@@ -48,7 +48,7 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
     >
       <div style={{ position: "absolute", inset: 0, padding: 30 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <CrxMark size={20} />
             <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Portfolio</span>
           </div>
@@ -142,20 +142,20 @@ export const CrxScene3Dash: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         ))}
 
-        <div style={{ position: "absolute", left: 372, top: 172, ...label }}>Hedged notional</div>
-        <div style={{ position: "absolute", right: 30, top: 169, ...tag, fontSize: 11.5 }}>6M</div>
+        <div style={{ position: "absolute", left: 386, top: 166, ...label }}>Hedged notional</div>
+        <div style={{ position: "absolute", right: 30, top: 163, ...tag, fontSize: 11.5 }}>6M</div>
         <BarChart
           frame={frame}
           growth={growth}
           bars={S3_BARS.h}
           months={S3_BARS.months}
-          x={376}
-          y={404}
+          x={392}
+          y={398}
           barW={34}
           gap={62}
           plotH={180}
           gridLabels={["$0.6M", "$1.2M", "$1.8M"]}
-          labelGutter={368}
+          labelGutter={376}
           pill={{ at: 282, text: "$1.7M" }}
         />
       </div>
