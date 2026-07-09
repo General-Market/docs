@@ -73,7 +73,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         >
           CRX
         </span>
-        <div style={{ display: "flex", gap: 4, marginLeft: 40 }}>
+        <div style={{ display: "flex", gap: 4, marginLeft: 44 }}>
           {S12_TABS.map((t) => {
             const active = t === "Portfolio";
             // TopNav: Transfer / Portfolio / Compliance are dropdown
@@ -148,7 +148,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         style={{
           position: "absolute",
           left: 26,
-          top: 72,
+          top: 74,
           width: 300,
           height: 300,
           backgroundColor: "#fff",
@@ -174,9 +174,9 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
             style={{
               position: "absolute",
               left: 22,
-              top: 116 + i * 52,
+              top: 104 + i * 56,
               width: 256,
-              height: 52,
+              height: 56,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -194,7 +194,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         style={{
           position: "absolute",
           left: 342,
-          top: 72,
+          top: 74,
           width: 400,
           height: 300,
           backgroundColor: "#fff",
@@ -212,10 +212,10 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           growth={growth}
           bars={S12_BARS.h}
           months={S12_BARS.months}
-          x={64}
-          y={246}
-          barW={36}
-          gap={64}
+          x={70}
+          y={250}
+          barW={34}
+          gap={67}
           plotH={147}
           gridLabels={["$1.4M", "$2.8M", "$4.2M"]}
           labelGutter={60}
@@ -228,7 +228,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
         style={{
           position: "absolute",
           left: 758,
-          top: 72,
+          top: 74,
           width: 330,
           height: 300,
           backgroundColor: "#fff",
@@ -249,12 +249,14 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
               style={{
                 position: "absolute",
                 left: 22,
-                top: 52 + i * 96,
+                top: 62 + i * 104,
                 width: 286,
-                height: 96,
+                height: 104,
                 borderBottom: i === 0 ? `1px solid ${BORDER}` : undefined,
                 opacity: op,
-                paddingTop: 14,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
