@@ -1693,7 +1693,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
 // slow-pulse grid (f1138/1149/1160, "dealers" lands with the third quote at the
 // f1160 crest) with tabular digits; the best rate is ringed on the f1182 snare
 // once all three are on the table. The card continues scene 4's trade: USD/BRL,
-// $2.5M, Jun 30 2027. Rows carry no dealer avatar — the name and desk line name
+// $2.5M, Aug 12 2026. Rows carry no dealer avatar — the name and desk line name
 // the counterparty; only the best row is ringed in teal-soft.
 const DEALERS = [
   { name: "Dealer 1", sub: "Tier-1 bank", rate: 5.4335, lands: 1138, t: "0.6s" },
@@ -1763,7 +1763,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
               <span>USD/BRL</span>
             </span>,
             <span key="n">$2,500,000</span>,
-            <span key="d">Jun 30, 2027</span>,
+            <span key="d">Aug 12, 2026</span>,
           ].map((chip, i) => (
             <div
               key={i}
