@@ -74,7 +74,7 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
           {[
             <span key="p" style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <FlagPair a="us" b="br" size={19} />
+              <FlagPair a="us" b="br" size={17} />
               <span>USD/BRL</span>
             </span>,
             <span key="n">$2,500,000</span>,
@@ -84,7 +84,8 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
               key={i}
               style={{
                 ...tag,
-                padding: "4px 10px",
+                height: 26,
+                padding: "0 11px",
                 fontSize: 12.5,
                 ...tnum,
               }}
@@ -113,9 +114,9 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
               style={{
                 position: "absolute",
                 left: 30,
-                top: 146 + i * 84,
-                width: 651,
-                height: 72,
+                top: 146 + i * 94,
+                width: 650,
+                height: 80,
                 borderRadius: 16,
                 backgroundColor: ringOp > 0 ? TEAL_SOFT : WELL,
                 boxShadow:
@@ -135,48 +136,55 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
                   {landed ? `${d.sub} · answered ${d.t}` : d.sub}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                {highlighted && isBest && (
+              {landed ? (
+                <div style={{ textAlign: "right", opacity: fadeIn(frame, d.lands, 4) }}>
                   <div
                     style={{
-                      fontSize: 12,
-                      fontWeight: 400,
-                      color: TEAL,
-                      backgroundColor: TEAL_SOFT,
-                      borderRadius: 980,
-                      padding: "3px 10px",
-                      ...settle(frame, HIGHLIGHT_AT, 10, 0.74),
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      gap: 14,
                     }}
                   >
-                    Best rate
-                  </div>
-                )}
-                {landed ? (
-                  <div style={{ textAlign: "right", opacity: fadeIn(frame, d.lands, 4) }}>
+                    {highlighted && isBest && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 400,
+                          color: TEAL,
+                          backgroundColor: TEAL_SOFT,
+                          borderRadius: 980,
+                          padding: "3px 10px",
+                          ...settle(frame, HIGHLIGHT_AT, 10, 0.74),
+                        }}
+                      >
+                        Best rate
+                      </div>
+                    )}
                     <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3, ...tnum }}>
                       {shown}
                     </div>
-                    <div style={{ fontSize: 12, color: TER }}>BRL per USD</div>
                   </div>
-                ) : (
-                  // Skeleton the app's way: a flat bar on animate-pulse
-                  // (opacity breathing, 2s period) — no light sweep.
-                  <div
-                    style={{
-                      width: 86,
-                      height: 14,
-                      borderRadius: 6,
-                      backgroundColor: BORDER_STRONG,
-                      opacity: 0.5 + 0.5 * Math.cos(((frame + i * 11) * Math.PI) / 22),
-                    }}
-                  />
-                )}
-              </div>
+                  <div style={{ fontSize: 12, color: TER }}>BRL per USD</div>
+                </div>
+              ) : (
+                // Skeleton the app's way: a flat bar on animate-pulse
+                // (opacity breathing, 2s period) — no light sweep.
+                <div
+                  style={{
+                    width: 86,
+                    height: 14,
+                    borderRadius: 6,
+                    backgroundColor: BORDER_STRONG,
+                    opacity: 0.5 + 0.5 * Math.cos(((frame + i * 11) * Math.PI) / 22),
+                  }}
+                />
+              )}
             </div>
           );
         })}
 
-        <div style={{ position: "absolute", left: 30, bottom: 20, fontSize: 12, color: TER }}>
+        <div style={{ position: "absolute", left: 30, bottom: 24, fontSize: 12, color: TER }}>
           One request: the whole dealer network answers
         </div>
       </div>
