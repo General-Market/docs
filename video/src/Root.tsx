@@ -106,6 +106,26 @@ import { zoomFollowPropMeta } from "./compositions/replicates/anoma/props/ZoomFo
 import { slideRailPropMeta } from "./compositions/replicates/anoma/props/SlideRailProp";
 import { fullBleedPropMeta } from "./compositions/replicates/anoma/props/FullBleedProp";
 import { crxAnomaSideBySideMeta } from "./compositions/replicates/anoma/CrxAnomaSideBySide";
+import {
+  clsDayReplicateMeta,
+  clsDaySideBySideMeta,
+  crxSettlementDayMeta,
+} from "./compositions/replicates/cls-day/ClsDayComps";
+import {
+  clsNetReplicateMeta,
+  clsNetSideBySideMeta,
+  crxNettingMeta,
+} from "./compositions/replicates/clsnet/ClsNetComps";
+import {
+  fnaLoopReplicateMeta,
+  fnaLoopSideBySideMeta,
+  crxLiquidityLoopMeta,
+} from "./compositions/replicates/fna-loop/FnaLoopComps";
+import {
+  netGrowthReplicateMeta,
+  netGrowthSideBySideMeta,
+  crxGrowthLoopMeta,
+} from "./compositions/replicates/netgrowth/NetGrowthComps";
 import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { partnershipReelMeta } from "./compositions/polymarket-replicas/PartnershipReelComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
@@ -625,6 +645,32 @@ export const RemotionRoot: React.FC = () => {
             />
           ))}
         </Folder>
+
+        {/* --- CLS (settlement-day + CLSNet explainers, FNA + growth loops) --- */}
+        {[
+          clsDayReplicateMeta,
+          clsDaySideBySideMeta,
+          crxSettlementDayMeta,
+          clsNetReplicateMeta,
+          clsNetSideBySideMeta,
+          crxNettingMeta,
+          fnaLoopReplicateMeta,
+          fnaLoopSideBySideMeta,
+          crxLiquidityLoopMeta,
+          netGrowthReplicateMeta,
+          netGrowthSideBySideMeta,
+          crxGrowthLoopMeta,
+        ].map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
 
         {/* --- IRSwap (interest-rate-swap explainer) --- */}
         {[irswapReplicateMeta, irswapSideBySideMeta].map((meta) => (
