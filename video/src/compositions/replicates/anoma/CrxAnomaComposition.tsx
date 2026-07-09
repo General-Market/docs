@@ -425,9 +425,9 @@ const LINES: CrxLineSpec[] = [
   // Scene 11 (cross-border-business-made-simple) is CUT in the re-pace: S10
   // (compliance) hands straight to the S12 brand finale.
   // Scene 12 — top-center; the brand line settles as the track breathes out:
-  // "CRX Sandbox" (f1500/1511), "is Live" lands on the f1533 snare (fades f1599-1621)
-  { words: [{ t: "CRX", f: 1500 }, { t: "Sandbox", f: 1511 }], capTop: 129, drop: 44, out: { fade: [1599, 1621] } },
-  { words: [{ t: "is", f: 1522 }, { t: "Live", f: 1533 }], capTop: 198, drop: 44, out: { fade: [1599, 1621] } },
+  // "CRX Sandbox" (f1236/1247), "is Live" lands on the f1269 snare (fades f1335-1357)
+  { words: [{ t: "CRX", f: 1236 }, { t: "Sandbox", f: 1247 }], capTop: 129, drop: 44, out: { fade: [1335, 1357] } },
+  { words: [{ t: "is", f: 1258 }, { t: "Live", f: 1269 }], capTop: 198, drop: 44, out: { fade: [1335, 1357] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
@@ -454,12 +454,12 @@ const LOCKUP_TOP = 344.7 - MARK_CY; // mark rides the frame's optical center
 const LEFT_FINAL = CENTER - LOCKUP_W / 2;
 const LEFT_ALONE = CENTER - MARK_CX; // phase 1: mark alone, centered
 
-// The mark arrives on the f1643 snare — where the water finishes fading to black
-// — and the wordmark reveals two slow pulses later on the f1687 snare, both
-// landing as the track breathes out. The wordmark settles by ~f1707 and holds on
-// black to the last frame (f1760).
-const MARK_IN = 1643;
-const REVEAL = 1687;
+// The mark arrives on the f1379 snare — where the water finishes fading to black
+// — and the wordmark reveals two slow pulses later on the f1423 snare, both
+// landing as the track breathes out. The wordmark settles by ~f1443 and holds on
+// black to the last frame (~f1470).
+const MARK_IN = 1379;
+const REVEAL = 1423;
 const REVEAL_DUR = 20;
 
 const EndMark: React.FC<{ size: number }> = ({ size }) => (

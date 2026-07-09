@@ -4,13 +4,13 @@ import { DIATYPE } from "./diatype";
 import { clamp } from "./AnomaComposition";
 import { BG, BORDER, BarChart, CARD_SHADOW, Card, CrxMark, FlagPair, INK, Money, SEC, SUCCESS, SURFACE2, TEAL, TER, WELL, fadeIn, label, tag, tnum } from "./CrxCardKit";
 
-// ─── Scene 12 (f1489-1620): the app, full width, under "CRX Sandbox is Live." ───
+// ─── Scene 12 (f1225-1356): the app, full width, under "CRX Sandbox is Live." ───
 // Nav + portfolio, AFTER the story's trade: margin locked reflects the
 // $2.5M hedge, and the positions list carries it. The card mounts on the
-// f1489 snare (the strong finale cut). Bars grow from f1511 and are FINISHED
-// on the f1577 snare — a long rest before the fade instead of growth
-// running into the cut. Positions land on the f1533 snare (with "Live") and
-// f1555. The Portfolio pill is chrome — the real nav never
+// f1225 snare (the strong finale cut). Bars grow from f1247 and are FINISHED
+// on the f1313 snare — a long rest before the fade instead of growth
+// running into the cut. Positions land on the f1269 snare (with "Live") and
+// f1291. The Portfolio pill is chrome — the real nav never
 // animates it in, so it is present from the scene's first frame.
 // Card stays bottom-anchored (top + h = 720). The amber sandbox banner was
 // removed, so the app shell is 30px shorter: top moves down 30 (291→321) and
@@ -21,8 +21,8 @@ const S12_BARS = { h: [72, 55, 84, 78, 106], months: ["Feb", "Mar", "Apr", "May"
 const S12_TABS = ["Swap", "Transfer", "Portfolio", "Compliance"];
 
 const POSITIONS = [
-  { at: 1533, a: "us", b: "br", pair: "USD/BRL", side: "Long", notional: "$2.5M", pnl: "+$1,240", health: 0.86 },
-  { at: 1555, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
+  { at: 1269, a: "us", b: "br", pair: "USD/BRL", side: "Long", notional: "$2.5M", pnl: "+$1,240", health: 0.86 },
+  { at: 1291, a: "us", b: "mx", pair: "USD/MXN", side: "Short", notional: "$1.0M", pnl: "+$310", health: 0.72 },
 ];
 
 // The whole UI wears the landing face, so the nav wears Diatype too — a
@@ -33,15 +33,15 @@ const NAV_INK = "#1a1a1a";
 const NAV_BORDER = "#e7e7e2";
 
 export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 1489 || frame >= 1621) return null;
+  if (frame < 1225 || frame >= 1357) return null;
   const opacity =
-    interpolate(frame, [1489, 1511], [0, 1], clamp) *
-    interpolate(frame, [1599, 1621], [1, 0], clamp);
+    interpolate(frame, [1225, 1247], [0, 1], clamp) *
+    interpolate(frame, [1335, 1357], [1, 0], clamp);
   if (opacity <= 0) return null;
   const growth = (fr: number) =>
-    // End at 1569 so the staggered hero bar (i*2) finishes on the f1577 snare
-    // and rests before the f1599 fade.
-    interpolate(fr, [1511, 1522, 1533, 1544, 1555, 1569], [0, 0.18, 0.42, 0.68, 0.9, 1], clamp);
+    // End at 1305 so the staggered hero bar (i*2) finishes on the f1313 snare
+    // and rests before the f1335 fade.
+    interpolate(fr, [1247, 1258, 1269, 1280, 1291, 1305], [0, 0.18, 0.42, 0.68, 0.9, 1], clamp);
   const pillOn = 1; // chrome never animates itself in
   return (
     <Card x={S12.left} y={S12.top} w={S12.w} h={S12.h} opacity={opacity} radius={16} bg={BG}>
@@ -219,7 +219,7 @@ export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
           plotH={147}
           gridLabels={["$1.4M", "$2.8M", "$4.2M"]}
           labelGutter={60}
-          pill={{ at: 1577, text: "$3.0M" }}
+          pill={{ at: 1313, text: "$3.0M" }}
         />
       </div>
 
