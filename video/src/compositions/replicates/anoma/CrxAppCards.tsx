@@ -301,9 +301,27 @@ const FlagPair: React.FC<{ a: string; b: string; size?: number }> = ({ a, b, siz
 );
 
 // ─── cursor: the operator's hand ───
-// Piecewise keyframe path with smoothstep hops; clicks dip the arrow
-// and ring outward. Card-local coordinates.
+// A Catmull-Rom spline threaded THROUGH the keyframe points, so the path
+// arcs like a real hand yet passes exactly through every keyframe — the
+// click ripples, which anchor at keyframe positions, stay pixel-exact on
+// their targets. TIMING is unchanged: the per-segment smoothstep still sets
+// the arrival, only the in-between shape is now curved. Dwell segments
+// (identical endpoints — the hold before a click) return the point flat, so
+// the spline never bulges during a still hold. Card-local coordinates.
 type CursorKey = { f: number; x: number; y: number };
+
+// Uniform Catmull-Rom basis on one axis; q(0)=p1, q(1)=p2.
+const catmull = (p0: number, p1: number, p2: number, p3: number, t: number) => {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 *
+    (2 * p1 +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+  );
+};
 
 const cursorAt = (frame: number, keys: CursorKey[]) => {
   if (frame <= keys[0].f) return { x: keys[0].x, y: keys[0].y };
@@ -311,8 +329,14 @@ const cursorAt = (frame: number, keys: CursorKey[]) => {
     const a = keys[i];
     const b = keys[i + 1];
     if (frame <= b.f) {
+      if (a.x === b.x && a.y === b.y) return { x: b.x, y: b.y };
       const t = smooth((frame - a.f) / (b.f - a.f));
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      const p0 = keys[i - 1] ?? a;
+      const p3 = keys[i + 2] ?? b;
+      return {
+        x: catmull(p0.x, a.x, b.x, p3.x, t),
+        y: catmull(p0.y, a.y, b.y, p3.y, t),
+      };
     }
   }
   const last = keys[keys.length - 1];
@@ -847,10 +871,48 @@ const RATE_TICKS = ["17.5081", "17.5104", "17.5092", "17.5110", "17.5087", "17.5
 const SPOT_FLICK = ["1", "3", "0", "4", "2", "5"];
 
 const NOTIONAL = "2,500,000";
-const TYPE_START = 545; // first char on the f545 snare
-// Types at 2.75f/char so the value completes on the f567 snare (as "notional"
-// lands) and the "Request quotes" CTA arms there.
-const TYPE_END = TYPE_START + Math.round((NOTIONAL.length - 1) * 2.75); // f567
+const NOTIONAL_DIGITS = NOTIONAL.replace(/,/g, ""); // "2500000" — the 7 raw digits
+const TYPE_START = 545; // first digit on the f545 snare
+const TYPE_END = 567; // 7th digit lands on the f567 snare; the CTA arms there
+
+// A person types the seven DIGITS of 2500000 one at a time; the field re-groups
+// with thousands separators as digits accrue ("2"→"25"→"250"→"2,500"→…→
+// "2,500,000"), never showing a trailing comma. Grouping the raw digit string
+// (not slicing the pre-formatted value) is what makes commas appear only where a
+// group is complete.
+const formatAmount = (digits: number) =>
+  NOTIONAL_DIGITS.slice(0, digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+// Deterministic [0,1) hash of a keystroke index — a seeded jitter so the
+// cadence reads human, NOT Math.random / Date.now, so the render stays
+// byte-deterministic.
+const keyJitter = (i: number) => {
+  let h = Math.imul(i + 1, 0x9e3779b1);
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h ^= h >>> 13;
+  return ((h >>> 0) % 1000) / 1000;
+};
+
+// Frame at which each of the 7 digits becomes visible. Base cadence + a small
+// per-keystroke jitter, with a tiny hesitation before the final group, then
+// scaled so digit 1 lands on TYPE_START and digit 7 lands exactly on TYPE_END.
+const TYPE_KEYFRAMES: number[] = (() => {
+  const gaps: number[] = [];
+  for (let i = 1; i < NOTIONAL_DIGITS.length; i++) {
+    const jitter = (keyJitter(i) - 0.5) * 2.0; // ±1f around the base beat
+    const hesitation = i === NOTIONAL_DIGITS.length - 1 ? 1.8 : 0; // pause before the last digit
+    gaps.push(3.0 + jitter + hesitation);
+  }
+  const total = gaps.reduce((s, g) => s + g, 0);
+  const scale = (TYPE_END - TYPE_START) / total;
+  const frames = [TYPE_START];
+  let acc = TYPE_START;
+  for (let j = 0; j < gaps.length; j++) {
+    acc += gaps[j] * scale;
+    frames.push(j === gaps.length - 1 ? TYPE_END : acc); // pin the last to TYPE_END
+  }
+  return frames;
+})();
 
 // Cursor keyframes on the slow pulse: every CLICK lands on a snare (open 435,
 // select 457, tenor 501/523, notional-focus 545, press 589), with a quarter-beat
@@ -930,9 +992,10 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
   const calSettle = settle(frame, 501, 10, 0.76);
   const calSelected = frame >= 523 ? 12 : 1;
   const focused = frame >= 542;
-  const typedChars =
-    frame < TYPE_START ? 0 : Math.min(Math.floor((frame - TYPE_START) / 2.75) + 1, NOTIONAL.length);
-  const typing = typedChars > 0 && typedChars < NOTIONAL.length;
+  const typedDigits =
+    frame < TYPE_START ? 0 : TYPE_KEYFRAMES.filter((f) => frame >= f).length;
+  const typedStr = formatAmount(typedDigits); // "" while empty, "2,500,000" when settled
+  const typing = typedDigits > 0 && typedDigits < NOTIONAL_DIGITS.length;
   // Caret blinks while idle-focused, holds solid while typing.
   const caretOn = focused && (typing || Math.floor(frame / 8) % 2 === 0);
   const armed = frame >= 567;
@@ -983,14 +1046,14 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             <div
               style={{
                 fontSize: 38,
-                fontWeight: typedChars > 0 ? 700 : 400,
+                fontWeight: typedDigits > 0 ? 700 : 400,
                 letterSpacing: -1,
                 marginTop: 2,
-                color: typedChars > 0 ? INK : "#b8bac4",
+                color: typedDigits > 0 ? INK : "#b8bac4",
                 ...tnum,
               }}
             >
-              {typedChars > 0 ? NOTIONAL.slice(0, typedChars) : focused ? "" : "0.0"}
+              {typedDigits > 0 ? typedStr : focused ? "" : "0.0"}
               {caretOn && (
                 <span style={{ color: TEAL, fontWeight: 400, marginLeft: 1 }}>|</span>
               )}
@@ -1586,7 +1649,7 @@ const ObFace: React.FC<{
       }}
     >
       <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
-      <span>You're notified the moment each check clears — usually within one business day.</span>
+      <span>Onboard once. Reach every dealer.</span>
     </div>
   </div>
 );
@@ -2014,8 +2077,8 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
               <Check size={10} stroke={17} color={SUCCESS} />
             </div>
             <span>
-              Every hedge is sanctions-screened and audit-logged —{" "}
-              <span style={{ color: INK, fontWeight: 700 }}>ready to trade on CRX</span>.
+              Sanctions-screened, audit-logged,{" "}
+              <span style={{ color: INK, fontWeight: 700 }}>cleared to trade</span>.
             </span>
           </div>
         )}
