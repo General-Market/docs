@@ -4,6 +4,7 @@ import { realistReplicateMeta } from "./compositions/replicates/realist/RealistC
 import { realistSideBySideMeta } from "./compositions/replicates/realist/RealistSideBySide";
 import { irswapReplicateMeta } from "./compositions/replicates/irswap/IRSwapComposition";
 import { irswapSideBySideMeta } from "./compositions/replicates/irswap/IRSwapSideBySide";
+import { crxAnomaQAMeta } from "./compositions/replicates/anoma/CrxAnomaQA";
 
 // Replica-only entry (src/index-replicas.ts). The main src/index.ts bundles
 // every composition, which (a) copies the full multi-GB public/ tree per
@@ -19,6 +20,7 @@ export const RootReplicas: React.FC = () => (
       realistSideBySideMeta,
       irswapReplicateMeta,
       irswapSideBySideMeta,
+      crxAnomaQAMeta,
     ].map((meta) => (
       <Composition key={meta.id} {...meta} />
     ))}

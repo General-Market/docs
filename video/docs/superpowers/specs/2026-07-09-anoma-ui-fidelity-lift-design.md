@@ -32,18 +32,19 @@ level — and the beat-sync never moves.
 - **Stage surgically.** `git add` explicit anoma paths only — never `-A`. The repo holds other
   sessions' unrelated work.
 
-## Typography mechanics (the biggest single tell)
+## Typography — leave it exactly as it is (documented decision)
 
-Real fintech tables use tabular figures so digits align. Introduce **IBM Plex Mono** (the app's
-own mono face, loaded via `@remotion/fonts`) for every number that sits in a column or reads as a
-rate / price / notional / PnL / percentage / countdown. Weights 500/600. Keep **Diatype** for
-prose, labels, headings. Enable `fontFeatureSettings: '"tnum" 1, "lnum" 1'` on numeric text.
+Do **not** introduce a mono face or `tnum`. The whole cut deliberately wears **Diatype**
+(replacing Inter) for brand cohesion, and `CrxAppCards.tsx:70–73` records that tabular figures
+were left off on purpose — Diatype's `tnum` monospaces the space/comma/period too, rendering
+"$30 , 440 . 00". Column alignment is already achieved by **right-anchoring value cells**, not by
+tabular digits. The fidelity gap is *component richness*, not type. Keep Diatype 400/700.
 
 ## Phase 1 — Shared primitives (build first, one commit)
 
 New/upgraded module-scope helpers in `CrxAppCards.tsx`:
 
-1. `Num` — tabular numeral text (IBM Plex Mono, tnum) for money/rates/percent/countdowns.
+1. (dropped — no mono/tnum; see Typography above. Value cells stay right-anchored in Diatype.)
 2. `TokenChip` — circular token disc + name + subtitle; optional selected (teal ring + check).
    Matches the app MARGIN-TOKEN chips.
 3. `FlagBadge` / upgraded `FlagPair` — overlapping circular flag discs like the app currency pair.
@@ -81,8 +82,12 @@ New/upgraded module-scope helpers in `CrxAppCards.tsx`:
   a real app screenshot.
 - Spot-render the real `CRX-Anoma` comp at 1–2 frames per card (APFS-cloned `--public-dir`, freed
   caches, `--concurrency=1`) to confirm the card still sits right over the silk background.
-- Per-card acceptance: (a) reads as the real app; (b) every number is tabular and aligned;
-  (c) the card's frame window and cursor clicks are byte-for-byte the same timings.
+- Per-card acceptance: (a) reads as the real app; (b) value columns are right-anchored and align
+  (Diatype proportional, no mono); (c) the card's frame window and cursor clicks are byte-for-byte
+  the same timings.
+
+(Note: "tabular" in the per-card table below means *right-anchored aligned value cells*, not a
+mono/tnum face.)
 
 ## Push cadence
 

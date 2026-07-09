@@ -384,6 +384,161 @@ const Cursor: React.FC<{
   );
 };
 
+// ─── date picker: the month grid the tenor field opens ───
+// app.crxfx.com's TENOR control opens a calendar popover; the mock must too —
+// a floating month grid (OVERLAY_SHADOW, like the corridor dropdown) with the
+// delivery day filled teal, the today ring, the weekday header, month-nav
+// chevrons, and the "N days from today" caption the app shows. Because the card
+// is short and the tenor sits low, the picker opens UPWARD over the form, the
+// way a real date field does when there is no room beneath it. Pure and
+// deterministic: given the month's layout and the selected day, it renders the
+// same every frame. Day-cell centres are on a fixed grid so the cursor can land
+// on the delivery day and its click-ripple reads as a real pick.
+const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const CalendarPicker: React.FC<{
+  left: number;
+  top: number;
+  w: number;
+  monthLabel: string; // "August 2026"
+  firstDow: number; // weekday of day 1 (0=Su … 6=Sa)
+  daysInMonth: number;
+  selected: number; // delivery day — teal fill
+  today?: number; // reference day — hairline teal ring
+  caption: string; // "41 days from today"
+  op: number;
+  settleStyle?: React.CSSProperties;
+}> = ({ left, top, w, monthLabel, firstDow, daysInMonth, selected, today, caption, op, settleStyle }) => {
+  if (op <= 0) return null;
+  const PAD = 16;
+  const cell = (w - PAD * 2) / 7;
+  const rows = Math.ceil((firstDow + daysInMonth) / 7);
+  const weeks: (number | null)[][] = [];
+  let d = 1 - firstDow;
+  for (let r = 0; r < rows; r++) {
+    const week: (number | null)[] = [];
+    for (let c = 0; c < 7; c++) {
+      week.push(d >= 1 && d <= daysInMonth ? d : null);
+      d++;
+    }
+    weeks.push(week);
+  }
+  const chev: React.CSSProperties = {
+    width: 22,
+    textAlign: "center",
+    color: TER,
+    fontSize: 17,
+    lineHeight: 1,
+  };
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left,
+        top,
+        width: w,
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        boxShadow: OVERLAY_SHADOW,
+        opacity: op,
+        padding: PAD,
+        boxSizing: "border-box",
+        ...settleStyle,
+      }}
+    >
+      {/* month header with nav chevrons */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <span style={chev}>‹</span>
+        <span style={{ fontSize: 14.5, fontWeight: 700, letterSpacing: -0.2 }}>{monthLabel}</span>
+        <span style={chev}>›</span>
+      </div>
+      {/* weekday header */}
+      <div style={{ display: "flex", marginBottom: 2 }}>
+        {WEEKDAYS.map((dw) => (
+          <div
+            key={dw}
+            style={{
+              width: cell,
+              textAlign: "center",
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: TER,
+              letterSpacing: "0.04em",
+            }}
+          >
+            {dw}
+          </div>
+        ))}
+      </div>
+      {/* day grid */}
+      {weeks.map((week, r) => (
+        <div key={r} style={{ display: "flex" }}>
+          {week.map((day, c) => {
+            const isSel = day === selected;
+            const isToday = day != null && day === today && !isSel;
+            return (
+              <div
+                key={c}
+                style={{
+                  width: cell,
+                  height: cell,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {day != null && (
+                  <div
+                    style={{
+                      width: cell - 10,
+                      height: cell - 10,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 13,
+                      fontWeight: isSel ? 700 : 400,
+                      color: isSel ? "#fff" : INK,
+                      backgroundColor: isSel ? TEAL : "transparent",
+                      boxShadow: isToday ? `0 0 0 1.5px ${TEAL_RING}` : undefined,
+                    }}
+                  >
+                    {day}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {/* delivery caption */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          marginTop: 10,
+          paddingTop: 10,
+          borderTop: `1px solid ${BORDER}`,
+          fontSize: 12.5,
+          color: SEC,
+        }}
+      >
+        <CalendarGlyph size={13} />
+        <span>
+          Delivery · <span style={{ color: INK, fontWeight: 700 }}>{caption}</span>
+        </span>
+      </div>
+    </div>
+  );
+};
+
 // ─── chart engine ───
 // Product-grade bar marks: ≤24px thick, 4px rounded data-end, square
 // at the baseline; history rides a de-emphasized teal step and the
@@ -710,11 +865,11 @@ const CURSOR_KEYS: CursorKey[] = [
   { f: 456, x: 420, y: 428 }, // row 3 (USD/BRL) — arrives
   { f: 457, x: 420, y: 428 }, // row 3 — click selects on the snare
   { f: 470, x: 470, y: 400 },
-  { f: 492, x: 170, y: 308 }, // tenor well
-  { f: 501, x: 170, y: 308 }, // tenor click 1 (snare)
-  { f: 512, x: 170, y: 308 },
-  { f: 523, x: 170, y: 308 }, // tenor click 2 (snare)
-  { f: 534, x: 150, y: 116 }, // notional field
+  { f: 492, x: 170, y: 308 }, // approach the tenor field
+  { f: 501, x: 170, y: 308 }, // click opens the calendar (snare)
+  { f: 512, x: 205, y: 288 }, // move up into the month grid
+  { f: 523, x: 222, y: 228 }, // click day 12 in the grid (snare) — the delivery pick
+  { f: 534, x: 150, y: 116 }, // to the notional field
   { f: 545, x: 150, y: 116 }, // focus click (snare) — typing begins
   { f: 556, x: 236, y: 148 }, // rest aside while it types
   { f: 580, x: 355, y: 384 }, // CTA (arms as typing completes)
@@ -753,17 +908,27 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
   const hoverOp = fadeIn(frame, 439, 3);
   const selIdx = frame < SELECT_AT ? 0 : 3;
 
-  // Beat C — tenor swaps on the snares f501/f523, notional types from the
-  // f545 snare, CTA arms as typing completes (f567).
+  // Beat C — the tenor CLICK on the f501 snare opens the calendar; the delivery
+  // day is PICKED on the f523 snare; notional types from the f545 snare; CTA arms
+  // as typing completes (f567). The field shows the default Aug 1 until the pick
+  // commits Aug 12 on f523 (matching the day the cursor clicks in the grid).
   const tenor =
-    frame < 501
+    frame < 523
       ? ["Aug 1, 2026", "30 days from today"]
-      : frame < 523
-        ? ["Sep 30, 2026", "90 days from today"]
-        : ["Jun 30, 2027", "363 days from today"];
-  const tenorSwap = frame >= 501 ? settle(frame, frame < 523 ? 501 : 523, 8, 0.74) : {};
+      : ["Aug 12, 2026", "41 days from today"];
+  const tenorSwap = frame >= 523 ? settle(frame, 523, 8, 0.74) : {};
   const tenorFocus =
     interpolate(frame, [499, 502], [0, 1], clamp) * interpolate(frame, [541, 545], [1, 0], clamp);
+
+  // Calendar popover: fades in on the f501 open-click, the teal fill jumps from
+  // Aug 1 to the picked Aug 12 on the f523 snare, then it fades as the cursor
+  // leaves for the notional field (~f534). August 2026 — day 1 is a Saturday
+  // (firstDow 6), 31 days.
+  const calOpen = frame >= 501 && frame < 536;
+  const calOp =
+    fadeIn(frame, 501, 4) * interpolate(frame, [530, 536], [1, 0], clamp);
+  const calSettle = settle(frame, 501, 10, 0.76);
+  const calSelected = frame >= 523 ? 12 : 1;
   const focused = frame >= 542;
   const typedChars =
     frame < TYPE_START ? 0 : Math.min(Math.floor((frame - TYPE_START) / 2.75) + 1, NOTIONAL.length);
@@ -1094,6 +1259,23 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Calendar picker — opens from the tenor field on the f501 click,
+            floats up over the form, delivery day picked on the f523 click */}
+        {calOpen && calOp > 0 && (
+          <CalendarPicker
+            left={30}
+            top={44}
+            w={384}
+            monthLabel="August 2026"
+            firstDow={6}
+            daysInMonth={31}
+            selected={calSelected}
+            caption={frame >= 523 ? "41 days from today" : "30 days from today"}
+            op={calOp}
+            settleStyle={calSettle}
+          />
         )}
 
         <Cursor
