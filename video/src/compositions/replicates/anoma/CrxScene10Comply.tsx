@@ -1,7 +1,7 @@
 import React from "react";
 import { interpolate } from "remotion";
 import { clamp } from "./AnomaComposition";
-import { BORDER, BORDER_STRONG, CARD, Card, Check, INK, SEC, SUCCESS, SUCCESS_SOFT, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
+import { BORDER, BORDER_STRONG, CARD, Card, Check, SEC, SUCCESS, SUCCESS_SOFT, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
 
 // ─── Scene 10 (f1204-1356): compliance checklist under "Compliance by design" ───
 // Crossfades over the RFQ card; checks tick in on the slow pulse, one every ~22f
@@ -115,44 +115,6 @@ export const CrxScene10Comply: React.FC<{ frame: number }> = ({ frame }) => {
           );
         })}
 
-        {/* the conclusion, filling the lower band: a full-width success strip
-            that lands with the All-clear pill on the f1313 snare */}
-        {frame >= ALL_CLEAR_AT && (
-          <div
-            style={{
-              position: "absolute",
-              left: 30,
-              top: 421,
-              width: 650,
-              height: 34,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              color: SEC,
-              fontSize: 13,
-              ...settle(frame, ALL_CLEAR_AT, 8, 0.76),
-            }}
-          >
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                backgroundColor: SUCCESS_SOFT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Check size={11} stroke={17} color={SUCCESS} />
-            </div>
-            <span>
-              Sanctions-screened, audit-logged,{" "}
-              <span style={{ color: INK, fontWeight: 700 }}>cleared to trade</span>.
-            </span>
-          </div>
-        )}
       </div>
     </Card>
   );

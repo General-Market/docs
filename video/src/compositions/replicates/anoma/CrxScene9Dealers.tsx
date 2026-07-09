@@ -183,10 +183,6 @@ export const CrxScene9Dealers: React.FC<{ frame: number }> = ({ frame }) => {
             </div>
           );
         })}
-
-        <div style={{ position: "absolute", left: 30, bottom: 24, fontSize: 12, color: TER }}>
-          One request: the whole dealer network answers
-        </div>
       </div>
     </Card>
   );

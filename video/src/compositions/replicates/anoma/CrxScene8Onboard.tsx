@@ -285,24 +285,6 @@ const ObFace: React.FC<{
         </div>
       );
     })}
-
-    {/* footer — closes the flow with the app's reassurance line and fills the
-        card so the lower third is not dead space */}
-    <div
-      style={{
-        position: "absolute",
-        left: 30,
-        top: 418,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        color: TER,
-        fontSize: 12.5,
-      }}
-    >
-      <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: TEAL }} />
-      <span>Onboard once. Reach every dealer.</span>
-    </div>
   </div>
 );
 
