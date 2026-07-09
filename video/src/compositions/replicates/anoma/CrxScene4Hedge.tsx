@@ -170,8 +170,8 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
       scale={scale}
     >
       <div style={{ position: "absolute", inset: 0, padding: "26px 30px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: TER, fontSize: 18, lineHeight: 1 }}>‹</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: TER, fontSize: 16, lineHeight: 1 }}>‹</span>
           <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.3 }}>Open a hedge</span>
         </div>
 
@@ -189,7 +189,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             boxShadow: focused && frame < TYPE_END + 8 ? FOCUS_RING : undefined,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             {/* SwapPage renders this one sentence-case — 12.5px/500
                 tertiary, not the uppercase eyebrow */}
             <div style={{ fontFamily: DIATYPE, fontSize: 12.5, fontWeight: 400, color: TER }}>
@@ -252,10 +252,10 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
             height: 74,
             backgroundColor: WELL,
             borderRadius: 16,
-            padding: "9px 12px 0 12px",
+            padding: "9px 18px 0 18px",
           }}
         >
-          <div style={{ ...label, paddingLeft: 12 }}>Pair</div>
+          <div style={label}>Pair</div>
           <div
             style={{
               display: "flex",
@@ -426,9 +426,9 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
           <div
             style={{
               position: "absolute",
-              left: 28,
+              left: 30,
               top: 262,
-              width: 654,
+              width: 650,
               borderRadius: 12,
               backgroundColor: "#fff",
               border: `1px solid ${BORDER}`,
@@ -446,7 +446,7 @@ export const CrxScene4Hedge: React.FC<{ frame: number }> = ({ frame }) => {
                   position: "absolute",
                   left: 8,
                   top: 8 + 44 * hoverIdx,
-                  width: 638,
+                  width: 634,
                   height: 44,
                   borderRadius: 8,
                   backgroundColor: SURFACE2,
