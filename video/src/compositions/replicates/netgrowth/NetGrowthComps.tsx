@@ -105,6 +105,8 @@ const CRX_THEME: SceneTheme = {
   digitWeight: "700",
   serifCapOffset: 0.14,
   sansCapOffset: 0.14,
+  // Diatype sets at its own natural width — no reference ink boxes to match.
+  naturalWidths: true,
   copy: CRX_COPY,
   colors: {
     ...COLORS,

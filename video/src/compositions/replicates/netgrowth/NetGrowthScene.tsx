@@ -57,6 +57,9 @@ export type SceneTheme = {
   digitWeight: string; // bubble digits
   serifCapOffset: number; // (box-top → cap-top) / fontSize, calibrated
   sansCapOffset: number;
+  // Replica mode stretches every line to the reference's measured ink box.
+  // Brand cuts (CRX) set true: lines run at the face's natural width.
+  naturalWidths?: boolean;
   copy: NetGrowthCopy;
   colors: typeof COLORS;
 };
@@ -121,10 +124,11 @@ const Line: React.FC<{
   dy?: number;
   dx?: number;
   opacity?: number;
-}> = ({ text, x, capTop, fs, inkW, family, weight, capOffset, color, dy = 0, dx = 0, opacity = 1 }) => {
+  natural?: boolean;
+}> = ({ text, x, capTop, fs, inkW, family, weight, capOffset, color, dy = 0, dx = 0, opacity = 1, natural = false }) => {
   if (opacity <= 0) return null;
   const nat = natWidth(text, family, fs, weight);
-  const sx = nat > 0 ? inkW / nat : 1;
+  const sx = natural || nat <= 0 ? 1 : inkW / nat;
   return (
     <div
       style={{
@@ -187,6 +191,7 @@ const Headline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
             weight={th.serifWeight}
             capOffset={th.serifCapOffset}
             color={th.colors.ink}
+            natural={th.naturalWidths}
             dy={h1dy}
           />
         </RiseClip>
@@ -203,6 +208,7 @@ const Headline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
             weight={th.sansWeight}
             capOffset={th.sansCapOffset}
             color={th.colors.ink}
+            natural={th.naturalWidths}
             dy={h2dy}
           />
         </RiseClip>
@@ -219,6 +225,7 @@ const Headline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
             weight={th.boldWeight}
             capOffset={th.sansCapOffset}
             color={th.colors.ink}
+            natural={th.naturalWidths}
             dy={subdy}
           />
         </RiseClip>
@@ -303,6 +310,7 @@ const StatRow: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }
               weight={th.sansWeight}
               capOffset={th.sansCapOffset}
               color={th.colors.label}
+              natural={th.naturalWidths}
               dx={labDx + rowDx}
             />
           </div>
@@ -408,7 +416,7 @@ const Legend: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }>
             position: "absolute",
             left: clipLeft,
             top: L.legendSqY - 10,
-            width: G.textX + G.inkW + 20 - clipLeft,
+            width: G.textX + G.inkW + (th.naturalWidths ? 140 : 20) - clipLeft,
             height: 55,
             overflow: "hidden",
           }}
@@ -424,6 +432,7 @@ const Legend: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }>
               weight={th.sansWeight}
               capOffset={th.sansCapOffset}
               color={row.legendText}
+              natural={th.naturalWidths}
               dx={-dxIn - dxOut}
             />
           </div>
@@ -448,6 +457,7 @@ const Footnote: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
       weight={th.sansWeight}
       capOffset={th.sansCapOffset}
       color={th.colors.footnote}
+      natural={th.naturalWidths}
       dx={dx}
       opacity={opacity}
     />
@@ -499,6 +509,7 @@ const Logo: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf, ex
           weight={th.serifWeight}
           capOffset={th.serifCapOffset}
           color={th.colors.ink}
+          natural={th.naturalWidths}
           dx={dx}
         />
       </div>
@@ -515,7 +526,7 @@ const Tagline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf,
       if (s <= 0.01) return null;
       const box = L.tag.words[wi];
       const nat = natWidth(word, th.sansFamily, L.tag.fs, th.sansWeight);
-      const sx = nat > 0 ? box.w / nat : 1;
+      const sx = th.naturalWidths || nat <= 0 ? 1 : box.w / nat;
       return (
         <div
           key={wi}
