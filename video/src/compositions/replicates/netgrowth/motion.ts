@@ -92,5 +92,9 @@ export const DIV_OUT = [1029, 1026, 1015, 994, 960, 907, 826, 705, 542, 378, 257
 // Tagline words scale back down (shared curve, measured off word 1).
 export const WORD_OUT = [1, 0.98, 0.95, 0.92, 0.86, 0.77, 0.61, 0.39, 0.23, 0.13, 0.05, 0]; // t=1..12
 
-// Footnote fades out fast (opacity per frame, anchored exitAt+3).
-export const FN_FADE = [1, 0.81, 0.3, 0];
+// Footnote sinks at FULL opacity behind a clip at y=944 (just above the
+// divider), anchored at exitAt. Top-edge dy measured per frame in all three
+// cycles (identical): settled 900 -> 901/902/904/909/918/932/941 -> consumed.
+// r1 modeled this as a 3f fade (FN_FADE [1,.81,.3,0]) — refuted by
+// measurement: max ink brightness stays ~650 through the whole exit.
+export const FN_SINK = [0, 1, 2, 4, 9, 18, 32, 41, 52, 64];

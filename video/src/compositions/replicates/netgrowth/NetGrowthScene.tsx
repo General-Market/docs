@@ -37,7 +37,7 @@ import {
   LOGO_OUT,
   DIV_OUT,
   WORD_OUT,
-  FN_FADE,
+  FN_SINK,
 } from "./motion";
 
 // ═══════════════════════════════════════════════════════════════
@@ -65,39 +65,44 @@ export type SceneTheme = {
 };
 
 // ─── Measured layout (px in the 1080×1080 frame) ───
+// `fix` = comparator-measured render trim (att vs ref at settled f180,
+// r2 pass): plain-div glyphs land 0-4px high and lsb-shifted vs the
+// measured ink anchors (strut law, lesson 11). Trims shift the whole
+// motion path rigidly — entrance/exit tables are offsets from settled.
 const L = {
-  h1: { x: 64, capTop: 79, fs: 82.9, inkW: 515, clipTop: 71, clipBottom: 157 },
-  h2: { x: 68, capTop: 164, fs: 77, inkW: 599, clipTop: 158, clipBottom: 238 },
-  sub: { x: 69, capTop: 256, fs: 32.2, inkW: 431, clipTop: 248, clipBottom: 292 },
+  h1: { x: 64, capTop: 79, fs: 82.9, inkW: 523, clipTop: 71, clipBottom: 157, fix: { dx: -5, dy: 0 } },
+  h2: { x: 68, capTop: 164, fs: 77, inkW: 605, clipTop: 158, clipBottom: 238, fix: { dx: -5, dy: 1 } },
+  sub: { x: 69, capTop: 256, fs: 32.2, inkW: 432, clipTop: 248, clipBottom: 292, fix: { dx: 1, dy: 1 } },
   rows: [
     {
       y: 411, labelCapTop: 391, trackEnd: 945, finalCx: 923.5, finalD: 162.2,
       labStart: 36, trkStart: 31, trkTab: TRK1_IN, popStart: 44, popTab: POP_Y,
-      cxTab: CX_Y, dTab: D_Y, outTab: ROW1_OUT, dir: 1,
+      cxTab: CX_Y, dTab: D_Y, outTab: ROW1_OUT, dir: 1, fix: { dx: 0, dy: 2, digitDy: 1.5, digitSx: 0.97 },
     },
     {
       y: 658.5, labelCapTop: 639, trackEnd: 943, finalCx: 837, finalD: 163.1,
       labStart: 41, trkStart: 40, trkTab: TRK2_IN, popStart: 43, popTab: POP_T,
-      cxTab: CX_T, dTab: D_T, outTab: ROW2_OUT, dir: -1,
+      cxTab: CX_T, dTab: D_T, outTab: ROW2_OUT, dir: -1, fix: { dx: 0, dy: 3, digitDy: -2.7, digitSx: 0.955 },
     },
   ],
-  labelX: 56, labelInkW: 371, labelFs: 35,
+  labelX: 56, labelInkW: 374, labelFs: 35,
   trackX0: 450, trackH: 10,
   digitFs: 56,
   legend: [
-    { sqX: 57, textX: 125, inkW: 275, inTab: LEG1_IN, inStart: 37, outTab: LEG1_OUT },
-    { sqX: 459, textX: 526, inkW: 267, inTab: LEG2_IN, inStart: 36, outTab: LEG2_OUT },
+    { sqX: 57, textX: 125, inkW: 276, inTab: LEG1_IN, inStart: 37, outTab: LEG1_OUT, fix: { dx: 3, dy: 1 } },
+    { sqX: 459, textX: 526, inkW: 270, inTab: LEG2_IN, inStart: 36, outTab: LEG2_OUT, fix: { dx: -1, dy: 1 } },
   ],
   legendSqY: 838, legendSq: 33, legendCapTop: 841, legendFs: 34,
-  fn: { x: 57, capTop: 900, fs: 25.2, inkW: 862 },
+  fn: { x: 57, capTop: 900, fs: 25.2, inkW: 864, fix: { dx: -1, dy: 1 } },
   divider: { y: 945, x0: 55, h: 1.5 },
-  logo: { x: 58, capTop: 971, fs: 51.4, inkW: 168, clipLeft: 51 },
+  logo: { x: 58, capTop: 971, fs: 51.4, inkW: 173, clipLeft: 51, fix: { dx: -3, dy: 2 } },
   tag: {
-    capTop: 1025, fs: 29.4,
+    capTop: 1025, fs: 29.4, fix: { dy: 4 },
+    // Ink-truth boxes re-measured r2 (r1 had word2/3 wrong: 247/198, 469/116).
     words: [
-      { x: 58, w: 173 },
-      { x: 247, w: 198 },
-      { x: 469, w: 116 },
+      { x: 58, w: 177, dx: -1 },
+      { x: 243, w: 206, dx: -1 },
+      { x: 457, w: 133, dx: -2 },
     ],
   },
 };
@@ -183,8 +188,8 @@ const Headline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
         <RiseClip top={L.h1.clipTop} bottom={L.h1.clipBottom}>
           <Line
             text={th.copy.headlineSerif}
-            x={L.h1.x}
-            capTop={L.h1.capTop}
+            x={L.h1.x + L.h1.fix.dx}
+            capTop={L.h1.capTop + L.h1.fix.dy}
             fs={L.h1.fs}
             inkW={L.h1.inkW}
             family={th.serifFamily}
@@ -200,8 +205,8 @@ const Headline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
         <RiseClip top={L.h2.clipTop} bottom={L.h2.clipBottom}>
           <Line
             text={th.copy.headlineSans}
-            x={L.h2.x}
-            capTop={L.h2.capTop}
+            x={L.h2.x + L.h2.fix.dx}
+            capTop={L.h2.capTop + L.h2.fix.dy}
             fs={L.h2.fs}
             inkW={L.h2.inkW}
             family={th.sansFamily}
@@ -217,8 +222,8 @@ const Headline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf
         <RiseClip top={L.sub.clipTop} bottom={L.sub.clipBottom}>
           <Line
             text={th.copy.subtitle}
-            x={L.sub.x}
-            capTop={L.sub.capTop}
+            x={L.sub.x + L.sub.fix.dx}
+            capTop={L.sub.capTop + L.sub.fix.dy}
             fs={L.sub.fs}
             inkW={L.sub.inkW}
             family={th.sansFamily}
@@ -302,8 +307,8 @@ const StatRow: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }
           >
             <Line
               text={row.label}
-              x={L.labelX}
-              capTop={R.labelCapTop}
+              x={L.labelX + R.fix.dx}
+              capTop={R.labelCapTop + R.fix.dy}
               fs={L.labelFs}
               inkW={L.labelInkW}
               family={th.sansFamily}
@@ -365,7 +370,10 @@ const StatRow: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }
               fontSize: L.digitFs * (D / R.finalD),
               lineHeight: 1,
               color: row.digits,
-              transform: `translateY(${(1.5 * D / R.finalD).toFixed(2)}px)`,
+              // Per-row digit trims (comparator vs ref at f75+f180): ref row2
+              // digits ride ~2.5px ABOVE bubble center (row1 below); HN digits
+              // set ~4% wider than the ref face.
+              transform: `translateY(${(R.fix.digitDy * D / R.finalD).toFixed(2)}px) scaleX(${R.fix.digitSx})`,
               whiteSpace: "pre",
             }}
           >
@@ -424,8 +432,8 @@ const Legend: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }>
           <div style={{ position: "absolute", left: -clipLeft, top: -(L.legendSqY - 10), width: 1080, height: 1080 }}>
             <Line
               text={row.legendLabel}
-              x={G.textX}
-              capTop={L.legendCapTop}
+              x={G.textX + G.fix.dx}
+              capTop={L.legendCapTop + G.fix.dy}
               fs={L.legendFs}
               inkW={G.inkW}
               family={th.sansFamily}
@@ -445,22 +453,38 @@ const Legend: React.FC<{ i: 0 | 1; rf: number; exitAt: number; th: SceneTheme }>
 const Footnote: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf, exitAt, th }) => {
   if (rf < 58) return null;
   const dx = -tab(FN_IN, 58, rf);
-  const opacity = rf >= exitAt + 3 ? tab(FN_FADE, exitAt + 3, rf) : 1;
+  // Exit: sinks at FULL opacity behind a clip at y=944, just above the
+  // divider (measured; r1's 3-frame fade was refuted — see FN_SINK).
+  const dy = rf >= exitAt ? tab(FN_SINK, exitAt, rf) : 0;
+  if (dy > 50) return null; // fully consumed by the clip
   return (
-    <Line
-      text={th.copy.footnote}
-      x={L.fn.x}
-      capTop={L.fn.capTop}
-      fs={L.fn.fs}
-      inkW={L.fn.inkW}
-      family={th.sansFamily}
-      weight={th.sansWeight}
-      capOffset={th.sansCapOffset}
-      color={th.colors.footnote}
-      natural={th.naturalWidths}
-      dx={dx}
-      opacity={opacity}
-    />
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 890,
+        width: 1080,
+        height: 54,
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ position: "absolute", left: 0, top: -890, width: 1080, height: 1080 }}>
+        <Line
+          text={th.copy.footnote}
+          x={L.fn.x + L.fn.fix.dx}
+          capTop={L.fn.capTop + L.fn.fix.dy}
+          fs={L.fn.fs}
+          inkW={L.fn.inkW}
+          family={th.sansFamily}
+          weight={th.sansWeight}
+          capOffset={th.sansCapOffset}
+          color={th.colors.footnote}
+          natural={th.naturalWidths}
+          dx={dx}
+          dy={dy}
+        />
+      </div>
+    </div>
   );
 };
 
@@ -501,8 +525,8 @@ const Logo: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf, ex
       <div style={{ position: "absolute", left: -L.logo.clipLeft, top: -960, width: 1080, height: 1080 }}>
         <Line
           text={th.copy.logo}
-          x={L.logo.x}
-          capTop={L.logo.capTop}
+          x={L.logo.x + L.logo.fix.dx}
+          capTop={L.logo.capTop + L.logo.fix.dy}
           fs={L.logo.fs}
           inkW={L.logo.inkW}
           family={th.serifFamily}
@@ -532,8 +556,8 @@ const Tagline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf,
           key={wi}
           style={{
             position: "absolute",
-            left: box.x,
-            top: L.tag.capTop - th.sansCapOffset * L.tag.fs,
+            left: box.x + box.dx,
+            top: L.tag.capTop + L.tag.fix.dy - th.sansCapOffset * L.tag.fs,
             width: box.w,
             height: L.tag.fs,
             transform: `scale(${s.toFixed(4)})`,
