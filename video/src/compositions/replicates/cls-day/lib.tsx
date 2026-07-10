@@ -414,7 +414,8 @@ export const ClsPill: React.FC<{
   h: number;
   logoP?: number; // wordmark reveal 0..1
   opacity?: number;
-}> = ({ x, y, w, h, logoP = 1, opacity = 1 }) => (
+  logoScale?: number; // wordmark height / pill height (ref S17: 0.425)
+}> = ({ x, y, w, h, logoP = 1, opacity = 1, logoScale = 0.5 }) => (
   <div
     style={{
       position: "absolute",
@@ -432,7 +433,7 @@ export const ClsPill: React.FC<{
     }}
   >
     <div style={{ opacity: logoP }}>
-      <ClsWordmark height={h * 0.5} />
+      <ClsWordmark height={h * logoScale} />
     </div>
   </div>
 );
@@ -566,8 +567,34 @@ export const Buildings: React.FC<{
   accent?: string;
   variant?: 0 | 1;
   strokeW?: number;
-}> = ({ w, h, ink = C.navyDeep, accent = C.red, variant = 0, strokeW = 2.5 }) => (
+  dense?: boolean; // S17 hexes: mini-city extras (slabs, vehicle, sliver)
+}> = ({ w, h, ink = C.navyDeep, accent = C.red, variant = 0, strokeW = 2.5, dense }) => (
   <svg width={w} height={h} viewBox="0 0 200 160">
+    {dense && variant === 0 && (
+      <>
+        <rect x={46} y={70} width={10} height={70} fill="#DCDCDC" />
+        <rect x={8} y={62} width={18} height={78} fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
+        {[0, 1, 2, 3].map((r) => (
+          <line key={r} x1={11} y1={72 + r * 14} x2={23} y2={72 + r * 14} stroke={ink} strokeWidth={2} />
+        ))}
+        <rect x={160} y={96} width={30} height={44} fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
+        <path d="M 18 138 L 18 128 Q 18 124 22 124 L 44 124 Q 48 124 48 128 L 48 138" fill="none" stroke={accent} strokeWidth={2.2} />
+        <circle cx={25} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
+        <circle cx={41} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
+      </>
+    )}
+    {dense && variant === 1 && (
+      <>
+        <rect x={94} y={58} width={8} height={82} fill="#DCDCDC" />
+        <rect x={12} y={72} width={30} height={68} fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
+        {[0, 1, 2].map((r) =>
+          [0, 1].map((c) => <rect key={`${r}${c}`} x={18 + c * 12} y={80 + r * 16} width={5} height={7} fill={ink} />),
+        )}
+        <path d="M 152 138 L 152 128 Q 152 124 156 124 L 178 124 Q 182 124 182 128 L 182 138" fill="none" stroke={accent} strokeWidth={2.2} />
+        <circle cx={159} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
+        <circle cx={175} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
+      </>
+    )}
     {variant === 0 ? (
       <>
         {/* red tower center-left */}
@@ -625,7 +652,8 @@ export const HexCity: React.FC<{
   opacity?: number;
   ink?: string;
   badgeP?: number;
-}> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1 }) => {
+  dense?: boolean;
+}> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1, dense }) => {
   const hw = w / 2;
   const hh = h / 2;
   const inset = w * 0.22;
@@ -641,7 +669,7 @@ export const HexCity: React.FC<{
         />
       </svg>
       <div style={{ position: "absolute", left: w * 0.17, top: h * 0.12, width: w * 0.66, height: h * 0.76 }}>
-        <Buildings w={w * 0.66} h={h * 0.76} variant={variant} />
+        <Buildings w={w * 0.66} h={h * 0.76} variant={variant} dense={dense} />
       </div>
       {letter && badgeP > 0 && (
         <div

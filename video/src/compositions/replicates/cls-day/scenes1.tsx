@@ -420,7 +420,8 @@ export const ClsPillSlot: React.FC<{
   h: number;
   p: number;
   PillLogo?: React.FC<{ h: number }>;
-}> = ({ x, y, w, h, p, PillLogo }) =>
+  logoScale?: number;
+}> = ({ x, y, w, h, p, PillLogo, logoScale = 0.5 }) =>
   PillLogo ? (
     <div
       style={{
@@ -440,7 +441,7 @@ export const ClsPillSlot: React.FC<{
       <PillLogo h={h * 0.5} />
     </div>
   ) : (
-    <ClsPill x={x} y={y} w={w} h={h} opacity={p} />
+    <ClsPill x={x} y={y} w={w} h={h} opacity={p} logoScale={logoScale} />
   );
 
 // ─── S5: skyline (f674..940) ───

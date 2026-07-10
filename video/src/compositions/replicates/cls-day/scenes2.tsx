@@ -769,7 +769,8 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
       <div style={{ position: "absolute", inset: 0, transform: `translate(${panX}px, ${drop}px)` }}>
       {milestones.map(({ h, m, below }, i) => (
         <React.Fragment key={i}>
-          <div style={{ position: "absolute", left: hx(h) - 2.5, top: 88, width: 5, height: below ? 110 : 48, background: C.marker }} />
+          {/* red ticks rise ABOVE the band top (measured f3300: y56) */}
+          <div style={{ position: "absolute", left: hx(h) - 2.5, top: 56, width: 5, height: below ? 145 : 80, background: C.marker }} />
           <div
             style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 140, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}
           >
@@ -783,29 +784,30 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
         </React.Fragment>
       ))}
       {/* hexes + pill + shield (measured centers) */}
-      <HexCity x={547} y={413} w={290} h={235} variant={0} />
-      <HexCity x={1351} y={413} w={290} h={235} variant={1} />
+      <HexCity x={547} y={413} w={290} h={235} variant={0} dense />
+      <HexCity x={1351} y={413} w={290} h={235} variant={1} dense />
       {/* trade executed arrow y393 */}
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
         <line x1={710} y1={393} x2={1195} y2={393} stroke={C.skyBlue} strokeWidth={3.5} />
         <path d="M 725 393 l 18 -10 v 20 z" fill={C.skyBlue} transform="rotate(180 734 393)" />
         <path d="M 1180 393 l 18 -10 v 20 z" fill={C.skyBlue} />
-        {/* connectors down into shield */}
-        <path d="M 547 530 L 547 905 L 755 905" fill="none" stroke={C.navyDeep} strokeWidth={3} />
-        <path d="M 755 905 l -18 -10 v 20 z" fill={C.navyDeep} transform="translate(18 0)" />
-        <path d="M 1351 530 L 1351 905 L 1183 905" fill="none" stroke={C.navyDeep} strokeWidth={3} />
-        <path d="M 1183 905 l 18 -10 v 20 z" fill={C.navyDeep} transform="translate(-18 0)" />
-        {/* prior to value date dashed */}
-        <line x1={430} y1={793} x2={1490} y2={793} stroke={C.skyBlue} strokeWidth={2.5} strokeDasharray="10 8" />
+        {/* connectors flow OUT of the shield sides and UP into the hexes
+            (measured f3300: legs y814, verticals x512/x1408, arrowheads UP) */}
+        <path d="M 782 814 L 512 814 L 512 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+        <path d="M 512 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
+        <path d="M 1160 814 L 1408 814 L 1408 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+        <path d="M 1408 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
+        {/* prior to value date dashed (slate, measured span) */}
+        <line x1={575} y1={786} x2={1370} y2={786} stroke={C.chipGrey} strokeWidth={2.5} strokeDasharray="10 8" />
       </svg>
       <div style={{ position: "absolute", left: 860, top: 358, width: 200, textAlign: "center", fontFamily: pack.sans, fontSize: 24, color: C.skyBlue }}>
         {pack.tradeExecuted}
       </div>
-      <div style={{ position: "absolute", left: 590, top: 762, fontFamily: pack.sans, fontSize: 22, color: C.skyBlue }}>
+      <div style={{ position: "absolute", left: 592, top: 764, fontFamily: pack.sans, fontSize: 20, color: C.skyBlue }}>
         {pack.priorToValueDate}
       </div>
-      {/* shield */}
-      <svg width={384} height={357} viewBox="0 0 384 357" style={{ position: "absolute", left: 777, top: 570 }}>
+      {/* shield (measured f3300: bottom V at y~880 → h305) */}
+      <svg width={384} height={310} viewBox="0 0 384 357" preserveAspectRatio="none" style={{ position: "absolute", left: 777, top: 575 }}>
         <path
           d="M 28 8 Q 8 8 8 30 L 8 250 Q 8 266 23 275 L 180 350 Q 192 356 204 350 L 361 275 Q 376 266 376 250 L 376 30 Q 376 8 356 8 Z"
           fill="#FDFDFD"
@@ -813,12 +815,17 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
           strokeWidth={3}
         />
       </svg>
-      <ClsPillSlot x={793} y={476} w={335} h={109} p={1} PillLogo={PillLogo} />
+      {/* doc sheet peeking behind the pill (fold top-right, measured) */}
+      <svg width={264} height={152} viewBox="0 0 264 152" style={{ position: "absolute", left: 835, top: 445 }}>
+        <path d="M 4 148 L 4 4 L 216 4 L 260 48 L 260 148 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
+        <path d="M 216 4 L 216 48 L 260 48" fill="none" stroke={C.navyDeep} strokeWidth="3" />
+      </svg>
+      <ClsPillSlot x={845} y={470} w={245} h={120} p={1} PillLogo={PillLogo} logoScale={0.425} />
       {pack.summaryRows.map((row, i) => {
         const y = [618, 692, 756, 822][i];
         return (
           <div key={i} style={{ opacity: rowsP[i] }}>
-            <RowIcon kind={i} x={812} y={y} />
+            <RowIcon kind={i} x={790} y={y} />
             <div style={{ position: "absolute", left: 872, top: y - 4, fontFamily: pack.sans, fontSize: 22, color: C.navyInk, lineHeight: 1.3 }}>
               {row.map((l, k) => (
                 <div key={k}>{l}</div>
@@ -833,7 +840,7 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
 };
 
 const RowIcon: React.FC<{ kind: number; x: number; y: number }> = ({ kind, x, y }) => (
-  <svg width={44} height={44} viewBox="0 0 44 44" style={{ position: "absolute", left: x, top: y - 8 }}>
+  <svg width={54} height={54} viewBox="0 0 44 44" style={{ position: "absolute", left: x, top: y - 12 }}>
     {kind === 0 && (
       <>
         <path d="M 8 40 L 8 4 L 28 4 L 36 12 L 36 40 Z" fill="none" stroke={C.navyDeep} strokeWidth={2.5} />
