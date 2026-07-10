@@ -238,11 +238,12 @@ export const MATCH = {
 } as const;
 
 // ─── Day/night strip ───
-// Gridlines probed at f2000/2050/2100: rate exactly 9.0 px/f, pitch 288,
-// the "06:00" line at x=963 at f2000.
+// Gridlines probed at f2000/2050/2100: rate exactly 9.0 px/f, pitch 290.7,
+// the "06:00" line at x=963 at f2000. Band re-measured r4: rows 502-577
+// (#A8A8A8, not the gantt-ruler #D9D9D9) at f2030/2060/2095.
 export const STRIP = {
-  bandY: 504,
-  bandH: 64,
+  bandY: 502,
+  bandH: 76,
   hourPx: 290.7, // h6→h9 span 872px at both f2000 and f2100
   rate: 9.0,
   anchorX: 963,
@@ -254,23 +255,62 @@ export const STRIP = {
   fs: 30,
 } as const;
 
-// Floating pill groups riding the strip (probed fr_2000 / fr_2133; x in
-// strip coords = screen x + rate*(f-2000); colors pixel-probed).
-export const STRIP_PILLS: { x: number; y: number; w: number; h: number; c: string }[] = [
-  // day group at h≈5.2 (above band)
-  { x: 730, y: 300, w: 95, h: 40, c: "#B5BDD6" },
-  { x: 735, y: 345, w: 220, h: 40, c: "#1A3E66" },
-  { x: 730, y: 400, w: 150, h: 40, c: "#D1542F" },
-  // night group at h≈6.2 (below band)
-  { x: 1010, y: 725, w: 115, h: 40, c: "#FDFDFD" },
-  { x: 1010, y: 775, w: 80, h: 40, c: "#CB3F17" },
-  // night group at h≈9.4 (muted, sits deep in the night half)
-  { x: 1947, y: 765, w: 75, h: 40, c: "#442F3D" },
-  { x: 1952, y: 810, w: 110, h: 40, c: "#58738F" },
-  { x: 1947, y: 855, w: 75, h: 40, c: "#442F3D" },
-  // night group at h≈10.2 (just below band)
-  { x: 2137, y: 595, w: 230, h: 42, c: "#FDFDFD" },
-  { x: 2142, y: 645, w: 115, h: 40, c: "#B5BDD6" },
+// ─── Strip entry (r4, all measured) ───
+// Ref enters via a band wipe + rotation, then the sheet slides in from the
+// right decelerating into the steady 9px/f scroll:
+//  1909-1930  white field (left) + navy field (right) sweep inward, each led
+//             by a 76px grey stripe; stripes meet at x=974 at f1930 (stripe
+//             centers tracked at 1914/1918/1922/1926 → d table below).
+//  1930-1950  the vertical band rotates to horizontal about (974,540)
+//             (tilt measured at 1934/1938/1942/1946: 0.4/4.7/25/79.5 deg).
+//  1948-1978  sheet rides in: offset vs steady scroll from hour-line tracks
+//             (line B sampled every frame 1959-1978; head extrapolated from
+//             track A velocities 1954-1958). Zero from f1978.
+export const STRIP_ENTRY = {
+  pivotX: 974,
+  wipeKeys: [1909, 1914, 1918, 1922, 1926, 1930],
+  wipeD: [990, 875, 772, 567, 152, 0],
+  rotKeys: [1930, 1934, 1938, 1942, 1946, 1950],
+  rotDeg: [-90, -89.6, -85.3, -65, -10.5, 0],
+  dxKeys: [1948, 1950, 1952, 1954, 1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978],
+  dxVals: [2450, 2043, 1640, 1262, 1093, 931, 787, 663, 558, 470, 395, 331, 277, 232, 193, 161, 135, 113, 95, 73, 54, 39, 26, 17, 9, 4, 1, 0],
+} as const;
+
+// Pill groups riding the strip (x in strip coords = screen x + rate*(f-2000)).
+// r4: every rect re-measured (pills.py connected components on full-res
+// frames); groups blink in/out — windows from region-mass lifecycle scans.
+export type StripPill = {
+  x: number; y: number; w: number; h: number; c: string;
+  in?: readonly [number, number]; out?: readonly [number, number];
+  fallKeys?: readonly [number, number]; fallY?: readonly [number, number];
+};
+export const STRIP_PILLS: StripPill[] = [
+  // day A at h5.2-6.0 (fr_2000); lavender drops in from off-top (y76@1970,
+  // y300@1974); whole group pops out 2004-2010
+  { x: 731, y: 298, w: 94, h: 36, c: "#B4BCD3", out: [2004, 2010], fallKeys: [1967, 1974], fallY: [-92, 300] },
+  { x: 730, y: 344, w: 224, h: 42, c: "#1A3E66", out: [2004, 2010] },
+  { x: 728, y: 404, w: 150, h: 40, c: "#D1542F", out: [2004, 2010] },
+  // day B at h7.8 (ref_2030), alive 2016-2070
+  { x: 1440, y: 383, w: 97, h: 39, c: "#CB3F17", in: [2016, 2022], out: [2064, 2070] },
+  { x: 1443, y: 432, w: 94, h: 37, c: "#ABB3CB", in: [2016, 2022], out: [2064, 2070] },
+  // day C at h8.1-8.9 (ref_2075/2060 — the "sail" r2 traced was actually
+  // these two pills), alive 2050-2106
+  { x: 1571, y: 376, w: 224, h: 44, c: "#002753", in: [2050, 2054], out: [2098, 2106] },
+  { x: 1570, y: 433, w: 231, h: 36, c: "#ABB3CB", in: [2050, 2054], out: [2098, 2106] },
+  // night 18:00 group (fr_2000), alive 1990-2046
+  { x: 1011, y: 720, w: 115, h: 34, c: "#FDFDFD", in: [1990, 1998], out: [2042, 2046] },
+  { x: 1008, y: 772, w: 82, h: 35, c: "#CB3F17", in: [1990, 1998], out: [2042, 2046] },
+  // night 19:00 trio (ref_2030), alive 2024-2070
+  { x: 1282, y: 614, w: 84, h: 36, c: "#CB3F17", in: [2024, 2032], out: [2066, 2070] },
+  { x: 1281, y: 684, w: 231, h: 36, c: "#ABB3CB", in: [2024, 2032], out: [2066, 2070] },
+  { x: 1280, y: 862, w: 116, h: 37, c: "#CB3F17", in: [2024, 2032], out: [2066, 2070] },
+  // night 21:00-ish trio (ref_2110), pops in 2088-2098, stays
+  { x: 1948, y: 596, w: 82, h: 35, c: "#CB3F17", in: [2088, 2098] },
+  { x: 1948, y: 641, w: 116, h: 35, c: "#FDFDFD", in: [2088, 2098] },
+  { x: 1944, y: 688, w: 84, h: 36, c: "#CB3F17", in: [2088, 2098] },
+  // night 22:00 lavender pair (ref_2125), pops in 2108-2118
+  { x: 2139, y: 596, w: 231, h: 36, c: "#ABB3CB", in: [2108, 2118] },
+  { x: 2140, y: 644, w: 116, h: 35, c: "#FDFDFD", in: [2108, 2118] },
 ];
 
 // ─── Strip reprise (navy band) — measured regular_0218/0222/0226 ───
