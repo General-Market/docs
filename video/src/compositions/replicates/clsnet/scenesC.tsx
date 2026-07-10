@@ -27,9 +27,9 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const rideT = lerp(f, [2129, 2143], [0, 1]);
   const pageY = 1080 * (1 - Math.pow(rideT, 1.4));
   const bracketP = lerp(f, [2131, 2142], [0, 1]);
-  // detail phase in (card already full at fr_2220 — earlier than r1's read),
+  // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88),
   // then reversed (ref restores the full gantt by 2291)
-  const detailP = lerp(f, [2205, 2231], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
+  const detailP = lerp(f, [2188, 2202], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
   // shrink-into-doc: full screen → mini panel inside the left doc (quadOut)
   const st = lerp(f, [2303, 2324], [0, 1]);
   const sp = 1 - (1 - st) * (1 - st);
@@ -102,7 +102,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* detail card (text fades first on the way out) */}
       {detailP > 0 && (
         <DetailCard
-          opacity={lerp(f, [2213, 2233], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
+          opacity={lerp(f, [2192, 2208], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
           textOpacity={lerp(f, [2279, 2286], [1, 0])}
         />
       )}
@@ -645,7 +645,9 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
           const at = 3160 + i * 9;
           const op = lerp(f, [at, at + 8], [0, 1]);
           if (op <= 0) return null;
-          const fifty = i % 2 === 0;
+          // r5: ref 35/50 assignment read per hex at f3280; all badge bodies
+          // are TEAL #006F88 (probed), not the title-card greys
+          const fifty = [false, true, false, false, true, true, false][i];
           return (
             <div
               key={`b${i}`}
@@ -655,7 +657,7 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
                 top: hx.cy + 10,
                 width: 92,
                 height: 94,
-                backgroundColor: fifty ? C.card50 : C.card35,
+                backgroundColor: "#006F88",
                 opacity: op,
                 padding: "8px 8px",
               }}
