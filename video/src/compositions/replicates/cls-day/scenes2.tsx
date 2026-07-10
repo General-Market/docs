@@ -277,16 +277,23 @@ const RefDoc: React.FC<{ x: number; y: number; seal: "lines" | "square" | "circl
   );
 };
 
-// 2-page focus doc, 355x457 + tabs/shadow (traced f2150)
+// 2-page focus doc (re-traced f2150 @1.5x): WHITE page 2 with its own
+// fold offset (+64,+22), a GREY shadow sliver hugging page 1's right and
+// bottom edges, page-2 content fragments peeking on the sliver, and a
+// rounded bottom-LEFT corner on page 1 — the old three side tabs were
+// invented
 const FocusDoc: React.FC<{ x: number; y: number }> = ({ x, y }) => (
   <svg width={430} height={500} viewBox="0 0 430 500" style={{ position: "absolute", left: x - 5, top: y - 5 }}>
-    {/* page 2 behind + right tabs */}
-    <path d="M 22 490 L 22 35 L 320 35 L 390 105 L 390 490 Z" fill="#DFE3E8" stroke={C.navyDeep} strokeWidth="3" />
-    <rect x={390} y={145} width={30} height={52} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
-    <rect x={390} y={235} width={30} height={52} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
-    <rect x={390} y={330} width={30} height={52} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
-    {/* page 1 */}
-    <path d="M 5 462 L 5 5 L 290 5 L 360 75 L 360 462 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3.5" strokeLinejoin="round" />
+    {/* page 2 behind (white, own fold) */}
+    <path d="M 30 484 L 30 40 L 355 40 L 422 105 L 422 484 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    <path d="M 355 40 L 355 105 L 422 105" fill="none" stroke={C.navyDeep} strokeWidth="3" />
+    {/* grey drop shadow: page-1 silhouette shifted (+20,+16) */}
+    <path d="M 380 478 L 55 478 Q 25 478 25 448 L 25 21 L 310 21 L 380 91 Z" fill="#DFE3E8" />
+    {/* page-2 content fragments on the sliver */}
+    <rect x={362} y={147} width={33} height={37} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    <rect x={362} y={214} width={35} height={86} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    {/* page 1 (rounded bottom-left) */}
+    <path d="M 360 462 L 35 462 Q 5 462 5 432 L 5 5 L 290 5 L 360 75 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3.5" strokeLinejoin="round" />
     <path d="M 290 5 L 290 75 L 360 75" fill="none" stroke={C.navyDeep} strokeWidth="3.5" />
     {/* navy pill seal + heading lines */}
     <rect x={32} y={27} width={93} height={40} rx={12} fill={C.navyBg} />
