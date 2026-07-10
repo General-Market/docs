@@ -960,21 +960,26 @@ const ClC: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
     {/* far-left thin outline bridge */}
     <path d="M 49.5 320 L 49.5 270 Q 49.5 262.5 57 262.5 L 107 262.5 L 107 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {/* left navy building: striped top + navy block w/ white ladder marks */}
-    <path d="M 107 320 L 107 188 Q 107 180 115 180 L 159 180 Q 167 180 167 188 L 167 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2, 3].map((c) => (
-      <line key={c} x1={119.5 + c * 12.5} y1={190} x2={119.5 + c * 12.5} y2={212.5} stroke={NAVY} strokeWidth="3" />
+    {/* left WHITE building w/ shelf glyphs (r7 re-trace, ink runs f860:
+        the r3 navy-block-with-slots read was inverted — ref body is white,
+        4 "⊓" shelves y227+15.7k x110.5 w26, roof bar y214 spanning to 163,
+        ticks ON the roof at 106.5/118.5/134.5/152.5) */}
+    <rect x={100.5} y={216.5} width={47} height={103.5} fill={WHT} />
+    <line x1={102.3} y1={219} x2={102.3} y2={320} stroke={NAVY} strokeWidth="3.5" />
+    <line x1={145.7} y1={219} x2={145.7} y2={320} stroke={NAVY} strokeWidth="3.5" />
+    <rect x={100.5} y={214} width={62.5} height={5} fill={NAVY} />
+    {[106.5, 118.5, 134.5, 152.5].map((x) => (
+      <line key={x} x1={x} y1={204} x2={x} y2={214} stroke={NAVY} strokeWidth="3" />
     ))}
-    <rect x={102} y={217.5} width={45} height={102.5} fill={NAVY} />
-    {[0, 1, 2, 3].map((r) => (
-      <React.Fragment key={r}>
-        <rect x={112} y={235 + r * 22} width={6} height={14} fill={WHT} />
-        <rect x={130} y={235 + r * 22} width={6} height={14} fill={WHT} />
+    {[0, 1, 2, 3].map((k) => (
+      <React.Fragment key={k}>
+        <rect x={110.5} y={227 + k * 15.7} width={26} height={4.5} fill={NAVY} />
+        <rect x={110.5} y={231.5 + k * 15.7} width={3.5} height={3.5} fill={NAVY} />
+        <rect x={133} y={231.5 + k * 15.7} width={3.5} height={3.5} fill={NAVY} />
       </React.Fragment>
     ))}
-    {/* grey slabs */}
+    {/* grey slab (behind the dots building) */}
     <rect x={302} y={207.5} width={17.5} height={112.5} fill="#DCDCDC" />
-    <rect x={387} y={260} width={15} height={60} fill="#DCDCDC" />
     {/* twin red tower: left col w/ 2 masts, right col w/ stepped crown */}
     <line x1={179.5} y1={42.5} x2={179.5} y2={70} stroke={C.red} strokeWidth="3.5" />
     <line x1={194.5} y1={57.5} x2={194.5} y2={70} stroke={C.red} strokeWidth="3.5" />
@@ -992,12 +997,18 @@ const ClC: React.FC = () => (
     ))}
     <line x1={167} y1={282.5} x2={302} y2={282.5} stroke={C.red} strokeWidth="3.5" />
     <path d="M 219.5 320 L 219.5 305 L 252 305 L 252 320" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* right navy building w/ dots + low bridge toward 13:00 */}
-    <path d="M 302 320 L 302 215 Q 302 207.5 309.5 207.5 L 344 207.5 Q 352 207.5 352 215 L 352 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2].map((r) =>
-      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={310 + c * 15} y={218 + r * 15} width={5.5} height={7} fill={NAVY} />),
+    {/* right navy building w/ dots (r7 re-trace f860: 2 rows x 3 cols at
+        306.5/318.5/332.5 y220/237.5, inner rail y277) + measured L-pipe
+        right furniture (rail y236.5 -> drop pipe x394 -> band; tall thin
+        post x374.5; the r3 "y270 bridge to 452" does not exist in ref) */}
+    <path d="M 302 320 L 302 215 Q 302 208 309.5 208 L 340 208 Q 348.5 208 348.5 215.5 L 348.5 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1].map((r) =>
+      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={306.5 + c * 13} y={220 + r * 17.5} width={4} height={8.5} fill={NAVY} />),
     )}
-    <path d="M 352 320 L 352 270 L 452 270 L 452 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    <rect x={302} y={277} width={48} height={3} fill={NAVY} />
+    <rect x={348.5} y={236.5} width={50} height={6.5} fill={NAVY} />
+    <rect x={374.5} y={200} width={4.5} height={120} fill={NAVY} />
+    <rect x={394} y={240} width={5} height={80} fill={NAVY} />
   </svg>
 );
 
@@ -1006,12 +1017,13 @@ const ClG: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
     {/* left low bridge */}
     <path d="M 56 320 L 56 267.5 L 118 267.5 L 118 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {/* left navy building */}
-    <line x1={156} y1={165} x2={156} y2={177} stroke={NAVY} strokeWidth="3.5" />
-    <rect x={150} y={177} width={12} height={13} fill="none" stroke={NAVY} strokeWidth="3.5" />
+    {/* left navy building (r7 re-trace f860: rooftop box x152.5 w21 h8.5
+        no mast; 7 dashes x146 w14 at y201.5+11k — the r3 8-dash stack sat
+        24px low and 10px left) */}
+    <rect x={152.5} y={180.5} width={21} height={8.5} fill={WHT} stroke={NAVY} strokeWidth="3" />
     <rect x={118} y={190} width={53} height={130} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4, 5, 6, 7].map((r) => (
-      <rect key={r} x={136} y={225 + r * 8.5} width={20} height={4.5} fill={NAVY} />
+    {[0, 1, 2, 3, 4, 5, 6].map((r) => (
+      <rect key={r} x={146} y={201.5 + r * 11} width={14} height={3.5} fill={NAVY} />
     ))}
     {/* grey slab */}
     <rect x={296} y={205} width={15} height={125} fill="#DCDCDC" />
@@ -1035,11 +1047,23 @@ const ClG: React.FC = () => (
       )),
     )}
     <path d="M 225 330 L 225 307.5 L 257 307.5 L 257 330" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* right navy building w/ 3x2 outline windows */}
-    <path d="M 285 320 L 285 195 Q 285 187.5 292.5 187.5 L 335 187.5 Q 343 187.5 343 195 L 343 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1].map((r) =>
-      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={306 + c * 13} y={248 + r * 17} width={9} height={11} fill="none" stroke={NAVY} strokeWidth="2.5" />),
-    )}
+    {/* right navy building (r7 re-trace f860: window section = 4 horizontal
+        rails y214.5/226.5/240/252 x295.5..348.5 with short dividers at
+        321.5/335.5 between rail pairs — NOT the r3 3x2 outline windows
+        which sat 30px low; bridge rails right at y263/y302 to the 15:00
+        rounded outline) */}
+    <path d="M 285 320 L 285 195 Q 285 187.5 292.5 187.5 L 340.5 187.5 Q 348.5 187.5 348.5 195 L 348.5 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[214.5, 226.5, 240, 252].map((y, i) => (
+      <rect key={i} x={295.5} y={y} width={53} height={i < 2 ? 3.5 : 4} fill={NAVY} />
+    ))}
+    {[321.5, 335.5].map((x) => (
+      <React.Fragment key={x}>
+        <rect x={x} y={218} width={3.5} height={8.5} fill={NAVY} />
+        <rect x={x} y={244} width={3.5} height={8} fill={NAVY} />
+      </React.Fragment>
+    ))}
+    <rect x={348.5} y={263} width={39.5} height={3} fill={NAVY} />
+    <rect x={348.5} y={302} width={39.5} height={4.5} fill={NAVY} />
     {/* far-right rounded outline w/ L-marks (toward 15:00) */}
     <path d="M 388 320 L 388 278 Q 388 270 396 270 L 462 270 L 462 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
     <path d="M 408 285 L 408 298 L 420 298" fill="none" stroke={NAVY} strokeWidth="3" />
