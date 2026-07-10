@@ -412,66 +412,54 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ═══ Scene 20: strip reprise with navy band + CLSNet box (f2612-2822) ═══
-// Measured regular_0218/0222/0226: band y405-680, scroll 9.76 px/f, the
-// orange-border CLSNet box FIXED at screen center; clusters anchored at f2775.
+// ═══ Scene 20: strip reprise with navy band + CLSNet box (f2612-2833) ═══
+// r8 ground-truth: band y404-676, five wide re-traced composites anchored
+// at their trace-crop origins, 16 vertical pill traversals clipped to the
+// band, and the measured EXIT — the band expands into the full-navy report
+// card 2814-2827 (no fade; the old fade-out was invented). Box fades
+// 2826-2832 (orange mass 4500@2820 → 3445@2824 → 2264@2828 → 0@2832).
 export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < 2640 || f >= SEG.reportCard[0] + 14) return null;
-  // ref cuts to the navy report card at ~2823 (white-fraction scan)
-  const out = lerp(f, [2820, 2826], [1, 0]);
+  if (f < 2640 || f >= 2833) return null;
   // entry (fr_2650 → fr_2680): the payment line descends to y455, then grows
   // into the band while clusters + box fade in
   const lineY = lerp(f, [2640, 2654], [368, 455]);
   const growP = lerp(f, [2656, 2678], [0, 1]);
-  const bandTop = lineY + (STRIP2.bandY - 455) * growP;
-  const bandBottom = lineY + 3 + (STRIP2.bandY + STRIP2.bandH - 458) * growP;
+  const grownTop = interpolate(f, STRIP2.expandF as unknown as number[], STRIP2.expandTop as unknown as number[], clamp);
+  const grownBot = interpolate(f, STRIP2.expandF as unknown as number[], STRIP2.expandBot as unknown as number[], clamp);
+  const bandTop = lineY + (grownTop - 455) * growP;
+  const bandBottom = lineY + 3 + (grownBot - 458) * growP;
   const contentOp = lerp(f, [2660, 2680], [0, 1]);
-  const { bandY, bandH } = STRIP2;
   const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * STRIP2.rate;
-  const artDims: Record<string, [number, number]> = {
-    rowBank: [460, 145],
-    rowOffice: [420, 210],
-    stripTowerUp: [370, 255],
-    rowSail: [760, 235],
-  };
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
+    <AbsoluteFill style={{ backgroundColor: C.white }}>
       <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
+      {/* recolor: the traces' white fill plane is #FFFFFF but the page is
+          #FDFDFD — the plate edge reads as a faint rectangle otherwise */}
       {STRIP2.ups.map((u, i) => {
-        const x = sx(u.cx);
-        if (x < -900 || x > 2400) return null;
-        const [aw, ah] = artDims[u.art];
-        const s = ("scale" in u ? u.scale : undefined) ?? 1;
-        return <TracedArt key={i} name={u.art} x={x - (aw * s) / 2} y={bandY - ah * s + 3} scale={s} />;
+        const x = sx(u.sx);
+        if (x + u.w < -50 || x > 1970) return null;
+        return <TracedArt key={i} name={u.art} x={x} y={u.y} scale={1} recolor={{ "#FFFFFF": C.white }} />;
       })}
       {STRIP2.dns.map((d, i) => {
-        const x = sx(d.cx);
-        if (x < -900 || x > 2400) return null;
-        const aw = { stripInvSail: 575, stripInvCity: 340, stripInvBrick: 300 }[d.art]!;
-        return (
-          <TracedArt
-            key={i}
-            name={d.art}
-            x={x - aw / 2}
-            y={bandY + bandH - 2}
-            recolor={{ "#FFFFFF": C.navy }}
-          />
-        );
+        const x = sx(d.sx);
+        if (x + d.w < -50 || x > 1970) return null;
+        return <TracedArt key={i} name={d.art} x={x} y={d.y} scale={1} recolor={{ "#FFFFFF": C.white }} />;
       })}
       </div>
-      <div style={{ position: "absolute", left: 0, top: bandTop, width: 1920, height: Math.max(3, bandBottom - bandTop), backgroundColor: C.navy }} />
+      <div style={{ position: "absolute", left: 0, top: bandTop, width: 1920, height: Math.max(3, bandBottom - bandTop), backgroundColor: C.navy, overflow: "hidden" }}>
+        {/* vertical pill traversals (screen-fixed x, ~30px/f), clipped to the band */}
+        {contentOp >= 1 && STRIP2.vpills.map((p, i) => {
+          const top = p.top0 + 30 * p.dir * (f - p.f0);
+          if (top + p.h < bandTop || top > bandBottom) return null;
+          return <Pill key={i} x={p.x} y={top - bandTop} w={p.w} h={p.h} color={p.c} />;
+        })}
+      </div>
       <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
-      {/* pills riding the strip inside the band */}
-      {STRIP2.pills.map((p, i) => {
-        const x = sx(p.x);
-        if (x < -300 || x > 2000) return null;
-        return <Pill key={i} x={x} y={p.y} w={p.w} h={p.h} color={p.c} />;
-      })}
       {/* CLSNet box fixed at center, orange border, no label. side/artD*
           measured r8: ref outer 200.5² at (860,436), content +3/+4 vs
           pure scaling */}
-      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2668, 2690], [0, 1])} side={200.5} artDx={3} artDy={4} />
+      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2668, 2690], [0, 1])} side={200.5} artDx={3} artDy={4} opacity={lerp(f, [2826, 2832], [1, 0])} />
       </div>
     </AbsoluteFill>
   );
@@ -485,7 +473,9 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
 export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.reportCard[0] - 12 || f >= SEG.mapBadges[0]) return null;
-  const bgOp = lerp(f, [2818, 2826], [0, 1]);
+  // strip2's band expansion IS the navy fill (complete 2827); this short
+  // navy-over-navy ramp just hands the background off invisibly
+  const bgOp = lerp(f, [2825, 2827], [0, 1]);
   // ref: navy holds empty until the outline draws ~2875-2900 (white-frac scan)
   const cardP = lerp(f, [2874, 2898], [0, 1]);
   const rowsP = lerp(f, [2898, 2922], [0, 1]) * lerp(f, [2972, 2982], [1, 0]);

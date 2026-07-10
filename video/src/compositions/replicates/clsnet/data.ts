@@ -324,31 +324,54 @@ export const STRIP_PILLS: StripPill[] = [
   { x: 2140, y: 644, w: 116, h: 35, c: "#FDFDFD", in: [2108, 2118] },
 ];
 
-// ─── Strip reprise (navy band) — measured regular_0218/0222/0226 ───
-// Band y 405-680; scroll 9.76 px/f (cluster 1443→955→460 across f2725/2775/2825);
-// CLSNet box FIXED at center; cluster inventory anchored at f2775.
+// ─── Strip reprise (navy band) — r8 ground-truth rebuild ───
+// Panorama (work/clsnet/r8/stitch2.py) + frame-exact pill tracker
+// (pillscan2/3; -ss vs select indexing calibrated on exact frame 2762).
+// Band measured y404-676; it EXPANDS into the full-navy report card
+// 2814-2827 (probed tops/bottoms) — the old fade-out was invented.
+// Clusters re-traced as five wide composites at native scale (old arts
+// ~50% too narrow); anchors = trace-crop origins in strip space
+// (sx = screen_x at f2762). The band carries VERTICAL pill traversals
+// (payments crossing at ~30px/f, screen-FIXED x, clipped to the band) —
+// 16 measured events; the two old static riders were single frames of
+// these movers, frozen.
 export const STRIP2 = {
-  bandY: 405,
-  bandH: 275,
+  bandY: 404,
+  bandH: 272,
   rate: 9.76,
-  anchorF: 2762, // regular_NNNN sits at (N-1)*0.5s — anchor corrected 13f earlier
+  anchorF: 2762,
   box: { x: 858, y: 437, w: 200 },
+  // band expansion into reportCard (probed 2800-2826)
+  expandF: [2813, 2814, 2818, 2820, 2822, 2824, 2826, 2827],
+  expandTop: [404, 402, 376, 336, 194, 51, 11, 0],
+  expandBot: [676, 678, 704, 744, 886, 1028, 1069, 1080],
   ups: [
-    { art: "rowBank", cx: -1228, scale: 0.95 },
-    { art: "rowSail", cx: -373, scale: 0.85 }, // fr_2630: sail city at screen ~915
-    { art: "stripTowerUp", cx: 955, scale: 1.15 },
-    { art: "rowSail", cx: 2238, scale: 0.75 },
-    { art: "rowOffice", cx: 3521 },
+    { art: "s2UpBank", sx: -646, y: 215, w: 532 },
+    { art: "s2UpCenter", sx: 688, y: 126, w: 614 },
+    { art: "s2UpSail", sx: 1919, y: 52, w: 489 },
   ],
   dns: [
-    { art: "stripInvSail", cx: -996 },
-    { art: "stripInvCity", cx: 282 },
-    { art: "stripInvBrick", cx: 1560 },
-    { art: "stripInvSail", cx: 2838 },
+    { art: "s2DnA", sx: -25, y: 678, w: 732 },
+    { art: "s2DnB", sx: 1270, y: 678, w: 616 },
   ],
-  pills: [
-    { x: 97, y: 593, w: 190, h: 52, c: "#C74D33" },
-    { x: 385, y: 450, w: 100, h: 50, c: "#ABB1CC" },
+  // vertical pill events: top(f) = top0 + 30*dir*(f - f0); dir 1=fall -1=rise
+  vpills: [
+    { c: "#C74D33", x: 178, w: 82, h: 43, top0: 494, f0: 2664, dir: 1 },
+    { c: "#ABB1CC", x: 347, w: 87, h: 48, top0: 449, f0: 2682, dir: 1 },
+    { c: "#C74D33", x: 1492, w: 82, h: 43, top0: 413, f0: 2684, dir: 1 },
+    { c: "#E9C8B0", x: 1680, w: 82, h: 43, top0: 584, f0: 2692, dir: -1 },
+    { c: "#C74D33", x: 536, w: 81, h: 43, top0: 630, f0: 2704, dir: -1 },
+    { c: "#C74D33", x: 178, w: 82, h: 43, top0: 455, f0: 2708, dir: 1 },
+    { c: "#C74D33", x: 494, w: 181, h: 43, top0: 478, f0: 2714, dir: 1 },
+    { c: "#C74D33", x: 1436, w: 180, h: 43, top0: 556, f0: 2732, dir: -1 },
+    { c: "#C74D33", x: 342, w: 179, h: 43, top0: 567, f0: 2732, dir: -1 },
+    { c: "#E9C8B0", x: 220, w: 167, h: 42, top0: 571, f0: 2746, dir: -1 },
+    { c: "#C74D33", x: 536, w: 81, h: 43, top0: 630, f0: 2746, dir: -1 },
+    { c: "#E9C8B0", x: 220, w: 167, h: 42, top0: 571, f0: 2760, dir: -1 },
+    { c: "#ABB1CC", x: 347, w: 87, h: 48, top0: 449, f0: 2768, dir: 1 },
+    { c: "#E9C8B0", x: 1334, w: 177, h: 42, top0: 432, f0: 2781, dir: 1 },
+    { c: "#C74D33", x: 494, w: 181, h: 43, top0: 420, f0: 2784, dir: 1 },
+    { c: "#E9C8B0", x: 1610, w: 167, h: 42, top0: 462, f0: 2798, dir: 1 },
   ],
 } as const;
 
