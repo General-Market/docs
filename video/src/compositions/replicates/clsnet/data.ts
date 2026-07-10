@@ -64,7 +64,7 @@ export const SEG = {
   mapBadges: [3104, 3290],
   implode: [3290, 3364],
   circle: [3364, 3480],
-  mosaic: [3480, 3688],
+  mosaic: [3477, 3645],
   shield: [3641, 3690], // zipper 3642, white wipe 3645-3657, shield 3661-3672 (probed)
   ledge: [3690, 3822], // band rotates 90°→see-saw→flat (θ measured at 3708/3732/3762)
   citiesStacks: [3822, 3926],
@@ -419,4 +419,79 @@ export const ENDCARD = {
   disclaimer: { x: 130, y: 880, fs: 34 },
   urlBox: { x: 860, y: 864, w: 910, h: 100 },
   urlFs: 62,
+} as const;
+
+// ─── Mosaic (f3477-3645) — r5 ground truth ───
+// Page windows measured by per-frame ink mass (seq scan 3479-3648); grids from
+// scipy CC scans of settled frames 3505/3535/3560/3582. Three grey bars (tops
+// 197/545/893, h8) draw L→R in cascade (extent keys probed per frame); four
+// pill pages pop in/out on a fixed 7-column grid; after page 4 the bars
+// converge to y549 (half-res track keys) and the merged bar rotates about
+// (948,549) to vertical, becoming the shield scene's zipper.
+// Cell grammar "above/below", tokens line-first:
+//   B big blue 86×68 · S small blue 83×34 · O big orange 87×68 · T tan 83×35.
+export const MOS = {
+  lines: [197, 545, 893],
+  cols: [74, 308, 526, 806, 1064, 1372, 1758],
+  draw: [
+    { f: [3478, 3479, 3480, 3481], x: [0, 760, 1582, 1920] },
+    { f: [3480, 3481, 3482, 3483, 3484], x: [0, 372, 764, 1478, 1920] },
+    { f: [3483, 3484, 3485, 3486, 3487, 3488], x: [0, 118, 340, 718, 1300, 1920] },
+  ],
+  // capTop values are pre-corrected for the Playfair render offset (measured
+  // r5: passing X renders the cap 16px above X at fs138) — they RENDER at the
+  // ref cap tops 94/441/789. Tracking 8px widens Playfair to the ref width.
+  labelSlots: [
+    { cx: 1482, capTop: 110 },
+    { cx: 1010, capTop: 457 },
+    { cx: 378, capTop: 805 },
+  ],
+  labelFs: 138,
+  labelTracking: 8,
+  orange: "#CC441E",
+  tan: "#F0C8AF",
+  converge: { f: [3606, 3610, 3613, 3615], l0: [201, 440, 530, 549], l2: [897, 640, 560, 549] },
+  rotate: { f: [3615, 3620, 3628, 3636, 3642], deg: [0, 4.2, 15, 56, 90] },
+  pages: [
+    {
+      in: 3487,
+      out: 3514,
+      labels: [["AED", "o"], ["RON", "w"], ["SAR", "o"]],
+      rows: [
+        "B/OT|S/|BS/|SS/OT|S/TT|/OT|BS/T",
+        "S/T|BS/OT|B/O|/|/|SS/TT|S/T",
+        "BS/O|/T|/OT|BS/TT|SS/T|BS/|S/OT",
+      ],
+    },
+    {
+      in: 3522,
+      out: 3543,
+      labels: [["CNH", "w"], ["RUB", "o"], ["THB", "o"]],
+      rows: [
+        "BS/T|S/|BS/|S/TT|SS/T|/TT|B/OT",
+        "SS/TT|S/T|B/O|/|/|BS/OT|S/T",
+        "S/OT|/T|/OT|SS/T|S/TT|SS/|BS/O",
+      ],
+    },
+    {
+      in: 3548,
+      out: 3566,
+      labels: [["CZK", "o"], ["SAR", "o"], ["TRY", "w"]],
+      rows: [
+        "B/OT|S/|BS/|SS/O|B/TT|/T|SS/TT",
+        "SS/TT|S/T|B/O|/|/|SS/TT|BS/OT",
+        "BS/O|/T|/OT|B/TT|SS/O|S/|SS/TT",
+      ],
+    },
+    {
+      in: 3571,
+      out: 3589,
+      labels: [["PLN", "w"], ["THB", "w"], ["AED", "o"]],
+      rows: [
+        "B/O|S/|BS/|SS/TT|S/T|/T|S/OT",
+        "BS/OT|S/T|SS/TT|/|/|S/T|BS/OT",
+        "B/O|/T|/OT|SS/TT|S/T|S/|BS/T",
+      ],
+    },
+  ],
 } as const;

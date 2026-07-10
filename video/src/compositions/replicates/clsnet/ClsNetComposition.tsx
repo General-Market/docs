@@ -46,8 +46,10 @@ export const ClsNetComposition: React.FC = () => {
       <Strip2Scene frame={frame} />
       <ReportCardScene frame={frame} />
       <MapBadgesScene frame={frame} />
-      <CircleScene frame={frame} />
+      {/* Mosaic below the Circle: its grey bars draw 3477-3488 while the
+          circle + handshake pill fade out above them (measured overlap) */}
       <MosaicScene frame={frame} />
+      <CircleScene frame={frame} />
       {/* Ledge (rotating band world) under the Shield so the shield's exit
           animation rides above the band it hands off to */}
       <LedgeScene frame={frame} />

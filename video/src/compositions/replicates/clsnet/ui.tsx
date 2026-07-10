@@ -150,7 +150,8 @@ export const SerifLabel: React.FC<{
   opacity?: number;
   align?: "left" | "right" | "center";
   width?: number;
-}> = ({ text, x, capTop, fs, color = C.navy, opacity = 1, align = "left", width }) => {
+  tracking?: number;
+}> = ({ text, x, capTop, fs, color = C.navy, opacity = 1, align = "left", width, tracking }) => {
   const brand = useBrand();
   if (opacity <= 0) return null;
   return (
@@ -168,6 +169,7 @@ export const SerifLabel: React.FC<{
         opacity,
         whiteSpace: "pre",
         textAlign: align,
+        letterSpacing: tracking,
       }}
     >
       {text}

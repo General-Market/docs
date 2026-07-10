@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate } from "remotion";
-import { C, CIRCLE, GANTT, DETAIL, LEDGE, MAP, REPORT, SEG, STRIP2, ENDCARD } from "./data";
+import { C, CIRCLE, GANTT, DETAIL, LEDGE, MAP, MOS, REPORT, SEG, STRIP2, ENDCARD } from "./data";
 import { clamp } from "./ui";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
@@ -679,11 +679,24 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
 // handshake pill GROWS from (875,505,180×92) to (790,460,350×185).
 export const CircleScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < 3396 || f >= SEG.mosaic[0] + 14) return null;
+  // r5 measured exit: the circle group slides LEFT from 3466 (cx keys probed
+  // per frame), the dot/elbows/square cut out 3467-3468 and the handshake pill
+  // fades 3468-3471 riding the slide; the bare circle then shrink-morphs into
+  // page 1's line-2 col-2 big blue pill (526,472,86,68) — landed by 3485-3486,
+  // after which the mosaic page owns it (no fade anywhere).
+  if (f < 3396 || f >= 3487) return null;
   const artOp = lerp(f, [3400, 3414], [0, 1]);
-  const out = lerp(f, [3468, 3484], [1, 0]);
-  const { cx, cy, r } = CIRCLE;
   const g = lerp(f, [3400, 3450], [0, 1]);
+  const MF = [3466, 3467, 3468, 3469, 3470, 3471, 3472, 3473, 3474, 3475, 3476, 3477, 3478, 3479, 3481, 3483, 3485];
+  const cx = interpolate(f, MF, [958, 956, 953, 948, 941, 932, 919, 900, 871, 814, 713, 657, 627, 605, 586, 575, 569], clamp);
+  const cy = interpolate(f, MF, [538, 538, 538, 538, 538, 537, 536, 535, 533, 530, 517, 512, 510, 509, 508, 507, 506], clamp);
+  const mw = interpolate(f, MF, [917, 917, 917, 917, 917, 917, 917, 917, 917, 917, 800, 521, 377, 280, 180, 122, 86], clamp);
+  const mh = interpolate(f, MF, [917, 917, 917, 917, 917, 917, 917, 917, 917, 917, 623, 406, 294, 216, 144, 96, 68], clamp);
+  const mr = interpolate(f, MF, [458, 458, 458, 458, 458, 458, 458, 458, 458, 458, 118, 57, 41, 25, 16, 14, 14], clamp);
+  const dotOp = lerp(f, [3466, 3468], [1, 0]);
+  const pillOp = lerp(f, [3467, 3471], [1, 0]);
+  const slideX = cx - 958;
+  const slideY = cy - 538;
   const pill = {
     x: CIRCLE.pillFrom.x + (CIRCLE.pillTo.x - CIRCLE.pillFrom.x) * g,
     y: CIRCLE.pillFrom.y + (CIRCLE.pillTo.y - CIRCLE.pillFrom.y) * g,
@@ -691,102 +704,218 @@ export const CircleScene: React.FC<{ frame: number }> = ({ frame }) => {
     h: CIRCLE.pillFrom.h + (CIRCLE.pillTo.h - CIRCLE.pillFrom.h) * g,
   };
   return (
-    <AbsoluteFill style={{ backgroundColor: C.navy, opacity: 1 }}>
-      <div style={{ position: "absolute", left: cx - r, top: cy - r, width: r * 2, height: r * 2, borderRadius: r, backgroundColor: C.blue, opacity: out }} />
-      {/* navy handshake pill grows in place from the first frame of the scene */}
+    <AbsoluteFill style={{ backgroundColor: f < SEG.mosaic[0] ? C.navy : undefined, opacity: 1 }}>
       <div
         style={{
           position: "absolute",
-          left: pill.x,
-          top: pill.y,
-          width: pill.w,
-          height: pill.h,
-          backgroundColor: C.navy,
-          borderRadius: `${pill.h * 0.28}px ${pill.h * 0.28}px ${pill.h * 0.28}px ${pill.h * 0.55}px`,
-          opacity: out,
+          left: cx - mw / 2,
+          top: cy - mh / 2,
+          width: mw,
+          height: mh,
+          borderRadius: f >= 3480 ? "2px 14px 2px 14px" : mr,
+          backgroundColor: C.blue,
         }}
-      >
-        <div style={{ position: "absolute", left: pill.w / 2 - (490 * 0.55 * (pill.w / 350)) / 2, top: pill.h / 2 - (320 * 0.55 * (pill.w / 350)) / 2 }}>
-          <TracedArt name="handshake" scale={0.55 * (pill.w / 350)} style={{ position: "relative" }} />
-        </div>
-      </div>
-      <div style={{ position: "absolute", inset: 0, opacity: artOp * out }}>
-        {/* white dot + elbows + orange square (fr_3460) */}
-        <div style={{ position: "absolute", left: CIRCLE.whiteDot.cx - CIRCLE.whiteDot.r, top: CIRCLE.whiteDot.cy - CIRCLE.whiteDot.r, width: CIRCLE.whiteDot.r * 2, height: CIRCLE.whiteDot.r * 2, borderRadius: CIRCLE.whiteDot.r, backgroundColor: C.white }} />
-        <svg width={1920} height={1080} style={{ position: "absolute" }}>
-          <path d="M965,455 V388 H755 M755,388 l16,-9 M755,388 l16,9" stroke={C.white} strokeWidth={3} fill="none" />
-          <path d="M965,650 V712 H1160 M1160,712 l-16,-9 M1160,712 l-16,9" stroke={C.white} strokeWidth={3} fill="none" />
-        </svg>
-        <div style={{ position: "absolute", left: CIRCLE.square.x, top: CIRCLE.square.y, width: CIRCLE.square.w, height: CIRCLE.square.w, backgroundColor: C.orangeDeep }} />
+      />
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${slideX}px, ${slideY}px)` }}>
+        {/* navy handshake pill grows in place, then fades 3468-3471 on the slide */}
+        {pillOp > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: pill.x,
+              top: pill.y,
+              width: pill.w,
+              height: pill.h,
+              backgroundColor: C.navy,
+              borderRadius: `${pill.h * 0.28}px ${pill.h * 0.28}px ${pill.h * 0.28}px ${pill.h * 0.55}px`,
+              opacity: pillOp,
+            }}
+          >
+            <div style={{ position: "absolute", left: pill.w / 2 - (490 * 0.55 * (pill.w / 350)) / 2, top: pill.h / 2 - (320 * 0.55 * (pill.w / 350)) / 2 }}>
+              <TracedArt name="handshake" scale={0.55 * (pill.w / 350)} style={{ position: "relative" }} />
+            </div>
+          </div>
+        )}
+        {artOp * dotOp > 0 && (
+          <div style={{ position: "absolute", inset: 0, opacity: artOp * dotOp }}>
+            {/* white dot + elbows + orange square (fr_3460) */}
+            <div style={{ position: "absolute", left: CIRCLE.whiteDot.cx - CIRCLE.whiteDot.r, top: CIRCLE.whiteDot.cy - CIRCLE.whiteDot.r, width: CIRCLE.whiteDot.r * 2, height: CIRCLE.whiteDot.r * 2, borderRadius: CIRCLE.whiteDot.r, backgroundColor: C.white }} />
+            <svg width={1920} height={1080} style={{ position: "absolute" }}>
+              <path d="M965,455 V388 H755 M755,388 l16,-9 M755,388 l16,9" stroke={C.white} strokeWidth={3} fill="none" />
+              <path d="M965,650 V712 H1160 M1160,712 l-16,-9 M1160,712 l-16,9" stroke={C.white} strokeWidth={3} fill="none" />
+            </svg>
+            <div style={{ position: "absolute", left: CIRCLE.square.x, top: CIRCLE.square.y, width: CIRCLE.square.w, height: CIRCLE.square.w, backgroundColor: C.orangeDeep }} />
+          </div>
+        )}
       </div>
     </AbsoluteFill>
   );
 };
 
-// ═══ Scene 25: currency mosaic (f3480-3688) ═══
-// Ground truth (regular_0284, t=141.5): 3 grey lines full-width at y 200/548/890;
-// stack groups of leaf pills — blue above the line, tan/orange below; serif
-// labels CNH (white) / RUB / THB (orange) riding the lines.
-const MOSAIC_ROWS = [
-  { y: 200, label: "CNH", labelColor: C.white, labelX: 1320 },
-  { y: 548, label: "RUB", labelColor: "#D9502C", labelX: 870 },
-  { y: 890, label: "THB", labelColor: "#D9502C", labelX: 235 },
-];
-// deterministic stack patterns [above pills, below pills] per group slot
-const MOSAIC_UP: string[][] = [
-  [C.blue, C.blue], [C.blue], [C.blue, C.blue], [C.blue], [C.blue, C.blue], [C.blue], [C.blue]
-];
-const MOSAIC_DN: string[][] = [
-  [C.tan], [C.tan], [C.orangeDeep, C.tan], [C.tan, C.tan], [C.tan, C.tan], [C.tan], [C.orangeDeep, C.tan]
-];
+// ═══ Scene 25: currency mosaic (f3477-3645) — r5 ground truth ═══
+// Three grey bars draw L→R in cascade (extent keys probed); four pill pages
+// pop in/out on a fixed 7-column grid (windows from per-frame ink mass).
+// Pop-in: pills approach the line from ~92px outside over 4f (linear),
+// scaleY 0.25→1, stack-outer pills lag 2f. Pop-out: the whole stack collapses
+// INTO the line (scaleY 1-t^2.5, origin on the line, 4f — bbox-tracked).
+// Then the bars converge to y549 (3606-3615) and the merged bar rotates about
+// (948,549) to vertical (keys 0/4.2/15/56/90°), becoming the shield zipper.
+// corner insets measured row-by-row on page_3505: line-side outer corner is
+// square (2px AA), the opposite diagonal carries a 13-14px radius
+const MOS_ABOVE_BIG = "2px 14px 2px 14px";
+const MOS_ABOVE_SMALL = "2px 13px 2px 13px";
+const MOS_BELOW_BIG = "14px 2px 14px 2px";
+const MOS_BELOW_SMALL = "13px 2px 13px 2px";
+
+const MosStack: React.FC<{
+  cell: string;
+  x: number;
+  lineTop: number;
+  f: number;
+  inF: number;
+  preLanded?: boolean; // page-1 L2-c2 big blue = the landed circle morph — no pop
+}> = ({ cell, x, lineTop, f, inF, preLanded }) => {
+  const [above = "", below = ""] = cell.split("/");
+  const pills: { x: number; y: number; w: number; h: number; color: string; radius: string; k: number; dir: 1 | -1 }[] = [];
+  let yBot = lineTop; // above cursor: next pill's bottom edge
+  above.split("").forEach((tk, k) => {
+    const big = tk === "B";
+    const h = big ? 68 : 34;
+    const bottom = k === 0 ? lineTop - (big ? 5 : 6) : yBot - 9;
+    pills.push({
+      x,
+      y: bottom - h,
+      w: big ? 86 : 83,
+      h,
+      color: C.blue,
+      radius: big ? MOS_ABOVE_BIG : MOS_ABOVE_SMALL,
+      k,
+      dir: -1,
+    });
+    yBot = bottom - h;
+  });
+  let yTop = lineTop; // below cursor: next pill's top edge
+  below.split("").forEach((tk, k) => {
+    const big = tk === "O";
+    const h = big ? 68 : 35;
+    const top = k === 0 ? lineTop + 21 : yTop + (big ? 8 : 8);
+    pills.push({
+      x: big ? x - 1 : x,
+      y: top,
+      w: big ? 87 : 83,
+      h,
+      color: big ? MOS.orange : MOS.tan,
+      radius: big ? MOS_BELOW_BIG : MOS_BELOW_SMALL,
+      k,
+      dir: 1,
+    });
+    yTop = top + h;
+  });
+  return (
+    <>
+      {pills.map((p, i) => {
+        const t = preLanded && p.dir === -1 && p.k === 0 ? 1 : Math.min(1, Math.max(0, (f - inF - p.k * 2) / 4));
+        if (t <= 0) return null;
+        const dy = 92 * (1 - t) * p.dir;
+        const sc = 0.25 + 0.75 * t;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: p.x,
+              top: p.y,
+              width: p.w,
+              height: p.h,
+              backgroundColor: p.color,
+              borderRadius: p.radius,
+              transform: `translateY(${dy}px) scaleY(${sc})`,
+              opacity: Math.min(1, 3 * t),
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
 
 export const MosaicScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.mosaic[0] || f >= SEG.shield[0] + 6) return null;
-  const wipeP = lerp(f, [3600, 3644], [0, 1]);
+  if (f < SEG.mosaic[0] || f >= SEG.mosaic[1]) return null;
+  const rot = f >= MOS.rotate.f[0];
+  const lineY = [
+    interpolate(f, MOS.converge.f as unknown as number[], MOS.converge.l0 as unknown as number[], clamp),
+    549,
+    interpolate(f, MOS.converge.f as unknown as number[], MOS.converge.l2 as unknown as number[], clamp),
+  ];
   return (
     <AbsoluteFill style={{ backgroundColor: C.navy }}>
-      {MOSAIC_ROWS.map((r, ri) => {
-        const rowOp = lerp(f, [3492 + ri * 12, 3508 + ri * 12], [0, 1]);
-        if (rowOp <= 0) return null;
-        const drift = (f - 3480) * 1.6 * (ri % 2 ? 1 : -1);
-        return (
-          <div key={ri} style={{ position: "absolute", inset: 0, opacity: rowOp }}>
-            <div style={{ position: "absolute", left: 0, top: r.y, width: 1920, height: 6, backgroundColor: C.band }} />
-            {Array.from({ length: 8 }, (_, i) => {
-              const gx = ((i * 250 + ri * 90 + drift) % 2050 + 2050) % 2050 - 60;
-              const up = MOSAIC_UP[(i + ri) % MOSAIC_UP.length];
-              const dn = MOSAIC_DN[(i + 2 * ri) % MOSAIC_DN.length];
-              return (
-                <React.Fragment key={i}>
-                  {up.map((c2, k) => (
-                    <Pill key={`u${k}`} x={gx} y={r.y - 10 - (k + 1) * 52} w={80} h={44} color={c2} />
-                  ))}
-                  {dn.map((c2, k) => (
-                    <Pill key={`d${k}`} x={gx} y={r.y + 16 + k * 52} w={80} h={44} color={c2} />
-                  ))}
-                </React.Fragment>
-              );
-            })}
-            <SerifLabel text={r.label} x={r.labelX} capTop={r.y - 85} fs={110} color={r.labelColor} />
-          </div>
-        );
-      })}
-      {wipeP > 0 && (
+      {!rot &&
+        MOS.lines.map((_, li) => {
+          const ext = interpolate(f, MOS.draw[li].f as unknown as number[], MOS.draw[li].x as unknown as number[], clamp);
+          if (ext <= 0) return null;
+          return (
+            <div key={li} style={{ position: "absolute", left: 0, top: lineY[li] - 4, width: ext, height: 8, backgroundColor: C.grey }} />
+          );
+        })}
+      {rot && (
         <div
           style={{
             position: "absolute",
-            left: -200,
-            top: -3000 + wipeP * 3400,
+            left: 948 - 1200,
+            top: 545,
             width: 2400,
-            height: 3000,
-            backgroundColor: C.navy,
-            transform: "rotate(-14deg)",
-            transformOrigin: "center bottom",
-            borderBottom: `3px solid ${C.band}`,
+            height: 8,
+            backgroundColor: C.grey,
+            transform: `rotate(${-interpolate(f, MOS.rotate.f as unknown as number[], MOS.rotate.deg as unknown as number[], clamp)}deg)`,
+            transformOrigin: "1200px 4px",
           }}
         />
       )}
+      {MOS.pages.map((pg, pi) => {
+        if (f < pg.in || f >= pg.out + 5) return null;
+        const tOut = Math.min(1, Math.max(0, (f - pg.out) / 4));
+        const sOut = 1 - Math.pow(tOut, 2.5);
+        const labelOp = Math.min(1, (f - pg.in) / 2) * (1 - Math.min(1, Math.max(0, (f - pg.out) / 3)));
+        return (
+          <React.Fragment key={pi}>
+            {pg.rows.map((row, li) => (
+              <div
+                key={li}
+                style={{ position: "absolute", inset: 0, transform: `scaleY(${sOut})`, transformOrigin: `960px ${MOS.lines[li] + 4}px` }}
+              >
+                {row.split("|").map((cell, ci) =>
+                  cell === "/" ? null : (
+                    <MosStack
+                      key={ci}
+                      cell={cell}
+                      x={MOS.cols[ci]}
+                      lineTop={MOS.lines[li]}
+                      f={f}
+                      inF={pg.in}
+                      preLanded={pi === 0 && li === 1 && ci === 2}
+                    />
+                  ),
+                )}
+              </div>
+            ))}
+            {pg.labels.map(([txt, colr], li) => (
+              <SerifLabel
+                key={li}
+                text={txt}
+                x={MOS.labelSlots[li].cx - 310}
+                width={620}
+                align="center"
+                capTop={MOS.labelSlots[li].capTop}
+                fs={MOS.labelFs}
+                tracking={MOS.labelTracking}
+                color={colr === "o" ? C.orange : C.white}
+                opacity={labelOp}
+              />
+            ))}
+          </React.Fragment>
+        );
+      })}
     </AbsoluteFill>
   );
 };
