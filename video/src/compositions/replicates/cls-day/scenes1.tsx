@@ -3,7 +3,7 @@
 // refined per-round via still A/Bs.
 import React from "react";
 import { interpolate, Easing } from "remotion";
-import { C, clamp, Pack } from "./data";
+import { C, clamp, Pack, SANS } from "./data";
 import {
   ClsMark,
   ClsLetters,
@@ -448,10 +448,16 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   const HH = 415;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
-      <div style={{ opacity: bandIn }}>
-        <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} />
-        <MarkerTriangle x={960} y={27} size={60} />
-      </div>
+      {frame < 656 ? (
+        <div style={{ opacity: bandIn }}>
+          <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} />
+          <MarkerTriangle x={960} y={27} size={60} />
+        </div>
+      ) : (
+        <S4ExitBand frame={frame} />
+      )}
+      {/* diagram content dies behind the incoming S5 front (f667..673) */}
+      <div style={{ position: "absolute", inset: 0, clipPath: frame >= 666 ? `inset(0 ${Math.max(0, 1920 - lutS(S4X_FRONT)(frame))}px 0 0)` : undefined }}>
       <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" badgeP={badgeP} variant={0} opacity={hexIn} />
       <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" badgeP={badgeP} variant={1} opacity={hexIn} />
       {/* trade executed arrow y531 */}
@@ -509,6 +515,75 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
           </text>
         </svg>
       )}
+      </div>
+    </div>
+  );
+};
+
+// ── S4 exit (f656..673) — r6 measured transition into S5 ──
+// The ref never hard-cuts: from f661 the band DESCENDS (y96→325@673,
+// S5's entry LUT picks up at 376@674) while the hour axis whips left and
+// STRETCHES (pitch 142.3→235; per-frame tick probes), the marker rides
+// its hour off the left edge, and the S5 world (white above / navy below
+// + scaled tick chains) wipes in behind a measured front (1858@667 →
+// 0@673). Phase values are measured AT integer frames (mod-pitch wraps
+// between frames are unsampled and harmless).
+const S4X_TOP: [number, number][] = [[656, 96], [660, 96], [661, 97], [662, 98], [663, 100], [664, 104], [665, 109], [666, 115], [667, 124], [668, 136], [669, 153], [670, 176], [671, 210], [672, 261], [673, 325]];
+const S4X_PITCH: [number, number][] = [[656, 142.3], [662, 142.7], [664, 145.5], [666, 150], [667, 153.7], [668, 158.4], [669, 165], [670, 174.4], [671, 188.5], [672, 208.8], [673, 235]];
+const S4X_PHASE: [number, number][] = [[656, 111], [660, 108], [662, 90], [664, 26], [666, 42], [667, 89], [668, 104], [669, 68], [670, 122], [671, 45], [672, 134], [673, 60]];
+const S4X_H0: [number, number][] = [[656, 18], [662, 18], [664, 19], [666, 20], [667, 21], [668, 22], [669, 23], [670, 24], [671, 25], [672, 26], [673, 27]];
+const S4X_MARKX: [number, number][] = [[656, 961], [664, 961], [666, 900], [668, 835], [669, 745], [670, 640], [671, 480], [672, 270], [673, 40]];
+const S4X_FRONT: [number, number][] = [[666, 1980], [667, 1858], [668, 1770], [669, 1640], [670, 1434], [671, 1084], [672, 451], [673, 0]];
+
+const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
+  const btop = lutS(S4X_TOP)(frame);
+  const pitch = lutS(S4X_PITCH)(frame);
+  const phase = lutS(S4X_PHASE)(frame);
+  const h0 = Math.round(lutS(S4X_H0)(frame));
+  const markX = lutS(S4X_MARKX)(frame);
+  const front = frame >= 666 ? lutS(S4X_FRONT)(frame) : 1980;
+  const bh = (40 * pitch) / 142.3;
+  const syp = pitch / 301.5; // S5-world scale implied by the shared pitch
+  const ticks = Array.from({ length: 15 }, (_, k) => ({ x: phase + k * pitch, h: h0 + k }));
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      {/* S5 world wiping in behind the front: white above, navy below */}
+      {front < 1920 && (
+        <>
+          <div style={{ position: "absolute", left: front, top: 0, width: 1980 - front, height: btop, background: C.white }} />
+          <div style={{ position: "absolute", left: front, top: btop + bh, width: 1980 - front, height: 1080 - btop - bh, background: C.navyBg }} />
+          {/* incoming S5 tick chains (above navy-on-white, below mirrored white) */}
+          <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, clipPath: `inset(0 0 0 ${front}px)` }}>
+            {ticks.map(({ x, h }) => (
+              <React.Fragment key={h}>
+                <div style={{ position: "absolute", left: x, top: btop - 310 * syp, width: 3, height: 310 * syp, background: C.navyDeep }} />
+                <div style={{ position: "absolute", left: x + 16 * syp, top: btop - 314 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: C.navyDeep }}>
+                  {String(((h % 24) + 24) % 24).padStart(2, "0")}:00
+                </div>
+                <div style={{ position: "absolute", left: x, top: btop + bh, width: 3, height: 308 * syp, background: "#FDFDFD" }} />
+                <div style={{ position: "absolute", left: x + 19 * syp, top: btop + bh + 292 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: "#FDFDFD" }}>
+                  {String(((h + 6) % 24 + 24) % 24).padStart(2, "0")}:00
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        </>
+      )}
+      {/* the shared band — one continuous strip, descending + stretching
+          (tick/label styling mirrors TimelineBand exactly) */}
+      <div style={{ position: "absolute", left: 0, top: btop, width: 1920, height: bh, background: C.bandGrey }} />
+      {ticks.map(({ x, h }) => (
+        <div key={`t${h}`} style={{ position: "absolute", left: x - 1.5, top: btop - 4, width: 3, height: bh + 4 + 20, background: C.navyDeep }} />
+      ))}
+      {/* S4-side hour labels (below the strip), only left of the front */}
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, clipPath: `inset(0 ${Math.max(0, 1920 - front)}px 0 0)` }}>
+        {ticks.map(({ x, h }) => (
+          <div key={`l${h}`} style={{ position: "absolute", left: x + 8, top: btop + bh + 2, fontFamily: SANS, fontSize: (30 * pitch) / 142.3, color: C.navyDeep, whiteSpace: "pre" }}>
+            {String(((h % 24) + 24) % 24).padStart(2, "0")}:00
+          </div>
+        ))}
+        <MarkerTriangle x={markX} y={btop - 69} size={60} />
+      </div>
     </div>
   );
 };
