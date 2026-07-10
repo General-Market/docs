@@ -461,10 +461,12 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   ])(frame);
   const sc = lutS([[918, 1], [922, 0.953], [924, 0.929], [926, 0.906], [928, 0.8], [930, 0.718], [932, 0.671], [936, 0.647], [940, 0.635]])(frame);
   const inkP = interpolate(frame, [924, 930], [1, 0], clamp);
-  const docs = [
-    { x: 700, t0: 700, sym: "$" },
-    { x: 1210, t0: 760, sym: "€" },
-    { x: 1560, t0: 830, sym: "$" },
+  // instruction docs pop from tower tops (measured: emerge hidden behind the
+  // tower, rise 33.75px/f, world-fixed x; B@f747, C@f799, G@f851)
+  const docPops = [
+    { wx: 427, top0: 276, t0: 747 }, // B tower (doc top y276@t0, tower top 235)
+    { wx: 1090, top0: 297, t0: 799 }, // C tower (fold clears y240 ~f801)
+    { wx: 1655, top0: 240, t0: 851 }, // G tower (top y70 @f856 measured)
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white }}>
@@ -478,8 +480,8 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
             const hh = (8 + i) % 24;
             return (
               <React.Fragment key={i}>
-                <div style={{ position: "absolute", left: x, top: 215, width: 3, height: bandY - 215, background: C.navyDeep }} />
-                <div style={{ position: "absolute", left: x + 8, top: 182, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
+                <div style={{ position: "absolute", left: x, top: 172, width: 3, height: bandY - 172, background: C.navyDeep }} />
+                <div style={{ position: "absolute", left: x + 10, top: 178, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
                   {String(hh).padStart(2, "0")}:00
                 </div>
                 <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 285, background: "#FDFDFD" }} />
@@ -491,63 +493,46 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
               </React.Fragment>
             );
           })}
-          {/* one ornate cluster every ~2h (ref f750: red-tower centers
-              134+610k, tower top y181 → scale 1.28) */}
-          {Array.from({ length: 9 }, (_, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: (i % 2 ? -378 : -333) + i * 610,
-                top: bandY - 384,
-                transform: "scale(1.28)",
-                transformOrigin: "top left",
-              }}
-            >
-              <Buildings2 variant={(i % 2) as 0 | 1} />
-            </div>
-          ))}
-          {/* mirrored clusters below (red+white ink on navy) reach the frame
-              bottom (ref: centers 431+610k, depth past y1080 → scaleY 1.7) */}
-          {Array.from({ length: 9 }, (_, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: (i % 2 ? -39 : -85) + i * 610,
-                top: bandY + bandH,
-                width: 460,
-                height: 300,
-                transform: "translateY(384px) scale(1.28, -1.28)",
-                transformOrigin: "0 0",
-              }}
-            >
-              <Buildings2 variant={((i + 1) % 2) as 0 | 1} dark />
-            </div>
-          ))}
+          {/* rising instruction docs (BEHIND the towers) */}
+          {docPops.map(({ wx, top0, t0 }, i) => {
+            if (frame < t0 || frame > t0 + 14) return null;
+            const top = top0 - 33.75 * (frame - t0);
+            return <DocPop key={i} x={wx} y={top} />;
+          })}
+          {/* distinct traced clusters (ref f750/f900), world-fixed.
+              Above: A@-152 B@452 C@1060 G@1657 (center world x, slot 604).
+              Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse). */}
+          <div style={{ position: "absolute", left: -382, top: 170 }}><ClA /></div>
+          <div style={{ position: "absolute", left: 222, top: 170 }}><ClB /></div>
+          <div style={{ position: "absolute", left: 830, top: 170 }}><ClC /></div>
+          <div style={{ position: "absolute", left: 1427, top: 170 }}><ClG /></div>
+          <div style={{ position: "absolute", left: -691, top: bandY + bandH - 5 }}><ClE /></div>
+          <div style={{ position: "absolute", left: -88, top: bandY + bandH - 5 }}><ClD /></div>
+          <div style={{ position: "absolute", left: 519, top: bandY + bandH - 5 }}><ClE /></div>
+          <div style={{ position: "absolute", left: 1115, top: bandY + bandH - 5 }}><ClF /></div>
+          {/* ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there */}
         </div>
         {/* grey band on top of buildings */}
         <div style={{ position: "absolute", left: -600, top: bandY, width: 3200, height: bandH, background: C.bandGrey }} />
-        {/* floating instruction docs */}
-        {docs.map(({ x, t0, sym }, i) => {
-          if (frame < t0) return null;
-          const p = interpolate(frame, [t0, t0 + 12], [0, 1], clamp) * inkP;
-          const drift = interpolate(frame, [t0, t0 + 120], [0, -60], clamp);
-          return (
-            <svg key={i} width={64} height={78} viewBox="0 0 64 78" style={{ position: "absolute", left: x - 0.7 * (frame - 750), top: 90 + drift, opacity: p }}>
-              <path d="M 4 74 L 4 4 L 44 4 L 60 20 L 60 74 Z" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
-              <path d="M 44 4 L 44 20 L 60 20" fill="none" stroke={C.navyDeep} strokeWidth="3" />
-              <circle cx="32" cy="46" r="13" fill="none" stroke={C.red} strokeWidth="2.5" />
-              <text x="32" y="53" textAnchor="middle" fontFamily="Helvetica" fontSize="20" fill={C.red}>
-                {sym}
-              </text>
-            </svg>
-          );
-        })}
       </div>
     </div>
   );
 };
+
+// rising settlement-instruction doc (traced f754: 95x120, navy outline,
+// two text lines, top-right fold, red $ ring at (47,66) r24)
+const DocPop: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <svg width={95} height={120} viewBox="0 0 95 120" style={{ position: "absolute", left: x, top: y }}>
+    <path d="M 4 116 L 4 4 L 68 4 L 91 27 L 91 116 Z" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="4.5" strokeLinejoin="round" />
+    <path d="M 68 4 L 68 27 L 91 27" fill="none" stroke={C.navyDeep} strokeWidth="4.5" />
+    <line x1={16} y1={20} x2={52} y2={20} stroke={C.navyDeep} strokeWidth="4.5" />
+    <line x1={16} y1={32} x2={40} y2={32} stroke={C.navyDeep} strokeWidth="4.5" />
+    <circle cx="47" cy="70" r="24" fill="none" stroke={C.red} strokeWidth="4" />
+    <text x="47" y="80" textAnchor="middle" fontFamily="Georgia, serif" fontSize="30" fill={C.red}>
+      $
+    </text>
+  </svg>
+);
 
 // piecewise-linear table sampler (scene-local)
 const lutS =
@@ -564,77 +549,306 @@ const lutS =
     return t[t.length - 1][1];
   };
 
-// skyline cluster: dominant ornate red tower + navy sidekicks + grey sliver
-// (grammar traced from ref f750 — stripes and window grids, not dot boxes)
-const Buildings2: React.FC<{ variant: 0 | 1; dark?: boolean }> = ({ variant, dark }) => {
-  const ink = dark ? "#FDFDFD" : C.navyDeep;
-  const accent = C.red; // the mirrored world keeps its red ink (ref f750)
-  const bg = dark ? "transparent" : "#FDFDFD";
-  const sliver = dark ? "rgba(253,253,253,0.25)" : "#DCDCDC";
-  return (
-    <svg width={460} height={300} viewBox="0 0 460 300">
-      {variant === 0 ? (
-        <>
-          {/* grey backdrop sliver */}
-          <rect x={210} y={200} width={40} height={100} fill={sliver} />
-          {/* small navy building left, dash windows + antenna */}
-          <rect x={20} y={165} width={52} height={135} fill={bg} stroke={ink} strokeWidth="3" />
-          <line x1={36} y1={165} x2={36} y2={148} stroke={ink} strokeWidth="3" />
-          <line x1={28} y1={152} x2={44} y2={152} stroke={ink} strokeWidth="3" />
-          {[0, 1, 2, 3, 4, 5].map((r) => (
-            <line key={r} x1={30} y1={182 + r * 18} x2={52} y2={182 + r * 18} stroke={ink} strokeWidth="3.5" />
-          ))}
-          {/* dominant red tower: crown, stripe rows, window grid, red band */}
-          <rect x={95} y={55} width={40} height={20} fill="none" stroke={accent} strokeWidth="3" />
-          <line x1={115} y1={55} x2={115} y2={38} stroke={accent} strokeWidth="3" />
-          <path d={`M 80 300 L 80 75 L 190 75 Q 200 75 200 88 L 200 300`} fill={bg} stroke={accent} strokeWidth="3.5" />
-          {[0, 1, 2, 3, 4, 5, 6].map((c) => (
-            <line key={c} x1={100 + c * 13} y1={92} x2={100 + c * 13} y2={124} stroke={accent} strokeWidth="3" />
-          ))}
-          <rect x={94} y={136} width={92} height={16} fill={accent} />
-          {[0, 1].map((r) =>
-            [0, 1, 2, 3].map((c) => (
-              <rect key={`${r}${c}`} x={98 + c * 23} y={162 + r * 26} width={15} height={16} fill="none" stroke={accent} strokeWidth="2.5" />
-            )),
-          )}
-          {[0, 1, 2, 3, 4].map((c) => (
-            <line key={c} x1={102 + c * 20} y1={224} x2={102 + c * 20} y2={296} stroke={accent} strokeWidth="3" strokeDasharray="8 7" />
-          ))}
-          {/* small navy building right with window boxes */}
-          <rect x={214} y={218} width={64} height={82} fill={bg} stroke={ink} strokeWidth="3" />
-          {[0, 1].map((r) =>
-            [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={222 + c * 19} y={230 + r * 22} width={10} height={12} fill={ink} />),
-          )}
-        </>
-      ) : (
-        <>
-          <rect x={330} y={190} width={36} height={110} fill={sliver} />
-          {/* small navy building left */}
-          <rect x={30} y={185} width={50} height={115} fill={bg} stroke={ink} strokeWidth="3" />
-          <line x1={46} y1={185} x2={46} y2={168} stroke={ink} strokeWidth="3" />
-          {[0, 1, 2, 3, 4].map((r) => (
-            <line key={r} x1={40} y1={200 + r * 18} x2={62} y2={200 + r * 18} stroke={ink} strokeWidth="3.5" />
-          ))}
-          {/* dominant red tower: filled-square column + stripe wing + crown */}
-          <path d={`M 105 300 L 105 68 Q 105 58 115 58 L 150 58 L 150 300`} fill={bg} stroke={accent} strokeWidth="3.5" />
-          {[0, 1, 2, 3, 4].map((r) => (
-            <rect key={r} x={116} y={78 + r * 42} width={22} height={22} fill={r % 2 === 0 ? accent : "none"} stroke={accent} strokeWidth="2.5" />
-          ))}
-          <path d={`M 150 300 L 150 92 Q 150 82 160 82 L 235 82 Q 245 82 245 95 L 245 300`} fill={bg} stroke={accent} strokeWidth="3.5" />
-          {[0, 1, 2, 3, 4, 5].map((c) => (
-            <line key={c} x1={165 + c * 13} y1={108} x2={165 + c * 13} y2={210} stroke={accent} strokeWidth="3" />
-          ))}
-          <rect x={130} y={44} width={46} height={14} fill="none" stroke={accent} strokeWidth="3" />
-          {/* small navy building right */}
-          <rect x={260} y={210} width={58} height={90} fill={bg} stroke={ink} strokeWidth="3" />
-          {[0, 1, 2].map((r) => (
-            <rect key={r} x={270} y={222 + r * 24} width={26} height={12} fill="none" stroke={ink} strokeWidth="2.5" />
-          ))}
-        </>
-      )}
-    </svg>
-  );
-};
+// ── traced skyline clusters (r3, per-tower tracing from ref f750/f900) ──
+// Above-world slots are 604x330 SVGs at world (center-230), y170; local
+// coords = (screen@f750 - slotLeft - 288, screen_y - 170). Below-world
+// slots are 604x330 at y570. All geometry from 2x crops of the ref frames.
+const NAVY = "#0B2341";
+const WHT = "#FDFDFD";
+
+// 08:00 cluster: red tower w/ horizontal-bar panel + dashed wings
+const ClA: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* left low bridge into frame edge */}
+    <path d="M -60 320 L -60 240 L 111 240 L 111 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {/* grey slab + right low bridge */}
+    <rect x={310} y={195} width={50} height={125} fill="#DCDCDC" />
+    <path d="M 354 320 L 354 238 L 425 238 L 425 262 L 519 262 L 519 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {/* left navy building + stepped antenna + solid bar windows */}
+    <line x1={146.5} y1={162} x2={146.5} y2={176} stroke={NAVY} strokeWidth="3.5" />
+    <rect x={141.5} y={176} width={11.5} height={10} fill="none" stroke={NAVY} strokeWidth="3.5" />
+    <rect x={111.5} y={186} width={51} height={134} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4, 5, 6, 7].map((r) => (
+      <rect key={r} x={128} y={200 + r * 9} width={18} height={4.5} fill={NAVY} />
+    ))}
+    {/* dominant red tower: crown, stripes, bar panel w/ solid band, wings */}
+    <line x1={247} y1={42} x2={247} y2={56.5} stroke={C.red} strokeWidth="3.5" />
+    <rect x={235.5} y={56.5} width={47} height={15} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <path d="M 178 320 L 178 74 Q 178 66 186 66 L 274 66 Q 283 66 283 75 L 283 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4].map((c) => (
+      <line key={c} x1={200 + c * 14} y1={85} x2={200 + c * 14} y2={110} stroke={C.red} strokeWidth="3" />
+    ))}
+    <line x1={200} y1={104} x2={256} y2={104} stroke={C.red} strokeWidth="3" />
+    <rect x={190.5} y={116.5} width={84.5} height={87.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <line x1={190.5} y1={130} x2={275} y2={130} stroke={C.red} strokeWidth="3" />
+    <rect x={195} y={137.5} width={75} height={17.5} fill={C.red} />
+    <rect x={200} y={141} width={9} height={10} fill={WHT} />
+    <rect x={256} y={141} width={9} height={10} fill={WHT} />
+    <line x1={190.5} y1={174} x2={275} y2={174} stroke={C.red} strokeWidth="3" />
+    <line x1={190.5} y1={190} x2={275} y2={190} stroke={C.red} strokeWidth="3" />
+    <rect x={192} y={204} width={79.5} height={18.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <line x1={192} y1={213} x2={271.5} y2={213} stroke={C.red} strokeWidth="3" />
+    {/* wings */}
+    <path d="M 159.5 320 L 159.5 197.5 L 178 197.5" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <path d="M 283 197.5 L 304 197.5 L 304 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {[168, 192, 269, 293].map((x, i) => (
+      <line key={i} x1={x} y1={228} x2={x} y2={315} stroke={C.red} strokeWidth="3" strokeDasharray="9 8" />
+    ))}
+    <path d="M 217 320 L 217 304 L 247 304 L 247 320" fill="none" stroke={C.red} strokeWidth="3.5" />
+    {/* right navy building w/ dot windows */}
+    <path d="M 306 320 L 306 215 Q 306 207.5 313.5 207.5 L 346 207.5 Q 354 207.5 354 215 L 354 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={314 + c * 15} y={218 + r * 15} width={5.5} height={7} fill={NAVY} />),
+    )}
+  </svg>
+);
+
+// 10:00 cluster: square-column tower + striped round-top tower (doc source)
+const ClB: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* left navy building */}
+    <line x1={132} y1={172.5} x2={132} y2={187.5} stroke={NAVY} strokeWidth="3.5" />
+    <rect x={127} y={187.5} width={11} height={12.5} fill="none" stroke={NAVY} strokeWidth="3.5" />
+    <rect x={110} y={200} width={52.5} height={120} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4, 5, 6].map((r) => (
+      <rect key={r} x={124} y={212.5 + r * 9.7} width={18.5} height={4.5} fill={NAVY} />
+    ))}
+    {/* slim white slab behind-left of the column tower */}
+    <rect x={164} y={65} width={25} height={255} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {/* narrow column tower + mast + square column */}
+    <line x1={198} y1={17.5} x2={198} y2={42.5} stroke={C.red} strokeWidth="3.5" />
+    <rect x={189} y={42.5} width={46} height={277.5} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {([[75, 1], [101, 0], [126, 0], [147.5, 1], [172.5, 0]] as const).map(([y, solid], i) => (
+      <rect key={i} x={201.5} y={y} width={20} height={16} fill={solid ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+    ))}
+    {/* step-roof + main striped tower, rounded top-right */}
+    <path d="M 235 65 L 235 53 L 264 53 L 264 65" fill="none" stroke={C.red} strokeWidth="3.5" />
+    <path d="M 235 320 L 235 65 L 305 65 Q 325 65 325 85 L 325 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4, 5].map((c) => (
+      <line key={c} x1={244 + c * 12} y1={114} x2={244 + c * 12} y2={302} stroke={C.red} strokeWidth="3" />
+    ))}
+    <path d="M 195 320 L 195 302.5 L 227.5 302.5 L 227.5 320" fill="none" stroke={C.red} strokeWidth="3.5" />
+    {/* grey slab + right navy building w/ 2x3 square windows */}
+    <rect x={318} y={185} width={20} height={135} fill="#DCDCDC" />
+    <rect x={323.5} y={182.5} width={36.5} height={137.5} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2].map((r) =>
+      [0, 1].map((c) => (
+        <rect key={`${r}${c}`} x={326 + c * 16} y={210 + r * 19} width={11} height={11} fill="none" stroke={NAVY} strokeWidth="3" />
+      )),
+    )}
+    {/* far-right navy L bridge + stepped outline building near 11:00 */}
+    <path d="M 360 257.5 L 430 257.5 L 430 320" fill="none" stroke={NAVY} strokeWidth="3.5" />
+    <path d="M 440 320 L 440 255 L 472 255 L 472 275 L 505 275 L 505 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+  </svg>
+);
+
+// 12:00 cluster: twin-column square-window tower
+const ClC: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* far-left thin outline bridge */}
+    <path d="M 49.5 320 L 49.5 270 Q 49.5 262.5 57 262.5 L 107 262.5 L 107 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {/* left navy building: striped top + navy block w/ white ladder marks */}
+    <path d="M 107 320 L 107 188 Q 107 180 115 180 L 159 180 Q 167 180 167 188 L 167 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2, 3].map((c) => (
+      <line key={c} x1={119.5 + c * 12.5} y1={190} x2={119.5 + c * 12.5} y2={212.5} stroke={NAVY} strokeWidth="3" />
+    ))}
+    <rect x={102} y={217.5} width={45} height={102.5} fill={NAVY} />
+    {[0, 1, 2, 3].map((r) => (
+      <React.Fragment key={r}>
+        <rect x={112} y={235 + r * 22} width={6} height={14} fill={WHT} />
+        <rect x={130} y={235 + r * 22} width={6} height={14} fill={WHT} />
+      </React.Fragment>
+    ))}
+    {/* grey slabs */}
+    <rect x={302} y={207.5} width={17.5} height={112.5} fill="#DCDCDC" />
+    <rect x={387} y={260} width={15} height={60} fill="#DCDCDC" />
+    {/* twin red tower: left col w/ 2 masts, right col w/ stepped crown */}
+    <line x1={179.5} y1={42.5} x2={179.5} y2={70} stroke={C.red} strokeWidth="3.5" />
+    <line x1={194.5} y1={57.5} x2={194.5} y2={70} stroke={C.red} strokeWidth="3.5" />
+    <path d="M 239.5 70 L 239.5 55 L 277 55 L 277 70" fill="none" stroke={C.red} strokeWidth="3.5" />
+    <rect x={167} y={70} width={55} height={250} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <rect x={222} y={70} width={80} height={250} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {([[97.5, 1], [122.5, 0], [147.5, 0], [172.5, 1], [197.5, 0], [222.5, 0], [247.5, 0]] as const).map(([y, solid], i) => (
+      <rect key={i} x={180} y={y} width={17} height={16} fill={solid ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+    ))}
+    {([[97.5, 0, 1], [122.5, 0, 0], [147.5, 0, 0], [172.5, 1, 0], [197.5, 0, 0], [222.5, 0, 1], [247.5, 0, 0]] as const).map(([y, sL, sR], i) => (
+      <React.Fragment key={i}>
+        <rect x={238} y={y} width={17} height={16} fill={sL ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+        <rect x={263} y={y} width={17} height={16} fill={sR ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+      </React.Fragment>
+    ))}
+    <line x1={167} y1={282.5} x2={302} y2={282.5} stroke={C.red} strokeWidth="3.5" />
+    <path d="M 219.5 320 L 219.5 305 L 252 305 L 252 320" fill="none" stroke={C.red} strokeWidth="3.5" />
+    {/* right navy building w/ dots + low bridge toward 13:00 */}
+    <path d="M 302 320 L 302 215 Q 302 207.5 309.5 207.5 L 344 207.5 Q 352 207.5 352 215 L 352 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={310 + c * 15} y={218 + r * 15} width={5.5} height={7} fill={NAVY} />),
+    )}
+    <path d="M 352 320 L 352 270 L 452 270 L 452 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+  </svg>
+);
+
+// 14:00 cluster: capped tower w/ twin window slots + dash-grid base (f900)
+const ClG: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* left low bridge */}
+    <path d="M 56 320 L 56 267.5 L 118 267.5 L 118 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {/* left navy building */}
+    <line x1={156} y1={165} x2={156} y2={177} stroke={NAVY} strokeWidth="3.5" />
+    <rect x={150} y={177} width={12} height={13} fill="none" stroke={NAVY} strokeWidth="3.5" />
+    <rect x={118} y={190} width={53} height={130} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4, 5, 6, 7].map((r) => (
+      <rect key={r} x={136} y={225 + r * 8.5} width={20} height={4.5} fill={NAVY} />
+    ))}
+    {/* grey slab */}
+    <rect x={296} y={205} width={15} height={125} fill="#DCDCDC" />
+    {/* crown + masts */}
+    <line x1={218} y1={57.5} x2={218} y2={70} stroke={C.red} strokeWidth="3.5" />
+    <line x1={228} y1={57.5} x2={228} y2={70} stroke={C.red} strokeWidth="3.5" />
+    <rect x={180} y={70} width={98} height={22} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <line x1={185} y1={100} x2={271} y2={100} stroke={C.red} strokeWidth="3.5" />
+    {/* upper shaft + inner panel w/ twin slots (left solid, right pale) */}
+    <rect x={176} y={97.5} width={100} height={107.5} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <rect x={198.5} y={122.5} width={67.5} height={82.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <rect x={208} y={135} width={18} height={25} fill={C.red} />
+    <rect x={231} y={135} width={17} height={25} fill="#F2C7A9" />
+    <rect x={208} y={160} width={18} height={45} fill="none" stroke={C.red} strokeWidth="3" />
+    <rect x={231} y={160} width={17} height={45} fill="none" stroke={C.red} strokeWidth="3" />
+    {/* broad body w/ dash windows */}
+    <path d="M 170 320 L 170 215 Q 170 205 180 205 L 280 205 Q 290 205 290 215 L 290 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {[0, 1, 2, 3].map((r) =>
+      [0, 1, 2, 3, 4].map((c) => (
+        <rect key={`${r}${c}`} x={186 + c * 21} y={225 + r * 25} width={4} height={11} fill={C.red} />
+      )),
+    )}
+    <path d="M 225 330 L 225 307.5 L 257 307.5 L 257 330" fill="none" stroke={C.red} strokeWidth="3.5" />
+    {/* right navy building w/ 3x2 outline windows */}
+    <path d="M 285 320 L 285 195 Q 285 187.5 292.5 187.5 L 335 187.5 Q 343 187.5 343 195 L 343 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1].map((r) =>
+      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={306 + c * 13} y={248 + r * 17} width={9} height={11} fill="none" stroke={NAVY} strokeWidth="2.5" />),
+    )}
+    {/* far-right rounded outline w/ L-marks (toward 15:00) */}
+    <path d="M 388 320 L 388 278 Q 388 270 396 270 L 462 270 L 462 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    <path d="M 408 285 L 408 298 L 420 298" fill="none" stroke={NAVY} strokeWidth="3" />
+    <path d="M 428 292 L 428 305 L 440 305" fill="none" stroke={NAVY} strokeWidth="3" />
+  </svg>
+);
+
+// below 15:00: hanging twin-column square-window tower + white neighbors
+const ClD: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* left white building w/ dot grid (rounded bottom) */}
+    <path d="M 40 0 L 40 157 Q 40 165 48 165 L 147 165 Q 155 165 155 157 L 155 0" fill="none" stroke={WHT} strokeWidth="3.5" />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2, 3].map((c) => <rect key={`${r}${c}`} x={112 + c * 12} y={90 + r * 15} width={5.5} height={6.5} fill={WHT} />),
+    )}
+    <path d="M 0 47.5 L 40 47.5" fill="none" stroke={WHT} strokeWidth="3.5" />
+    {/* red hanging tower */}
+    <rect x={212.5} y={0} width={37.5} height={22.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <line x1={231} y1={0} x2={231} y2={22.5} stroke={C.red} strokeWidth="3" />
+    <rect x={155} y={0} width={90} height={250} fill={C.navyBg} stroke={C.red} strokeWidth="4" />
+    <rect x={245} y={0} width={60} height={250} fill={C.navyBg} stroke={C.red} strokeWidth="4" />
+    {([[75, 0, 0, 0], [104, 1, 0, 0], [133, 0, 0, 0], [162, 0, 1, 1], [191, 0, 0, 0], [220, 0, 0, 0], [249, 1, 0, 1]] as const).map(([y, s1, s2, s3], i) => (
+      <React.Fragment key={i}>
+        <rect x={167} y={y - 10} width={18} height={17} fill={s1 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+        <rect x={195} y={y - 10} width={18} height={17} fill={s2 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+        <rect x={266} y={y - 10} width={18} height={17} fill={s3 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+      </React.Fragment>
+    ))}
+    {/* stepped hanging base + mast */}
+    <path d="M 155 250 L 180 250 L 180 270 L 220 270 L 220 250 L 305 250" fill="none" stroke={C.red} strokeWidth="4" />
+    <line x1={280} y1={250} x2={280} y2={317} stroke={C.red} strokeWidth="3.5" />
+    {/* right white building w/ comb marks */}
+    <path d="M 305 0 L 305 157 Q 305 165 313 165 L 372 165 Q 380 165 380 157 L 380 0" fill="none" stroke={WHT} strokeWidth="3.5" />
+    {[0, 1, 2, 3].map((r) => (
+      <path key={r} d={`M 365 ${47 + r * 14} L 337 ${47 + r * 14} L 337 ${57 + r * 14} L 365 ${57 + r * 14}`} fill="none" stroke={WHT} strokeWidth="3" />
+    ))}
+    <path d="M 318 125 L 352 125" fill="none" stroke={WHT} strokeWidth="3" />
+    {[0, 1, 2, 3].map((c) => (
+      <line key={c} x1={322 + c * 9} y1={125} x2={322 + c * 9} y2={140} stroke={WHT} strokeWidth="3" />
+    ))}
+    {/* rails toward the next slot */}
+    <path d="M 380 38 L 448 38 Q 468 38 468 58 L 468 88 L 540 88" fill="none" stroke={WHT} strokeWidth="3.5" />
+  </svg>
+);
+
+// below 17:00: symmetric legged structure w/ capsule feet
+const ClE: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* rails left */}
+    <path d="M 33 75 L 108 75 Q 120 75 120 87 L 120 110" fill="none" stroke={WHT} strokeWidth="3.5" />
+    <rect x={103} y={77.5} width={7} height={9} fill={C.red} />
+    <rect x={103} y={92.5} width={7} height={9} fill={C.red} />
+    {/* outer wings */}
+    <path d="M 118 0 L 118 92 L 153 92 L 153 0" fill="none" stroke={C.red} strokeWidth="4" />
+    <line x1={140} y1={35} x2={140} y2={92} stroke={C.red} strokeWidth="3" />
+    <path d="M 308 0 L 308 92 L 343 92 L 343 0" fill="none" stroke={C.red} strokeWidth="4" />
+    <line x1={321} y1={35} x2={321} y2={92} stroke={C.red} strokeWidth="3" />
+    {/* legs + capsule feet + dashed interiors */}
+    <path d="M 168 0 L 168 177.5 M 198 0 L 198 177.5" stroke={C.red} strokeWidth="4" fill="none" />
+    <path d="M 168 177.5 L 168 205 Q 168 220 183 220 Q 198 220 198 205 L 198 177.5" fill="none" stroke={C.red} strokeWidth="4" />
+    <line x1={183} y1={20} x2={183} y2={165} stroke={C.red} strokeWidth="3" strokeDasharray="10 12" />
+    <path d="M 258 0 L 258 177.5 M 288 0 L 288 177.5" stroke={C.red} strokeWidth="4" fill="none" />
+    <path d="M 258 177.5 L 258 205 Q 258 220 273 220 Q 288 220 288 205 L 288 177.5" fill="none" stroke={C.red} strokeWidth="4" />
+    <line x1={273} y1={20} x2={273} y2={165} stroke={C.red} strokeWidth="3" strokeDasharray="10 12" />
+    {/* center body: attachment, comb, cross bar */}
+    <rect x={215} y={7.5} width={35} height={17.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <line x1={232.5} y1={7.5} x2={232.5} y2={25} stroke={C.red} strokeWidth="3" />
+    <line x1={200} y1={75} x2={260} y2={75} stroke={C.red} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4].map((c) => (
+      <line key={c} x1={207 + c * 12} y1={75} x2={207 + c * 12} y2={155} stroke={C.red} strokeWidth="3.5" />
+    ))}
+    <line x1={198} y1={159} x2={258} y2={159} stroke={C.red} strokeWidth="3.5" />
+    {/* white right building w/ bars + hanging mast */}
+    <path d="M 323 92 L 323 155 Q 323 162.5 330.5 162.5 L 365 162.5 Q 373 162.5 373 155 L 373 92" fill="none" stroke={WHT} strokeWidth="3.5" />
+    {[0, 1, 2].map((r) => (
+      <rect key={r} x={338} y={100 + r * 15} width={20} height={7} fill={WHT} />
+    ))}
+    <path d="M 348 145 L 348 162 M 341 152 L 355 152" stroke={WHT} strokeWidth="3" fill="none" />
+    {/* rails right */}
+    <path d="M 373 100 L 420 100 Q 435 100 435 115 L 435 135 L 500 135" fill="none" stroke={WHT} strokeWidth="3.5" />
+  </svg>
+);
+
+// below 19:00: monolithic block w/ finned shaft + trapezoid cap
+const ClF: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    {/* left white building w/ solid bars */}
+    <path d="M 37 0 L 37 160 L 102 160 L 102 0" fill="none" stroke={WHT} strokeWidth="3.5" />
+    <rect x={47} y={85} width={45} height={12.5} fill={WHT} />
+    <rect x={47} y={115} width={45} height={12.5} fill={WHT} />
+    <line x1={69} y1={0} x2={69} y2={85} stroke={WHT} strokeWidth="3" />
+    {/* big red block */}
+    <path d="M 172 7.5 L 172 260 Q 172 270 182 270 L 279 270 Q 289 270 289 260 L 289 7.5" fill={C.navyBg} stroke={C.red} strokeWidth="4.5" />
+    {/* center shaft + squares + fins + footing */}
+    <line x1={212} y1={7.5} x2={212} y2={225} stroke={C.red} strokeWidth="3.5" />
+    <line x1={247} y1={7.5} x2={247} y2={225} stroke={C.red} strokeWidth="3.5" />
+    {([[93, 0], [120, 0], [148, 1], [175, 0], [203, 1]] as const).map(([y, solid], i) => (
+      <rect key={i} x={222} y={y - 8} width={15} height={17} fill={solid ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+    ))}
+    {[155, 172.5, 190].map((y, i) => (
+      <React.Fragment key={i}>
+        <line x1={177} y1={y} x2={212} y2={y} stroke={C.red} strokeWidth="3.5" />
+        <line x1={247} y1={y} x2={284} y2={y} stroke={C.red} strokeWidth="3.5" />
+      </React.Fragment>
+    ))}
+    <rect x={209.5} y={225} width={40} height={12.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    {/* hanging steps + trapezoid cap */}
+    <path d="M 179.5 270 L 179.5 282.5 L 282 282.5 L 282 270" fill="none" stroke={C.red} strokeWidth="4" />
+    <path d="M 194.5 282.5 L 264.5 282.5 L 252.5 310 L 207 310 Z" fill="none" stroke={C.red} strokeWidth="4" />
+    {/* right white building w/ comb marks + rail */}
+    <path d="M 312 0 L 312 157 Q 312 165 320 165 L 369 165 Q 377 165 377 157 L 377 0" fill="none" stroke={WHT} strokeWidth="3.5" />
+    {[0, 1, 2, 3].map((r) => (
+      <path key={r} d={`M 362 ${47 + r * 14} L 334 ${47 + r * 14} L 334 ${57 + r * 14} L 362 ${57 + r * 14}`} fill="none" stroke={WHT} strokeWidth="3" />
+    ))}
+    <path d="M 320 120 L 354 120" fill="none" stroke={WHT} strokeWidth="3" />
+    {[0, 1, 2, 3].map((c) => (
+      <line key={c} x1={324 + c * 9} y1={120} x2={324 + c * 9} y2={135} stroke={WHT} strokeWidth="3" />
+    ))}
+    {/* small hanging box right of the 20:00 tick (ref f900) */}
+    <rect x={392} y={-4} width={32} height={80} fill="none" stroke={WHT} strokeWidth="3.5" />
+  </svg>
+);
 
 // ─── S6: pay-in schedule 00:00 (f923..1176) ───
 // Arrival: navy sweeps in from top-right f923..930 (no crossfade); the band
