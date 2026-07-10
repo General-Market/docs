@@ -452,70 +452,201 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 674 || frame >= 941) return null;
   const bandY = 490;
   const bandH = 85;
-  // measured: x(09:00) = 288 - 1.54*(f-750)
-  const x9 = 288 - 1.54 * (frame - 750);
+  // ── r4 per-frame measured camera (tick tracking, work/cls-day/r4) ──
+  // ENTRY f674..684: the cut lands zoomed OUT (pitch 255.5, band 377..447)
+  // on hours 02..08, then whips left ~1800px decelerating into the cruise
+  // while the world zooms/settles onto the band. CRUISE f690..916:
+  // x9 piecewise-measured (≈ -1.596px/f; the old -1.54 drifted 10px @f860).
+  // EXIT f916..930: the band whips left AGAIN (09:00 tick +25.5@916 →
+  // -1097@928, hours pan 10:00→24:00 into S6's 00:00@293) and the shrink
+  // is NON-uniform: pitch 301.5→~199 (sx→0.66) vs h 85→54 (sy→0.635).
   const px = 301.5;
-  // exit rise+shrink (band centers measured f918..940)
+  const sx = lutS([
+    [674, 0.8475], [675, 0.885], [676, 0.9254], [677, 0.945], [678, 0.9642], [679, 0.9761],
+    [680, 0.9847], [681, 0.9911], [682, 0.996], [684, 1],
+    [916, 1], [918, 0.988], [920, 0.988], [922, 0.975], [924, 0.902], [926, 0.81],
+    [928, 0.803], [930, 0.73], [932, 0.68], [934, 0.67], [936, 0.663], [940, 0.66],
+  ])(frame);
+  const sy = lutS([
+    [674, 0.824], [675, 0.855], [676, 0.88], [677, 0.918], [678, 0.941], [679, 0.953],
+    [680, 0.965], [681, 0.978], [682, 0.988], [683, 0.994], [684, 1],
+    [916, 0.988], [918, 0.988], [920, 0.976], [922, 0.929], [924, 0.929], [926, 0.835],
+    [928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635],
+  ])(frame);
+  // band center (rest 532.5): entry descend + exit rise, both measured
   const riseC = lutS([
+    [674, 412], [675, 447.5], [676, 474.5], [677, 490], [678, 503], [679, 512.5],
+    [680, 520], [681, 525], [682, 529], [683, 530.5], [684, 532.5],
     [918, 532.5], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [928, 327],
     [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179],
   ])(frame);
-  const sc = lutS([[918, 1], [922, 0.953], [924, 0.929], [926, 0.906], [928, 0.8], [930, 0.718], [932, 0.671], [936, 0.647], [940, 0.635]])(frame);
+  // inner x of the 09:00 tick (screen tick positions unprojected through
+  // the sx scale about x=960; cruise points are direct measurements)
+  const x9 = lutS([
+    [674, 2184.8], [675, 1751], [676, 1438.7], [677, 1150.5], [678, 911.3], [679, 744.9],
+    [680, 621.3], [681, 530.7], [682, 467], [683, 425.6], [684, 400.5], [685, 391.5],
+    [686, 390.5], [688, 387], [690, 384],
+    [750, 288.5], [800, 206], [850, 124.5], [896, 55.5], [916, 25.5],
+    [918, 5.2], [920, -63.7], [922, -177.4], [924, -423], [926, -905.5],
+    [928, -1601.5], [930, -4013], [940, -4574],
+  ])(frame);
+  // towers/docs fade f924..930; the tick chain stays crisp until S6's band
+  // takes over at f929 (measured: 14:00/15:00 labels still sharp @f928)
   const inkP = interpolate(frame, [924, 930], [1, 0], clamp);
+  const tickP = frame >= 929 ? 0 : 1;
+  // S6 navy front (same LUT as S6Schedule's sweep) — ticks it has passed
+  // repaint white (ref f924: white 16:00 tick+label inside the navy field)
+  const sweepS5 = lutS([
+    [922, 1920], [923, 1671], [924, 1548], [925, 1382], [926, 1152], [927, 830],
+    [928, 400], [929, 50], [930, -10],
+  ])(frame);
+  // S6-chain replacement front (dup of S6Schedule's): the ABOVE-band S5
+  // chain dies behind it (ref f928: S5 16:00@597, S6 23:00@854); the
+  // BELOW-band mirror chain survives it (ref f930: 22:00@192, 23:00@412)
+  const front5 = lutS([
+    [926, 1920], [928, 760], [929, 610], [930, 428], [932, 202], [934, 90],
+    [936, 32], [938, 4], [940, 0],
+  ])(frame);
+  const frontLocal = 960 + (front5 - 960) / sx - x9;
   // instruction docs pop from tower tops (measured: emerge hidden behind the
   // tower, rise 33.75px/f, world-fixed x; B@f747, C@f799, G@f851)
   const docPops = [
     { wx: 427, top0: 276, t0: 747 }, // B tower (doc top y276@t0, tower top 235)
     { wx: 1090, top0: 297, t0: 799 }, // C tower (fold clears y240 ~f801)
-    { wx: 1655, top0: 240, t0: 851 }, // G tower (top y70 @f856 measured)
+    { wx: 1612, top0: 219, t0: 851 }, // G tower (screen 1725..1815 @f860)
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white }}>
-      <div style={{ position: "absolute", inset: 0, transform: `translateY(${riseC - 532.5}px) scale(${sc})`, transformOrigin: "960px 532.5px" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transform: `translateY(${riseC - 532.5}px) scaleX(${sx}) scaleY(${sy})`,
+          transformOrigin: "960px 532.5px",
+        }}
+      >
         {/* navy lower world (tall so the shrink never exposes the floor) */}
-        <div style={{ position: "absolute", left: -600, top: bandY + bandH, width: 3200, height: 2000, background: C.navyBg }} />
-        <div style={{ position: "absolute", left: x9, top: 0, width: 5200, opacity: inkP }}>
-          {/* hour ticks + labels above and mirrored below (+6h) */}
-          {Array.from({ length: 16 }, (_, i) => {
-            const x = (i - 1) * px;
-            const hh = (8 + i) % 24;
-            return (
-              <React.Fragment key={i}>
-                <div style={{ position: "absolute", left: x, top: 172, width: 3, height: bandY - 172, background: C.navyDeep }} />
-                <div style={{ position: "absolute", left: x + 10, top: 178, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
-                  {String(hh).padStart(2, "0")}:00
-                </div>
-                <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 285, background: "#FDFDFD" }} />
-                <div
-                  style={{ position: "absolute", left: x + 8, top: bandY + bandH + 290, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}
-                >
-                  {String((hh + 6) % 24).padStart(2, "0")}:00
-                </div>
-              </React.Fragment>
-            );
-          })}
-          {/* rising instruction docs (BEHIND the towers) */}
-          {docPops.map(({ wx, top0, t0 }, i) => {
-            if (frame < t0 || frame > t0 + 14) return null;
-            const top = top0 - 33.75 * (frame - t0);
-            return <DocPop key={i} x={wx} y={top} />;
-          })}
-          {/* distinct traced clusters (ref f750/f900), world-fixed.
-              Above: A@-152 B@452 C@1060 G@1657 (center world x, slot 604).
-              Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse). */}
-          <div style={{ position: "absolute", left: -382, top: 170 }}><ClA /></div>
-          <div style={{ position: "absolute", left: 222, top: 170 }}><ClB /></div>
-          <div style={{ position: "absolute", left: 830, top: 170 }}><ClC /></div>
-          <div style={{ position: "absolute", left: 1427, top: 170 }}><ClG /></div>
-          <div style={{ position: "absolute", left: -691, top: bandY + bandH - 5 }}><ClE /></div>
-          <div style={{ position: "absolute", left: -88, top: bandY + bandH - 5 }}><ClD /></div>
-          <div style={{ position: "absolute", left: 519, top: bandY + bandH - 5 }}><ClE /></div>
-          <div style={{ position: "absolute", left: 1115, top: bandY + bandH - 5 }}><ClF /></div>
-          {/* ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there */}
+        <div style={{ position: "absolute", left: -3200, top: bandY + bandH, width: 8000, height: 2000, background: C.navyBg }} />
+        <div style={{ position: "absolute", left: x9, top: 0, width: 5200 }}>
+          {/* hour ticks + labels above and mirrored below (+6h); all 24h —
+              the entry whip shows hours 02..08, the exit whip 10..17 */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: 5200,
+              height: bandY,
+              opacity: tickP,
+              clipPath: frame >= 924 ? `inset(0 ${Math.max(0, 5200 - frontLocal)}px 0 0)` : undefined,
+            }}
+          >
+            {Array.from({ length: 24 }, (_, i) => {
+              const x = (i - 9) * px;
+              return (
+                <React.Fragment key={i}>
+                  <div style={{ position: "absolute", left: x, top: 172, width: 3, height: bandY - 172, background: C.navyDeep }} />
+                  <div style={{ position: "absolute", left: x + 10, top: 178, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
+                    {String(i).padStart(2, "0")}:00
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <div style={{ opacity: frame >= 934 ? 0 : 1 }}>
+            {Array.from({ length: 24 }, (_, i) => {
+              const x = (i - 9) * px;
+              return (
+                <React.Fragment key={i}>
+                  <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 285, background: "#FDFDFD" }} />
+                  <div
+                    style={{ position: "absolute", left: x + 8, top: bandY + bandH + 290, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}
+                  >
+                    {String((i + 6) % 24).padStart(2, "0")}:00
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <div style={{ opacity: inkP }}>
+            {/* rising instruction docs (BEHIND the towers) */}
+            {docPops.map(({ wx, top0, t0 }, i) => {
+              if (frame < t0 || frame > t0 + 14) return null;
+              const top = top0 - 33.75 * (frame - t0);
+              return <DocPop key={i} x={wx} y={top} />;
+            })}
+            {/* distinct traced clusters (ref f750/f900), world-fixed.
+                Above: A@-152 B@452 C@1060 G@1657 (center world x, slot 604).
+                Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse). */}
+            <div style={{ position: "absolute", left: -382, top: 170 }}><ClA /></div>
+            <div style={{ position: "absolute", left: 222, top: 170 }}><ClB /></div>
+            <div style={{ position: "absolute", left: 830, top: 170 }}><ClC /></div>
+            <div style={{ position: "absolute", left: 1427, top: 170 }}><ClG /></div>
+            <div style={{ position: "absolute", left: -691, top: bandY + bandH - 5 }}><ClE /></div>
+            <div style={{ position: "absolute", left: -88, top: bandY + bandH - 5 }}><ClD /></div>
+            <div style={{ position: "absolute", left: 519, top: bandY + bandH - 5 }}><ClE /></div>
+            <div style={{ position: "absolute", left: 1115, top: bandY + bandH - 5 }}><ClF /></div>
+            {/* ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there */}
+            {/* entry-whip left tiles (hours 2..7, visible only f674..~690):
+                designs cycle on — real per-slot identity unreadable at
+                100..300px/f; position+mass carry the window (lesson 4) */}
+            {frame < 692 && (
+              <>
+                <div style={{ position: "absolute", left: -986, top: 170 }}><ClG /></div>
+                <div style={{ position: "absolute", left: -1590, top: 170 }}><ClC /></div>
+                <div style={{ position: "absolute", left: -2194, top: 170 }}><ClB /></div>
+                <div style={{ position: "absolute", left: -1295, top: bandY + bandH - 5 }}><ClF /></div>
+                <div style={{ position: "absolute", left: -1899, top: bandY + bandH - 5 }}><ClE /></div>
+                <div style={{ position: "absolute", left: -2503, top: bandY + bandH - 5 }}><ClD /></div>
+              </>
+            )}
+          </div>
         </div>
         {/* grey band on top of buildings */}
-        <div style={{ position: "absolute", left: -600, top: bandY, width: 3200, height: bandH, background: C.bandGrey }} />
+        <div style={{ position: "absolute", left: -3200, top: bandY, width: 8000, height: bandH, background: C.bandGrey }} />
       </div>
+      {/* S6 navy front (screen space, moved here from S6Schedule so the
+          passed ticks can repaint WHITE above it — ref f924..928) */}
+      {frame >= 922 && (
+        <>
+          <div
+            style={{ position: "absolute", left: sweepS5, top: 0, width: 1980 - sweepS5, height: riseC - 42.5 * sy, background: C.navyBg }}
+          />
+          {frame < 929 && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                transform: `translateY(${riseC - 532.5}px) scaleX(${sx}) scaleY(${sy})`,
+                transformOrigin: "960px 532.5px",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: x9,
+                  top: 0,
+                  width: 5200,
+                  height: 600,
+                  clipPath: `inset(0 ${Math.max(0, 5200 - frontLocal)}px 0 ${960 + (sweepS5 - 960) / sx - x9}px)`,
+                }}
+              >
+                {Array.from({ length: 24 }, (_, i) => {
+                  const x = (i - 9) * px;
+                  return (
+                    <React.Fragment key={i}>
+                      <div style={{ position: "absolute", left: x, top: 172, width: 3, height: bandY - 172, background: "#FDFDFD" }} />
+                      <div style={{ position: "absolute", left: x + 10, top: 178, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}>
+                        {String(i).padStart(2, "0")}:00
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -859,16 +990,40 @@ const ClF: React.FC = () => (
 // that bar.
 export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 923 || frame >= 1177) return null;
-  // navy arrival: a vertical edge sweeps right→left above the rising band
-  // (probed f923..930: x 1671→1548→1382→1152→830→400→50→0)
-  const sweepX = lutS([[922, 1920], [923, 1671], [924, 1548], [925, 1382], [926, 1152], [927, 830], [928, 400], [929, 50], [930, -10]])(frame);
-  // the S5 band top while it rises (the sweep stops at the band)
-  const bandTopS5 = lutS([[923, 500], [924, 466], [926, 411], [928, 296], [930, 224], [934, 168], [938, 155], [940, 152]])(frame);
-  const panIn = lutS([[929, 480], [930, 337], [932, 159], [934, 71], [936, 25], [938, 3], [940, 0]])(frame);
-  const textP = interpolate(frame, [948, 962], [0, 1], clamp);
-  // text block slides off left f985..1015 (measured mid-exit at f1000)
-  const textX = interpolate(frame, [985, 1015], [0, -1250], { ...clamp, easing: Easing.in(Easing.quad) });
-  const rightP = interpolate(frame, [960, 974], [0, 1], clamp);
+  // navy arrival sweep now lives in S5Skyline (so passed ticks repaint
+  // white above it); from f938 S6 owns the whole frame
+  const panIn = lutS([[928, 803], [929, 480], [930, 337], [932, 159], [934, 71], [936, 25], [938, 3], [940, 0]])(frame);
+  // ── r4 measured arrival (work/cls-day/r4) ──
+  // The S6 chain replaces the S5 chain behind a right→left front (S5 16:00
+  // white @597 f928 while S6 23:00 already shows @854); the S6 band rides
+  // the S5 band's morph (y152 static was floating in the sky f929..937).
+  const front = lutS([
+    [926, 1920], [928, 760], [929, 610], [930, 428], [932, 202], [934, 90],
+    [936, 32], [938, 4], [940, 0],
+  ])(frame);
+  const sxDup = lutS([[928, 0.803], [930, 0.73], [932, 0.676], [934, 0.664], [936, 0.6615], [940, 0.66]])(frame);
+  const syDup = lutS([[928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635]])(frame);
+  const riseC6 = lutS([[928, 327], [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179]])(frame);
+  const s6x = frame < 941 ? (301.5 * sxDup) / 199 : 1;
+  const s6y = frame < 941 ? (85 * syDup) / 54 : 1;
+  const bandTop6 = frame < 941 ? riseC6 - 42.5 * syDup : 152;
+  // big text: digits h228→206 (fs≈287), cap-top 754→635, arriving clipped
+  // at the window front (=00:00 line); old 130px/y585 was half the ref size
+  const textP = interpolate(frame, [929, 932], [0, 1], clamp);
+  const tScale = lutS([[930, 1.107], [932, 1.03], [936, 1.005], [938, 1]])(frame);
+  const tTop = lutS([[930, 754], [932, 697], [934, 663], [936, 646], [938, 638], [940, 635]])(frame);
+  const tLeft = lutS([[930, 407], [934, 399], [936, 393], [938, 380], [944, 358]])(frame);
+  // text exit: slides left INTO the 00:00 line clip (right edge 1105@990 →
+  // 1010@995 → 361@1000; left edge pinned at the x293 clip throughout)
+  const textX = lutS([[990, 0], [995, -95], [1000, -744], [1005, -1315]])(frame);
+  // right preview: WHITE label + red band tick, both sliding in from the
+  // right with the morph (screen-measured tick 1691@934 → 1586@940) +
+  // red drop line under the tick appearing f938..944
+  const pP = interpolate(frame, [930, 936], [0, 1], clamp);
+  const pTop = lutS([[932, 483], [934, 457], [936, 442], [940, 434]])(frame);
+  const pLeft = lutS([[932, 1811], [934, 1692], [936, 1638], [938, 1610], [940, 1602]])(frame);
+  const tickX = lutS([[930, 1905], [932, 1785], [934, 1691], [936, 1626], [938, 1596], [940, 1586]])(frame);
+  const lineP = interpolate(frame, [938, 944], [0, 1], clamp);
   const docP = interpolate(frame, [988, 1015], [0, 1], { ...clamp, easing: EASE });
   const axisP = interpolate(frame, [1025, 1042], [0, 1], clamp);
   // exit zoom into the last bar (blue-area growth table, f1152..1176)
@@ -877,32 +1032,74 @@ export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
       <div style={{ position: "absolute", inset: 0, transform: `scale(${zoomS})`, transformOrigin: "1016px 755px" }}>
-        {/* navy arrival above the band: vertical edge sweeping right→left */}
-        {frame < 938 ? (
-          <div style={{ position: "absolute", left: sweepX, top: 0, width: 1980 - sweepX, height: bandTopS5, background: C.navyBg }} />
-        ) : (
-          <div style={{ position: "absolute", inset: 0, background: C.navyBg }} />
-        )}
-        <div style={{ opacity: frame >= 929 ? 1 : 0, clipPath: frame < 941 ? `inset(0 0 0 ${panIn * 1.27}px)` : undefined }}>
-          <TimelineBand y={152} h={54} originX={293 + panIn} originHour={24} pxPerHour={199} ink="#FDFDFD" labelSize={32} tickBelow={24} />
-          {/* red milestone line at 00:00 (band top to y445) */}
-          <Milestone x={293 + panIn} lineTop={152} lineBottom={445} />
-        </div>
-        <div style={{ opacity: textP, transform: `translateX(${textX}px)` }}>
-          <div style={{ position: "absolute", left: 360, top: 585, fontFamily: pack.sans, fontWeight: 700, fontSize: 130, color: "#FCFCFC" }}>
-            {pack.milestones.m0000.time}
+        {/* navy field (the arrival sweep itself is painted by S5Skyline) */}
+        {frame >= 938 && <div style={{ position: "absolute", inset: 0, background: C.navyBg }} />}
+        {/* NOTE: the clip wrapper MUST be a full-frame box — clip-path
+            inset() on a zero-height plain div clips everything away
+            (this exact bug hid the whole band f929..940 through r2/r3) */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: frame >= 927 ? 1 : 0,
+            clipPath: frame < 941 ? `inset(0 0 0 ${front}px)` : undefined,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              transform: `translate(${panIn + 293 - s6x * 293}px, ${bandTop6 - s6y * 152}px) scale(${s6x}, ${s6y})`,
+              transformOrigin: "0 0",
+            }}
+          >
+            <TimelineBand y={152} h={54} originX={293} originHour={24} pxPerHour={199} ink="#FDFDFD" labelSize={32} tickBelow={24} />
+            {/* red 00:00 line: grows down with the arriving window
+                (bottom 641@930 → 913@936, measured), then SNAPS to the
+                band tick at f938 — the settled state has NO long line
+                (probed f950/f1000: red rows 152..207 only) */}
+            {frame >= 929 && (
+              <Milestone
+                x={293}
+                lineTop={152}
+                lineBottom={
+                  frame < 938
+                    ? lutS([[929, 422], [930, 524.6], [932, 806], [934, 875.7], [936, 893.4], [937, 895]])(frame)
+                    : 207
+                }
+              />
+            )}
           </div>
-          <div style={{ position: "absolute", left: 368, top: 748, fontFamily: pack.sans, fontSize: 38, color: "#FCFCFC" }}>
-            {pack.milestones.m0000.label.join(" ")}
-          </div>
         </div>
-        {/* preview of 06:30 milestone right: red tick on band + label */}
-        <div style={{ opacity: rightP }}>
-          <div style={{ position: "absolute", left: 1586, top: 152, width: 5, height: 54, background: C.marker }} />
-          <div style={{ position: "absolute", left: 1540, top: 628, fontFamily: pack.sans, fontSize: 28, color: "#FCFCFC", lineHeight: 1.35 }}>
+        {/* 06:30 preview (screen-measured: tick + label slide in from the
+            right while the band morphs; tick rides the band's y) */}
+        <div style={{ opacity: pP }}>
+          <div style={{ position: "absolute", left: tickX, top: bandTop6, width: 5, height: 54 * s6y, background: C.marker }} />
+          <div style={{ position: "absolute", left: pLeft, top: pTop - 8, fontFamily: pack.sans, fontSize: 40, color: "#FDFDFD", lineHeight: "42px" }}>
             {pack.milestones.m0630.label.map((l, i) => (
               <div key={i}>{l}</div>
             ))}
+          </div>
+        </div>
+        <div style={{ position: "absolute", left: tickX, top: bandTop6 + 54 * s6y, width: 5, height: 501 - (bandTop6 + 54 * s6y), background: C.marker, opacity: lineP }} />
+        <div
+          style={{
+            opacity: textP,
+            transform: `translateX(${textX}px)`,
+            clipPath: frame < 941 || frame >= 985 ? `inset(0 0 0 ${panIn + 293}px)` : undefined,
+            position: "absolute",
+            inset: 0,
+          }}
+        >
+          <div style={{ position: "absolute", left: tLeft, top: tTop, transform: `scale(${tScale})`, transformOrigin: "0 0" }}>
+            {/* digits: ref glyphs 355..1112 × 626..848 ⇒ fs 308 (calibrated
+                against our f950 render: 287 came out 7% small) */}
+            <div style={{ position: "absolute", left: -23, top: -60, fontFamily: pack.sans, fontWeight: 700, fontSize: 308, lineHeight: 1, color: "#FCFCFC" }}>
+              {pack.milestones.m0000.time}
+            </div>
+            <div style={{ position: "absolute", left: 0, top: 222, fontFamily: pack.sans, fontSize: 59, lineHeight: 1, color: "#FCFCFC", whiteSpace: "nowrap" }}>
+              {pack.milestones.m0000.label.join(" ")}
+            </div>
           </div>
         </div>
         {/* schedule document with gantt — measured (310,260) 966×671 */}
