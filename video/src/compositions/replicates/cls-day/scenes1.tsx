@@ -94,42 +94,45 @@ export const LogoCard: React.FC<{
   );
 };
 
-// ─── S1: intro (f0..112) — mark draws, letters+tagline+icons reveal ───
+// ─── S1: intro (f0..123) — mark draws, letters+tagline+icons reveal ───
+// Exit f108..122: a white slash splits the card in two; both pieces are
+// STATIC content clipped by the moving slash edges (measured bar extents),
+// while the S2 ruler wipe levels in underneath.
 export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC<{ markP: number; lettersP: number }> }> = ({
   frame,
   pack,
   BrandLogo,
 }) => {
-  if (frame >= 130) return null;
+  if (frame >= 124) return null;
   const markP = interpolate(frame, [0, 18], [0.15, 1], { ...clamp, easing: EASE });
   const lettersP = interpolate(frame, [8, 30], [0, 1], clamp);
   const taglineP = interpolate(frame, [26, 44], [0, 1], clamp);
   const iconsP = interpolate(frame, [40, 58], [0, 1], clamp);
+  const card = <LogoCard markP={markP} lettersP={lettersP} taglineP={taglineP} iconsP={iconsP} pack={pack} BrandLogo={BrandLogo} />;
+  if (frame < 107) return card;
+  // slash edge tables at y540 (probed white runs f107..117); the slit opens
+  // at x~975 and both edges accelerate apart while the ruler plane rises
+  const slashL = lutS([[107, 896], [109, 888], [110, 878], [111, 856], [112, 792], [113, 660], [114, 488], [115, 230], [116, -60], [117, -420]])(frame);
+  const slashR = lutS([[107, 975], [108, 986], [109, 1000], [110, 1040], [111, 1110], [112, 1240], [113, 1510], [114, 1859], [115, 2400]])(frame);
+  // edges lean ~14° from vertical (top toward the right)
+  const dx = 0.25;
   return (
-    <LogoCard markP={markP} lettersP={lettersP} taglineP={taglineP} iconsP={iconsP} pack={pack} BrandLogo={BrandLogo} />
+    <>
+      <div style={{ position: "absolute", inset: 0, clipPath: `polygon(-300px -200px, ${slashL + 740 * dx}px -200px, ${slashL - 760 * dx}px 1300px, -300px 1300px)` }}>
+        {card}
+      </div>
+      <div style={{ position: "absolute", inset: 0, clipPath: `polygon(${slashR + 740 * dx}px -200px, 2300px -200px, 2300px 1300px, ${slashR - 760 * dx}px 1300px)` }}>
+        {card}
+      </div>
+    </>
   );
 };
 
-// ─── Diagonal white wipe f100..118 (rotated sheet sweeps from right) ───
-export const WipeIn: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 96 || frame >= 122) return null;
-  const t = interpolate(frame, [96, 120], [0, 1], { ...clamp, easing: EASE });
-  // white plane rotated ~-28°, sweeping leftward across the screen
-  const x = interpolate(t, [0, 1], [2400, -400]);
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: x,
-        top: -800,
-        width: 4200,
-        height: 2800,
-        background: C.white,
-        transform: "rotate(-28deg)",
-      }}
-    />
-  );
-};
+// The intro wipe is the S2 ruler itself sweeping up from the bottom-right
+// with the white world glued below it (measured: line at -17°, y960
+// 1300@f100 → 725@f110 → 534@f124); WipeIn stays exported as a no-op for
+// mount-order stability.
+export const WipeIn: React.FC<{ frame: number }> = () => null;
 
 // ─── S2: currency carousel (f100..300) ───
 // Ruler: navy hairline y534 + grey strip y538..552, ticks every 50px.
@@ -137,7 +140,7 @@ export const WipeIn: React.FC<{ frame: number }> = ({ frame }) => {
 // Chip columns at x1252 / x1432 (w132 h104, pitch 156).
 type PairPhase = { i: number; settle: number; leave: number };
 const PAIR_TIMES: PairPhase[] = [
-  { i: 0, settle: 118, leave: 172 }, // USD/JPY
+  { i: 0, settle: 129, leave: 154 }, // USD/JPY (pans in f119..129, collapses into the ruler f154..168)
   { i: 1, settle: 180, leave: 226 }, // DKK/GBP
   { i: 2, settle: 232, leave: 252 }, // AUD/CHF (accelerating)
   { i: 3, settle: 256, leave: 272 }, // HKD/NZD
@@ -146,54 +149,70 @@ const PAIR_TIMES: PairPhase[] = [
 
 export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 96 || frame >= 320) return null;
-  const bgP = interpolate(frame, [116, 124], [0, 1], clamp);
-  // ruler: rotates in with the wipe, settles horizontal y534
-  const rulerRot = interpolate(frame, [100, 122], [-28, 0], { ...clamp, easing: EASE });
+  const bgP = interpolate(frame, [117, 122], [0, 1], clamp);
+  // ruler-led wipe (measured f104..126): the line rises steeply from the
+  // bottom-right, then levels onto y534; the white world rides below it.
+  const rulerY = lutS([[104, 1300], [106, 1113], [108, 943], [110, 768], [112, 660], [114, 556], [116, 541], [118, 539], [122, 536], [126, 534]])(frame);
+  const rulerRot = lutS([[106, -30], [114, -33], [116, -19], [118, -10], [120, -5], [122, -2.4], [124, -0.8], [126, 0]])(frame);
   // ruler slides off with the globe arrival (docks into ring) f288..305
   const rulerOff = interpolate(frame, [288, 308], [0, 1], clamp);
   const pairColor = (c: "red" | "navy") => (c === "red" ? C.red : C.navyInk);
   // chip columns: x1317/x1507, chip 112×71, pitch 80, stacked through the ruler
   const CHIP_COLORS_L = [C.chipGrey, C.chipGrey, C.chipNavy, C.chipGrey, C.chipGrey, C.chipGrey, C.chipGrey];
   const CHIP_COLORS_R = [C.chipCream, C.chipRed, C.chipCream, C.chipCream, C.chipCream, C.chipCream, C.chipCream, C.chipCream, C.chipCream];
+  const rulerXf = `translate(${rulerOff * -2400}px, ${rulerY - 534}px) rotate(${rulerRot}deg)`;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       <div style={{ position: "absolute", inset: 0, background: C.white, opacity: bgP }} />
+      {/* white world below the sweeping line (the wipe) — under the pairs/chips */}
+      {frame < 126 && (
+        <div style={{ position: "absolute", inset: 0, transform: rulerXf, transformOrigin: "960px 534px" }}>
+          <div style={{ position: "absolute", left: -700, top: 548, width: 3400, height: 2600, background: C.white }} />
+        </div>
+      )}
       {/* pairs — serif sits ON the ruler: top baseline y534, bottom cap-top y558 */}
       {PAIR_TIMES.map(({ i, settle, leave }) => {
         const pair = pack.currencyPairs[i];
         if (!pair) return null;
-        const enter = settle - 16;
-        if (frame < enter || frame > leave + 16) return null;
-        const yIn = interpolate(frame, [enter, settle], [520, 0], { ...clamp, easing: EASE });
-        const yOut = interpolate(frame, [leave, leave + 16], [0, -560], { ...clamp, easing: Easing.in(Easing.quad) });
-        const dy = yIn + yOut;
+        // measured grammar: codes PAN IN from the right (USD at x1730 @f121),
+        // then COLLAPSE INTO the ruler line on exit (top sinks, bottom rises)
+        const enter = i === 0 ? 119 : settle - 12;
+        if (frame < enter || frame > leave + 15) return null;
+        const xIn = interpolate(frame, [enter, settle], [1500, 0], { ...clamp, easing: EASE });
+        const sink = interpolate(frame, [leave, leave + 14], [0, 350], { ...clamp, easing: Easing.in(Easing.quad) });
         return (
-          <div key={i} style={{ position: "absolute", inset: 0, transform: `translateY(${dy}px)` }}>
-            <div
-              style={{
-                position: "absolute",
-                left: 335,
-                top: 534 - 320 * 0.95,
-                fontFamily: pack.serif,
-                fontSize: 320,
-                lineHeight: 0.93,
-                color: pairColor(pair.topColor),
-              }}
-            >
-              {pair.top}
+          <div key={i} style={{ position: "absolute", inset: 0 }}>
+            <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 534, clipPath: "inset(0 0 0 0)", overflow: "hidden" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 335,
+                  top: 534 - 320 * 0.95,
+                  fontFamily: pack.serif,
+                  fontSize: 320,
+                  lineHeight: 0.93,
+                  color: pairColor(pair.topColor),
+                  transform: `translate(${xIn}px, ${sink}px)`,
+                }}
+              >
+                {pair.top}
+              </div>
             </div>
-            <div
-              style={{
-                position: "absolute",
-                left: 445,
-                top: 556,
-                fontFamily: pack.serif,
-                fontSize: 320,
-                lineHeight: 0.93,
-                color: pairColor(pair.topColor === "red" ? "navy" : "red"),
-              }}
-            >
-              {pair.bottom}
+            <div style={{ position: "absolute", left: 0, top: 548, width: 1920, height: 532, overflow: "hidden" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 445,
+                  top: 556 - 548,
+                  fontFamily: pack.serif,
+                  fontSize: 320,
+                  lineHeight: 0.93,
+                  color: pairColor(pair.topColor === "red" ? "navy" : "red"),
+                  transform: `translate(${xIn}px, ${-sink}px)`,
+                }}
+              >
+                {pair.bottom}
+              </div>
             </div>
           </div>
         );
@@ -215,21 +234,19 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
         const y = r < 0 ? 534 + r * 80 - 5 : 538 + 14 + (r - 1) * 80 + 5;
         return <Chip key={`r${k}`} x={1507} y={y} w={112} h={71} color={color} opacity={p} />;
       })}
-      {/* ruler — fine ticks every 22px */}
+      {/* ruler — fine ticks every 22px; leads the white wipe in, then exits with the globe */}
       <div
         style={{
           position: "absolute",
-          left: -200 + rulerOff * -2400,
-          top: 531,
-          width: 2600,
-          transform: `rotate(${rulerRot}deg)`,
-          transformOrigin: "1500px 0px",
+          inset: 0,
+          transform: rulerXf,
+          transformOrigin: "960px 534px",
         }}
       >
-        <div style={{ position: "absolute", top: 0, width: 2600, height: 3, background: C.navyDeep }} />
-        <div style={{ position: "absolute", top: 3, width: 2600, height: 14, background: C.bandGrey }} />
+        <div style={{ position: "absolute", left: -200, top: 531, width: 2600, height: 3, background: C.navyDeep }} />
+        <div style={{ position: "absolute", left: -200, top: 534, width: 2600, height: 14, background: C.bandGrey }} />
         {Array.from({ length: 119 }, (_, i) => (
-          <div key={i} style={{ position: "absolute", left: i * 22, top: 3, width: 1.5, height: 14, background: C.navyDeep }} />
+          <div key={i} style={{ position: "absolute", left: -200 + i * 22, top: 534, width: 1.5, height: 14, background: C.navyDeep }} />
         ))}
       </div>
     </div>
@@ -427,160 +444,257 @@ export const ClsPillSlot: React.FC<{
   );
 
 // ─── S5: skyline (f674..940) ───
-// Band mid y400 h40; upright buildings sit on y400; mirrored navy world
-// below y440. Ticks up to y192 (labels top) and down to y870 (labels).
-// Content pans left ~35px/s.
+// Band mid y490 h85; one ornate cluster every ~2h (603px); mirrored navy
+// world below. Exit f920..940: the world rises + shrinks into the S6 band
+// (y152 h54) while the city ink fades — the ref never crossfades.
 export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 674 || frame >= 952) return null;
-  const fadeOut = interpolate(frame, [936, 950], [0, 1], clamp);
+  if (frame < 674 || frame >= 941) return null;
   const bandY = 490;
   const bandH = 85;
   // measured: x(09:00) = 288 - 1.54*(f-750)
   const x9 = 288 - 1.54 * (frame - 750);
   const px = 301.5;
+  // exit rise+shrink (band centers measured f918..940)
+  const riseC = lutS([
+    [918, 532.5], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [928, 327],
+    [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179],
+  ])(frame);
+  const sc = lutS([[918, 1], [922, 0.953], [924, 0.929], [926, 0.906], [928, 0.8], [930, 0.718], [932, 0.671], [936, 0.647], [940, 0.635]])(frame);
+  const inkP = interpolate(frame, [924, 930], [1, 0], clamp);
   const docs = [
     { x: 700, t0: 700, sym: "$" },
     { x: 1210, t0: 760, sym: "€" },
     { x: 1560, t0: 830, sym: "$" },
   ];
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - fadeOut }}>
-      {/* navy lower world */}
-      <div style={{ position: "absolute", left: 0, top: bandY + bandH, width: 1920, height: 1080 - bandY - bandH, background: C.navyBg }} />
-      <div style={{ position: "absolute", left: x9, top: 0, width: 5200 }}>
-        {/* hour ticks + labels above and mirrored below (+6h) */}
-        {Array.from({ length: 16 }, (_, i) => {
-          const x = (i - 1) * px;
-          const hh = (8 + i) % 24;
+    <div style={{ position: "absolute", inset: 0, background: C.white }}>
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${riseC - 532.5}px) scale(${sc})`, transformOrigin: "960px 532.5px" }}>
+        {/* navy lower world (tall so the shrink never exposes the floor) */}
+        <div style={{ position: "absolute", left: -600, top: bandY + bandH, width: 3200, height: 2000, background: C.navyBg }} />
+        <div style={{ position: "absolute", left: x9, top: 0, width: 5200, opacity: inkP }}>
+          {/* hour ticks + labels above and mirrored below (+6h) */}
+          {Array.from({ length: 16 }, (_, i) => {
+            const x = (i - 1) * px;
+            const hh = (8 + i) % 24;
+            return (
+              <React.Fragment key={i}>
+                <div style={{ position: "absolute", left: x, top: 215, width: 3, height: bandY - 215, background: C.navyDeep }} />
+                <div style={{ position: "absolute", left: x + 8, top: 182, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
+                  {String(hh).padStart(2, "0")}:00
+                </div>
+                <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 285, background: "#FDFDFD" }} />
+                <div
+                  style={{ position: "absolute", left: x + 8, top: bandY + bandH + 290, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}
+                >
+                  {String((hh + 6) % 24).padStart(2, "0")}:00
+                </div>
+              </React.Fragment>
+            );
+          })}
+          {/* one ornate cluster every ~2h (ref f750: red-tower centers
+              134+610k, tower top y181 → scale 1.28) */}
+          {Array.from({ length: 9 }, (_, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: (i % 2 ? -378 : -333) + i * 610,
+                top: bandY - 384,
+                transform: "scale(1.28)",
+                transformOrigin: "top left",
+              }}
+            >
+              <Buildings2 variant={(i % 2) as 0 | 1} />
+            </div>
+          ))}
+          {/* mirrored clusters below (red+white ink on navy) reach the frame
+              bottom (ref: centers 431+610k, depth past y1080 → scaleY 1.7) */}
+          {Array.from({ length: 9 }, (_, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: (i % 2 ? -39 : -85) + i * 610,
+                top: bandY + bandH,
+                width: 460,
+                height: 300,
+                transform: "translateY(384px) scale(1.28, -1.28)",
+                transformOrigin: "0 0",
+              }}
+            >
+              <Buildings2 variant={((i + 1) % 2) as 0 | 1} dark />
+            </div>
+          ))}
+        </div>
+        {/* grey band on top of buildings */}
+        <div style={{ position: "absolute", left: -600, top: bandY, width: 3200, height: bandH, background: C.bandGrey }} />
+        {/* floating instruction docs */}
+        {docs.map(({ x, t0, sym }, i) => {
+          if (frame < t0) return null;
+          const p = interpolate(frame, [t0, t0 + 12], [0, 1], clamp) * inkP;
+          const drift = interpolate(frame, [t0, t0 + 120], [0, -60], clamp);
           return (
-            <React.Fragment key={i}>
-              <div style={{ position: "absolute", left: x, top: 215, width: 3, height: bandY - 215, background: C.navyDeep }} />
-              <div style={{ position: "absolute", left: x + 8, top: 182, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
-                {String(hh).padStart(2, "0")}:00
-              </div>
-              <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 285, background: "#FDFDFD" }} />
-              <div
-                style={{ position: "absolute", left: x + 8, top: bandY + bandH + 290, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}
-              >
-                {String((hh + 6) % 24).padStart(2, "0")}:00
-              </div>
-            </React.Fragment>
+            <svg key={i} width={64} height={78} viewBox="0 0 64 78" style={{ position: "absolute", left: x - 0.7 * (frame - 750), top: 90 + drift, opacity: p }}>
+              <path d="M 4 74 L 4 4 L 44 4 L 60 20 L 60 74 Z" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
+              <path d="M 44 4 L 44 20 L 60 20" fill="none" stroke={C.navyDeep} strokeWidth="3" />
+              <circle cx="32" cy="46" r="13" fill="none" stroke={C.red} strokeWidth="2.5" />
+              <text x="32" y="53" textAnchor="middle" fontFamily="Helvetica" fontSize="20" fill={C.red}>
+                {sym}
+              </text>
+            </svg>
           );
         })}
-        {/* upright buildings above the band (sit on y490) */}
-        {Array.from({ length: 14 }, (_, i) => (
-          <div key={i} style={{ position: "absolute", left: -220 + i * 380, top: bandY - 262 }}>
-            <Buildings2 variant={(i % 2) as 0 | 1} />
-          </div>
-        ))}
-        {/* mirrored buildings below (white/red ink on navy) */}
-        {Array.from({ length: 14 }, (_, i) => (
-          <div
-            key={i}
-            style={{ position: "absolute", left: -30 + i * 380, top: bandY + bandH, transform: "scaleY(-1)", transformOrigin: "top" }}
-          >
-            <Buildings2 variant={((i + 1) % 2) as 0 | 1} dark />
-          </div>
-        ))}
       </div>
-      {/* grey band on top of buildings */}
-      <div style={{ position: "absolute", left: 0, top: bandY, width: 1920, height: bandH, background: C.bandGrey }} />
-      {/* floating instruction docs */}
-      {docs.map(({ x, t0, sym }, i) => {
-        if (frame < t0) return null;
-        const p = interpolate(frame, [t0, t0 + 12], [0, 1], clamp);
-        const drift = interpolate(frame, [t0, t0 + 120], [0, -60], clamp);
-        return (
-          <svg key={i} width={64} height={78} viewBox="0 0 64 78" style={{ position: "absolute", left: x - 0.7 * (frame - 750), top: 90 + drift, opacity: p }}>
-            <path d="M 4 74 L 4 4 L 44 4 L 60 20 L 60 74 Z" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
-            <path d="M 44 4 L 44 20 L 60 20" fill="none" stroke={C.navyDeep} strokeWidth="3" />
-            <circle cx="32" cy="46" r="13" fill="none" stroke={C.red} strokeWidth="2.5" />
-            <text x="32" y="53" textAnchor="middle" fontFamily="Helvetica" fontSize="20" fill={C.red}>
-              {sym}
-            </text>
-          </svg>
-        );
-      })}
     </div>
   );
 };
 
-// skyline building cluster (wider than the hex one)
+// piecewise-linear table sampler (scene-local)
+const lutS =
+  (t: [number, number][]) =>
+  (frame: number): number => {
+    if (frame <= t[0][0]) return t[0][1];
+    for (let i = 1; i < t.length; i++) {
+      if (frame <= t[i][0]) {
+        const [f0, v0] = t[i - 1];
+        const [f1, v1] = t[i];
+        return v0 + ((frame - f0) / (f1 - f0)) * (v1 - v0);
+      }
+    }
+    return t[t.length - 1][1];
+  };
+
+// skyline cluster: dominant ornate red tower + navy sidekicks + grey sliver
+// (grammar traced from ref f750 — stripes and window grids, not dot boxes)
 const Buildings2: React.FC<{ variant: 0 | 1; dark?: boolean }> = ({ variant, dark }) => {
   const ink = dark ? "#FDFDFD" : C.navyDeep;
-  const accent = C.red;
+  const accent = C.red; // the mirrored world keeps its red ink (ref f750)
   const bg = dark ? "transparent" : "#FDFDFD";
+  const sliver = dark ? "rgba(253,253,253,0.25)" : "#DCDCDC";
   return (
-    <svg width={330} height={262} viewBox="0 0 330 232">
+    <svg width={460} height={300} viewBox="0 0 460 300">
       {variant === 0 ? (
         <>
-          <rect x="90" y="10" width="70" height="222" fill={bg} stroke={accent} strokeWidth="3" />
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((r) =>
-            [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={100 + c * 18} y={22 + r * 25} width="10" height="13" fill={accent} />),
-          )}
-          <rect x="160" y="70" width="60" height="162" fill={bg} stroke={ink} strokeWidth="3" />
-          {[0, 1, 2, 3, 4].map((r) => (
-            <line key={r} x1="168" y1={86 + r * 28} x2="212" y2={86 + r * 28} stroke={ink} strokeWidth="3" />
+          {/* grey backdrop sliver */}
+          <rect x={210} y={200} width={40} height={100} fill={sliver} />
+          {/* small navy building left, dash windows + antenna */}
+          <rect x={20} y={165} width={52} height={135} fill={bg} stroke={ink} strokeWidth="3" />
+          <line x1={36} y1={165} x2={36} y2={148} stroke={ink} strokeWidth="3" />
+          <line x1={28} y1={152} x2={44} y2={152} stroke={ink} strokeWidth="3" />
+          {[0, 1, 2, 3, 4, 5].map((r) => (
+            <line key={r} x1={30} y1={182 + r * 18} x2={52} y2={182 + r * 18} stroke={ink} strokeWidth="3.5" />
           ))}
-          <rect x="30" y="120" width="60" height="112" fill={bg} stroke={ink} strokeWidth="3" />
-          <rect x="220" y="140" width="46" height="92" fill={bg} stroke={ink} strokeWidth="3" />
+          {/* dominant red tower: crown, stripe rows, window grid, red band */}
+          <rect x={95} y={55} width={40} height={20} fill="none" stroke={accent} strokeWidth="3" />
+          <line x1={115} y1={55} x2={115} y2={38} stroke={accent} strokeWidth="3" />
+          <path d={`M 80 300 L 80 75 L 190 75 Q 200 75 200 88 L 200 300`} fill={bg} stroke={accent} strokeWidth="3.5" />
+          {[0, 1, 2, 3, 4, 5, 6].map((c) => (
+            <line key={c} x1={100 + c * 13} y1={92} x2={100 + c * 13} y2={124} stroke={accent} strokeWidth="3" />
+          ))}
+          <rect x={94} y={136} width={92} height={16} fill={accent} />
+          {[0, 1].map((r) =>
+            [0, 1, 2, 3].map((c) => (
+              <rect key={`${r}${c}`} x={98 + c * 23} y={162 + r * 26} width={15} height={16} fill="none" stroke={accent} strokeWidth="2.5" />
+            )),
+          )}
+          {[0, 1, 2, 3, 4].map((c) => (
+            <line key={c} x1={102 + c * 20} y1={224} x2={102 + c * 20} y2={296} stroke={accent} strokeWidth="3" strokeDasharray="8 7" />
+          ))}
+          {/* small navy building right with window boxes */}
+          <rect x={214} y={218} width={64} height={82} fill={bg} stroke={ink} strokeWidth="3" />
+          {[0, 1].map((r) =>
+            [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={222 + c * 19} y={230 + r * 22} width={10} height={12} fill={ink} />),
+          )}
         </>
       ) : (
         <>
-          <rect x="150" y="16" width="76" height="216" fill={bg} stroke={accent} strokeWidth="3" />
-          <rect x="164" y="4" width="42" height="12" fill="none" stroke={accent} strokeWidth="3" />
-          {[0, 1, 2, 3, 4, 5, 6].map((r) =>
-            [0, 1].map((c) => <rect key={`${r}${c}`} x={162 + c * 28} y={28 + r * 27} width="14" height="12" fill={accent} />),
-          )}
-          <rect x="80" y="90" width="70" height="142" fill={bg} stroke={ink} strokeWidth="3" />
-          {[0, 1, 2, 3].map((r) => (
-            <rect key={r} x={92} y={104 + r * 30} width="16" height="10" fill="none" stroke={ink} strokeWidth="2.5" />
+          <rect x={330} y={190} width={36} height={110} fill={sliver} />
+          {/* small navy building left */}
+          <rect x={30} y={185} width={50} height={115} fill={bg} stroke={ink} strokeWidth="3" />
+          <line x1={46} y1={185} x2={46} y2={168} stroke={ink} strokeWidth="3" />
+          {[0, 1, 2, 3, 4].map((r) => (
+            <line key={r} x1={40} y1={200 + r * 18} x2={62} y2={200 + r * 18} stroke={ink} strokeWidth="3.5" />
           ))}
-          <rect x="226" y="110" width="54" height="122" fill={bg} stroke={ink} strokeWidth="3" />
+          {/* dominant red tower: filled-square column + stripe wing + crown */}
+          <path d={`M 105 300 L 105 68 Q 105 58 115 58 L 150 58 L 150 300`} fill={bg} stroke={accent} strokeWidth="3.5" />
+          {[0, 1, 2, 3, 4].map((r) => (
+            <rect key={r} x={116} y={78 + r * 42} width={22} height={22} fill={r % 2 === 0 ? accent : "none"} stroke={accent} strokeWidth="2.5" />
+          ))}
+          <path d={`M 150 300 L 150 92 Q 150 82 160 82 L 235 82 Q 245 82 245 95 L 245 300`} fill={bg} stroke={accent} strokeWidth="3.5" />
+          {[0, 1, 2, 3, 4, 5].map((c) => (
+            <line key={c} x1={165 + c * 13} y1={108} x2={165 + c * 13} y2={210} stroke={accent} strokeWidth="3" />
+          ))}
+          <rect x={130} y={44} width={46} height={14} fill="none" stroke={accent} strokeWidth="3" />
+          {/* small navy building right */}
+          <rect x={260} y={210} width={58} height={90} fill={bg} stroke={ink} strokeWidth="3" />
+          {[0, 1, 2].map((r) => (
+            <rect key={r} x={270} y={222 + r * 24} width={26} height={12} fill="none" stroke={ink} strokeWidth="2.5" />
+          ))}
         </>
       )}
     </svg>
   );
 };
 
-// ─── S6: pay-in schedule 00:00 (f940..1188) ───
+// ─── S6: pay-in schedule 00:00 (f923..1176) ───
+// Arrival: navy sweeps in from top-right f923..930 (no crossfade); the band
+// ticks + red 00:00 line pan in from the right, decelerating (red line
+// x630@f930 → x293@f940 measured). Exit: the camera dives into the doc's
+// last blue bar f1152..1176 (zoom, focus 1016,755) — S7's blue field IS
+// that bar.
 export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 936 || frame >= 1205) return null;
-  const bgP = interpolate(frame, [936, 950], [0, 1], clamp);
+  if (frame < 923 || frame >= 1177) return null;
+  // navy arrival: a vertical edge sweeps right→left above the rising band
+  // (probed f923..930: x 1671→1548→1382→1152→830→400→50→0)
+  const sweepX = lutS([[922, 1920], [923, 1671], [924, 1548], [925, 1382], [926, 1152], [927, 830], [928, 400], [929, 50], [930, -10]])(frame);
+  // the S5 band top while it rises (the sweep stops at the band)
+  const bandTopS5 = lutS([[923, 500], [924, 466], [926, 411], [928, 296], [930, 224], [934, 168], [938, 155], [940, 152]])(frame);
+  const panIn = lutS([[929, 480], [930, 337], [932, 159], [934, 71], [936, 25], [938, 3], [940, 0]])(frame);
   const textP = interpolate(frame, [948, 962], [0, 1], clamp);
   // text block slides off left f985..1015 (measured mid-exit at f1000)
   const textX = interpolate(frame, [985, 1015], [0, -1250], { ...clamp, easing: Easing.in(Easing.quad) });
   const rightP = interpolate(frame, [960, 974], [0, 1], clamp);
-  const docP = interpolate(frame, [985, 1005], [0, 1], { ...clamp, easing: EASE });
+  const docP = interpolate(frame, [988, 1015], [0, 1], { ...clamp, easing: EASE });
   const axisP = interpolate(frame, [1025, 1042], [0, 1], clamp);
-  const outP = interpolate(frame, [1188, 1204], [0, 1], clamp);
+  // exit zoom into the last bar (blue-area growth table, f1152..1176)
+  const zoomS = lutS([[1152, 1], [1156, 1.35], [1158, 1.7], [1160, 2.1], [1162, 2.7], [1164, 4], [1166, 7], [1168, 11], [1170, 15], [1172, 20], [1176, 26]])(frame);
   const bars = [0, 1, 2, 3, 4];
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.navyBg, opacity: bgP * (1 - outP) }}>
-      <TimelineBand y={152} h={54} originX={293} originHour={24} pxPerHour={199} ink="#FDFDFD" labelSize={32} tickBelow={24} />
-      {/* red milestone line at 00:00 (band top to y445) */}
-      <Milestone x={293} lineTop={152} lineBottom={445} />
-      <div style={{ opacity: textP, transform: `translateX(${textX}px)` }}>
-        <div style={{ position: "absolute", left: 360, top: 585, fontFamily: pack.sans, fontWeight: 700, fontSize: 130, color: "#FCFCFC" }}>
-          {pack.milestones.m0000.time}
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: 0, transform: `scale(${zoomS})`, transformOrigin: "1016px 755px" }}>
+        {/* navy arrival above the band: vertical edge sweeping right→left */}
+        {frame < 938 ? (
+          <div style={{ position: "absolute", left: sweepX, top: 0, width: 1980 - sweepX, height: bandTopS5, background: C.navyBg }} />
+        ) : (
+          <div style={{ position: "absolute", inset: 0, background: C.navyBg }} />
+        )}
+        <div style={{ opacity: frame >= 929 ? 1 : 0, clipPath: frame < 941 ? `inset(0 0 0 ${panIn * 1.27}px)` : undefined }}>
+          <TimelineBand y={152} h={54} originX={293 + panIn} originHour={24} pxPerHour={199} ink="#FDFDFD" labelSize={32} tickBelow={24} />
+          {/* red milestone line at 00:00 (band top to y445) */}
+          <Milestone x={293 + panIn} lineTop={152} lineBottom={445} />
         </div>
-        <div style={{ position: "absolute", left: 368, top: 748, fontFamily: pack.sans, fontSize: 38, color: "#FCFCFC" }}>
-          {pack.milestones.m0000.label.join(" ")}
+        <div style={{ opacity: textP, transform: `translateX(${textX}px)` }}>
+          <div style={{ position: "absolute", left: 360, top: 585, fontFamily: pack.sans, fontWeight: 700, fontSize: 130, color: "#FCFCFC" }}>
+            {pack.milestones.m0000.time}
+          </div>
+          <div style={{ position: "absolute", left: 368, top: 748, fontFamily: pack.sans, fontSize: 38, color: "#FCFCFC" }}>
+            {pack.milestones.m0000.label.join(" ")}
+          </div>
         </div>
+        {/* preview of 06:30 milestone right: red tick on band + label */}
+        <div style={{ opacity: rightP }}>
+          <div style={{ position: "absolute", left: 1586, top: 152, width: 5, height: 54, background: C.marker }} />
+          <div style={{ position: "absolute", left: 1540, top: 628, fontFamily: pack.sans, fontSize: 28, color: "#FCFCFC", lineHeight: 1.35 }}>
+            {pack.milestones.m0630.label.map((l, i) => (
+              <div key={i}>{l}</div>
+            ))}
+          </div>
+        </div>
+        {/* schedule document with gantt — measured (310,260) 966×671 */}
+        {docP > 0 && frame >= 988 && (
+          <SchedDoc frame={frame} docP={docP} axisP={axisP} bars={bars} x={310} y={260} w={966} h={671} dark />
+        )}
       </div>
-      {/* preview of 06:30 milestone right: red tick on band + label */}
-      <div style={{ opacity: rightP }}>
-        <div style={{ position: "absolute", left: 1586, top: 152, width: 5, height: 54, background: C.marker }} />
-        <div style={{ position: "absolute", left: 1540, top: 628, fontFamily: pack.sans, fontSize: 28, color: "#FCFCFC", lineHeight: 1.35 }}>
-          {pack.milestones.m0630.label.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
-        </div>
-      </div>
-      {/* schedule document with gantt (drawn white, fills blue) */}
-      {docP > 0 && frame >= 985 && (
-        <SchedDoc frame={frame} docP={docP} axisP={axisP} bars={bars} x={1032} y={645} w={400} h={425} dark />
-      )}
     </div>
   );
 };
@@ -598,44 +712,47 @@ export const SchedDoc: React.FC<{
   fillFrom?: number;
 }> = ({ frame, docP, axisP, bars, x, y, w, h, dark, fillFrom = 1055 }) => {
   const ink = dark ? "#FDFDFD" : C.navyDeep;
-  const n = bars.length;
-  const bw = w * 0.19;
-  const bh = h * 0.093;
-  const stepX = w * 0.155;
-  const stepY = h * 0.115;
+  // bar rects measured on ref f1142, as fractions of the 966×671 page;
+  // the last bar is double height — it is the S7 zoom target.
+  const RECTS: [number, number, number, number][] = [
+    [0.0838, 0.2578, 0.1014, 0.0537],
+    [0.1988, 0.3487, 0.2143, 0.0537],
+    [0.4203, 0.4531, 0.1004, 0.0537],
+    [0.557, 0.5633, 0.1014, 0.0537],
+    [0.6791, 0.6796, 0.1046, 0.1163],
+  ];
   return (
     <div style={{ position: "absolute", left: x, top: y, width: w, height: h, opacity: docP }}>
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
         {/* page outline w/ top-right fold */}
         <path
-          d={`M 4 ${h - 4} L 4 4 L ${w - w * 0.13} 4 L ${w - 4} ${w * 0.13} L ${w - 4} ${h - 4} Z`}
+          d={`M 4 ${h - 4} L 4 4 L ${w - w * 0.1} 4 L ${w - 4} ${w * 0.1} L ${w - 4} ${h - 4} Z`}
           fill="none"
           stroke={ink}
-          strokeWidth="3"
+          strokeWidth="4"
           strokeLinejoin="round"
         />
-        <path d={`M ${w - w * 0.13} 4 L ${w - w * 0.13} ${w * 0.13} L ${w - 4} ${w * 0.13}`} fill="none" stroke={ink} strokeWidth="3" />
-        {/* axis */}
+        <path d={`M ${w - w * 0.1} 4 L ${w - w * 0.1} ${w * 0.1} L ${w - 4} ${w * 0.1}`} fill="none" stroke={ink} strokeWidth="4" />
+        {/* axis with hanging ticks */}
         {axisP > 0 && (
           <g opacity={axisP}>
-            <line x1={w * 0.12} y1={h * 0.14} x2={w * 0.66} y2={h * 0.14} stroke={ink} strokeWidth="2.5" />
-            {Array.from({ length: 7 }, (_, i) => (
+            <line x1={w * 0.078} y1={h * 0.115} x2={w * 0.787} y2={h * 0.115} stroke={ink} strokeWidth="3" />
+            {Array.from({ length: 8 }, (_, i) => (
               <line
                 key={i}
-                x1={w * 0.12 + i * (w * 0.09)}
-                y1={h * 0.14}
-                x2={w * 0.12 + i * (w * 0.09)}
-                y2={h * 0.17}
+                x1={w * 0.078 + i * (w * 0.1)}
+                y1={h * 0.115}
+                x2={w * 0.078 + i * (w * 0.1)}
+                y2={h * 0.164}
                 stroke={ink}
-                strokeWidth="2"
+                strokeWidth="2.5"
               />
             ))}
           </g>
         )}
         {/* bars staircase */}
         {bars.map((b) => {
-          const bx = w * 0.1 + b * stepX;
-          const by = h * 0.2 + b * stepY;
+          const [fx, fy, fw, fh] = RECTS[b];
           const outlineAt = fillFrom - 25 + b * 8;
           const fillAt = fillFrom + b * 14;
           if (frame < outlineAt) return null;
@@ -643,86 +760,92 @@ export const SchedDoc: React.FC<{
           return (
             <rect
               key={b}
-              x={bx}
-              y={by}
-              width={bw + (b === n - 1 ? bw * 0.4 : 0)}
-              height={bh}
-              rx={bh * 0.3}
+              x={fx * w}
+              y={fy * h}
+              width={fw * w}
+              height={fh * h}
+              rx={h * 0.0537 * 0.3}
               fill={filled ? C.blue : "none"}
               stroke={ink}
-              strokeWidth="2.5"
+              strokeWidth="3"
             />
           );
         })}
         {/* footer text lines */}
-        <line x1={w * 0.1} y1={h * 0.83} x2={w * 0.62} y2={h * 0.83} stroke={ink} strokeWidth="2.5" />
-        <line x1={w * 0.1} y1={h * 0.88} x2={w * 0.55} y2={h * 0.88} stroke={ink} strokeWidth="2.5" />
-        <line x1={w * 0.1} y1={h * 0.93} x2={w * 0.17} y2={h * 0.93} stroke={ink} strokeWidth="2.5" />
-        <line x1={w * 0.19} y1={h * 0.93} x2={w * 0.24} y2={h * 0.93} stroke={ink} strokeWidth="2.5" />
+        <line x1={w * 0.09} y1={h * 0.865} x2={w * 0.8} y2={h * 0.865} stroke={ink} strokeWidth="3" />
+        <line x1={w * 0.09} y1={h * 0.915} x2={w * 0.62} y2={h * 0.915} stroke={ink} strokeWidth="3" />
+        <line x1={w * 0.09} y1={h * 0.96} x2={w * 0.16} y2={h * 0.96} stroke={ink} strokeWidth="3" />
+        <line x1={w * 0.18} y1={h * 0.96} x2={w * 0.23} y2={h * 0.96} stroke={ink} strokeWidth="3" />
       </svg>
     </div>
   );
 };
 
-// ─── S7: netting donuts (f1188..1466) ───
+// ─── S7: netting donuts (f1170..1466) ───
+// Measured: grey ring draws in at (958,517) f1170..1188, slides right to
+// (1352,517) f1192..1212 (outer R 355, thick 131); one big icon circle
+// r237 at (511,511), later two r150 circles; no dashed connectors.
 export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 1188 || frame >= 1478) return null;
-  const bgP = interpolate(frame, [1188, 1202], [0, 1], clamp);
+  if (frame < 1170 || frame >= 1478) return null;
+  const bgP = interpolate(frame, [1170, 1174], [0, 1], clamp);
   const outP = interpolate(frame, [1464, 1476], [0, 1], clamp);
+  const ringIn = lutS([[1170, 0.05], [1172, 0.115], [1174, 0.26], [1176, 0.7], [1178, 0.86], [1180, 0.94], [1182, 0.975], [1188, 1]])(frame);
+  const cx = interpolate(frame, [1192, 1212], [958, 1352], { ...clamp, easing: EASE });
+  const cy = 517;
   // phases
   const p96 = interpolate(frame, [1240, 1285], [0, 0.96], { ...clamp, easing: EASE });
   const p99 = interpolate(frame, [1345, 1385], [0.96, 0.99], clamp);
   const progress = frame < 1240 ? 0 : frame < 1345 ? p96 : p99;
   const pct = frame < 1248 ? pack.percents[0] : frame < 1352 ? pack.percents[1] : pack.percents[2];
-  const icon1P = interpolate(frame, [1252, 1266], [0, 1], clamp);
-  const icon2P = interpolate(frame, [1330, 1344], [0, 1], clamp);
-  const grey = frame < 1240;
+  const icon1P = interpolate(frame, [1238, 1250], [0, 1], clamp);
+  const splitP = interpolate(frame, [1352, 1364], [0, 1], clamp);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.blue, opacity: bgP * (1 - outP) }}>
       <Donut
-        cx={1080}
-        cy={510}
-        r={230}
-        thick={95}
+        cx={cx}
+        cy={cy}
+        r={289.5}
+        thick={131}
         progress={progress}
-        pct={pct}
-        ringBg={grey ? C.donutGrey : C.donutGrey}
+        pct={frame >= 1230 ? pct : ""}
+        ringBg={C.donutGrey}
         ringFg={C.navyBg}
-        center={grey ? C.blue : "none"}
+        center="none"
         textColor="#FCFCFC"
-        fontSize={120}
+        fontSize={130}
+        bgSweep={ringIn}
       />
-      {progress > 0.2 && <MarkerTriangle x={1080} y={510 - 230 - 95 - 46} size={40} />}
-      {/* icon circles + dashed connectors */}
-      {icon1P > 0 && <NetIcon x={610} y={frame >= 1330 ? 388 : 510} p={icon1P} kind="in" toX={1080 - 230 - 60} toY={510} />}
-      {icon2P > 0 && <NetIcon x={610} y={632} p={icon2P} kind="out" toX={1080 - 230 - 60} toY={510} />}
+      {progress > 0.2 && <MarkerTriangle x={cx} y={cy - 289.5 - 131 / 2 - 52} size={40} />}
+      {/* icon circles (one big, then two) */}
+      {icon1P > 0 && splitP < 1 && <NetIcon x={511} y={511} r={237} p={icon1P * (1 - splitP)} kind="in" />}
+      {splitP > 0 && (
+        <>
+          <NetIcon x={516} y={313} r={150} p={splitP} kind="in" />
+          <NetIcon x={515} y={721} r={150} p={splitP} kind="out" />
+        </>
+      )}
     </div>
   );
 };
 
-const NetIcon: React.FC<{ x: number; y: number; p: number; kind: "in" | "out"; toX: number; toY: number }> = ({
-  x,
-  y,
-  p,
-  kind,
-  toX,
-  toY,
-}) => (
-  <div style={{ position: "absolute", inset: 0, opacity: p }}>
-    <svg width={1920} height={1080} style={{ position: "absolute" }}>
-      <circle cx={x} cy={y} r={64} fill="none" stroke="#FDFDFD" strokeWidth={3.5} />
-      <path d={`M ${x + 64} ${y} L ${(x + toX) / 2} ${y} L ${(x + toX) / 2} ${toY} L ${toX} ${toY}`} fill="none" stroke="#FDFDFD" strokeWidth={3} strokeDasharray="10 10" />
-      {/* chip stack glyph */}
-      <g transform={`translate(${x - 34} ${y - 26})`}>
-        {[0, 1, 2].map((r) => (
-          <rect key={r} x={0} y={r * 19} width={38} height={13} rx={6} fill="none" stroke="#FDFDFD" strokeWidth={2.5} />
-        ))}
-        {kind === "in" ? (
-          <path d="M 44 8 L 66 8 M 58 0 L 66 8 L 58 16 M 44 27 L 62 27 M 44 46 L 58 46" stroke="#FDFDFD" strokeWidth={3} fill="none" />
-        ) : (
-          <path d="M 66 8 L 44 8 M 52 0 L 44 8 L 52 16 M 44 27 L 62 27" stroke="#FDFDFD" strokeWidth={3} fill="none" />
-        )}
-      </g>
-    </svg>
-  </div>
-);
+const NetIcon: React.FC<{ x: number; y: number; r: number; p: number; kind: "in" | "out" }> = ({ x, y, r, p, kind }) => {
+  const s = r / 110; // glyph scale
+  return (
+    <div style={{ position: "absolute", inset: 0, opacity: p }}>
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        <circle cx={x} cy={y} r={r} fill="none" stroke="#FDFDFD" strokeWidth={4} />
+        {/* chip stack glyph */}
+        <g transform={`translate(${x} ${y}) scale(${s}) translate(-56 -40)`}>
+          {[0, 1, 2].map((row) => (
+            <rect key={row} x={0} y={row * 30} width={58} height={21} rx={9} fill="none" stroke="#FDFDFD" strokeWidth={3.5} />
+          ))}
+          {kind === "in" ? (
+            <path d="M 68 12 L 102 12 M 90 0 L 102 12 L 90 24 M 68 42 L 96 42 M 68 72 L 88 72" stroke="#FDFDFD" strokeWidth={4.5} fill="none" />
+          ) : (
+            <path d="M 102 12 L 68 12 M 80 0 L 68 12 L 80 24 M 68 42 L 96 42" stroke="#FDFDFD" strokeWidth={4.5} fill="none" />
+          )}
+        </g>
+      </svg>
+    </div>
+  );
+};

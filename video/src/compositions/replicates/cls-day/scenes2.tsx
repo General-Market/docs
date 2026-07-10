@@ -309,17 +309,14 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   const cityP = interpolate(frame, [2380, 2405], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [2370, 2390], [0, 1], clamp);
   const pathP = interpolate(frame, [2410, 2440], [0, 1], { ...clamp, easing: EASE });
-  // chip runs, both directions at once (PvP)
-  const runs = [
-    { t0: 2500, t1: 2570, top: true, color: C.chipRed },
-    { t0: 2540, t1: 2610, top: false, color: C.chipGrey },
-    { t0: 2570, t1: 2640, top: true, color: C.chipCream },
-    { t0: 2600, t1: 2670, top: false, color: C.chipNavy },
-    { t0: 2630, t1: 2700, top: true, color: C.chipRed },
-    { t0: 2650, t1: 2715, top: false, color: C.chipGrey },
+  // chip runs (measured f2440..2740 samples): chips CRAWL left→right along
+  // the top rail (~0.9px/f, not the r1 18px/f sprint), a cream/red pair plus
+  // a later single; one chip descends the center line into the pill.
+  const crawlers = [
+    { f0: 2505, x0: 719, v: 0.92, color: C.chipCream },
+    { f0: 2508, x0: 689, v: 0.92, color: C.chipRed },
+    { f0: 2585, x0: 488, v: 0.78, color: C.chipCream },
   ];
-  const topPath = (p: number): [number, number] => [1650 - p * 1290, 279];
-  const botPath = (p: number): [number, number] => [270 + p * 1290, 781];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* band touches the top edge in this scene (y0 h57), static, no marker */}
@@ -339,12 +336,23 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
         <line x1={949} y1={279} x2={949} y2={781} stroke={C.navyDeep} strokeWidth={3} />
       </svg>
       <HandshakePill x={759} y={435} w={380} h={213} opacity={pillP} />
-      {runs.map((r, i) => {
-        const p = interpolate(frame, [r.t0, r.t1], [0, 1], { ...clamp, easing: Easing.inOut(Easing.quad) });
-        if (frame < r.t0 || p >= 1) return null;
-        const [x, y] = r.top ? topPath(p) : botPath(p);
-        return <Chip key={i} x={x - 48} y={y - 19} w={96} h={38} color={r.color} />;
+      {crawlers.map((r, i) => {
+        if (frame < r.f0) return null;
+        const p = interpolate(frame, [r.f0, r.f0 + 10], [0, 1], clamp);
+        const x = Math.min(r.x0 + r.v * (frame - r.f0), 900);
+        return <Chip key={i} x={x - 48} y={279 - 19} w={96} h={38} color={r.color} opacity={p} />;
       })}
+      {/* one chip descends the center line into the pill */}
+      {frame >= 2505 && (
+        <Chip
+          x={946 - 48}
+          y={Math.min(342 + 0.6 * (frame - 2520), 500) - 19}
+          w={96}
+          h={38}
+          color={C.chipCream}
+          opacity={interpolate(frame, [2505, 2515], [0, 1], clamp)}
+        />
+      )}
     </div>
   );
 };
@@ -363,17 +371,27 @@ const BigCity: React.FC<{ side: "left" | "right" }> = ({ side }) => {
       <svg width={620} height={614} viewBox="0 0 620 614">
         {/* half-hexagon frame: flat top/bottom, right vertex mid-height */}
         <path d="M 0 2 L 420 2 L 618 307 L 420 612 L 0 612" fill="none" stroke={C.navyDeep} strokeWidth={3.5} strokeLinejoin="round" />
-        {/* buildings */}
-        <rect x="80" y="120" width="120" height="360" fill="#FDFDFD" stroke={C.red} strokeWidth="3.5" />
+        {/* buildings — the ref's right cluster carries a cream-filled tower */}
+        <rect x="80" y="120" width="120" height="360" fill={flip ? C.chipCream : "#FDFDFD"} stroke={C.red} strokeWidth="3.5" />
         {[0, 1, 2, 3, 4, 5, 6, 7].map((r) =>
           [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={96 + c * 32} y={140 + r * 42} width="18" height="22" fill={C.red} />),
         )}
         <rect x="210" y="200" width="100" height="280" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3.5" />
-        {[0, 1, 2, 3, 4].map((r) => (
-          <line key={r} x1="222" y1={224 + r * 48} x2="298" y2={224 + r * 48} stroke={C.navyDeep} strokeWidth="3" />
-        ))}
+        {[0, 1, 2, 3, 4].map((r) =>
+          [0, 1].map((c) => (
+            <rect key={`${r}${c}`} x={224 + c * 40} y={220 + r * 50} width={28} height={16} fill="none" stroke={C.navyDeep} strokeWidth="2.5" />
+          )),
+        )}
         <rect x="320" y="260" width="90" height="220" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3.5" />
+        {[0, 1, 2, 3].map((r) => (
+          <line key={r} x1="330" y1={282 + r * 46} x2="400" y2={282 + r * 46} stroke={C.navyDeep} strokeWidth="3" />
+        ))}
         <rect x="20" y="280" width="60" height="200" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3" />
+        {[0, 1, 2, 3].map((r) => (
+          <line key={r} x1={28} y1={300 + r * 40} x2={72} y2={300 + r * 40} stroke={C.navyDeep} strokeWidth="2.5" />
+        ))}
+        {/* cream block tucked into the vertex side */}
+        <rect x="415" y="330" width="66" height="150" fill={C.chipCream} />
         <line x1="0" y1="480" x2="510" y2="480" stroke={C.navyDeep} strokeWidth="3.5" />
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <line key={i} x1={20 + i * 55} y1="480" x2={20 + i * 55} y2="492" stroke={C.navyDeep} strokeWidth="2.5" />
@@ -550,12 +568,28 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
   pack,
   PillLogo,
 }) => {
-  if (frame < 3200 || frame >= 3455) return null;
+  if (frame < 3200 || frame >= 3394) return null;
   const inP = interpolate(frame, [3208, 3228], [0, 1], clamp);
-  const outP = interpolate(frame, [3430, 3448], [0, 1], clamp);
   const rowsP = [0, 1, 2, 3].map((i) => interpolate(frame, [3250 + i * 14, 3262 + i * 14], [0, 1], clamp));
   // measured band: 02:00 tick at x62, pitch 144.4, y92 h40
   const hx = (h: number) => 62 + (h - 2) * 144.4;
+  // exit: accelerating left pan + band drop toward the outro pivot
+  // (measured f3372..3393; S18 owns the band from f3394)
+  const panX =
+    frame < 3372
+      ? 0
+      : -lut(frame, [
+          [3372, 0], [3378, 90], [3382, 220], [3385, 400], [3387, 560], [3388, 680],
+          [3389, 820], [3390, 1000], [3391, 1250], [3392, 1800], [3393, 2600],
+        ]);
+  const drop =
+    frame < 3384
+      ? 0
+      : lut(frame, [
+          [3384, 5], [3385, 9], [3386, 15], [3387, 22], [3388, 31], [3389, 44],
+          [3390, 61], [3391, 87], [3392, 130], [3393, 211],
+        ]);
+  const markerP = interpolate(frame, [3388, 3391], [1, 0], clamp);
   const ms = pack.milestones;
   const milestones = [
     { h: 6.5, m: ms.m0630, below: true },
@@ -564,9 +598,12 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
     { h: 12, m: ms.m1200, below: false },
   ];
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.white, opacity: inP * (1 - outP) }}>
-      <TimelineBand y={92} originX={hx(7)} originHour={7} pxPerHour={144.4} labelSize={28} tickBelow={18} />
-      <MarkerTriangle x={955} y={27} size={56} />
+    <div style={{ position: "absolute", inset: 0, background: C.white, opacity: inP }}>
+      <TimelineBand y={92 + drop} originX={hx(7) + panX} originHour={7} pxPerHour={144.4} labels={frame < 3393} labelSize={28} tickBelow={18} />
+      <div style={{ opacity: markerP }}>
+        <MarkerTriangle x={955} y={27 + drop} size={56} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${panX}px, ${drop}px)` }}>
       {milestones.map(({ h, m, below }, i) => (
         <React.Fragment key={i}>
           <div style={{ position: "absolute", left: hx(h) - 2.5, top: 88, width: 5, height: below ? 110 : 48, background: C.marker }} />
@@ -627,6 +664,7 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
           </div>
         );
       })}
+      </div>
     </div>
   );
 };
@@ -661,81 +699,264 @@ const IconHandshakeMini: React.FC = () => (
   </g>
 );
 
-// ─── S18: outro gauge + diagonal rise (f3440..3561) ───
+// ─── S18: outro world rotation (f3394..3561) ───
+// One rigid world: the timeline band sweeps 0→90° (navy plate + shield ride
+// in), reverses 90→0 (navy now on top, gauge slides in), red wedge fills
+// 0→180°, then the world flips a further 180° with a damped-pendulum settle
+// (chips glide in above the band) and rises off before the end-card cut.
+// Every curve below is a per-frame measured table
+// (.claude/rounds/work/cls-day/r2/outro_measure.csv) — do NOT replace with
+// analytic easings; single-anchor fits died in r1.
+type Lut = [number, number][];
+const lut = (frame: number, t: Lut): number => {
+  if (frame <= t[0][0]) return t[0][1];
+  for (let i = 1; i < t.length; i++) {
+    if (frame <= t[i][0]) {
+      const [f0, v0] = t[i - 1];
+      const [f1, v1] = t[i];
+      return v0 + ((frame - f0) / (f1 - f0)) * (v1 - v0);
+    }
+  }
+  return t[t.length - 1][1];
+};
+
+// band angle (deg, unwrapped: 0→90 up, back to 0, on to 180 + oscillation)
+const THETA: Lut = [
+  [3406, 0], [3407, 2.4], [3408, 10.7], [3409, 22.6], [3410, 33.9], [3411, 43.5],
+  [3412, 51.4], [3413, 57.9], [3414, 63.5], [3415, 68], [3416, 72], [3417, 75.3],
+  [3418, 78.1], [3419, 80.6], [3420, 82.6], [3421, 84.3], [3422, 85.8], [3423, 87.1],
+  [3424, 88], [3425, 88.8], [3426, 89.3], [3427, 89.7], [3429, 90], [3431, 89.8],
+  [3433, 89.4], [3434, 88.8], [3435, 88.2], [3436, 87.4], [3437, 86.4], [3438, 85],
+  [3439, 83.5], [3440, 81.4], [3441, 78.6], [3442, 74.7], [3443, 68.7], [3444, 57.2],
+  [3445, 32.9], [3446, 21.3], [3447, 15.2], [3448, 11.5], [3449, 8.7], [3450, 6.6],
+  [3451, 5], [3452, 3.8], [3453, 2.5], [3454, 1.8], [3455, 1.3], [3456, 0.9],
+  [3457, 0.6], [3458, 0.3], [3460, 0], [3481, 0.2], [3482, 0.3], [3483, 0.9],
+  [3484, 1.5], [3485, 2.8], [3486, 4.4], [3487, 5.9], [3488, 8.6], [3489, 11.7],
+  [3490, 15.5], [3491, 20.7], [3492, 27.7], [3493, 37.5], [3494, 54.5], [3495, 96],
+  [3496, 137.4], [3497, 154.5], [3498, 164.3], [3499, 171.3], [3500, 176.6],
+  [3501, 180.6], [3502, 183.5], [3503, 185.8], [3504, 187.6], [3505, 189.2],
+  [3506, 190.5], [3508, 191.8], [3510, 191.9], [3512, 190.5], [3514, 187.8],
+  [3516, 184.6], [3518, 181.8], [3520, 179.3], [3522, 177.1], [3524, 175.4],
+  [3526, 174.4], [3528, 173.6], [3530, 172.9], [3533, 172.9], [3536, 173.8],
+  [3539, 175.7], [3541, 177.5], [3543, 178.6], [3545, 179.4], [3547, 179.9],
+  [3549, 180], [3560, 180],
+];
+// band centerline y at x960 (P0 drop from the summary handoff, then settle)
+const BANDC: Lut = [
+  [3394, 404], [3395, 446], [3396, 472], [3397, 489], [3398, 502], [3399, 512],
+  [3400, 519], [3401, 524], [3402, 528], [3403, 531], [3405, 533], [3428, 533],
+  [3448, 585], [3560, 585],
+];
+// tick pitch (world scale breathes 136→166 across the rotations)
+const PITCH: Lut = [[3394, 138], [3398, 136], [3406, 136], [3430, 145], [3455, 166], [3560, 166]];
+// navy plate leading edge, world-x from pivot (slides in along the band)
+const PLATE_S: Lut = [[3406, 1100], [3408, 784], [3410, 554], [3412, 305], [3414, 120], [3416, -450], [3420, -1600], [3424, -3200]];
+// gauge world-x offset: slides in decelerating, dwells, accelerates out
+const GAUGE_X: Lut = [
+  [3444, 1000], [3445, 695], [3446, 449], [3447, 323], [3448, 241], [3449, 181],
+  [3450, 136], [3451, 102], [3452, 75], [3453, 54], [3454, 37], [3455, 24],
+  [3456, 14], [3457, 6], [3458, 0], [3480, 0], [3481, -3], [3482, -8], [3483, -18],
+  [3484, -32], [3485, -52], [3486, -79], [3487, -114], [3488, -158], [3489, -215],
+  [3490, -289], [3491, -385], [3492, -513], [3493, -680], [3494, -900], [3496, -1500],
+];
+// red wedge sweep angle (deg from the left horizon, from red-area fractions)
+const WEDGE: Lut = [
+  [3452, 0], [3453, 1.6], [3454, 3.7], [3455, 7.2], [3456, 12], [3457, 19],
+  [3458, 30], [3459, 49], [3460, 91], [3461, 132], [3462, 151], [3463, 162],
+  [3464, 168], [3465, 173], [3466, 176], [3467, 178], [3469, 180],
+];
+// shield slide-out along the band (world-x delta from its dwell spot)
+const SHIELD_X: Lut = [
+  [3431, 0], [3432, -20], [3433, -32], [3434, -47], [3435, -66], [3436, -90],
+  [3437, -119], [3438, -157], [3439, -203], [3440, -260], [3441, -327],
+  [3442, -394], [3443, -491], [3444, -685], [3445, -1000], [3446, -1350],
+];
+// chip flock glide (flip-frame offset rel. settled layout; L-path: drop then glide left)
+const CHIP_DX: Lut = [
+  [3496, 300], [3499, 306], [3502, 322], [3505, 330], [3508, 332], [3511, 334],
+  [3514, 342], [3517, 346], [3520, 342], [3523, 327], [3526, 297], [3529, 244],
+  [3532, 167], [3535, 102], [3538, 59], [3541, 29], [3544, 13], [3547, 3], [3550, 0],
+];
+const CHIP_DY: Lut = [
+  [3496, -300], [3499, -202], [3502, -107], [3505, -49], [3508, -27], [3511, -22],
+  [3514, -13], [3517, -5], [3520, 1], [3523, 8], [3526, 11], [3529, 13], [3532, 15],
+  [3535, 14], [3538, 12], [3541, 6], [3544, 3], [3547, 2], [3550, 0],
+];
+// exit rise into the end-card cut (band centerline 575→426)
+const RISE: Lut = [[3552, -1], [3553, -3], [3554, -7], [3555, -14], [3556, -24], [3557, -37], [3558, -58], [3559, -91], [3560, -149]];
+
+// settled chip layout, flip-frame screen rects at f3550 (x, y, colorKey)
+const CHIP_LAYOUT: [number, number, "g" | "n" | "c" | "r"][] = [
+  [591, 86, "g"], [592, 166, "g"], [593, 248, "g"], [588, 334, "n"], [588, 422, "n"],
+  [782, 248, "c"], [784, 334, "c"], [784, 420, "c"],
+  [1002, 248, "g"], [1003, 334, "g"], [1003, 420, "g"],
+  [1210, 84, "c"], [1207, 164, "c"], [1208, 246, "c"], [1202, 332, "r"], [1203, 420, "r"],
+];
+
+const GAUGE_GREY = "#CFD9DD"; // annulus is a touch blue vs the band grey (probed)
+
 export const S18Outro: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 3440 || frame >= 3561) return null;
-  const floorY = interpolate(frame, [3440, 3480], [1080, 888], { ...clamp, easing: EASE });
-  const gaugeP = interpolate(frame, [3460, 3480], [0, 1], clamp);
-  const needle = interpolate(frame, [3470, 3520], [-160, -35], { ...clamp, easing: EASE });
-  const wedgeP = interpolate(frame, [3500, 3560], [0, 1], { ...clamp, easing: EASE });
-  const chipsP = interpolate(frame, [3510, 3530], [0, 1], clamp);
-  const R = 150;
+  if (frame < 3394 || frame >= 3561) return null;
+  const theta = lut(frame, THETA);
+  const bandC = lut(frame, BANDC);
+  const pitch = lut(frame, PITCH);
+  const bandH = 40 * (pitch / 144.4);
+  // rotation anchor: on the band through P1, drifts with it, fixed 580 for the flip
+  const pv = frame < 3475 ? bandC : lut(frame, [[3475, 585], [3481, 580], [3560, 580]]);
+  const rise = frame >= 3552 ? lut(frame, RISE) : 0;
+  const shieldScale = interpolate(frame, [3414, 3424], [0.06, 1], { ...clamp, easing: EASE });
+  const shieldX = lut(frame, SHIELD_X);
+  const wedge = lut(frame, WEDGE);
+  const gx = lut(frame, GAUGE_X);
+  const preTicks = frame < 3495;
+  const gaugeOn = frame >= 3444 && frame < 3497;
+  const shieldOn = frame >= 3414 && frame < 3447;
+  const chipsOn = frame >= 3496;
+  // gauge geometry (probed f3475): chord at band bottom, disc R198,
+  // hairline arc R210, annulus 232..282, base ring r20 at bandC+43
+  const chordY = bandC + 25;
+  const gcx = 960 + gx;
+  const sector = (cx: number, cy: number, r: number, degFrom: number, degSweep: number) => {
+    // degrees measured from the left horizon (180°=left), sweeping clockwise over the top
+    const a0 = Math.PI - (degFrom * Math.PI) / 180;
+    const a1 = Math.PI - ((degFrom + degSweep) * Math.PI) / 180;
+    const large = degSweep > 180 ? 1 : 0;
+    return `M ${cx} ${cy} L ${cx + r * Math.cos(a0)} ${cy - r * Math.sin(a0)} A ${r} ${r} 0 ${large} 1 ${cx + r * Math.cos(a1)} ${cy - r * Math.sin(a1)} Z`;
+  };
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.white }}>
-      {/* chip columns top right */}
-      {chipsP > 0 && (
-        <div style={{ opacity: chipsP }}>
-          {[0, 1, 2, 3].map((col) =>
-            [0, 1, 2, 3, 4].map((row) => {
-              const colors = [C.chipNavy, C.chipGrey, C.chipCream, C.chipRed];
-              const color = colors[(col + row) % 4];
-              return (
-                <Chip
-                  key={`${col}${row}`}
-                  x={1120 + col * 155}
-                  y={840 - row * 62 - (col % 2) * 30 - wedgeP * 500}
-                  w={96}
-                  h={40}
-                  color={color}
-                />
-              );
-            }),
-          )}
-        </div>
-      )}
-      {/* navy floor + horizon band */}
-      <div style={{ position: "absolute", left: 0, top: floorY, width: 1920, height: 1200, background: C.navyBg }} />
-      <div style={{ position: "absolute", left: 0, top: floorY - 26, width: 1920, height: 26, background: C.bandGrey }} />
-      {Array.from({ length: 14 }, (_, i) => (
-        <div key={i} style={{ position: "absolute", left: i * 142, top: floorY - 26, width: 2.5, height: 26, background: C.navyDeep }} />
-      ))}
-      {/* gauge */}
-      {gaugeP > 0 && (
-        <svg width={2 * R + 60} height={R + 40} viewBox={`0 0 ${2 * R + 60} ${R + 40}`} style={{ position: "absolute", left: 960 - R - 30, top: floorY - 26 - R - 8, opacity: gaugeP }}>
-          <path d={`M 30 ${R + 8} A ${R} ${R} 0 0 1 ${2 * R + 30} ${R + 8}`} fill={C.white} stroke={C.bandGrey} strokeWidth={34} />
-          <path
-            d={`M ${R + 30 + R * Math.cos(Math.PI)} ${R + 8 + R * Math.sin(Math.PI)} A ${R} ${R} 0 0 1 ${R + 30 + R * Math.cos((needle * Math.PI) / 180)} ${R + 8 + R * Math.sin((needle * Math.PI) / 180)}`}
-            fill="none"
-            stroke={C.marker}
-            strokeWidth={12}
-          />
-          <line
-            x1={R + 30}
-            y1={R + 8}
-            x2={R + 30 + (R - 24) * Math.cos((needle * Math.PI) / 180)}
-            y2={R + 8 + (R - 24) * Math.sin((needle * Math.PI) / 180)}
-            stroke={C.marker}
-            strokeWidth={7}
-          />
-          <circle cx={R + 30} cy={R + 8} r={12} fill={C.white} stroke={C.navyDeep} strokeWidth={5} />
-        </svg>
-      )}
-      {/* diagonal navy wedge rise */}
-      {wedgeP > 0 && (
+    <div style={{ position: "absolute", inset: 0, background: C.white, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transform: `translateY(${rise}px) rotate(${theta}deg)`,
+          transformOrigin: `960px ${pv}px`,
+        }}
+      >
+        {/* navy plate glued above the band, leading edge slides in along it */}
         <div
           style={{
             position: "absolute",
-            left: -400,
-            top: 1080 - wedgeP * 1500,
-            width: 3200,
-            height: 2200,
+            left: 960 + lut(frame, PLATE_S),
+            top: bandC - bandH / 2 - 6000,
+            width: 9000,
+            height: 6000,
             background: C.navyBg,
-            transform: `rotate(${-9 * (1 - wedgeP * 0.4)}deg)`,
-            transformOrigin: "left top",
           }}
         />
-      )}
+        {/* the band */}
+        <div style={{ position: "absolute", left: -1540, top: bandC - bandH / 2, width: 5000, height: bandH, background: C.bandGrey }} />
+        {/* pre-flip ticks */}
+        {preTicks &&
+          (frame < 3444
+            ? // grid phased at x110 + 136k (f3404 probe), scaled about the pivot as the world breathes
+              Array.from({ length: 30 }, (_, i) => {
+                const x = 960 + (110 + (i - 14) * 136 - 960) * (pitch / 136);
+                return <div key={i} style={{ position: "absolute", left: x, top: bandC - bandH / 2, width: 3, height: bandH, background: C.navyDeep }} />;
+              })
+            : [
+                ...Array.from({ length: 5 }, (_, i) => 14.5 + i * 166),
+                ...Array.from({ length: 5 }, (_, i) => 1238.5 + i * 165.5),
+              ].map((x, i) => (
+                <div key={i} style={{ position: "absolute", left: x, top: bandC - bandH / 2, width: 3, height: bandH, background: C.navyDeep }} />
+              )))}
+        {/* shield straddling the band (drawn side-on; upright once the world is vertical) */}
+        {shieldOn && (
+          <div
+            style={{
+              position: "absolute",
+              left: 950 + shieldX - 275,
+              top: bandC - 357,
+              width: 550,
+              height: 700,
+              transform: `rotate(-90deg) scale(${shieldScale})`,
+              transformOrigin: "275px 350px",
+            }}
+          >
+            <OutroShield frame={frame} />
+          </div>
+        )}
+        {/* gauge riding the band */}
+        {gaugeOn && (
+          <svg width={640} height={420} viewBox="0 0 640 420" style={{ position: "absolute", left: gcx - 320, top: chordY - 330 }}>
+            {/* annulus */}
+            <path d={`M 38 330 A 282 282 0 0 1 602 330 L 552 330 A 232 232 0 0 0 88 330 Z`} fill={GAUGE_GREY} />
+            {/* annulus ticks 45/90/135° */}
+            {[45, 90, 135].map((a) => {
+              const r0 = 232;
+              const r1 = 282;
+              const ca = Math.cos((Math.PI * (180 - a)) / 180);
+              const sa = Math.sin((Math.PI * (180 - a)) / 180);
+              return <line key={a} x1={320 + r0 * ca} y1={330 - r0 * sa} x2={320 + r1 * ca} y2={330 - r1 * sa} stroke={C.navyDeep} strokeWidth={3} />;
+            })}
+            {/* dial interior */}
+            <path d={`M 88 330 A 232 232 0 0 1 552 330 Z`} fill={C.white} />
+            {/* red hairline arc */}
+            <path d={`M 110 330 A 210 210 0 0 1 530 330`} fill="none" stroke={C.red} strokeWidth={5} />
+            {/* red wedge fill, sweeping from the left horizon */}
+            {wedge > 0 && <path d={sector(320, 330, 198, 0, wedge)} fill={C.red} />}
+            {/* base ring */}
+            <circle cx={320} cy={348} r={20} fill={C.white} stroke={C.navyDeep} strokeWidth={7} />
+          </svg>
+        )}
+        {/* post-flip layer: chips + re-phased ticks (reads upright after the 180° flip) */}
+        <div style={{ position: "absolute", inset: 0, transform: "rotate(180deg)", transformOrigin: "960px 580px" }}>
+          {!preTicks &&
+            Array.from({ length: 12 }, (_, i) => (
+              <div key={i} style={{ position: "absolute", left: 140.5 + i * 166, top: 552, width: 3, height: 46, background: C.navyDeep }} />
+            ))}
+          {chipsOn &&
+            CHIP_LAYOUT.map(([x, y, k], i) => (
+              <Chip
+                key={i}
+                x={x + lut(frame, CHIP_DX)}
+                y={y + lut(frame, CHIP_DY)}
+                w={133}
+                h={61}
+                color={k === "g" ? C.chipGrey : k === "n" ? C.chipNavy : k === "c" ? C.chipCream : C.chipRed}
+              />
+            ))}
+        </div>
+      </div>
     </div>
+  );
+};
+
+// Outro shield: split along its vertical center line (the band axis) —
+// red-outline/red-fill half over the white world, white-outline half over
+// the navy plate. Traced from ref f3430 (bbox 550×700 centered on the band).
+const OutroShield: React.FC<{ frame: number }> = ({ frame }) => {
+  const sparkP = interpolate(frame, [3420, 3424], [0, 1], clamp);
+  // shield outline path, local 550×700, tip at bottom center
+  const outline =
+    "M 28 18 Q 275 46 522 18 L 522 300 Q 522 460 448 556 Q 372 648 275 692 Q 178 648 102 556 Q 28 460 28 300 Z";
+  const inner =
+    "M 52 44 Q 275 68 498 44 L 498 298 Q 498 448 432 536 Q 362 620 275 664 Q 188 620 118 536 Q 52 448 52 298 Z";
+  return (
+    <svg width={550} height={700} viewBox="0 0 550 700">
+      <defs>
+        <clipPath id="clsOutroL">
+          <rect x={0} y={0} width={275} height={700} />
+        </clipPath>
+        <clipPath id="clsOutroR">
+          <rect x={275} y={0} width={275} height={700} />
+        </clipPath>
+      </defs>
+      {/* left half: red outline + red inner fill on the white world */}
+      <g clipPath="url(#clsOutroL)">
+        <path d={outline} fill={C.white} stroke={C.red} strokeWidth={9} />
+        <path d={inner} fill={C.red} />
+      </g>
+      {/* right half: white outline + white inner fill against the navy plate */}
+      <g clipPath="url(#clsOutroR)">
+        <path d={outline} fill={C.navyBg} stroke="#FDFDFD" strokeWidth={9} />
+        <path d={inner} fill="#FDFDFD" />
+      </g>
+      {/* sparkle near the top right */}
+      <g opacity={sparkP} transform="translate(516 176)">
+        <path d="M 0 -14 L 3 -3 L 14 0 L 3 3 L 0 14 L -3 3 L -14 0 L -3 -3 Z" fill="#FDFDFD" />
+      </g>
+    </svg>
   );
 };
 

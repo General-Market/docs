@@ -471,7 +471,8 @@ export const Donut: React.FC<{
   textColor?: string;
   fontSize?: number;
   gapDeg?: number; // white gap at top when in-progress look
-}> = ({ cx, cy, r, thick, progress, pct, ringBg = C.donutGrey, ringFg = C.navyBg, center = "none", textColor = "#FCFCFC", fontSize = 90, gapDeg = 14 }) => {
+  bgSweep?: number; // grey ring draw-in 0..1 (clockwise from top)
+}> = ({ cx, cy, r, thick, progress, pct, ringBg = C.donutGrey, ringFg = C.navyBg, center = "none", textColor = "#FCFCFC", fontSize = 90, gapDeg = 14, bgSweep = 1 }) => {
   const R = r;
   const circ = 2 * Math.PI * R;
   const sweep = Math.max(0, Math.min(1, progress));
@@ -479,7 +480,16 @@ export const Donut: React.FC<{
   return (
     <div style={{ position: "absolute", left: cx - size / 2, top: cy - size / 2, width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={size / 2} cy={size / 2} r={R} fill="none" stroke={ringBg} strokeWidth={thick} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={R}
+          fill="none"
+          stroke={ringBg}
+          strokeWidth={thick}
+          strokeDasharray={bgSweep >= 1 ? undefined : `${bgSweep * circ} ${circ}`}
+          transform={bgSweep >= 1 ? undefined : `rotate(-90 ${size / 2} ${size / 2})`}
+        />
         {center !== "none" && <circle cx={size / 2} cy={size / 2} r={R - thick / 2} fill={center} />}
         {sweep > 0 && (
           <circle

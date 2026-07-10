@@ -57,9 +57,9 @@ export const SCENES = {
   currencies: { from: 100, to: 300 }, // white, serif pairs + chips + ruler
   globe: { from: 300, to: 460 }, // globe clock + padlock
   trade: { from: 460, to: 674 }, // hexagons + CLS pill
-  skyline: { from: 674, to: 940 }, // banded skyline, cut in at f674
-  schedule: { from: 940, to: 1188 }, // navy, 00:00 pay-in schedule
-  netting: { from: 1188, to: 1466 }, // blue bg, donuts 0→96→99%
+  skyline: { from: 674, to: 940 }, // banded skyline, cut in at f674; rises into S6 f920..940
+  schedule: { from: 923, to: 1176 }, // navy sweep-in, 00:00 pay-in schedule; zoom-out via doc bar
+  netting: { from: 1170, to: 1466 }, // blue bg (the zoomed bar), donuts 0→96→99%
   revised: { from: 1466, to: 1700 }, // white, 06:30 revised schedule
   zoomTimes: { from: 1700, to: 1837 }, // big 06:00|07:00 sweep
   settle: { from: 1837, to: 2075 }, // A/B + CLS pill + central banks flows
@@ -69,8 +69,8 @@ export const SCENES = {
   target9: { from: 2737, to: 2837 }, // 09:00 settlement completion target
   brackets: { from: 2837, to: 3040 }, // Settlement / Funding bars + 8.0+
   payouts: { from: 3040, to: 3200 }, // chips over A..H
-  summary: { from: 3200, to: 3440 }, // full summary diagram
-  outro: { from: 3440, to: 3561 }, // gauge + diagonal navy rise
+  summary: { from: 3200, to: 3394 }, // full summary diagram, pan-exit f3372..3393
+  outro: { from: 3394, to: 3561 }, // world rotation: 0→90→0 (+gauge) → 180 + chips
   endCard: { from: 3561, to: 3750 }, // static logo card
 } as const;
 
