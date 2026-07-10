@@ -541,7 +541,20 @@ const Logo: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf, ex
   );
 };
 
-const Tagline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf, exitAt, th }) => (
+const Tagline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf, exitAt, th }) => {
+  // naturalWidths (brand cuts): flow words left→right at the face's own
+  // widths with the ref's measured ~11px ink gap — the CLS-measured boxes
+  // leave wide holes under a different face.
+  const widths = th.copy.taglineWords.map((w) =>
+    natWidth(w, th.sansFamily, L.tag.fs, th.sansWeight),
+  );
+  const flowXs: number[] = [];
+  let flowX = L.tag.words[0].x;
+  for (let i = 0; i < widths.length; i++) {
+    flowXs.push(flowX);
+    flowX += widths[i] + 11;
+  }
+  return (
   <>
     {th.copy.taglineWords.map((word, wi) => {
       const start = WORD_STARTS[wi];
@@ -549,16 +562,16 @@ const Tagline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf,
       const s = rf >= exitAt ? tab(WORD_OUT, exitAt, rf) : tab(WORD_IN, start, rf);
       if (s <= 0.01) return null;
       const box = L.tag.words[wi];
-      const nat = natWidth(word, th.sansFamily, L.tag.fs, th.sansWeight);
+      const nat = widths[wi];
       const sx = th.naturalWidths || nat <= 0 ? 1 : box.w / nat;
       return (
         <div
           key={wi}
           style={{
             position: "absolute",
-            left: box.x + box.dx,
+            left: th.naturalWidths ? flowXs[wi] : box.x + box.dx,
             top: L.tag.capTop + L.tag.fix.dy - th.sansCapOffset * L.tag.fs,
-            width: box.w,
+            width: th.naturalWidths ? nat : box.w,
             height: L.tag.fs,
             transform: `scale(${s.toFixed(4)})`,
             transformOrigin: "center center",
@@ -585,7 +598,8 @@ const Tagline: React.FC<{ rf: number; exitAt: number; th: SceneTheme }> = ({ rf,
       );
     })}
   </>
-);
+  );
+};
 
 export const NetGrowthScene: React.FC<{ frame: number; theme: SceneTheme }> = ({
   frame,
