@@ -382,12 +382,17 @@ const FLOW_FIELD2: FlowPill[] = [
 
 export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.hexRow[0] || f >= SEG.flows[1] + 14) return null;
+  if (f < SEG.hexRow[0] || f >= 468) return null;
   const inOp = lerp(f, [322, 336], [0, 1]);
   const boxOp = lerp(f, [330, 344], [0, 1]);
-  // globe scene push: everything slides left off as globe arrives (f452-470)
-  const shift = lerp(f, [452, 470], [0, -1920]);
-  const out = lerp(f, [452, 468], [1, 0]);
+  // r6 measured exit (CLSNet-box left edge track): the whole layout slides
+  // LEFT with acceleration, NO fade — content off by f466-467. Band stays.
+  const shift = interpolate(
+    f,
+    [450, 452, 454, 456, 458, 460, 461, 462, 463, 464, 465, 466, 467],
+    [0, -17, -51, -111, -206, -358, -466, -608, -803, -1068, -1418, -1888, -2400],
+    clamp
+  );
 
   // ruler + pills phase (f366+)
   const rulerP = lerp(f, [366, 384], [0, 1]);
@@ -397,31 +402,32 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const pairBOp = lerp(f, [420, 428], [0, 1]);
 
   return (
-    <AbsoluteFill style={{ opacity: out }}>
-      <div style={{ position: "absolute", inset: 0, transform: `translateX(${shift * 0.3}px)` }}>
-        {/* ruler */}
-        {rulerP > 0 && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: FLOWS.rulerY,
-              width: 1920 * rulerP,
-              height: FLOWS.rulerH,
-              backgroundColor: C.band,
-            }}
-          />
-        )}
+    <AbsoluteFill>
+      {/* ruler band: STATIC — content slides off over it (r6 probed: band
+          y805-843 stays put through the push; ticks ride the slide) */}
+      {rulerP > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: FLOWS.rulerY,
+            width: 1920 * rulerP,
+            height: FLOWS.rulerH,
+            backgroundColor: C.band,
+          }}
+        />
+      )}
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${shift}px)` }}>
         {rulerP >= 1 &&
           Array.from({ length: 14 }, (_, i) => (
             <div
               key={i}
               style={{
                 position: "absolute",
-                left: 70 + i * FLOWS.tickEvery,
+                left: FLOWS.tickX0 + i * FLOWS.tickEvery,
                 top: FLOWS.rulerY + 2,
                 width: 2.5,
-                height: 16,
+                height: 20,
                 backgroundColor: C.navy,
               }}
             />
@@ -481,30 +487,52 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { sans: SANS } = useBrand();
   const f = frame;
   if (f < SEG.globe[0] - 10 || f >= SEG.globe[1] + 10) return null;
-  const slideIn = lerp(f, [455, 478], [900, 0]);
+  // r6 measured entry (blue-disc bbox track): center 1762@468 → 958.5@482,
+  // decelerating; fully off-screen before f464
+  const slideIn = interpolate(
+    f,
+    [464, 466, 468, 470, 472, 474, 476, 478, 480, 482],
+    [1750, 1250, 802, 465, 272, 152, 76, 33, 6, 0],
+    clamp
+  );
   const out = lerp(f, [556, 566], [1, 0]);
   // globe rotation: crossfade globeA→globeB over the scene
   const spin = lerp(f, [478, 545], [0, 1]);
   const ringSpin = lerp(f, [478, 566], [0, -38]);
   const lockState = f < 500 ? "lockOpen" : f < 528 ? "lockList" : "lockClosed";
   const lockOp = lerp(f, [470, 480], [0, 1]);
-  // grey band sweeping into ring from left (f462-480)
-  const bandP = lerp(f, [458, 476], [0, 1]);
+  // r6 probed band choreography: drops y805→846 (468-480); right end retreats
+  // with the globe to x~1028; holds to ~f506; reels IN rightward ~77px/f from
+  // f508 until absorbed (~f521). Ticks ride both the landing decel + reel-in.
+  const bandTop = interpolate(f, [468, 470, 472, 474, 476, 478, 480], [805, 809, 823, 835, 841, 844, 846], clamp);
+  const tickDx = interpolate(f, [468, 470, 472, 474], [41, 16, 1, 0], clamp);
+  const bandRight = interpolate(f, [468, 470, 472, 474, 476, 480, 486], [1831, 1493, 1299, 1179, 1103, 1032, 1028], clamp);
+  const bandLeft = interpolate(f, [507.8, 521.5], [0, 1060], clamp);
   return (
     <AbsoluteFill style={{ opacity: out }}>
+      {f >= 468 && bandRight - bandLeft > 0 && (
+        <>
+          <div style={{ position: "absolute", left: bandLeft, top: bandTop, width: bandRight - bandLeft, height: 40, backgroundColor: C.band }} />
+          {Array.from({ length: 14 }, (_, i) => {
+            const x = FLOWS.tickX0 + i * FLOWS.tickEvery + tickDx + bandLeft;
+            if (x < bandLeft - 3 || x > 820) return null;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: x,
+                  top: bandTop + 2,
+                  width: 2.5,
+                  height: 20,
+                  backgroundColor: C.navy,
+                }}
+              />
+            );
+          })}
+        </>
+      )}
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${slideIn}px)` }}>
-        {bandP > 0 && bandP < 1 && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 844,
-              width: (GLOBE.cx - 40) * bandP,
-              height: 28,
-              backgroundColor: C.band,
-            }}
-          />
-        )}
         {/* ring: grey donut with ticks + time labels */}
         <svg
           width={2 * GLOBE.ringR + 40}
@@ -588,9 +616,9 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
           <TracedArt name="globeA" x={0} y={-170 + 0} scale={1} opacity={1 - spin} style={{ left: -22 - spin * 160 }} />
           <TracedArt name="globeB" x={0} y={-170} scale={1} opacity={spin} style={{ left: -22 + (1 - spin) * 160 }} />
         </div>
-        {/* orange triangle marker */}
-        <svg width={44} height={36} viewBox="0 0 44 36" style={{ position: "absolute", left: GLOBE.triangle.x - 22, top: GLOBE.triangle.y }}>
-          <path d="M4,4 H40 L22,32 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
+        {/* orange triangle marker (r6 probed f486: 60x52 at x931-991 y81-133) */}
+        <svg width={60} height={52} viewBox="0 0 60 52" style={{ position: "absolute", left: GLOBE.triangle.x - 30, top: GLOBE.triangle.y }}>
+          <path d="M4,4 H56 L30,48 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
         </svg>
         {/* lock */}
         <TracedArt name={lockState} x={GLOBE.lock.x} y={GLOBE.lock.y} opacity={lockOp} />

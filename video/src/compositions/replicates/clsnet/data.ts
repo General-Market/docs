@@ -162,9 +162,11 @@ export const HEXROW = {
 
 // ─── Flows scene (t=15-18.5) ───
 export const FLOWS = {
-  rulerY: 819,
-  rulerH: 22,
-  tickEvery: 137,
+  // r6 probed: band y805-843 h~39 (was 819/22); ticks pitch 142.4 phase 56.5
+  rulerY: 806,
+  rulerH: 38,
+  tickEvery: 142.4,
+  tickX0: 56.5,
   stacks: [232, 420, 601, 1288], // stack center xs
   pillW: 62,
   pillH: 26,
@@ -176,11 +178,11 @@ export const FLOWS = {
 // ─── Globe scene ───
 export const GLOBE = {
   cx: 960,
-  cy: 550,
+  cy: 539, // r6 probed: settled disc bbox y254-825 → cy 539.5 (was 550)
   r: 293,
   ringR: 335,
   lock: { x: 1430, y: 280, w: 260, h: 380 },
-  triangle: { x: 960, y: 148 },
+  triangle: { x: 961, y: 81 }, // r6 probed f486: x931-991 y81-133 (rides the slide)
 } as const;
 
 // ─── Map scenes ───
