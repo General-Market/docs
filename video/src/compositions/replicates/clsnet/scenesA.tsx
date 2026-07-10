@@ -1,9 +1,9 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, interpolate } from "remotion";
 import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
-import { ClsNetBox, HexIcon, Pill, SansText, SerifLabel, lerp } from "./ui";
+import { ClsNetBox, HexIcon, Pill, SansText, SerifLabel, clamp, lerp } from "./ui";
 
 // ═══ Scene 1: Title (f0-150) ═══
 // CLSNet reveals right-to-left; CLS logo + tagline fade; supporting text;
@@ -262,19 +262,40 @@ export const TitleOutro: React.FC<{ frame: number; children: React.ReactNode }> 
 };
 
 // ═══ Scene 2: Rows build (f148-320) ═══
+// r5 ground truth (dense-core column tracking, work/clsnet/r5/rows2): the four
+// clusters rest in a STAIRCASE at ink-left 222/534/858/1354 (r1's 60/120/210
+// were misplaced by 160-640px) and each settles ~200/224/241/266 — the scene
+// then HOLDS static to the hexify morph. Entries slide in from the right with
+// a fast decel (x keys measured per ~6f) while the art unveils (clip grow).
+// Art-origin→ink offsets calibrated on the r4 render: +0/+3/+9/+260 (sail's
+// left 260px bakes the helicopter+plane props, which ref flies separately but
+// which land at our baked spots by f308 — documented static-prop spend).
 const ROW_LINES = [220, 462, 765, 1035];
+// static ground ticks measured at f280 (x, w, h), sitting on their line;
+// they fade in with the row's cluster settle
+const ROW_TICKS: [number, number, number][][] = [
+  [[751, 2, 7], [788, 2, 7], [802, 2, 7], [907, 2, 7], [941, 2, 7], [957, 2, 7], [1381, 2, 7], [1476, 3, 7], [1484, 2, 7], [1622, 2, 7], [1778, 2, 7], [1812, 2, 7]],
+  [[1015, 4, 14], [1054, 3, 13], [1105, 3, 13], [1115, 4, 14], [1126, 4, 14], [1149, 6, 14], [1170, 3, 13], [1216, 3, 13], [1357, 3, 14], [1371, 8, 14], [1393, 3, 13], [1414, 3, 13], [1427, 2, 13], [1461, 2, 13], [1522, 4, 14], [1561, 3, 14], [1601, 3, 13], [1611, 4, 13], [1620, 6, 14], [1659, 3, 14], [1671, 3, 13], [1750, 4, 14], [1766, 4, 14], [1805, 3, 13], [1856, 3, 13], [1866, 4, 14], [1903, 3, 14]],
+  [[1475, 2, 9], [1490, 2, 9], [1642, 6, 10], [1691, 3, 9], [1744, 3, 10], [1791, 2, 9], [1843, 2, 9]],
+  [[32, 2, 7], [58, 3, 7], [67, 2, 6], [104, 2, 6], [204, 2, 6], [242, 2, 6], [256, 2, 6], [385, 3, 7], [412, 3, 7], [420, 2, 6], [458, 2, 6], [487, 2, 7], [558, 2, 6], [595, 2, 6], [609, 3, 6], [1277, 3, 7], [1855, 3, 6]],
+];
+const ROW_SETTLE = [202, 226, 244, 268];
+// xKeys place the TRACE-CROP origin (bank crop x280, office x575, towers
+// x850, sail x1100 — regular_0025); entry deltas from the measured leading
+// edge. rowBankL/rowOfficeL are the left blocks the r1 crops cut off — they
+// LEAD each slide at a fixed dx.
 const ROW_ART: {
   art: string;
   y: number;
-  settleX: number;
-  spawnX: number;
-  pop: number; // frame the cluster pops
-  settle: number; // frame slide completes
+  fKeys: number[];
+  xKeys: number[];
+  growEnd: number;
+  left?: { art: string; dx: number; y: number };
 }[] = [
-  { art: "rowBank", y: 77, settleX: 60, spawnX: 780, pop: 172, settle: 250 },
-  { art: "rowOffice", y: 253, settleX: 120, spawnX: 560, pop: 196, settle: 268 },
-  { art: "rowTowers", y: 500, settleX: 210, spawnX: 850, pop: 214, settle: 286 },
-  { art: "rowSail", y: 800, settleX: 1100, spawnX: 1420, pop: 245, settle: 300 },
+  { art: "rowBank", y: 77, fKeys: [178, 184, 190, 196, 202], xKeys: [1888, 634, 432, 338, 280], growEnd: 198, left: { art: "rowBankL", dx: -62, y: 146 } },
+  { art: "rowOffice", y: 253, fKeys: [194, 202, 208, 214, 220, 226], xKeys: [1142, 788, 662, 616, 586, 575], growEnd: 218, left: { art: "rowOfficeL", dx: -47, y: 379 } },
+  { art: "rowTowers", y: 500, fKeys: [214, 220, 226, 232, 238, 244], xKeys: [1777, 1339, 1045, 897, 861, 850], growEnd: 236 },
+  { art: "rowSail", y: 800, fKeys: [244, 250, 256, 262, 268], xKeys: [1412, 1246, 1118, 1100, 1100], growEnd: 262 },
 ];
 
 export const RowsBuild: React.FC<{ frame: number }> = ({ frame }) => {
@@ -298,21 +319,34 @@ export const RowsBuild: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         />
       ))}
-      {ROW_ART.map((r, i) => {
-        if (f < r.pop) return null;
-        const x = lerp(f, [r.pop, r.settle], [r.spawnX, r.settleX]);
-        const grow = lerp(f, [r.pop, r.pop + 10], [0, 1]);
+      {ROW_TICKS.map((ticks, li) => {
+        const op = lerp(f, [ROW_SETTLE[li] - 6, ROW_SETTLE[li]], [0, 1]);
+        if (op <= 0) return null;
         return (
-          <TracedArt
-            key={i}
-            name={r.art}
-            x={x}
-            y={r.y}
-            opacity={1}
-            style={{
-              clipPath: `inset(0 ${(1 - grow) * 60}% 0 ${(1 - grow) * 30}%)`,
-            }}
-          />
+          <React.Fragment key={`t${li}`}>
+            {ticks.map(([tx, tw, th], k) => (
+              <div key={k} style={{ position: "absolute", left: tx, top: ROW_LINES[li] - th, width: tw, height: th, backgroundColor: C.navy, opacity: op }} />
+            ))}
+          </React.Fragment>
+        );
+      })}
+      {ROW_ART.map((r, i) => {
+        if (f < r.fKeys[0]) return null;
+        const x = interpolate(f, r.fKeys, r.xKeys, clamp);
+        const grow = lerp(f, [r.fKeys[0], r.growEnd], [0, 1]);
+        return (
+          <React.Fragment key={i}>
+            <TracedArt
+              name={r.art}
+              x={x}
+              y={r.y}
+              opacity={1}
+              style={{
+                clipPath: `inset(0 ${(1 - grow) * 60}% 0 ${(1 - grow) * 30}%)`,
+              }}
+            />
+            {r.left && <TracedArt name={r.left.art} x={x + r.left.dx} y={r.left.y} opacity={1} />}
+          </React.Fragment>
         );
       })}
     </AbsoluteFill>
