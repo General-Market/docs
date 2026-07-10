@@ -27,8 +27,9 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const rideT = lerp(f, [2129, 2143], [0, 1]);
   const pageY = 1080 * (1 - Math.pow(rideT, 1.4));
   const bracketP = lerp(f, [2131, 2142], [0, 1]);
-  // detail phase in, then reversed (ref restores the full gantt by 2291)
-  const detailP = lerp(f, [2240, 2266], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
+  // detail phase in (card already full at fr_2220 — earlier than r1's read),
+  // then reversed (ref restores the full gantt by 2291)
+  const detailP = lerp(f, [2205, 2231], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
   // shrink-into-doc: full screen → mini panel inside the left doc (quadOut)
   const st = lerp(f, [2303, 2324], [0, 1]);
   const sp = 1 - (1 - st) * (1 - st);
@@ -101,7 +102,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* detail card (text fades first on the way out) */}
       {detailP > 0 && (
         <DetailCard
-          opacity={lerp(f, [2248, 2268], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
+          opacity={lerp(f, [2213, 2233], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
           textOpacity={lerp(f, [2279, 2286], [1, 0])}
         />
       )}
@@ -324,9 +325,11 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
 export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
-  if (f < SEG.payment[0] || f >= SEG.strip2[0] + 14) return null;
+  if (f < SEG.payment[0] || f >= 2652) return null;
   const inOp = lerp(f, [2482, 2496], [0, 1]);
-  const out = lerp(f, [2600, 2614], [1, 0]);
+  // ref holds the payment layout well past 2612 (fr_2630 still shows the
+  // below-line plumbing), everything cleared by 2650 (fr_2650 = bare line)
+  const out = lerp(f, [2636, 2650], [1, 0]);
   const arrOp = lerp(f, [2505, 2518], [0, 1]);
   const belowOp = lerp(f, [2520, 2538], [0, 1]);
   const orangeP = lerp(f, [2556, 2580], [0, 1]);
@@ -382,19 +385,27 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
 // orange-border CLSNet box FIXED at screen center; clusters anchored at f2775.
 export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.strip2[0] || f >= SEG.reportCard[0] + 14) return null;
-  const inOp = lerp(f, [2612, 2626], [0, 1]);
+  if (f < 2640 || f >= SEG.reportCard[0] + 14) return null;
   // ref cuts to the navy report card at ~2823 (white-fraction scan)
   const out = lerp(f, [2820, 2826], [1, 0]);
+  // entry (fr_2650 → fr_2680): the payment line descends to y455, then grows
+  // into the band while clusters + box fade in
+  const lineY = lerp(f, [2640, 2654], [368, 455]);
+  const growP = lerp(f, [2656, 2678], [0, 1]);
+  const bandTop = lineY + (STRIP2.bandY - 455) * growP;
+  const bandBottom = lineY + 3 + (STRIP2.bandY + STRIP2.bandH - 458) * growP;
+  const contentOp = lerp(f, [2660, 2680], [0, 1]);
   const { bandY, bandH } = STRIP2;
   const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * STRIP2.rate;
   const artDims: Record<string, [number, number]> = {
+    rowBank: [460, 145],
     rowOffice: [420, 210],
     stripTowerUp: [370, 255],
     rowSail: [760, 235],
   };
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
+    <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
+      <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
       {STRIP2.ups.map((u, i) => {
         const x = sx(u.cx);
         if (x < -900 || x > 2400) return null;
@@ -416,7 +427,9 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
           />
         );
       })}
-      <div style={{ position: "absolute", left: 0, top: bandY, width: 1920, height: bandH, backgroundColor: C.navy }} />
+      </div>
+      <div style={{ position: "absolute", left: 0, top: bandTop, width: 1920, height: Math.max(3, bandBottom - bandTop), backgroundColor: C.navy }} />
+      <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
       {/* pills riding the strip inside the band */}
       {STRIP2.pills.map((p, i) => {
         const x = sx(p.x);
@@ -424,7 +437,8 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
         return <Pill key={i} x={x} y={p.y} w={p.w} h={p.h} color={p.c} />;
       })}
       {/* CLSNet box fixed at center, orange border, no label */}
-      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2626, 2650], [0, 1])} />
+      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2668, 2690], [0, 1])} />
+      </div>
     </AbsoluteFill>
   );
 };

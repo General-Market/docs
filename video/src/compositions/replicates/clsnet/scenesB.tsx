@@ -14,9 +14,13 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const aOp = lerp(f, [915, 925], [0, 1]);
   const bOp = lerp(f, [950, 960], [0, 1]);
   const badgeOp = lerp(f, [1000, 1012], [0, 1]);
-  // cities shrink to small state f1040-1075
+  // cities shrink to small state f1040-1075; the ground lines RISE with them
+  // (fr_1150: line1 380, line2 938, badge B at 770, cityA center ~525)
   const s = lerp(f, [1040, 1075], [1, CITIES.smallScale]);
-  const aX = lerp(f, [1040, 1075], [CITIES.cityA.x, CITIES.aSmallCx - (CITIES.cityA.w * CITIES.smallScale) / 2]);
+  const line1 = lerp(f, [1040, 1075], [CITIES.line1, 380]);
+  const line2 = lerp(f, [1040, 1075], [CITIES.line2, 938]);
+  const badgeBcy = lerp(f, [1040, 1075], [CITIES.badgeB.cy, 770]);
+  const aX = lerp(f, [1040, 1075], [CITIES.cityA.x, 525 - (CITIES.cityA.w * CITIES.smallScale) / 2]);
   const bX = lerp(f, [1040, 1075], [CITIES.cityB.x, CITIES.bSmallCx - (CITIES.cityB.w * CITIES.smallScale) / 2]);
   // hexify: everything fades as hex scene takes over (f1302-1330)
   const out = lerp(f, [1302, 1326], [1, 0]);
@@ -38,54 +42,72 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
       {/* horizon lines */}
-      <div style={{ position: "absolute", left: 0, top: CITIES.line1, width: 1920, height: 3, backgroundColor: C.navy, opacity: aOp }} />
-      <div style={{ position: "absolute", left: 0, top: CITIES.line2, width: 1920, height: 3, backgroundColor: C.navy, opacity: bOp }} />
+      <div style={{ position: "absolute", left: 0, top: line1, width: 1920, height: 3, backgroundColor: C.navy, opacity: aOp }} />
+      <div style={{ position: "absolute", left: 0, top: line2, width: 1920, height: 3, backgroundColor: C.navy, opacity: bOp }} />
       {/* cities (anchor to their ground lines while scaling) */}
-      <div style={{ position: "absolute", left: aX, top: CITIES.line1 - CITIES.cityA.h * s + 2, opacity: aOp }}>
+      <div style={{ position: "absolute", left: aX, top: line1 - CITIES.cityA.h * s + 2, opacity: aOp }}>
         <TracedArt name="cityA" scale={s} />
       </div>
-      <div style={{ position: "absolute", left: bX, top: CITIES.line2 - CITIES.cityB.h * s + 2, opacity: bOp }}>
+      <div style={{ position: "absolute", left: bX, top: line2 - CITIES.cityB.h * s + 2, opacity: bOp }}>
         <TracedArt name="cityB" scale={s} />
       </div>
       <Badge letter="A" cx={CITIES.badgeA.cx} cy={CITIES.badgeA.cy} opacity={badgeOp} />
-      <Badge letter="B" cx={CITIES.badgeB.cx} cy={CITIES.badgeB.cy} opacity={badgeOp} />
-      {/* pair labels: top-right above line1, mirrored below; inverse pair at line2 left */}
-      <SerifLabel text={pair.top} x={1650} capTop={CITIES.line1 - 105} fs={CITIES.pairFs} color={C.serifNavy} opacity={pairOp} />
-      <SerifLabel text={pair.bottom} x={1650} capTop={CITIES.line1 + 22} fs={CITIES.pairFs} color={C.orangeDeep} opacity={pairOp} />
-      <SerifLabel text={pair.bottom} x={60} capTop={CITIES.line2 - 105} fs={CITIES.pairFs} color={C.serifNavy} opacity={pairOp} />
-      <SerifLabel text={pair.top} x={60} capTop={CITIES.line2 + 22} fs={CITIES.pairFs} color={C.orangeDeep} opacity={pairOp} />
-      {/* pill stacks: right of line1, left of line2, mirrored above/below */}
+      <Badge letter="B" cx={CITIES.badgeB.cx} cy={badgeBcy} opacity={badgeOp} />
+      {/* pair labels hug the lines (fr_1150: cap −66 above, +5 below) */}
+      <SerifLabel text={pair.top} x={1650} capTop={line1 - 66} fs={CITIES.pairFs} color={C.serifNavy} opacity={pairOp} />
+      <SerifLabel text={pair.bottom} x={1650} capTop={line1 + 5} fs={CITIES.pairFs} color={C.orangeDeep} opacity={pairOp} />
+      <SerifLabel text={pair.bottom} x={110} capTop={line2 - 66} fs={CITIES.pairFs} color={C.serifNavy} opacity={pairOp} />
+      <SerifLabel text={pair.top} x={110} capTop={line2 + 5} fs={CITIES.pairFs} color={C.orangeDeep} opacity={pairOp} />
+      {/* pill stacks at measured column centers (fr_1150) */}
       {stacksOp > 0 && (
         <>
-          <PairStacks xs={[1210, 1310, 1420]} lineY={CITIES.line1} f={f} base={1085} opacity={stacksOp} />
-          <PairStacks xs={[185, 290, 395]} lineY={CITIES.line2} f={f} base={1095} opacity={stacksOp} />
+          <PairStacks cols={PAIR_COLS_R} lineY={line1} f={f} base={1085} opacity={stacksOp} />
+          <PairStacks cols={PAIR_COLS_L} lineY={line2} f={f} base={1095} opacity={stacksOp} />
         </>
       )}
     </AbsoluteFill>
   );
 };
 
-const UP_COLS = [C.steel, C.steelDark, C.pillNavy, C.steel, C.steelDark];
-const DN_COLS = [C.orangeDeep, C.tan, C.tan, C.tan, C.tan];
+const TAN_LIGHT = "#F0DCC9";
+type PairCol = { x: number; up: string[]; dn: string[] };
+// bottom-up per column; first entry renders taller (the accent pill on the line)
+const PAIR_COLS_R: PairCol[] = [
+  { x: 1222, up: [C.steel, C.steel, C.steel, C.steel], dn: [C.orangeDeep, C.tan, TAN_LIGHT] },
+  { x: 1332, up: [C.pillNavy, C.steelDark, C.steel, C.steel, C.steel], dn: [C.tan, C.tan, TAN_LIGHT] },
+  { x: 1442, up: [C.steelDark, C.steel, C.steel], dn: [C.tan, TAN_LIGHT] },
+];
+const PAIR_COLS_L: PairCol[] = [
+  { x: 392, up: [C.steel, C.steel, C.steel], dn: [C.tan, TAN_LIGHT] },
+  { x: 507, up: [C.pillNavy, C.steelDark, C.steel], dn: [C.orangeDeep, C.tan, TAN_LIGHT] },
+  { x: 617, up: [C.pillNavy, C.steel, C.steelDark, C.steel], dn: [C.orangeDeep, C.tan, TAN_LIGHT] },
+];
 
 const PairStacks: React.FC<{
-  xs: number[];
+  cols: PairCol[];
   lineY: number;
   f: number;
   base: number;
   opacity: number;
-}> = ({ xs, lineY, f, base, opacity }) => (
+}> = ({ cols, lineY, f, base, opacity }) => (
   <>
-    {xs.map((cx, si) => {
-      const n = Math.max(0, Math.min(5, Math.floor((f - base - si * 5) / 6)));
+    {cols.map((col, si) => {
+      const n = Math.max(0, Math.floor((f - base - si * 5) / 6));
+      let yu = lineY - 6;
+      let yd = lineY + 8;
       return (
         <React.Fragment key={si}>
-          {UP_COLS.slice(0, n).map((col, i) => (
-            <Pill key={`u${i}`} x={cx - 31} y={lineY - 12 - (i + 1) * 34} color={col} opacity={opacity} />
-          ))}
-          {DN_COLS.slice(0, n).map((col, i) => (
-            <Pill key={`d${i}`} x={cx - 31} y={lineY + 14 + i * 34} color={col} opacity={opacity} />
-          ))}
+          {col.up.slice(0, n).map((c2, i) => {
+            const h = i === 0 ? 42 : 28;
+            yu -= h + 8;
+            return <Pill key={`u${i}`} x={col.x - 28} y={yu + 8} w={56} h={h} color={c2} opacity={opacity} />;
+          })}
+          {col.dn.slice(0, n).map((c2, i) => {
+            const h = i === 0 ? 42 : 28;
+            const el = <Pill key={`d${i}`} x={col.x - 28} y={yd} w={56} h={h} color={c2} opacity={opacity} />;
+            yd += h + 8;
+            return el;
+          })}
         </React.Fragment>
       );
     })}

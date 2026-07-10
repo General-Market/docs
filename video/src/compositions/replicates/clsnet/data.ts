@@ -283,9 +283,10 @@ export const STRIP2 = {
   anchorF: 2762, // regular_NNNN sits at (N-1)*0.5s — anchor corrected 13f earlier
   box: { x: 858, y: 437, w: 200 },
   ups: [
-    { art: "rowOffice", cx: -328 },
+    { art: "rowBank", cx: -1228, scale: 0.95 },
+    { art: "rowSail", cx: -373, scale: 0.85 }, // fr_2630: sail city at screen ~915
     { art: "stripTowerUp", cx: 955, scale: 1.15 },
-    { art: "rowSail", cx: 2238 },
+    { art: "rowSail", cx: 2238, scale: 0.75 },
     { art: "rowOffice", cx: 3521 },
   ],
   dns: [
