@@ -332,16 +332,20 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const out = lerp(f, [2636, 2650], [1, 0]);
   const arrOp = lerp(f, [2505, 2518], [0, 1]);
   const belowOp = lerp(f, [2520, 2538], [0, 1]);
-  const orangeP = lerp(f, [2556, 2580], [0, 1]);
+  // r5: ref shows the orange return plumbing SOLID by 2560 (was fading in
+  // 2556-2580); the orange up-arrows into the cities are gone by ~2610
+  const orangeP = lerp(f, [2532, 2546], [0, 1]);
+  const upArrowOp = orangeP * lerp(f, [2596, 2612], [1, 0]);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
       <div style={{ position: "absolute", left: 0, top: 368, width: 1920, height: 3, backgroundColor: C.navy }} />
       <div style={{ position: "absolute", left: 215, top: 368 - 295 * 0.47, opacity: 1 }}>
         <TracedArt name="cityA" scale={0.47} />
       </div>
-      <div style={{ position: "absolute", left: 1040, top: 368 - 545 * 0.53 }}>
-        <TracedArt name="cityB" scale={0.53} />
-      </div>
+      {/* r5: the ref payment cityB is a WIDER arrangement than the intro art
+          (w873×h277 vs uniform-scale 630) — traced at native scale from
+          ref_2610 (badge painted out) */}
+      <TracedArt name="cityBPay" x={1000} y={80} />
       <Badge letter="A" cx={188} cy={265} r={40} />
       <Badge letter="B" cx={1728} cy={265} r={40} />
       {/* Payment complete double arrow */}
@@ -370,11 +374,17 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* orange return paths */}
       {orangeP > 0 && (
         <div style={{ position: "absolute", inset: 0, opacity: orangeP }}>
-          <Elbow points={[[875, 955], [400, 955], [400, 490]]} />
-          <Elbow points={[[1045, 955], [1528, 955], [1528, 490]]} />
+          <Elbow points={[[875, 930], [396, 930], [396, 490]]} />
+          <Elbow points={[[1045, 930], [1528, 930], [1528, 490]]} />
           <Doc x={360} y={392} w={70} h={95} />
           <Doc x={1495} y={392} w={70} h={95} />
         </div>
+      )}
+      {/* orange up-arrows delivering payment into the cities (fade ~2596) */}
+      {upArrowOp > 0 && (
+        <svg width={1920} height={1080} style={{ position: "absolute", opacity: upArrowOp }}>
+          <path d="M396,366 V205 M396,205 l-9,16 M396,205 l9,16 M1415,366 V205 M1415,205 l-9,16 M1415,205 l9,16" stroke={C.orange} strokeWidth={3.5} fill="none" />
+        </svg>
       )}
     </AbsoluteFill>
   );
