@@ -303,103 +303,187 @@ export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ─── S13: PvP handshake (f2362..2737) ───
+// Measured f2450/f2550/f2700: two FIXED asymmetric city capsules (left top
+// y222/bottom y690, vertex 497,455; right top y390/bottom y855, vertex
+// 1428,622), an S-rail from the pill (top: left-arrow at x415 y290; bottom:
+// right-arrow at x1465 y770), chips spawn at the pill arcs and travel
+// OUTWARD at ~7.2px/f (red/cream leftward on top, slate rightward below).
 export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2362 || frame >= 2750) return null;
   const outP = interpolate(frame, [2737, 2750], [0, 1], clamp);
   const cityP = interpolate(frame, [2380, 2405], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [2370, 2390], [0, 1], clamp);
   const pathP = interpolate(frame, [2410, 2440], [0, 1], { ...clamp, easing: EASE });
-  // chip runs (measured f2440..2740 samples): chips CRAWL left→right along
-  // the top rail (~0.9px/f, not the r1 18px/f sprint), a cream/red pair plus
-  // a later single; one chip descends the center line into the pill.
-  const crawlers = [
-    { f0: 2505, x0: 719, v: 0.92, color: C.chipCream },
-    { f0: 2508, x0: 689, v: 0.92, color: C.chipRed },
-    { f0: 2585, x0: 488, v: 0.78, color: C.chipCream },
+  // chip waves (anchors: red@480 f2550 arrived; slate@1412 f2550;
+  // cream@897 f2700; slate@1007 f2700)
+  const waves = [
+    { f0: 2482, dir: -1 as const, color: C.chipRed, end: 480 },
+    { f0: 2486, dir: 1 as const, color: C.chipGrey, end: 1420 },
+    { f0: 2693, dir: -1 as const, color: C.chipCream, end: 480 },
+    { f0: 2692, dir: 1 as const, color: C.chipGrey, end: 1420 },
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* band touches the top edge in this scene (y0 h57), static, no marker */}
       <TimelineBand y={0} h={57} originX={101} originHour={4} pxPerHour={285.7} tickAbove={0} tickBelow={22} labelSize={30} />
-      {/* big city clusters clipped at frame edges */}
       <div style={{ opacity: cityP }}>
-        <BigCity side="left" />
-        <BigCity side="right" />
+        <PvpLeftCity />
+        <PvpRightCity />
       </div>
-      {/* rails */}
+      {/* S-rail: pill top → arc → leftward arrow; pill bottom → arc → rightward arrow */}
       <svg width={1920} height={1080} style={{ position: "absolute", opacity: pathP }}>
-        <path d="M 1650 279 L 330 279" fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-        <path d="M 348 279 l 22 -12 v 24 z" fill={C.navyDeep} transform="rotate(180 359 279)" />
-        <path d="M 270 781 L 1590 781" fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-        <path d="M 1570 781 l 22 -12 v 24 z" fill={C.navyDeep} />
-        {/* vertical line through pill */}
-        <line x1={949} y1={279} x2={949} y2={781} stroke={C.navyDeep} strokeWidth={3} />
+        <path d="M 950 425 L 950 345 Q 950 290 895 290 L 445 290" fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+        <path d="M 447 290 l 30 -15 v 30 z" fill={C.navyDeep} transform="rotate(180 462 290)" />
+        <path d="M 950 635 L 950 715 Q 950 770 1005 770 L 1435 770" fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+        <path d="M 1433 770 l 30 -15 v 30 z" fill={C.navyDeep} />
       </svg>
       <HandshakePill x={759} y={435} w={380} h={213} opacity={pillP} />
-      {crawlers.map((r, i) => {
-        if (frame < r.f0) return null;
-        const p = interpolate(frame, [r.f0, r.f0 + 10], [0, 1], clamp);
-        const x = Math.min(r.x0 + r.v * (frame - r.f0), 900);
-        return <Chip key={i} x={x - 48} y={279 - 19} w={96} h={38} color={r.color} opacity={p} />;
+      {waves.map((w, i) => {
+        if (frame < w.f0) return null;
+        const raw = 950 + w.dir * 7.2 * (frame - w.f0);
+        const x = w.dir < 0 ? Math.max(raw, w.end) : Math.min(raw, w.end);
+        const arrived = w.dir < 0 ? raw <= w.end : raw >= w.end;
+        const hold = arrived ? interpolate(frame, [w.f0 + 68, w.f0 + 88], [1, 0], clamp) : 1;
+        const y = w.dir < 0 ? 290 : 770;
+        return <Chip key={i} x={x - 60} y={y - 27} w={120} h={55} color={w.color} opacity={hold * interpolate(frame, [w.f0, w.f0 + 8], [0, 1], clamp)} />;
       })}
-      {/* one chip descends the center line into the pill */}
-      {frame >= 2505 && (
-        <Chip
-          x={946 - 48}
-          y={Math.min(342 + 0.6 * (frame - 2520), 500) - 19}
-          w={96}
-          h={38}
-          color={C.chipCream}
-          opacity={interpolate(frame, [2505, 2515], [0, 1], clamp)}
-        />
-      )}
     </div>
   );
 };
 
-const BigCity: React.FC<{ side: "left" | "right" }> = ({ side }) => {
-  const flip = side === "right";
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: flip ? 1440 : -140,
-        top: 223,
-        transform: flip ? "scaleX(-1)" : undefined,
-      }}
-    >
-      <svg width={620} height={614} viewBox="0 0 620 614">
-        {/* half-hexagon frame: flat top/bottom, right vertex mid-height */}
-        <path d="M 0 2 L 420 2 L 618 307 L 420 612 L 0 612" fill="none" stroke={C.navyDeep} strokeWidth={3.5} strokeLinejoin="round" />
-        {/* buildings — the ref's right cluster carries a cream-filled tower */}
-        <rect x="80" y="120" width="120" height="360" fill={flip ? C.chipCream : "#FDFDFD"} stroke={C.red} strokeWidth="3.5" />
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((r) =>
-          [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={96 + c * 32} y={140 + r * 42} width="18" height="22" fill={C.red} />),
-        )}
-        <rect x="210" y="200" width="100" height="280" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3.5" />
-        {[0, 1, 2, 3, 4].map((r) =>
-          [0, 1].map((c) => (
-            <rect key={`${r}${c}`} x={224 + c * 40} y={220 + r * 50} width={28} height={16} fill="none" stroke={C.navyDeep} strokeWidth="2.5" />
-          )),
-        )}
-        <rect x="320" y="260" width="90" height="220" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3.5" />
-        {[0, 1, 2, 3].map((r) => (
-          <line key={r} x1="330" y1={282 + r * 46} x2="400" y2={282 + r * 46} stroke={C.navyDeep} strokeWidth="3" />
-        ))}
-        <rect x="20" y="280" width="60" height="200" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="3" />
-        {[0, 1, 2, 3].map((r) => (
-          <line key={r} x1={28} y1={300 + r * 40} x2={72} y2={300 + r * 40} stroke={C.navyDeep} strokeWidth="2.5" />
-        ))}
-        {/* cream block tucked into the vertex side */}
-        <rect x="415" y="330" width="66" height="150" fill={C.chipCream} />
-        <line x1="0" y1="480" x2="510" y2="480" stroke={C.navyDeep} strokeWidth="3.5" />
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <line key={i} x1={20 + i * 55} y1="480" x2={20 + i * 55} y2="492" stroke={C.navyDeep} strokeWidth="2.5" />
-        ))}
-      </svg>
-    </div>
-  );
-};
+// left PvP city capsule (traced from ref f2550 crop, absolute coords)
+const PvpLeftCity: React.FC = () => (
+  <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute" }}>
+    {/* capsule frame */}
+    <path
+      d="M -80 222 L 330 222 Q 365 222 385 255 L 477 415 Q 497 455 477 495 L 405 655 Q 385 690 350 690 L -80 690"
+      fill="none"
+      stroke={C.navyDeep}
+      strokeWidth={4}
+    />
+    {/* far-left navy building w/ dash windows */}
+    <rect x={0} y={405} width={95} height={255} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2].map((c) => (
+        <rect key={`${r}${c}`} x={22 + c * 26} y={425 + r * 36} width={6} height={19} fill={C.navyDeep} />
+      )),
+    )}
+    {/* red temple tower: crown + door slots */}
+    <line x1={177} y1={252} x2={177} y2={268} stroke={C.red} strokeWidth={3.5} />
+    <rect x={107} y={268} width={140} height={18} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={100} y={286} width={152} height={16} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={115} y={302} width={124} height={183} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <line x1={130} y1={302} x2={130} y2={485} stroke={C.red} strokeWidth={3.5} />
+    <line x1={224} y1={302} x2={224} y2={485} stroke={C.red} strokeWidth={3.5} />
+    <rect x={143} y={330} width={28} height={155} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={181} y={330} width={28} height={155} fill="#F2C7A9" stroke={C.red} strokeWidth={3.5} />
+    <line x1={143} y1={395} x2={171} y2={395} stroke={C.red} strokeWidth={3.5} />
+    <line x1={181} y1={395} x2={209} y2={395} stroke={C.red} strokeWidth={3.5} />
+    {/* red dash-window block below */}
+    <path d="M 85 660 L 85 500 Q 85 485 100 485 L 265 485 L 265 660" fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    {[0, 1, 2].map((r) =>
+      [0, 1, 2, 3, 4].map((c) => (
+        <rect key={`${r}${c}`} x={113 + c * 30} y={512 + r * 45} width={6} height={22} fill={C.red} />
+      )),
+    )}
+    {/* grey slab + right sections building */}
+    <rect x={265} y={430} width={35} height={230} fill="#DCDCDC" />
+    <rect x={330} y={350} width={100} height={310} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1].map((r) => (
+      <React.Fragment key={r}>
+        <rect x={330} y={408 + r * 42} width={100} height={24} fill="none" stroke={C.navyDeep} strokeWidth={3} />
+        <line x1={363} y1={408 + r * 42} x2={363} y2={432 + r * 42} stroke={C.navyDeep} strokeWidth={3} />
+        <line x1={396} y1={408 + r * 42} x2={396} y2={432 + r * 42} stroke={C.navyDeep} strokeWidth={3} />
+      </React.Fragment>
+    ))}
+    {/* street: car, shed, bollards, posts */}
+    <path d="M 55 655 Q 55 640 70 640 L 78 640 L 88 622 L 112 622 L 120 640 Q 132 641 132 652 L 132 655" fill="none" stroke={C.red} strokeWidth={3.5} />
+    <circle cx={75} cy={653} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    <circle cx={113} cy={653} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    <rect x={148} y={628} width={52} height={32} fill="none" stroke={C.red} strokeWidth={3.5} />
+    <line x1={165} y1={628} x2={165} y2={660} stroke={C.red} strokeWidth={3} />
+    <line x1={182} y1={628} x2={182} y2={660} stroke={C.red} strokeWidth={3} />
+    <rect x={2} y={632} width={6} height={28} fill={C.blue} />
+    <rect x={228} y={632} width={6} height={28} fill={C.blue} />
+    <rect x={255} y={638} width={5} height={22} fill={C.chipGrey} />
+    {[0, 1, 2].map((i) => (
+      <rect key={i} x={300 + i * 11} y={640} width={5} height={20} fill={C.navyDeep} />
+    ))}
+    {/* ground */}
+    <line x1={-80} y1={660} x2={432} y2={660} stroke={C.navyDeep} strokeWidth={4} />
+  </svg>
+);
+
+// right PvP city capsule (traced from ref f2550 crop, absolute coords)
+const PvpRightCity: React.FC = () => (
+  <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute" }}>
+    {/* capsule frame (vertex on the left) */}
+    <path
+      d="M 2000 390 L 1595 390 Q 1560 390 1540 423 L 1448 582 Q 1428 622 1448 662 L 1520 822 Q 1540 855 1575 855 L 2000 855"
+      fill="none"
+      stroke={C.navyDeep}
+      strokeWidth={4}
+    />
+    {/* background building top-left w/ hanging verticals */}
+    <rect x={1495} y={440} width={125} height={385} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1, 2].map((c) => (
+      <line key={c} x1={1520 + c * 24} y1={440} x2={1520 + c * 24} y2={498} stroke={C.navyDeep} strokeWidth={3} />
+    ))}
+    {/* navy rounded building w/ double-line window rows */}
+    <path d="M 1465 825 L 1465 530 Q 1465 515 1480 515 L 1580 515 Q 1595 515 1595 530 L 1595 825" fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1, 2, 3].map((r) => (
+      <React.Fragment key={r}>
+        <rect x={1487} y={600 + r * 44} width={34} height={20} fill="none" stroke={C.navyDeep} strokeWidth={3} />
+        <rect x={1537} y={600 + r * 44} width={34} height={20} fill="none" stroke={C.navyDeep} strokeWidth={3} />
+      </React.Fragment>
+    ))}
+    {/* grey slabs */}
+    <rect x={1635} y={540} width={20} height={285} fill="#DCDCDC" />
+    <rect x={1820} y={620} width={35} height={205} fill="#DCDCDC" />
+    {/* central banded red tower */}
+    <line x1={1716} y1={390} x2={1716} y2={412} stroke={C.red} strokeWidth={3.5} />
+    <rect x={1685} y={412} width={70} height={38} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={1665} y={450} width={120} height={375} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    {[0, 1, 2, 3, 4].map((c) => (
+      <line key={c} x1={1695 + c * 22} y1={468} x2={1695 + c * 22} y2={515} stroke={C.red} strokeWidth={3.5} />
+    ))}
+    <line x1={1665} y1={530} x2={1785} y2={530} stroke={C.red} strokeWidth={3} />
+    <rect x={1665} y={552} width={95} height={22} fill="#F2C7A9" />
+    <line x1={1665} y1={588} x2={1785} y2={588} stroke={C.red} strokeWidth={3} />
+    <rect x={1665} y={595} width={120} height={28} fill={C.red} />
+    <rect x={1690} y={600} width={26} height={17} fill={C.white} />
+    <rect x={1735} y={600} width={26} height={17} fill={C.white} />
+    <line x1={1665} y1={648} x2={1785} y2={648} stroke={C.red} strokeWidth={3} />
+    <line x1={1665} y1={668} x2={1785} y2={668} stroke={C.red} strokeWidth={3} />
+    {/* lower body w/ dashed columns + door */}
+    <line x1={1692} y1={690} x2={1692} y2={808} stroke={C.red} strokeWidth={3.5} strokeDasharray="10 9" />
+    <line x1={1758} y1={690} x2={1758} y2={808} stroke={C.red} strokeWidth={3.5} strokeDasharray="10 9" />
+    <rect x={1718} y={788} width={45} height={37} fill="none" stroke={C.red} strokeWidth={3.5} />
+    {[0, 1, 2, 3].map((i) => (
+      <rect key={i} x={1724 + i * 9} y={806} width={4} height={19} fill={C.navyDeep} />
+    ))}
+    {/* right white building w/ double-dash rows */}
+    <path d="M 1855 825 L 1855 560 L 1880 560 L 1880 540 L 1920 540" fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1, 2, 3, 4, 5, 6, 7].map((r) => (
+      <React.Fragment key={r}>
+        <rect x={1868} y={592 + r * 21} width={12} height={5} fill={C.navyDeep} />
+        <rect x={1888} y={592 + r * 21} width={12} height={5} fill={C.navyDeep} />
+      </React.Fragment>
+    ))}
+    {/* street: truck, bollards, shed, posts */}
+    <path d="M 1472 820 Q 1472 800 1490 800 L 1495 800 L 1495 775 Q 1495 765 1505 765 L 1560 765 Q 1572 765 1572 777 L 1572 820" fill="none" stroke={C.red} strokeWidth={3.5} />
+    <line x1={1495} y1={790} x2={1572} y2={790} stroke={C.red} strokeWidth={3} />
+    <circle cx={1492} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    <circle cx={1552} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    {[0, 1, 2].map((i) => (
+      <rect key={i} x={1588 + i * 11} y={800} width={5} height={25} fill={C.navyDeep} />
+    ))}
+    <rect x={1710} y={800} width={5} height={25} fill={C.blue} />
+    <rect x={1795} y={800} width={5} height={25} fill={C.blue} />
+    {/* ground */}
+    <line x1={1497} y1={825} x2={2000} y2={825} stroke={C.navyDeep} strokeWidth={4} />
+  </svg>
+);
 
 // ─── S14: 09:00 settlement completion target (f2737..2837) ───
 export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {

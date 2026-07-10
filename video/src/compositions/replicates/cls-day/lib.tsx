@@ -134,34 +134,51 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
   ink = "#FCFCFC",
   accent = C.red,
 }) => (
-  <svg width={size} height={size * 0.8} viewBox="0 0 200 160">
-    {/* right hand (white) */}
-    <path
-      d="M 60 62 L 100 32 Q 112 24 124 32 L 168 62 Q 178 70 170 82 L 150 108 Q 140 120 126 112"
-      fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round"
-    />
-    <path d="M 168 62 L 196 48" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
-    {/* clasp knuckles (accent) */}
-    {[0, 1, 2, 3].map((i) => (
-      <ellipse
+  <svg width={size} height={size * 0.69} viewBox="0 0 174 120">
+    {/* traced from ref f2550 pill crop (/1.5, origin 863,465) */}
+    {/* red arm along the top-left */}
+    <path d="M 0 30 L 36 30 L 63 5" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M 8 38 Q 8 56 22 63" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" />
+    {/* white top edge + right sleeve exit */}
+    <path d="M 63 5 L 122 5 L 162 24 L 174 24" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    {/* right-hand back + wrist edge descending to the clasp */}
+    <path d="M 63 5 L 44 34 Q 40 43 48 49 L 78 72" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    {/* thumb */}
+    <path d="M 88 5 L 73 40 L 99 48" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    {/* lower white hand edge toward the fingers */}
+    <path d="M 162 24 Q 160 52 146 72" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
+    {/* bottom-left white cuff dash */}
+    <path d="M 0 80 L 28 80" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
+    {/* clasp knuckles (accent, rounded squares descending the diagonal) */}
+    {([[32, 70], [48, 83], [63, 95], [78, 106]] as const).map(([cx, cy], i) => (
+      <rect
         key={i}
-        cx={62 + i * 17}
-        cy={92 + i * 8}
-        rx="12"
-        ry="9"
-        transform={`rotate(-35 ${62 + i * 17} ${92 + i * 8})`}
+        x={cx - 12}
+        y={cy - 9.5}
+        width={24}
+        height={19}
+        rx={7}
+        transform={`rotate(-38 ${cx} ${cy})`}
         fill="none"
         stroke={accent}
         strokeWidth={S_W}
       />
     ))}
-    {/* left arm (accent) then white fingers */}
-    <path d="M 4 58 L 34 44 L 62 66" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    <path
-      d="M 118 96 Q 132 106 122 116 M 104 104 Q 118 114 108 124 M 90 110 Q 102 120 94 128"
-      fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round"
-    />
-    <path d="M 4 108 L 40 122" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
+    {/* white fingers wrapping from the right */}
+    {([[100, 74], [114, 85], [128, 96], [142, 106]] as const).map(([cx, cy], i) => (
+      <rect
+        key={i}
+        x={cx - 12}
+        y={cy - 9.5}
+        width={24}
+        height={19}
+        rx={7}
+        transform={`rotate(-38 ${cx} ${cy})`}
+        fill="none"
+        stroke={ink}
+        strokeWidth={S_W}
+      />
+    ))}
   </svg>
 );
 
@@ -699,14 +716,17 @@ export const HandshakePill: React.FC<{
       width: w,
       height: h,
       background: C.navyBg,
-      borderRadius: h * 0.3,
+      // leaf shape like the chips: TL+BR rounded, TR+BL near-square (ref f2550)
+      borderRadius: `${h * 0.27}px 8px ${h * 0.27}px 8px`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       opacity,
     }}
   >
-    <IconHandshake size={w * 0.55} />
+    <div style={{ transform: "translateY(-8px)" }}>
+      <IconHandshake size={w * 0.46} />
+    </div>
   </div>
 );
 
