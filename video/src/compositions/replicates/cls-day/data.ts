@@ -100,7 +100,8 @@ export const COPY = {
 } as const;
 
 // Currency carousel pairs (top code, bottom code, colors alternate
-// red/navy). Read off regular_0011..0023.
+// red/navy). 0-1 settle on the ruler; 2-8 plunge through it in the
+// accelerated phase (identities read per-frame off ref f225-283).
 export const CURRENCY_PAIRS: {
   top: string;
   bottom: string;
@@ -110,7 +111,11 @@ export const CURRENCY_PAIRS: {
   { top: "DKK", bottom: "GBP", topColor: "navy" },
   { top: "AUD", bottom: "CHF", topColor: "red" },
   { top: "HKD", bottom: "NZD", topColor: "navy" },
+  { top: "KRW", bottom: "EUR", topColor: "red" },
   { top: "EUR", bottom: "GBP", topColor: "navy" },
+  { top: "GBP", bottom: "DKK", topColor: "red" },
+  { top: "HKD", bottom: "AUD", topColor: "navy" },
+  { top: "KRW", bottom: "EUR", topColor: "red" },
 ];
 
 export const clamp = {

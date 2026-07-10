@@ -22,6 +22,21 @@ import {
 
 const EASE = Easing.bezier(0.4, 0, 0.2, 1);
 
+// piecewise-linear table sampler (scene-local)
+const lutS =
+  (t: [number, number][]) =>
+  (frame: number): number => {
+    if (frame <= t[0][0]) return t[0][1];
+    for (let i = 1; i < t.length; i++) {
+      if (frame <= t[i][0]) {
+        const [f0, v0] = t[i - 1];
+        const [f1, v1] = t[i];
+        return v0 + ((frame - f0) / (f1 - f0)) * (v1 - v0);
+      }
+    }
+    return t[t.length - 1][1];
+  };
+
 // ─── Logo card (intro + end card share this layout) ───
 // End-card geometry: mark x422 y166 size 235; letters x702 y166 h230;
 // tagline x442 y426 (65px light sans); icons y651 h170; labels y866 serif 34.
@@ -134,33 +149,104 @@ export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC
 // mount-order stability.
 export const WipeIn: React.FC<{ frame: number }> = () => null;
 
-// ─── S2: currency carousel (f100..300) ───
-// Ruler: navy hairline y534 + grey strip y538..552, ticks every 50px.
-// Serif pairs ~310px Georgia; top code above the ruler, bottom below.
-// Chip columns at x1252 / x1432 (w132 h104, pitch 156).
-type PairPhase = { i: number; settle: number; leave: number };
-const PAIR_TIMES: PairPhase[] = [
-  { i: 0, settle: 129, leave: 154 }, // USD/JPY (pans in f119..129, collapses into the ruler f154..168)
-  { i: 1, settle: 180, leave: 226 }, // DKK/GBP
-  { i: 2, settle: 232, leave: 252 }, // AUD/CHF (accelerating)
-  { i: 3, settle: 256, leave: 272 }, // HKD/NZD
-  { i: 4, settle: 276, leave: 292 }, // EUR/GBP
+// ─── S2: currency carousel (f100..300) — r5 measured rebuild ───
+// Early phase f118..224: pairs pan in from the right and settle with the
+// top baseline ON the ruler (ref caps 251px → fs349; ref f150 USD x337,
+// JPY x431 cap-top 565). The whole assembly (codes, chips, ticks) drifts
+// left ~1.5px/f throughout (DKK x246@f190 → 199@f220; cream column
+// 1561@f150 → 1457@f220). Chips are w129 h58, tight pitch ~78, and creep
+// THROUGH the ruler (L col up 1.1px/f, R col down 1.75px/f; f220 rows
+// measured). Ruler ticks every 49.5px (not 22 — grid probed f230-288).
+// Accelerated phase f224..283 — the world funnels INTO the ruler:
+//  · DKK/GBP is swallowed f224-230 (baseline 534→772 measured);
+//  · six pairs plunge vertically through the frame into the line with NO
+//    settle (per-frame baseline LUTs from ink tracking; bottom code
+//    mirrors the top about y1081: capTop = 1081 − baseline; fs338,
+//    cap 242); x anchors drift left, accelerating pair by pair
+//    (189 → 168 → 146 → sliding off the left edge);
+//  · the tight chip stack drains into the line f227-236, then a pitch-150
+//    stream converges on it at ±48px/f (chip inventory anchored to ref
+//    f250), columns riding a measured x LUT off the left edge by f283;
+//  · from f254 the whole assembly DESCENDS (hairline 535→772@f290,
+//    per-frame LUT) while the band STRETCHES about x≈−428 (tick pitch
+//    49.5→125.5@f288) and the S3 globe docks onto it from the top right.
+type PlungeLUT = {
+  i: number; // pack.currencyPairs index
+  base: [number, number][]; // TOP-code baseline y (ruler space)
+  xT: [number, number][]; // top-code CSS left
+  xB: [number, number][]; // bottom-code CSS left
+  end: number;
+};
+const PLUNGES: PlungeLUT[] = [
+  { i: 2, end: 243, base: [[230, 64], [231, 148], [232, 253], [233, 366], [234, 470], [235, 554], [236, 619], [237, 668], [238, 706], [239, 734], [240, 756], [242, 795]], xT: [[230, 177]], xB: [[230, 207]] },
+  { i: 3, end: 249, base: [[238, 27], [239, 118], [240, 238], [241, 373], [242, 493], [243, 591], [244, 657], [245, 705], [246, 739], [248, 795]], xT: [[238, 156]], xB: [[238, 188]] },
+  { i: 4, end: 258, base: [[247, 28], [248, 119], [249, 239], [250, 374], [251, 494], [252, 589], [253, 655], [254, 703], [255, 738], [257, 795]], xT: [[247, 140], [250, 136], [252, 132], [253, 127], [254, 120], [255, 112]], xB: [[247, 191], [250, 187], [252, 183], [254, 173], [255, 165]] },
+  { i: 5, end: 266, base: [[255, 26], [256, 117], [257, 236], [258, 372], [259, 494], [260, 581], [261, 649], [262, 698], [263, 734], [265, 795]], xT: [[255, 164], [256, 156], [257, 140], [258, 124], [259, 108], [260, 86], [261, 62], [262, 36], [263, 6], [264, -22]], xB: [[255, 180], [256, 168], [257, 154], [258, 139], [259, 121], [260, 100], [261, 76], [262, 54], [263, 32], [264, 8]] },
+  { i: 6, end: 271, base: [[262, 65], [263, 209], [264, 383], [265, 518], [266, 613], [267, 683], [268, 733], [270, 795]], xT: [[262, 62], [263, 20], [264, -22], [265, -64], [266, -106], [267, -148], [268, -190], [269, -232]], xB: [[262, -4], [263, -46], [264, -88], [265, -130], [266, -172], [267, -214], [268, -256], [269, -298]] },
+  { i: 7, end: 277, base: [[266, -13], [267, 35], [268, 181], [269, 366], [270, 508], [271, 520], [274, 517]], xT: [[266, -180], [267, -290], [268, -330], [269, -350], [270, -370], [271, -420], [272, -480], [273, -540], [274, -600]], xB: [[268, 28], [269, -92], [270, -212], [271, -252], [272, -312], [273, -392], [274, -472]] },
+  { i: 8, end: 277, base: [[271, 95], [272, 199], [273, 253], [274, 349], [275, 459], [276, 514]], xT: [[271, -150], [272, -270], [273, -390], [274, -520], [275, -650], [276, -780]], xB: [[274, -12], [275, -52], [276, -162]] },
 ];
+// serif calibration (measured on rendered stills vs ref): rendered
+// baseline = CSS_top + 0.825·fs; rendered cap-top = CSS_top + 0.122·fs.
+const FS_SET = 349; // settled pairs — ref cap 251
+const FS_PLG = 338; // plunging pairs — ref cap 242
+// early chips sit on a FIXED lattice (rows identical at f150 and f220,
+// x drifting left with the assembly); occupancy/colors BLINK between the
+// two measured states ("-" = empty slot). Blink placed mid-hold (f185).
+const EARLY_L: [number, string, string][] = [[254, "-", "G"], [330, "G", "G"], [407, "G", "G"], [484, "G", "-"], [550, "N", "G"], [630, "G", "G"], [710, "G", "G"], [792, "G", "-"]];
+const EARLY_R: [number, string, string][] = [[255, "C", "-"], [331, "C", "C"], [408, "C", "C"], [484, "R", "C"], [550, "C", "R"], [630, "C", "R"], [709, "C", "C"], [793, "-", "C"], [877, "-", "C"]];
+// funnel streams: chip top y AT F250 (ruler space); above chips fall at
+// +48px/f, below chips rise at −48px/f, all swallowed by the line.
+const FUN_L_AB: [number, string][] = [[357, "G"], [206, "G"], [68, "N"], [-76, "N"], [-220, "G"], [-336, "N"], [-486, "G"], [-630, "G"], [-780, "N"], [-930, "G"], [-1080, "G"], [-1230, "N"], [-1380, "G"], [-1530, "G"], [-1680, "N"]];
+const FUN_L_BE: [number, string][] = [[619, "G"], [775, "G"], [917, "N"], [1065, "N"], [1214, "G"], [1349, "N"], [1500, "G"], [1650, "G"], [1800, "N"], [1950, "G"], [2100, "G"], [2250, "N"], [2400, "G"], [2550, "N"], [2700, "G"]];
+const FUN_R_AB: [number, string][] = [[463, "R"], [302, "C"], [156, "C"], [24, "R"], [-122, "R"], [-268, "C"], [-420, "C"], [-570, "R"], [-720, "C"], [-870, "C"], [-1020, "R"], [-1170, "C"], [-1320, "C"], [-1470, "R"], [-1620, "C"]];
+const FUN_R_BE: [number, string][] = [[550, "R"], [670, "C"], [821, "C"], [958, "R"], [1109, "R"], [1237, "C"], [1390, "C"], [1540, "R"], [1690, "C"], [1840, "C"], [1990, "R"], [2140, "C"], [2290, "C"], [2440, "R"], [2590, "C"]];
+const CHIP_C: Record<string, string> = { G: C.chipGrey, N: C.chipNavy, C: C.chipCream, R: C.chipRed };
+// right chip-column left edge (cream-column scans f150-283); L = R − 180
+const X_COL_R = lutS([[150, 1497], [200, 1421], [220, 1392], [225, 1384], [232, 1372], [238, 1367], [244, 1360], [250, 1351], [255, 1339], [258, 1313], [260, 1293], [262, 1263], [264, 1224], [266, 1177], [268, 1120], [270, 1049], [272, 964], [274, 854], [276, 732], [278, 570], [280, 367], [282, 102], [284, -170]]);
+// band descent (hairline row probes f254-290, extrapolated off-frame)
+const DESCENT = lutS([[253, 0], [256, 1], [258, 3], [260, 5], [262, 7], [264, 9], [265, 11], [266, 13], [267, 15], [268, 18], [269, 20], [270, 22], [271, 25], [272, 29], [273, 32], [274, 36], [275, 41], [276, 46], [277, 51], [278, 57], [279, 65], [280, 73], [281, 81], [282, 91], [283, 103], [284, 117], [285, 136], [286, 155], [287, 177], [288, 199], [289, 220], [290, 237], [294, 325], [298, 425], [302, 540], [306, 660]]);
+// band stretch: tick pitch + grid phase (probed rows f230-288)
+const TICK_P = lutS([[255, 49.5], [260, 51], [265, 54], [270, 58], [274, 63.5], [278, 71.5], [282, 85], [285, 100.7], [288, 125.6], [292, 150]]);
+const TICK_PHI = lutS([[150, 36], [230, 39], [250, 14.5], [270, -8], [278, -32.5], [285, -52.7], [288, -87.6], [292, -120]]);
 
 export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 96 || frame >= 320) return null;
+  if (frame < 96 || frame >= 308) return null;
   const bgP = interpolate(frame, [117, 122], [0, 1], clamp);
   // ruler-led wipe (measured f104..126): the line rises steeply from the
   // bottom-right, then levels onto y534; the white world rides below it.
   const rulerY = lutS([[104, 1300], [106, 1113], [108, 943], [110, 768], [112, 660], [114, 556], [116, 541], [118, 539], [122, 536], [126, 534]])(frame);
   const rulerRot = lutS([[106, -30], [114, -33], [116, -19], [118, -10], [120, -5], [122, -2.4], [124, -0.8], [126, 0]])(frame);
-  // ruler slides off with the globe arrival (docks into ring) f288..305
-  const rulerOff = interpolate(frame, [288, 308], [0, 1], clamp);
+  const dy = DESCENT(frame);
   const pairColor = (c: "red" | "navy") => (c === "red" ? C.red : C.navyInk);
-  // chip columns: x1317/x1507, chip 112×71, pitch 80, stacked through the ruler
-  const CHIP_COLORS_L = [C.chipGrey, C.chipGrey, C.chipNavy, C.chipGrey, C.chipGrey, C.chipGrey, C.chipGrey];
-  const CHIP_COLORS_R = [C.chipCream, C.chipRed, C.chipCream, C.chipCream, C.chipCream, C.chipCream, C.chipCream, C.chipCream, C.chipCream];
-  const rulerXf = `translate(${rulerOff * -2400}px, ${rulerY - 534}px) rotate(${rulerRot}deg)`;
+  const rulerXf = `translate(0px, ${rulerY - 534}px) rotate(${rulerRot}deg)`;
+  const xR = X_COL_R(frame);
+  const xL = xR - 180;
+  const pT = TICK_P(frame);
+  const sc = pT / 49.5;
+  const phi = TICK_PHI(frame);
+  // early chips: fixed lattice; whole stack drains INTO the line f227-236
+  // (measured ink collapse). Rendered into BOTH clips (the line splits them).
+  const drain = interpolate(frame, [227, 236], [0, 300], { ...clamp, easing: Easing.in(Easing.quad) });
+  const earlyChip = (col: "L" | "R", row: [number, string, string], k: number) => {
+    if (frame > 238) return null;
+    const cc = frame < 185 ? row[1] : row[2];
+    if (cc === "-") return null;
+    const start = (col === "R" ? 114 : 118) + k * 4;
+    if (frame < start) return null;
+    const p = interpolate(frame, [start, start + 6], [0, 1], clamp);
+    const above = row[0] + 29 < 534;
+    const y = row[0] + (above ? drain : -drain);
+    return <Chip key={`e${col}${k}`} x={col === "L" ? xL : xR} y={y} w={129} h={58} color={CHIP_C[cc]} opacity={p} />;
+  };
+  // funnel chips: converge on the line at ±48px/f from both frame edges
+  const funChip = (col: "L" | "R", side: 1 | -1, y250: number, cc: string, k: number) => {
+    const y = y250 + side * 48 * (frame - 250);
+    if (y < -120 || y > 1140) return null;
+    if (side > 0 && y250 > 520) return null; // above stream stops at the line
+    if (side < 0 && y250 < 545) return null;
+    return <Chip key={`f${col}${side}${k}`} x={col === "L" ? xL : xR} y={y} w={129} h={58} color={CHIP_C[cc]} opacity={1} />;
+  };
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       <div style={{ position: "absolute", inset: 0, background: C.white, opacity: bgP }} />
@@ -170,85 +256,98 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
           <div style={{ position: "absolute", left: -700, top: 548, width: 3400, height: 2600, background: C.white }} />
         </div>
       )}
-      {/* pairs — serif sits ON the ruler: top baseline y534, bottom cap-top y558 */}
-      {PAIR_TIMES.map(({ i, settle, leave }) => {
-        const pair = pack.currencyPairs[i];
-        if (!pair) return null;
-        // measured grammar: codes PAN IN from the right (USD at x1730 @f121),
-        // then COLLAPSE INTO the ruler line on exit (top sinks, bottom rises)
-        const enter = i === 0 ? 119 : settle - 12;
-        if (frame < enter || frame > leave + 15) return null;
-        const xIn = interpolate(frame, [enter, settle], [1500, 0], { ...clamp, easing: EASE });
-        const sink = interpolate(frame, [leave, leave + 14], [0, 350], { ...clamp, easing: Easing.in(Easing.quad) });
-        return (
-          <div key={i} style={{ position: "absolute", inset: 0 }}>
-            <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 534, clipPath: "inset(0 0 0 0)", overflow: "hidden" }}>
-              <div
-                style={{
-                  position: "absolute",
-                  left: 335,
-                  top: 534 - 320 * 0.95,
-                  fontFamily: pack.serif,
-                  fontSize: 320,
-                  lineHeight: 0.93,
-                  color: pairColor(pair.topColor),
-                  transform: `translate(${xIn}px, ${sink}px)`,
-                }}
-              >
-                {pair.top}
-              </div>
-            </div>
-            <div style={{ position: "absolute", left: 0, top: 548, width: 1920, height: 532, overflow: "hidden" }}>
-              <div
-                style={{
-                  position: "absolute",
-                  left: 445,
-                  top: 556 - 548,
-                  fontFamily: pack.serif,
-                  fontSize: 320,
-                  lineHeight: 0.93,
-                  color: pairColor(pair.topColor === "red" ? "navy" : "red"),
-                  transform: `translate(${xIn}px, ${-sink}px)`,
-                }}
-              >
-                {pair.bottom}
-              </div>
-            </div>
+      {/* descent wrapper — pairs, chips and band all ride the sinking line */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${dy}px)` }}>
+        {/* above-the-line clip */}
+        <div style={{ position: "absolute", left: 0, top: -1200, width: 1920, height: 1734, overflow: "hidden" }}>
+          <div style={{ position: "absolute", left: 0, top: 1200 }}>
+            {/* settled pairs: USD/JPY pans in f119, collapses f154-168;
+                DKK/GBP pans in f168, swallowed f224-230 (measured LUT) */}
+            {frame >= 119 && frame <= 172 && (
+              <SettledCode pack={pack} i={0} top xIn={interpolate(frame, [119, 129], [1500, 0], { ...clamp, easing: EASE })} x={325} sink={interpolate(frame, [154, 168], [0, 350], { ...clamp, easing: Easing.in(Easing.quad) })} />
+            )}
+            {frame >= 168 && frame <= 232 && (
+              <SettledCode pack={pack} i={1} top xIn={interpolate(frame, [168, 180], [1500, 0], { ...clamp, easing: EASE })} x={234 - 1.55 * (frame - 190)} sink={lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
+            )}
+            {/* plunging top codes */}
+            {PLUNGES.map((P) => {
+              const pair = pack.currencyPairs[P.i];
+              if (!pair || frame < P.base[0][0] || frame > P.end) return null;
+              const base = lutS(P.base)(frame);
+              return (
+                <div key={`pt${P.i}`} style={{ position: "absolute", left: lutS(P.xT)(frame), top: base - 0.825 * FS_PLG, fontFamily: pack.serif, fontSize: FS_PLG, lineHeight: 0.93, color: pairColor(pair.topColor) }}>
+                  {pair.top}
+                </div>
+              );
+            })}
+            {/* chips (each clip shows its side of the line) */}
+            {EARLY_L.map((row, k) => earlyChip("L", row, k))}
+            {EARLY_R.map((row, k) => earlyChip("R", row, k))}
+            {frame > 236 && FUN_L_AB.map(([y, cc], k) => funChip("L", 1, y, cc, k))}
+            {frame > 236 && FUN_R_AB.map(([y, cc], k) => funChip("R", 1, y, cc, k))}
           </div>
-        );
-      })}
-      {/* chip columns grow through the scene, stacked tight across the ruler */}
-      {CHIP_COLORS_L.map((color, k) => {
-        const start = 118 + k * 5;
-        if (frame < start) return null;
-        const p = interpolate(frame, [start, start + 6], [0, 1], clamp);
-        const r = k < 3 ? k - 3 : k - 2; // rows -3..-1, +1..+4
-        const y = r < 0 ? 534 + r * 80 - 5 : 538 + 14 + (r - 1) * 80 + 5;
-        return <Chip key={`l${k}`} x={1317} y={y} w={112} h={71} color={color} opacity={p} />;
-      })}
-      {CHIP_COLORS_R.map((color, k) => {
-        const start = 114 + k * 5;
-        if (frame < start) return null;
-        const p = interpolate(frame, [start, start + 6], [0, 1], clamp);
-        const r = k < 5 ? k - 5 : k - 4; // rows -5..-1, +1..+4
-        const y = r < 0 ? 534 + r * 80 - 5 : 538 + 14 + (r - 1) * 80 + 5;
-        return <Chip key={`r${k}`} x={1507} y={y} w={112} h={71} color={color} opacity={p} />;
-      })}
-      {/* ruler — fine ticks every 22px; leads the white wipe in, then exits with the globe */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          transform: rulerXf,
-          transformOrigin: "960px 534px",
-        }}
-      >
-        <div style={{ position: "absolute", left: -200, top: 531, width: 2600, height: 3, background: C.navyDeep }} />
-        <div style={{ position: "absolute", left: -200, top: 534, width: 2600, height: 14, background: C.bandGrey }} />
-        {Array.from({ length: 119 }, (_, i) => (
-          <div key={i} style={{ position: "absolute", left: -200 + i * 22, top: 534, width: 1.5, height: 14, background: C.navyDeep }} />
-        ))}
+        </div>
+        {/* below-the-line clip */}
+        <div style={{ position: "absolute", left: 0, top: 548, width: 1920, height: 1300, overflow: "hidden" }}>
+          <div style={{ position: "absolute", left: 0, top: -548 }}>
+            {frame >= 119 && frame <= 172 && (
+              <SettledCode pack={pack} i={0} xIn={interpolate(frame, [119, 129], [1500, 0], { ...clamp, easing: EASE })} x={419} sink={-interpolate(frame, [154, 168], [0, 350], { ...clamp, easing: Easing.in(Easing.quad) })} />
+            )}
+            {frame >= 168 && frame <= 232 && (
+              <SettledCode pack={pack} i={1} xIn={interpolate(frame, [168, 180], [1500, 0], { ...clamp, easing: EASE })} x={287 - 1.55 * (frame - 190)} sink={-lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
+            )}
+            {/* plunging bottom codes — mirror the top about y1081 */}
+            {PLUNGES.map((P) => {
+              const pair = pack.currencyPairs[P.i];
+              if (!pair || frame < P.xB[0][0] || frame > P.end) return null;
+              const capTop = 1081 - lutS(P.base)(frame);
+              return (
+                <div key={`pb${P.i}`} style={{ position: "absolute", left: lutS(P.xB)(frame), top: capTop - 0.122 * FS_PLG, fontFamily: pack.serif, fontSize: FS_PLG, lineHeight: 0.93, color: pairColor(pair.topColor === "red" ? "navy" : "red") }}>
+                  {pair.bottom}
+                </div>
+              );
+            })}
+            {EARLY_L.map((row, k) => earlyChip("L", row, k))}
+            {EARLY_R.map((row, k) => earlyChip("R", row, k))}
+            {frame > 236 && FUN_L_BE.map(([y, cc], k) => funChip("L", -1, y, cc, k))}
+            {frame > 236 && FUN_R_BE.map(([y, cc], k) => funChip("R", -1, y, cc, k))}
+          </div>
+        </div>
+        {/* the band — hairline + grey strip + tick grid; leads the white
+            wipe in, stretches (about the tick grid) as it descends out */}
+        <div style={{ position: "absolute", inset: 0, transform: rulerXf, transformOrigin: "960px 534px" }}>
+          <div style={{ position: "absolute", left: -200, top: 534 - 3 * sc, width: 2600, height: 3 * sc, background: C.navyDeep }} />
+          <div style={{ position: "absolute", left: -200, top: 534, width: 2600, height: 14 * sc, background: C.bandGrey }} />
+          {Array.from({ length: 46 }, (_, i) => {
+            const x = phi + (i - 3) * pT;
+            if (x < -10 || x > 1930) return null;
+            return <div key={i} style={{ position: "absolute", left: x, top: 534, width: 1.5 * sc, height: 14 * sc, background: C.navyDeep }} />;
+          })}
+        </div>
       </div>
+    </div>
+  );
+};
+
+// settled serif code (baseline on the ruler; calibrated placement)
+const SettledCode: React.FC<{ pack: Pack; i: number; top?: boolean; xIn: number; x: number; sink: number }> = ({ pack, i, top, xIn, x, sink }) => {
+  const pair = pack.currencyPairs[i];
+  if (!pair) return null;
+  const color = top ? pair.topColor : pair.topColor === "red" ? "navy" : "red";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: top ? 530 - 0.825 * FS_SET : 565 - 0.122 * FS_SET,
+        fontFamily: pack.serif,
+        fontSize: FS_SET,
+        lineHeight: 0.93,
+        color: color === "red" ? C.red : C.navyInk,
+        transform: `translate(${xIn}px, ${sink}px)`,
+      }}
+    >
+      {top ? pair.top : pair.bottom}
     </div>
   );
 };
@@ -259,15 +358,16 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
 const GLOBE = { cx: 960, cy: 690, r: 235, ringW: 36 };
 
 export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 288 || frame >= 470) return null;
-  const arriveX = interpolate(frame, [288, 310], [700, 0], { ...clamp, easing: EASE });
+  if (frame < 283 || frame >= 470) return null;
+  // dock from the top right, smaller (measured f285: cx≈1870 cy≈490 r≈180)
+  const dockP = 1 - interpolate(frame, [283, 310], [1, 0], { ...clamp, easing: Easing.bezier(0.6, 0, 0.2, 1) });
   const exitP = interpolate(frame, [452, 468], [0, 1], clamp);
   const rot = interpolate(frame, [300, 460], [0, -120], clamp); // map drift
   const lockIn = interpolate(frame, [345, 358], [0, 1], clamp);
   const lockClosed = frame >= 400;
   const { cx, cy, r, ringW } = GLOBE;
   return (
-    <div style={{ position: "absolute", inset: 0, transform: `translateX(${arriveX}px)`, opacity: 1 - exitP }}>
+    <div style={{ position: "absolute", inset: 0, transform: `translate(${910 * (1 - dockP)}px, ${-200 * (1 - dockP)}px) scale(${0.77 + 0.23 * dockP})`, transformOrigin: `${cx}px ${cy}px`, opacity: 1 - exitP }}>
       {/* ring */}
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
         <circle cx={cx} cy={cy} r={r + ringW / 2 + 2} fill="none" stroke={C.bandGrey} strokeWidth={ringW} />
@@ -665,21 +765,6 @@ const DocPop: React.FC<{ x: number; y: number }> = ({ x, y }) => (
     </text>
   </svg>
 );
-
-// piecewise-linear table sampler (scene-local)
-const lutS =
-  (t: [number, number][]) =>
-  (frame: number): number => {
-    if (frame <= t[0][0]) return t[0][1];
-    for (let i = 1; i < t.length; i++) {
-      if (frame <= t[i][0]) {
-        const [f0, v0] = t[i - 1];
-        const [f1, v1] = t[i];
-        return v0 + ((frame - f0) / (f1 - f0)) * (v1 - v0);
-      }
-    }
-    return t[t.length - 1][1];
-  };
 
 // ── traced skyline clusters (r3, per-tower tracing from ref f750/f900) ──
 // Above-world slots are 604x330 SVGs at world (center-230), y170; local
