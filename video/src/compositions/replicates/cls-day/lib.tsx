@@ -23,14 +23,29 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
     {/* red arm along the top-left */}
     <path d="M 0 30 L 36 30 L 63 5" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
     <path d="M 8 38 Q 8 56 22 63" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" />
-    {/* white top edge + right sleeve exit */}
-    <path d="M 63 5 L 122 5 L 162 24 L 174 24" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    {/* right-hand back + wrist edge descending to the clasp */}
-    <path d="M 63 5 L 44 34 Q 40 43 48 49 L 78 72" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    {/* thumb */}
-    <path d="M 88 5 L 73 40 L 99 48" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    {/* lower white hand edge toward the fingers */}
-    <path d="M 162 24 Q 160 52 146 72" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
+    {/* white right hand (r7 re-trace from the isolated white-ink plate,
+        f2550: rounded back, beak palm hook, FOUR hooked finger strokes —
+        the old trapezoid-with-fold + bump-chain read wrong at eye level) */}
+    {/* top contour into the right cuff */}
+    <path d="M 72 2 L 124 2 Q 133 2 137 7 L 145 18 Q 148 21 153 21 L 174 21" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    {/* left palm edge + beak hook curling up-right */}
+    <path d="M 72 2 Q 60 12 53 29 Q 49 40 57 44 Q 65 47 71 41 Q 76 36 81 34" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    {/* inner palm line under the hand back */}
+    <path d="M 81 34 Q 96 29 110 29" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
+    {/* four fingers: parallel strokes w/ J-hooks at the lower-left ends */}
+    {([[110, 29, 71, 68], [122, 38, 83, 77], [134, 47, 95, 86], [146, 56, 107, 95]] as const).map(([tx, ty, bx, by], i) => (
+      <path
+        key={i}
+        d={`M ${tx} ${ty} L ${bx} ${by} Q ${bx - 2} ${by + 8} ${bx + 5} ${by + 9} Q ${bx + 12} ${by + 10} ${bx + 13} ${by + 2}`}
+        fill="none"
+        stroke={ink}
+        strokeWidth={S_W}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ))}
+    {/* right hand edge from the cuff down to the last finger */}
+    <path d="M 153 21 Q 155 40 146 56" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
     {/* bottom-left white cuff dash */}
     <path d="M 0 80 L 28 80" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
     {/* clasp knuckles (accent, rounded squares descending the diagonal) */}
@@ -45,21 +60,6 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
         transform={`rotate(-38 ${cx} ${cy})`}
         fill="none"
         stroke={accent}
-        strokeWidth={S_W}
-      />
-    ))}
-    {/* white fingers wrapping from the right */}
-    {([[100, 74], [114, 85], [128, 96], [142, 106]] as const).map(([cx, cy], i) => (
-      <rect
-        key={i}
-        x={cx - 12}
-        y={cy - 9.5}
-        width={24}
-        height={19}
-        rx={7}
-        transform={`rotate(-38 ${cx} ${cy})`}
-        fill="none"
-        stroke={ink}
         strokeWidth={S_W}
       />
     ))}
