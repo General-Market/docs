@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate } from "remotion";
 import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
-import { ClsNetBox, HexIcon, Pill, SansText, SerifLabel, clamp, lerp } from "./ui";
+import { ClsNetBox, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
 
 // ═══ Scene 1: Title (f0-150) ═══
 // CLSNet reveals right-to-left; CLS logo + tagline fade; supporting text;
@@ -355,6 +355,30 @@ export const RowsBuild: React.FC<{ frame: number }> = ({ frame }) => {
 
 // ═══ Scene 3+4: hex row + CLSNet + flows (f320-462) ═══
 const HEX_ARTS = ["hexBank", "hexOffice", "hexTowers", "hexSail"];
+// r5: flows pill fields CC-scanned (x,y,w,h,color) — field1 at f395, field2 at
+// f430. Colors: steel #8A9DB2 / mid #4B6686 / navy / orange #CC441E accents /
+// tan #F0C8AF. Ruler band center y830 is the collapse origin.
+type FlowPill = [number, number, number, number, string];
+const FLOW_FIELD1: FlowPill[] = [
+  [197, 703, 71, 31, "#8A9DB2"], [197, 738, 71, 31, "#8A9DB2"], [198, 774, 71, 26, "#8A9DB2"],
+  [195, 846, 75, 43, "#CC441E"], [198, 896, 71, 30, "#F0C8AF"], [198, 931, 71, 30, "#F0C8AF"], [198, 966, 71, 30, "#F0C8AF"], [198, 1000, 72, 30, "#F0C8AF"],
+  [375, 627, 71, 30, "#8A9DB2"], [373, 662, 74, 58, "#4B6686"], [375, 727, 71, 29, "#4B6686"], [374, 763, 74, 37, "#002753"],
+  [375, 846, 71, 28, "#F0C8AF"], [376, 878, 71, 31, "#F0C8AF"], [376, 914, 71, 31, "#F0C8AF"], [376, 950, 71, 30, "#F0C8AF"],
+  [565, 704, 71, 30, "#8A9DB2"], [565, 740, 71, 30, "#8A9DB2"], [566, 775, 71, 25, "#8A9DB2"],
+  [565, 846, 75, 43, "#CC441E"], [568, 896, 71, 30, "#F0C8AF"], [568, 931, 71, 30, "#F0C8AF"],
+  [1251, 706, 71, 30, "#8A9DB2"], [1251, 742, 71, 30, "#8A9DB2"], [1252, 777, 71, 23, "#8A9DB2"],
+  [1250, 846, 72, 30, "#CC441E"], [1251, 880, 73, 32, "#CC441E"], [1252, 916, 71, 30, "#F0C8AF"], [1252, 951, 71, 30, "#F0C8AF"],
+];
+const FLOW_FIELD2: FlowPill[] = [
+  [197, 654, 71, 30, "#8A9DB2"], [197, 688, 71, 30, "#8A9DB2"], [197, 726, 71, 30, "#8A9DB2"], [198, 761, 71, 30, "#8A9DB2"],
+  [196, 846, 74, 44, "#CC441E"], [198, 896, 71, 30, "#F0C8AF"], [198, 932, 71, 30, "#F0C8AF"],
+  [375, 625, 71, 30, "#8A9DB2"], [373, 661, 74, 58, "#4B6686"], [375, 726, 71, 30, "#4B6686"], [374, 763, 74, 37, "#002753"],
+  [373, 846, 75, 54, "#CC441E"], [376, 907, 71, 29, "#F0C8AF"], [374, 944, 75, 58, "#CC441E"], [375, 1008, 73, 30, "#CC441E"], [376, 1041, 72, 31, "#F0C8AF"],
+  [565, 576, 71, 29, "#8A9DB2"], [565, 609, 71, 30, "#8A9DB2"], [562, 645, 75, 58, "#4B6686"], [565, 710, 71, 30, "#4B6686"], [564, 747, 74, 53, "#002753"],
+  [565, 846, 75, 44, "#CC441E"], [568, 896, 71, 30, "#F0C8AF"], [568, 932, 71, 30, "#F0C8AF"], [568, 967, 71, 31, "#F0C8AF"], [568, 1002, 72, 30, "#F0C8AF"],
+  [1251, 671, 71, 29, "#8A9DB2"], [1251, 704, 71, 30, "#8A9DB2"], [1251, 742, 71, 30, "#8A9DB2"], [1252, 777, 71, 23, "#8A9DB2"],
+  [1250, 846, 72, 29, "#F0C8AF"], [1252, 880, 71, 30, "#F0C8AF"], [1252, 918, 71, 30, "#F0C8AF"], [1252, 952, 71, 30, "#F0C8AF"],
+];
 
 export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
@@ -367,9 +391,10 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
 
   // ruler + pills phase (f366+)
   const rulerP = lerp(f, [366, 384], [0, 1]);
-  // pair labels: USD/CNH f≈380-425, EUR/CZK f≈428-462
-  const pairAOp = lerp(f, [382, 392], [0, 1]) * lerp(f, [420, 430], [1, 0]);
-  const pairBOp = lerp(f, [430, 440], [0, 1]);
+  // pair labels flip with the pill pages (r5 ink-timeline: page1 out 406-412,
+  // page2 in 419-428)
+  const pairAOp = lerp(f, [364, 372], [0, 1]) * lerp(f, [406, 412], [1, 0]);
+  const pairBOp = lerp(f, [420, 428], [0, 1]);
 
   return (
     <AbsoluteFill style={{ opacity: out }}>
@@ -414,34 +439,34 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
         {/* CLSNet box */}
         <ClsNetBox x={HEXROW.box.x} y={HEXROW.box.y} opacity={boxOp} />
-        {/* pill stacks (above: steel/navy; below: orange/tan) */}
-        {f >= 372 &&
-          FLOWS.stacks.map((cx, si) => {
-            const upCols = [C.steel, si === 1 ? C.pillNavy : C.steelDark, C.steel];
-            const dnCols = [si % 2 ? C.tan : C.orangeDeep, C.tan, C.tan];
-            const n = Math.floor(lerp(f, [374 + si * 6, 400 + si * 6], [0, 3.99]));
-            return (
-              <React.Fragment key={si}>
-                {upCols.slice(0, n).map((col, i) => (
-                  <Pill
-                    key={`u${i}`}
-                    x={cx - FLOWS.pillW / 2}
-                    y={FLOWS.rulerY - 14 - (i + 1) * (FLOWS.pillH + FLOWS.pillGap)}
-                    color={col}
-                  />
-                ))}
-                {dnCols.slice(0, n).map((col, i) => (
-                  <Pill
-                    key={`d${i}`}
-                    x={cx - FLOWS.pillW / 2}
-                    y={FLOWS.rulerY + FLOWS.rulerH + 14 + i * (FLOWS.pillH + FLOWS.pillGap)}
-                    color={col}
-                  />
-                ))}
-              </React.Fragment>
-            );
-          })}
-        {/* currency pair labels */}
+        {/* pill fields (r5: TWO static pages CC-scanned at f395/f430; the whole
+            field collapses into the ruler 406-412 and the second pops out of
+            it 419-428 — page flip, not continuous growth) */}
+        {[FLOW_FIELD1, FLOW_FIELD2].map((field, fi) => {
+          const sIn = fi === 0 ? lerp(f, [364, 372], [0.15, 1]) : lerp(f, [419, 428], [0.15, 1]);
+          const sOut = fi === 0 ? 1 - Math.pow(lerp(f, [406, 412], [0, 1]), 2) : 1;
+          const sc = sIn * sOut;
+          if (sc <= 0 || (fi === 0 && f >= 413) || (fi === 1 && f < 419)) return null;
+          return (
+            <div key={fi} style={{ position: "absolute", inset: 0, transform: `scaleY(${sc})`, transformOrigin: "960px 830px" }}>
+              {field.map(([x, y, w, h, color], i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: x,
+                    top: y,
+                    width: w,
+                    height: h,
+                    backgroundColor: color,
+                    borderRadius: y < 819 ? "2px 13px 2px 13px" : "13px 2px 13px 2px",
+                  }}
+                />
+              ))}
+            </div>
+          );
+        })}
+        {/* currency pair labels (flip with the pill pages) */}
         <SerifLabel text="USD" x={FLOWS.labelTop.x} capTop={FLOWS.labelTop.capTop} fs={FLOWS.labelTop.fs} color={C.serifNavy} opacity={pairAOp} />
         <SerifLabel text="CNH" x={FLOWS.labelBot.x} capTop={FLOWS.labelBot.capTop} fs={FLOWS.labelBot.fs} color={C.orangeDeep} opacity={pairAOp} />
         <SerifLabel text="EUR" x={FLOWS.labelTop.x} capTop={FLOWS.labelTop.capTop} fs={FLOWS.labelTop.fs} color={C.serifNavy} opacity={pairBOp} />
