@@ -631,16 +631,20 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
 export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
-  if (f < SEG.mapDraw[0] || f >= SEG.mapHexes[1] + 16) return null;
+  if (f < SEG.mapDraw[0] || f >= 766) return null;
   // blue rounded rect expands to full bleed f560-586
   const expand = lerp(f, [560, 586], [0, 1]);
   const radius = lerp(f, [560, 590], [400, 0]);
   const mapP = lerp(f, [575, 605], [0, 1]);
   const w = 1120 + 800 * expand;
   const h = 630 + 450 * expand;
-  const labelOp = lerp(f, [672, 684], [0, 1]);
-  // out: map+hexes dissolve into network scene (f732-748)
-  const out = lerp(f, [732, 748], [1, 0]);
+  const labelOp = lerp(f, [672, 684], [0, 1]) * lerp(f, [756, 764], [1, 0]);
+  // r6 measured map-out (ref f746 full / f758 mid / f766 gone): the map is
+  // ERASED edges-inward 750-764 (not faded); non-morphing minis pop out
+  // 750-762; the 4 network hexes persist and morph (NetworkScene owns them
+  // from NET_MORPH_START).
+  const eraseL = interpolate(f, [750, 758, 764], [0, 25, 55], clamp);
+  const eraseR = interpolate(f, [750, 758, 764], [0, 36, 45], clamp);
   return (
     <AbsoluteFill style={{ opacity: 1 }}>
       <div
@@ -654,18 +658,24 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
           borderRadius: radius,
         }}
       />
-      <div style={{ position: "absolute", inset: 0, opacity: out }}>
-        <TracedArt
-          name="worldMap"
-          x={MAP.x}
-          y={MAP.y}
-          opacity={mapP}
-          recolor={{ "#FFFFFF": C.white }}
-        />
-        {/* mini hexes pop f600-660 staggered */}
+      <div style={{ position: "absolute", inset: 0 }}>
+        <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${eraseR}% 0 ${eraseL}%)` }}>
+          <TracedArt
+            name="worldMap"
+            x={MAP.x}
+            y={MAP.y}
+            opacity={mapP}
+            recolor={{ "#FFFFFF": C.white }}
+          />
+        </div>
+        {/* mini hexes pop f600-660 staggered; morphing 4 hand off to
+            NetworkScene at NET_MORPH_START, others pop out 750-762 */}
         {MAP.hexes.map((hx, i) => {
+          const start = NET_MORPH_START[hx.art];
+          if (start !== undefined && f >= start) return null;
           const pop = 600 + i * 9;
-          const s = lerp(f, [pop, pop + 12], [0, 1]);
+          let s = lerp(f, [pop, pop + 12], [0, 1]);
+          if (start === undefined) s *= lerp(f, [750 + i * 2, 756 + i * 2], [1, 0]);
           if (s <= 0) return null;
           return (
             <div
@@ -696,61 +706,126 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 8: network hexes + product docs (f745-913) ═══
-// measured islands at t=31: 375×332 hexes at these centers
+// r6 ground-truth rebuild. Hexes re-traced at native 375 from the settled
+// network frame f890 with elbow ink painted out (the old mHex* map traces
+// carried baked route dashes + a helicopter — the "white dash artifacts").
+// Entry = MORPH from the map mini positions (w215) to the network rests
+// (w375), staggered (white-fill growth probed f756-772). NO scene fade.
+export const NET_MORPH_START: Record<string, number> = {
+  mHexHeli: 758,
+  mHexBank: 760,
+  mHexBank2: 758,
+  mHexCity2: 756,
+};
 const NET_HEXES = [
-  { art: "mHexHeli", cx: 393, cy: 409, w: 375 },
-  { art: "mHexBank", cx: 774, cy: 678, w: 375 },
-  { art: "mHexBank2", cx: 1179, cy: 414, w: 375 },
-  { art: "mHexCity2", cx: 1594, cy: 650, w: 375 },
+  { art: "mHexHeliL", from: [375, 405], to: [393, 409], f0: 758, f1: 770 },
+  { art: "mHexBankL", from: [555, 765], to: [774, 678], f0: 760, f1: 772 },
+  { art: "mHexBank2L", from: [1105, 425], to: [1179, 414], f0: 758, f1: 770 },
+  { art: "mHexCity2L", from: [1460, 715], to: [1594, 650], f0: 756, f1: 768 },
+] as const;
+
+// Elbow routes probed at f900 (4px navy, rounded corners); each draws
+// OUTWARD from its origin hex over f764-788.
+const NET_ELBOWS = [
+  { d: "M382,572 V726 Q382,750 406,750 H627", len: 413 },
+  { d: "M782,512 V324 Q782,300 806,300 H990", len: 410 },
+  { d: "M937,764 H1159 Q1183,764 1183,740 V576", len: 424 },
+  { d: "M1370,321 H1559 Q1583,321 1583,345 V487", len: 369 },
+];
+
+// Product docs RIDE the elbows — per-frame center tables from a white-blob
+// tracker over f745-915 (step 5). Two travel simultaneously.
+type DocJourney = {
+  label: string;
+  w: number;
+  h: number;
+  fs: number;
+  bar: boolean;
+  fKeys: number[];
+  xs: number[];
+  ys: number[];
+  io: [number, number, number, number]; // fade in f0,f1 / out f0,f1
+};
+const NET_DOCS: DocJourney[] = [
+  // Tom/next day: hex1 bottom → down x388 → right y757 → hex2 (f807-838)
+  { label: "Tom/\nnext\nday", w: 71, h: 93, fs: 22, bar: false,
+    fKeys: [807, 810, 815, 820, 825, 830, 835, 838],
+    xs: [388, 387, 397, 442, 504, 564, 618, 645],
+    ys: [600, 638, 697, 738, 752, 757, 759, 760], io: [806, 810, 836, 840] },
+  // NDF: hex2 top → up x781 → right y318 → hex3 (f793-824)
+  { label: "NDF", w: 91, h: 117, fs: 40, bar: true,
+    fKeys: [793, 795, 800, 805, 810, 815, 820, 824],
+    xs: [780, 780, 782, 803, 869, 939, 1004, 1055],
+    ys: [505, 462, 409, 344, 319, 317, 318, 318], io: [792, 796, 821, 825] },
+  // Same day: hex3 right → right y321 → down x1577 → hex4 (f817-849)
+  { label: "Same\nday", w: 60, h: 79, fs: 19, bar: false,
+    fKeys: [817, 820, 825, 830, 835, 840, 845, 849],
+    xs: [1350, 1365, 1420, 1480, 1539, 1573, 1577, 1577],
+    ys: [321, 321, 321, 324, 338, 384, 438, 468], io: [816, 820, 847, 851] },
+  // Spots: hex2 right → right y762 → up x1184 → hex3 (f853-878)
+  { label: "Spots", w: 65, h: 85, fs: 21, bar: true,
+    fKeys: [853, 855, 860, 865, 870, 875, 878],
+    xs: [960, 987, 1055, 1120, 1173, 1184, 1184],
+    ys: [762, 762, 757, 751, 713, 651, 625], io: [852, 856, 876, 880] },
+  // Forwards: hex4 top → up x1556 → LEFT y320 → hex3 (f863-894, reverse flow)
+  { label: "Forwards", w: 62, h: 84, fs: 15, bar: true,
+    fKeys: [863, 870, 875, 880, 885, 890, 894],
+    xs: [1556, 1555, 1545, 1504, 1441, 1390, 1360],
+    ys: [430, 391, 349, 326, 321, 318, 318], io: [862, 866, 892, 896] },
 ];
 
 export const NetworkScene: React.FC<{ frame: number }> = ({ frame }) => {
-  const COPY = useCopy();
   const f = frame;
-  if (f < SEG.network[0] - 6 || f >= SEG.network[1]) return null;
-  const inOp = lerp(f, [742, 758], [0, 1]);
-  const linesP = lerp(f, [760, 782], [0, 1]);
-  // product docs appear along the connectors
-  const docs = [
-    { label: COPY.docLabels[0], x: 470, y: 780, at: 800 },
-    { label: COPY.docLabels[1], x: 880, y: 300, at: 815 },
-    { label: COPY.docLabels[2], x: 1290, y: 290, at: 830 },
-    { label: COPY.docLabels[3], x: 850, y: 760, at: 860 },
-    { label: COPY.docLabels[4], x: 930, y: 760, at: 868 },
-  ];
+  if (f < 756 || f >= SEG.network[1]) return null;
   const wipe = lerp(f, [900, 913], [0, 1]); // hard-ish cut to cities at 913
   return (
     <AbsoluteFill style={{ backgroundColor: C.blue }}>
-      <div style={{ position: "absolute", inset: 0, opacity: inOp }}>
-        {/* elbow connectors between hexes */}
-        <svg width={1920} height={1080} style={{ position: "absolute" }}>
-          <path
-            d="M393,575 V800 H590 M774,512 V330 H1000 M1179,580 V790 H1410 M1365,414 H1594 V480"
-            fill="none"
-            stroke={C.navy}
-            strokeWidth={3}
-            strokeDasharray={2400}
-            strokeDashoffset={2400 * (1 - linesP)}
-          />
-        </svg>
-        {NET_HEXES.map((hx) => (
-          <div key={hx.art}>
-            <div
-              style={{
-                position: "absolute",
-                left: hx.cx - hx.w / 2,
-                top: hx.cy - (hx.w * 0.906) / 2,
-              }}
-            >
-              <TracedArt name={hx.art} scale={hx.w / 215} />
-            </div>
-          </div>
-        ))}
-        {docs.map((d, i) => {
-          const op = lerp(f, [d.at, d.at + 8], [0, 1]);
-          return <DocLabel key={i} {...d} opacity={op} />;
+      {/* elbow connectors, drawing outward from their origin hexes */}
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        {NET_ELBOWS.map((e, i) => {
+          const p = lerp(f, [764, 788], [0, 1]);
+          if (p <= 0) return null;
+          return (
+            <path
+              key={i}
+              d={e.d}
+              fill="none"
+              stroke={C.navy}
+              strokeWidth={4}
+              strokeDasharray={e.len}
+              strokeDashoffset={e.len * (1 - p)}
+            />
+          );
         })}
-      </div>
+      </svg>
+      {NET_DOCS.map((d, i) => {
+        const op = lerp(f, [d.io[0], d.io[1]], [0, 1]) * lerp(f, [d.io[2], d.io[3]], [1, 0]);
+        if (op <= 0 || f < d.fKeys[0] - 4 || f > d.fKeys[d.fKeys.length - 1] + 4) return null;
+        const cx = interpolate(f, d.fKeys, d.xs, clamp);
+        const cy = interpolate(f, d.fKeys, d.ys, clamp);
+        return <NetDoc key={i} spec={d} cx={cx} cy={cy} opacity={op} />;
+      })}
+      {NET_HEXES.map((hx) => {
+        if (f < hx.f0) return null;
+        const p = lerp(f, [hx.f0, hx.f1], [0, 1]);
+        const cx = hx.from[0] + (hx.to[0] - hx.from[0]) * p;
+        const cy = hx.from[1] + (hx.to[1] - hx.from[1]) * p;
+        const w = 215 + (375 - 215) * p;
+        // large art: 396px crop holding a 375px hex
+        const scale = w / 375;
+        return (
+          <div
+            key={hx.art}
+            style={{
+              position: "absolute",
+              left: cx - (396 * scale) / 2,
+              top: cy - (360 * scale) / 2,
+            }}
+          >
+            <TracedArt name={hx.art} scale={scale} />
+          </div>
+        );
+      })}
       {wipe > 0 && (
         <div style={{ position: "absolute", inset: 0, backgroundColor: C.white, opacity: wipe }} />
       )}
@@ -758,26 +833,52 @@ export const NetworkScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-const DocLabel: React.FC<{ label: string; x: number; y: number; opacity: number }> = ({
-  label,
-  x,
-  y,
+const NetDoc: React.FC<{ spec: DocJourney; cx: number; cy: number; opacity: number }> = ({
+  spec,
+  cx,
+  cy,
   opacity,
 }) => {
-  const { sans: SANS } = useBrand();
-  if (opacity <= 0) return null;
+  const { serif: SERIF } = useBrand();
+  const { w, h } = spec;
+  const fold = Math.round(w * 0.22);
+  const lines = spec.label.split("\n");
+  const lineH = spec.fs * 1.08;
+  const textTop = h * 0.32 + spec.fs * 0.8;
   return (
-    <div style={{ position: "absolute", left: x, top: y, opacity }}>
-      <svg width={78} height={96} viewBox="0 0 78 96">
-        <path d="M2,2 H60 L76,18 V94 H2 Z" fill={C.white} stroke={C.navy} strokeWidth={2.5} strokeLinejoin="round" />
-        <path d="M60,2 V18 H76" fill="none" stroke={C.navy} strokeWidth={2.5} />
-        <text x={10} y={40} fontFamily={SANS} fontSize={15} fill={C.orangeDeep}>
-          {label.split("\n").map((s, i) => (
-            <tspan key={i} x={10} dy={i === 0 ? 0 : 16}>
-              {s}
-            </tspan>
-          ))}
-        </text>
+    <div style={{ position: "absolute", left: cx - w / 2, top: cy - h / 2, opacity }}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <path
+          d={`M2,2 H${w - fold - 2} L${w - 2},${fold + 2} V${h - 2} H2 Z`}
+          fill={C.white}
+          stroke={C.navy}
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+        <path d={`M${w - fold - 2},2 V${fold + 2} H${w - 2}`} fill="none" stroke={C.navy} strokeWidth={2.5} />
+        {/* header: navy dot + grey lines */}
+        <circle cx={w * 0.14} cy={h * 0.12} r={w * 0.045} fill={C.navy} />
+        <rect x={w * 0.24} y={h * 0.09} width={w * 0.4} height={2} fill="#B9B9B9" />
+        <rect x={w * 0.24} y={h * 0.13} width={w * 0.3} height={2} fill="#B9B9B9" />
+        {lines.map((s, i) => (
+          <text
+            key={i}
+            x={w / 2}
+            y={textTop + i * lineH}
+            textAnchor="middle"
+            fontFamily={SERIF}
+            fontSize={spec.fs}
+            fill={C.orangeDeep}
+          >
+            {s}
+          </text>
+        ))}
+        {spec.bar && (
+          <rect x={w * 0.12} y={h * 0.72} width={w * 0.76} height={h * 0.14} fill="none" stroke={C.navy} strokeWidth={1.5} />
+        )}
+        {spec.bar && (
+          <rect x={w * 0.15} y={h * 0.75} width={w * 0.7} height={h * 0.05} fill="#B9B9B9" />
+        )}
       </svg>
     </div>
   );
