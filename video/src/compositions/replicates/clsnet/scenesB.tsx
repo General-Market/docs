@@ -15,28 +15,30 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const aOp = lerp(f, [915, 925], [0, 1]);
   const bOp = lerp(f, [950, 960], [0, 1]);
   const badgeOp = lerp(f, [1000, 1012], [0, 1]);
-  // cities shrink to small state f1040-1075; the ground lines RISE with them
-  // (fr_1150: line1 380, line2 938, badge B at 770, cityA center ~525)
-  const s = lerp(f, [1040, 1075], [1, CITIES.smallScale]);
-  const line1 = lerp(f, [1040, 1075], [CITIES.line1, 380]);
-  const line2 = lerp(f, [1040, 1075], [CITIES.line2, 938]);
-  const badgeBcy = lerp(f, [1040, 1075], [CITIES.badgeB.cy, 770]);
-  const aX = lerp(f, [1040, 1075], [CITIES.cityA.x, 525 - (CITIES.cityA.w * CITIES.smallScale) / 2]);
-  const bX = lerp(f, [1040, 1075], [CITIES.cityB.x, CITIES.bSmallCx - (CITIES.cityB.w * CITIES.smallScale) / 2]);
+  // r5: the ref HOLDS the intro state to f1062, then shrinks 1062-1075
+  // (cityA y-extent tracked per frame); the badges appear BIG at (410,182)/
+  // (1578,745) r69 and travel+shrink with the collapse to (190,238)/(1670,770)
+  // r46 (disc-probed at f1045/f1150) — they are moving elements, not statics.
+  const SHRINK: [number, number] = [1062, 1075];
+  const s = lerp(f, SHRINK, [1, CITIES.smallScale]);
+  const line1 = lerp(f, SHRINK, [CITIES.line1, 380]);
+  const line2 = lerp(f, SHRINK, [CITIES.line2, 938]);
+  const badgeA = { cx: lerp(f, SHRINK, [410, 190]), cy: lerp(f, SHRINK, [182, 238]), r: lerp(f, SHRINK, [69, 46]) };
+  const badgeB = { cx: lerp(f, SHRINK, [1578, 1670]), cy: lerp(f, SHRINK, [745, 770]), r: lerp(f, SHRINK, [69, 45]) };
+  const aX = lerp(f, SHRINK, [CITIES.cityA.x, 525 - (CITIES.cityA.w * CITIES.smallScale) / 2]);
+  const bX = lerp(f, SHRINK, [CITIES.cityB.x, CITIES.bSmallCx - (CITIES.cityB.w * CITIES.smallScale) / 2]);
   // hexify: everything fades as hex scene takes over (f1302-1330)
   const out = lerp(f, [1302, 1326], [1, 0]);
 
-  // active currency pair
+  // pair carousel: old fades in place, next rises ~90px into the slots
   const sched = COPY.pairSchedule;
-  let pair = sched[0];
-  for (const p of sched) if (f >= p.from) pair = p;
-  const pairOp =
-    lerp(f, [1075, 1088], [0, 1]) *
-    // dip at each swap
-    Math.min(
-      1,
-      ...sched.slice(1).map((p) => 0.25 + Math.abs(f - p.from) / 8),
-    );
+  const activePairs = sched
+    .map((p) => {
+      const rise = lerp(f, [p.in, p.in + 12], [90, 0]);
+      const op = lerp(f, [p.in, p.in + 7], [0, 1]) * lerp(f, [p.out, p.out + 8], [1, 0]);
+      return { ...p, rise, op };
+    })
+    .filter((p) => p.op > 0);
 
   const stacksOp = lerp(f, [1085, 1100], [0, 1]);
 
@@ -45,73 +47,116 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* horizon lines */}
       <div style={{ position: "absolute", left: 0, top: line1, width: 1920, height: 3, backgroundColor: C.navy, opacity: aOp }} />
       <div style={{ position: "absolute", left: 0, top: line2, width: 1920, height: 3, backgroundColor: C.navy, opacity: bOp }} />
-      {/* cities (anchor to their ground lines while scaling) */}
-      <div style={{ position: "absolute", left: aX, top: line1 - CITIES.cityA.h * s + 2, opacity: aOp }}>
-        <TracedArt name="cityA" scale={s} />
-      </div>
-      <div style={{ position: "absolute", left: bX, top: line2 - CITIES.cityB.h * s + 2, opacity: bOp }}>
-        <TracedArt name="cityB" scale={s} />
-      </div>
-      <Badge letter="A" cx={CITIES.badgeA.cx} cy={CITIES.badgeA.cy} opacity={badgeOp} />
-      <Badge letter="B" cx={CITIES.badgeB.cx} cy={badgeBcy} opacity={badgeOp} />
-      {/* pair labels hug the lines (fr_1150: cap −66 above, +5 below) */}
-      <SerifLabel text={pair.top} x={1650} capTop={line1 - 66} fs={CITIES.pairFs} color={C.serifNavy} opacity={pairOp} />
-      <SerifLabel text={pair.bottom} x={1650} capTop={line1 + 5} fs={CITIES.pairFs} color={C.orangeDeep} opacity={pairOp} />
-      <SerifLabel text={pair.bottom} x={110} capTop={line2 - 66} fs={CITIES.pairFs} color={C.serifNavy} opacity={pairOp} />
-      <SerifLabel text={pair.top} x={110} capTop={line2 + 5} fs={CITIES.pairFs} color={C.orangeDeep} opacity={pairOp} />
+      {/* cities (anchor to their ground lines while scaling); once settled the
+          scaled big traces swap to cityASmall/cityBSmall traced AT final scale
+          from fr_1150 (downscaling the big traces blurs the ~1.5px strokes) */}
+      {f < 1076 ? (
+        <>
+          <div style={{ position: "absolute", left: aX, top: line1 - CITIES.cityA.h * s + 2, opacity: aOp }}>
+            <TracedArt name="cityA" scale={s} />
+          </div>
+          <div style={{ position: "absolute", left: bX, top: line2 - CITIES.cityB.h * s + 2, opacity: bOp }}>
+            <TracedArt name="cityB" scale={s} />
+          </div>
+        </>
+      ) : (
+        <>
+          <TracedArt name="cityASmall" x={240} y={188} />
+          <TracedArt name="cityBSmall" x={760} y={575} />
+        </>
+      )}
+      <Badge letter="A" cx={badgeA.cx} cy={badgeA.cy} r={badgeA.r} opacity={badgeOp} />
+      <Badge letter="B" cx={badgeB.cx} cy={badgeB.cy} r={badgeB.r} opacity={badgeOp} />
+      {/* pair labels hug the lines (fr_1150: cap −64 above, +5 below) */}
+      {activePairs.map((p, i) => (
+        <React.Fragment key={`${p.top}${p.bottom}${i}`}>
+          <SerifLabel text={p.top} x={1648} capTop={line1 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op} />
+          <SerifLabel text={p.bottom} x={1648} capTop={line1 + 5 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op} />
+          <SerifLabel text={p.bottom} x={113} capTop={line2 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op} />
+          <SerifLabel text={p.top} x={113} capTop={line2 + 2 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op} />
+        </React.Fragment>
+      ))}
       {/* pill stacks at measured column centers (fr_1150) */}
       {stacksOp > 0 && (
         <>
-          <PairStacks cols={PAIR_COLS_R} lineY={line1} f={f} base={1085} opacity={stacksOp} />
-          <PairStacks cols={PAIR_COLS_L} lineY={line2} f={f} base={1095} opacity={stacksOp} />
+          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={1085} opacity={stacksOp} />
+          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={1095} opacity={stacksOp} />
         </>
       )}
     </AbsoluteFill>
   );
 };
 
-const TAN_LIGHT = "#F0DCC9";
-type PairCol = { x: number; up: string[]; dn: string[] };
-// bottom-up per column; first entry renders taller (the accent pill on the line)
-const PAIR_COLS_R: PairCol[] = [
-  { x: 1222, up: [C.steel, C.steel, C.steel, C.steel], dn: [C.orangeDeep, C.tan, TAN_LIGHT] },
-  { x: 1332, up: [C.pillNavy, C.steelDark, C.steel, C.steel, C.steel], dn: [C.tan, C.tan, TAN_LIGHT] },
-  { x: 1442, up: [C.steelDark, C.steel, C.steel], dn: [C.tan, TAN_LIGHT] },
+// r5: exact pill rects CC-scanned at fr_1150 (lines settled 380/938).
+// Colors probed: light steel #8A9DB2, mid #4B6686, navy #002753, orange
+// #CC441E accents (taller, hugging the line from below), tan #F0C8AF.
+// Corner grammar mirrors the mosaic pills (line-side outer corner square).
+const PAIR_STEEL = "#8A9DB2";
+const PAIR_MID = "#4B6686";
+const PAIR_ORANGE = "#CC441E";
+const PAIR_TAN = "#F0C8AF";
+type PairPill = [number, number, number, number, string]; // x,y,w,h,color
+// listed line-first per column so the reveal grows away from the line
+const PAIR_STACKS_R: PairPill[][] = [
+  [
+    [1194, 355, 58, 25, PAIR_STEEL], [1193, 326, 58, 25, PAIR_STEEL], [1193, 296, 58, 25, PAIR_STEEL], [1193, 267, 58, 25, PAIR_STEEL],
+    [1191, 384, 61, 36, PAIR_ORANGE], [1194, 424, 58, 24, PAIR_TAN], [1194, 452, 58, 26, PAIR_TAN],
+  ],
+  [
+    [1303, 344, 60, 36, C.navy], [1303, 315, 58, 24, PAIR_MID], [1302, 263, 60, 47, PAIR_MID], [1303, 233, 58, 25, PAIR_STEEL],
+    [1302, 384, 60, 24, PAIR_TAN], [1304, 410, 58, 25, PAIR_TAN], [1304, 440, 58, 25, PAIR_TAN],
+  ],
+  [
+    [1414, 331, 60, 45, PAIR_MID], [1414, 302, 58, 24, PAIR_STEEL], [1414, 273, 58, 24, PAIR_STEEL],
+    [1415, 384, 59, 24, PAIR_TAN], [1416, 411, 59, 25, PAIR_TAN],
+  ],
 ];
-const PAIR_COLS_L: PairCol[] = [
-  { x: 392, up: [C.steel, C.steel, C.steel], dn: [C.tan, TAN_LIGHT] },
-  { x: 507, up: [C.pillNavy, C.steelDark, C.steel], dn: [C.orangeDeep, C.tan, TAN_LIGHT] },
-  { x: 617, up: [C.pillNavy, C.steel, C.steelDark, C.steel], dn: [C.orangeDeep, C.tan, TAN_LIGHT] },
+const PAIR_STACKS_L: PairPill[][] = [
+  [
+    [368, 910, 58, 24, PAIR_STEEL], [367, 884, 58, 24, PAIR_STEEL], [367, 854, 58, 24, PAIR_STEEL],
+    [367, 942, 59, 22, PAIR_TAN], [368, 968, 59, 24, PAIR_TAN],
+  ],
+  [
+    [478, 910, 58, 24, C.navy], [478, 882, 57, 26, C.navy], [478, 854, 57, 24, PAIR_MID], [478, 825, 57, 24, PAIR_STEEL],
+    [476, 942, 61, 44, PAIR_ORANGE], [478, 990, 58, 25, PAIR_TAN], [478, 1019, 58, 25, PAIR_TAN],
+  ],
+  [
+    [588, 888, 60, 46, C.navy], [588, 858, 58, 25, PAIR_MID], [587, 806, 60, 47, PAIR_MID], [588, 777, 58, 24, PAIR_STEEL], [588, 748, 58, 24, PAIR_STEEL],
+    [588, 942, 62, 34, PAIR_ORANGE], [591, 980, 58, 25, PAIR_TAN], [591, 1009, 58, 25, PAIR_TAN],
+  ],
 ];
 
 const PairStacks: React.FC<{
-  cols: PairCol[];
+  cols: PairPill[][];
   lineY: number;
   f: number;
   base: number;
   opacity: number;
 }> = ({ cols, lineY, f, base, opacity }) => (
   <>
-    {cols.map((col, si) => {
-      const n = Math.max(0, Math.floor((f - base - si * 5) / 6));
-      let yu = lineY - 6;
-      let yd = lineY + 8;
-      return (
-        <React.Fragment key={si}>
-          {col.up.slice(0, n).map((c2, i) => {
-            const h = i === 0 ? 42 : 28;
-            yu -= h + 8;
-            return <Pill key={`u${i}`} x={col.x - 28} y={yu + 8} w={56} h={h} color={c2} opacity={opacity} />;
-          })}
-          {col.dn.slice(0, n).map((c2, i) => {
-            const h = i === 0 ? 42 : 28;
-            const el = <Pill key={`d${i}`} x={col.x - 28} y={yd} w={56} h={h} color={c2} opacity={opacity} />;
-            yd += h + 8;
-            return el;
-          })}
-        </React.Fragment>
-      );
-    })}
+    {cols.map((col, si) => (
+      <React.Fragment key={si}>
+        {col.map(([x, y, w, h, color], i) => {
+          if (f < base + si * 5 + i * 4) return null;
+          const above = y + h / 2 < lineY;
+          return (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: x,
+                top: y,
+                width: w,
+                height: h,
+                backgroundColor: color,
+                borderRadius: above ? "2px 13px 2px 13px" : "13px 2px 13px 2px",
+                opacity,
+              }}
+            />
+          );
+        })}
+      </React.Fragment>
+    ))}
   </>
 );
 

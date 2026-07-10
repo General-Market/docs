@@ -40,10 +40,11 @@ export const CRX_COPY: CopyShape = {
   ],
   gantt2nd: "RFQ-C923-USDTRY-03",
   pairSchedule: [
-    { top: "USD", bottom: "CNH", from: 1040 },
-    { top: "USD", bottom: "TRY", from: 1140 },
-    { top: "EUR", bottom: "PLN", from: 1195 },
-    { top: "EUR", bottom: "CZK", from: 1250 },
+    { top: "USD", bottom: "CNH", in: 1098, out: 1132 },
+    { top: "USD", bottom: "TRY", in: 1136, out: 1170 },
+    { top: "USD", bottom: "MXN", in: 1174, out: 1208 },
+    { top: "EUR", bottom: "PLN", in: 1212, out: 1246 },
+    { top: "EUR", bottom: "CZK", in: 1250, out: 1282 },
   ],
   docLabels: ["T+1", "NDF", "Same\nday", "Spot", "Fwd"],
 };

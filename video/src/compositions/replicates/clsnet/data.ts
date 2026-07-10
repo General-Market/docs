@@ -89,7 +89,7 @@ export type CopyShape = {
   detail: [string, string][];
   ganttIds: string[];
   gantt2nd: string;
-  pairSchedule: { top: string; bottom: string; from: number }[];
+  pairSchedule: { top: string; bottom: string; in: number; out: number }[];
   docLabels: string[];
 };
 
@@ -125,13 +125,15 @@ export const COPY: CopyShape = {
     "BC01TYO3V027FG1K",
   ],
   gantt2nd: "BC17BHO8G005PO1I",
-  // currency pair schedule during SEG.pairs (top label above line1-right,
-  // bottom label mirrored below; second city shows inverse pair)
+  // currency pair carousel during SEG.pairs (r5 measured: five pairs at
+  // ~38f cadence; old pair fades IN PLACE ~8f from `out`, next pair RISES
+  // ~90px into the slots from `in`; label caps 58-60px → fs 84)
   pairSchedule: [
-    { top: "USD", bottom: "CNH", from: 1040 },
-    { top: "EUR", bottom: "RUB", from: 1140 },
-    { top: "EUR", bottom: "PLN", from: 1195 },
-    { top: "EUR", bottom: "CZK", from: 1250 },
+    { top: "USD", bottom: "CNH", in: 1098, out: 1132 },
+    { top: "EUR", bottom: "RUB", in: 1136, out: 1170 },
+    { top: "USD", bottom: "TRY", in: 1174, out: 1208 },
+    { top: "EUR", bottom: "PLN", in: 1212, out: 1246 },
+    { top: "EUR", bottom: "CZK", in: 1250, out: 1282 },
   ],
   docLabels: ["Tom/\nnext\nday", "NDF", "Same\nday", "Spot", "Swaps"],
 };
@@ -212,7 +214,7 @@ export const CITIES = {
   bSmallCx: 1230,
   badgeA: { cx: 190, cy: 235, r: 42 },
   badgeB: { cx: 1728, cy: 905, r: 42 },
-  pairFs: 74,
+  pairFs: 84, // cap 58-60 measured at fr_1150
 } as const;
 
 // ─── Matching scene ───
