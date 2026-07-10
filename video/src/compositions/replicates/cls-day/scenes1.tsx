@@ -1019,11 +1019,23 @@ export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
   // right preview: WHITE label + red band tick, both sliding in from the
   // right with the morph (screen-measured tick 1691@934 → 1586@940) +
   // red drop line under the tick appearing f938..944
-  const pP = interpolate(frame, [930, 936], [0, 1], clamp);
+  const pOut = interpolate(frame, [997, 1002], [1, 0], clamp); // gone by f1003 (probed)
+  const pP = interpolate(frame, [930, 936], [0, 1], clamp) * pOut;
   const pTop = lutS([[932, 483], [934, 457], [936, 442], [940, 434]])(frame);
   const pLeft = lutS([[932, 1811], [934, 1692], [936, 1638], [938, 1610], [940, 1602]])(frame);
   const tickX = lutS([[930, 1905], [932, 1785], [934, 1691], [936, 1626], [938, 1596], [940, 1586]])(frame);
   const lineP = interpolate(frame, [938, 944], [0, 1], clamp);
+  // ── doc-phase camera push f1002..1020 (measured): the whole band zooms
+  // (pitch 199→244.75, h→66.4) and rises off the top (y152→-9.4) while
+  // the 00:00 red line grows to the doc bottom (931) at x≈304
+  const bandY6 = lutS([
+    [1000, 152], [1006, 138], [1008, 120], [1010, 70], [1012, 22], [1014, 4], [1017, -7], [1020, -9.4],
+  ])(frame);
+  const pph6 = lutS([[1006, 199], [1008, 208.4], [1010, 222], [1012, 235.6], [1014, 241], [1018, 244.75]])(frame);
+  const x006 = lutS([[1006, 293], [1010, 296], [1013, 304], [1020, 303.75]])(frame);
+  const zb = pph6 / 199;
+  const docLineTop = lutS([[1002, 152], [1014, 0]])(frame);
+  const docLineBot = lutS([[1002, 207], [1008, 560], [1016, 931]])(frame);
   const docP = interpolate(frame, [988, 1015], [0, 1], { ...clamp, easing: EASE });
   const axisP = interpolate(frame, [1025, 1042], [0, 1], clamp);
   // exit zoom into the last bar (blue-area growth table, f1152..1176)
@@ -1053,12 +1065,22 @@ export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
               transformOrigin: "0 0",
             }}
           >
-            <TimelineBand y={152} h={54} originX={293} originHour={24} pxPerHour={199} ink="#FDFDFD" labelSize={32} tickBelow={24} />
+            <TimelineBand
+              y={bandY6}
+              h={54 * zb}
+              originX={x006}
+              originHour={24}
+              pxPerHour={pph6}
+              ink="#FDFDFD"
+              labelSize={32 * zb}
+              tickBelow={24 * zb}
+            />
             {/* red 00:00 line: grows down with the arriving window
                 (bottom 641@930 → 913@936, measured), then SNAPS to the
                 band tick at f938 — the settled state has NO long line
-                (probed f950/f1000: red rows 152..207 only) */}
-            {frame >= 929 && (
+                (probed f950/f1000: red rows 152..207 only). From f1002
+                it regrows to the doc bottom while the band rises off. */}
+            {frame >= 929 && frame < 1002 && (
               <Milestone
                 x={293}
                 lineTop={152}
@@ -1067,6 +1089,11 @@ export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
                     ? lutS([[929, 422], [930, 524.6], [932, 806], [934, 875.7], [936, 893.4], [937, 895]])(frame)
                     : 207
                 }
+              />
+            )}
+            {frame >= 1002 && (
+              <div
+                style={{ position: "absolute", left: x006, top: docLineTop, width: 4.6, height: docLineBot - docLineTop, background: C.marker }}
               />
             )}
           </div>
@@ -1081,7 +1108,7 @@ export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
             ))}
           </div>
         </div>
-        <div style={{ position: "absolute", left: tickX, top: bandTop6 + 54 * s6y, width: 5, height: 501 - (bandTop6 + 54 * s6y), background: C.marker, opacity: lineP }} />
+        <div style={{ position: "absolute", left: tickX, top: bandTop6 + 54 * s6y, width: 5, height: 501 - (bandTop6 + 54 * s6y), background: C.marker, opacity: lineP * pOut }} />
         <div
           style={{
             opacity: textP,
@@ -1166,9 +1193,11 @@ export const SchedDoc: React.FC<{
         {bars.map((b) => {
           const [fx, fy, fw, fh] = RECTS[b];
           const outlineAt = fillFrom - 25 + b * 8;
-          const fillAt = fillFrom + b * 14;
+          // fills cascade left→right f1058..1075 (per-bar blue probed:
+          // bars 0-1 full @1064, bar2 partial, bar4 grows 1066→1075)
+          const fillAt = fillFrom + 3 + b * 2.2;
           if (frame < outlineAt) return null;
-          const filled = frame >= fillAt;
+          const fillP = interpolate(frame, [fillAt, fillAt + (b === 4 ? 9 : 6)], [0, 1], clamp);
           return (
             <rect
               key={b}
@@ -1177,7 +1206,8 @@ export const SchedDoc: React.FC<{
               width={fw * w}
               height={fh * h}
               rx={h * 0.0537 * 0.3}
-              fill={filled ? C.blue : "none"}
+              fill={C.blue}
+              fillOpacity={fillP}
               stroke={ink}
               strokeWidth="3"
             />
