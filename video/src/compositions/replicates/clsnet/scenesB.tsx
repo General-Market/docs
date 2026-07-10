@@ -339,10 +339,12 @@ export const SmallHex: React.FC<{
   artW: number;
   letter?: string;
   opacity?: number;
-}> = ({ art, cx, cy, w, artW, letter, opacity = 1 }) => {
+  badge?: { dx: number; dy: number; r: number }; // fractions of w + radius
+  artScale?: number; // override: ref locks hexes CLIP a ~0.6-scale city
+}> = ({ art, cx, cy, w, artW, letter, opacity = 1, badge, artScale }) => {
   if (opacity <= 0) return null;
   const h = w * 0.906;
-  const scale = (w * 0.92) / artW;
+  const scale = artScale ?? (w * 0.92) / artW;
   return (
     <div style={{ position: "absolute", left: 0, top: 0, opacity }}>
       <div
@@ -361,7 +363,7 @@ export const SmallHex: React.FC<{
         </div>
       </div>
       <Hexagon cx={cx} cy={cy} w={w} />
-      {letter && <Badge letter={letter} cx={cx - w * 0.38} cy={cy - w * 0.40} r={30} />}
+      {letter && <Badge letter={letter} cx={cx + w * (badge?.dx ?? -0.38)} cy={cy + w * (badge?.dy ?? -0.40)} r={badge?.r ?? 30} />}
     </div>
   );
 };
@@ -373,9 +375,12 @@ export const EdgeRulers: React.FC<{ f: number }> = ({ f }) => {
   const rows = Array.from({ length: 14 }, (_, i) => i);
   return (
     <>
+      {/* r5: both edges carry a 36px #A8A8A8 band through the whole
+          matching/locks phase (probed f1500/1700/1900) */}
+      <div style={{ position: "absolute", left: 0, top: 0, width: 36, height: 1080, backgroundColor: C.grey }} />
+      <div style={{ position: "absolute", left: 1884, top: 0, width: 36, height: 1080, backgroundColor: C.grey }} />
       {[14, 1906].map((x, side) => (
         <div key={side} style={{ position: "absolute", left: x - 12, top: 0, width: 24, height: 1080, overflow: "visible" }}>
-          <div style={{ position: "absolute", left: 10, top: 0, width: 4, height: 1080, backgroundColor: C.band }} />
           {rows.map((i) => {
             const y = ((i * 110 + scroll) % 1540) - 230;
             const hour = (26 - i + 24 * 10) % 24;
@@ -419,12 +424,13 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   if (f < SEG.reportsUp[0] - 10 || f >= SEG.strip[0] + 10) return null;
   const phase1 = f < 1770; // reports beside CLSNet box, arrows up to small hexes
   const growP = lerp(f, [1755, 1785], [0, 1]);
-  const hexW = 230 + 170 * growP;
-  const hexAx = 415 + (640 - 415) * growP;
-  const hexBx = 1512 + (1290 - 1512) * growP;
-  const hexY = 400 + (330 - 400) * growP;
+  // r5 targets measured at f1840: hexes (612,385)/(1306,385) w385
+  const hexW = 230 + 155 * growP;
+  const hexAx = 415 + (612 - 415) * growP;
+  const hexBx = 1512 + (1306 - 1512) * growP;
+  const hexY = 400 + (385 - 400) * growP;
   const docOp = lerp(f, [1800, 1815], [0, 1]);
-  const lockClosedP = f >= 1868 ? 1 : 0;
+  const lockClosedP = f >= 1838 ? 1 : 0;
   // no exit fade: ref keeps the locks layout intact until the strip's band
   // wipe (1909-1930) has fully covered it (measured: content static at f1914)
   return (
@@ -439,15 +445,15 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
           <Elbow points={[[1360, 700], [1512, 700], [1512, 515]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1])} />
         </>
       )}
-      <SmallHex art="cityA" cx={hexAx} cy={hexY} w={hexW} artW={1150} letter="A" />
-      <SmallHex art="cityB" cx={hexBx} cy={hexY} w={hexW} artW={1190} letter="B" />
-      {/* orange rising lines under hexes */}
+      <SmallHex art="cityA" cx={hexAx} cy={hexY} w={hexW} artW={1150} letter="A" badge={{ dx: -0.312, dy: -0.314, r: 36 }} artScale={0.6 * (hexW / 385)} />
+      <SmallHex art="cityB" cx={hexBx} cy={hexY} w={hexW} artW={1190} letter="B" badge={{ dx: -0.312, dy: -0.314, r: 36 }} artScale={0.6 * (hexW / 385)} />
+      {/* orange rising lines under the doc+lock groups (ref x632/1313, from y872) */}
       {!phase1 && (
         <>
-          <Elbow points={[[hexAx, 1080], [hexAx, hexY + hexW * 0.5 + 250]]} opacity={docOp} />
-          <Elbow points={[[hexBx, 1080], [hexBx, hexY + hexW * 0.5 + 250]]} opacity={docOp} />
-          <DocWithLock x={hexAx - 70} y={hexY + 210} closed={lockClosedP} opacity={docOp} />
-          <DocWithLock x={hexBx - 70} y={hexY + 210} closed={lockClosedP} opacity={docOp} />
+          <Elbow points={[[hexAx + 20, 1080], [hexAx + 20, 872]]} opacity={docOp} />
+          <Elbow points={[[hexBx + 7, 1080], [hexBx + 7, 872]]} opacity={docOp} />
+          <DocWithLock x={hexAx - 58} y={643} closed={lockClosedP} opacity={docOp} />
+          <DocWithLock x={hexBx - 76} y={643} closed={lockClosedP} opacity={docOp} />
         </>
       )}
     </AbsoluteFill>
@@ -463,12 +469,12 @@ const DocWithLock: React.FC<{ x: number; y: number; closed: number; opacity: num
   if (opacity <= 0) return null;
   return (
     <div style={{ position: "absolute", left: x, top: y, opacity }}>
-      <Doc x={0} y={0} w={130} h={160} />
+      <Doc x={0} y={0} w={150} h={190} />
       <TracedArt
         name={closed >= 1 ? "lockClosed" : "lockList"}
-        x={60}
-        y={70}
-        scale={0.32}
+        x={70}
+        y={85}
+        scale={0.38}
       />
     </div>
   );
