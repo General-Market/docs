@@ -622,6 +622,14 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 23: map with FX Global Code badges (f3104-3364) ═══
+// r7 measured second-map geometry (hex order = MAP.hexes order)
+const BADGE_HEX_POS: [number, number][] = [
+  [402, 410], [664, 259], [583, 791], [1092, 421], [915, 727], [1507, 335], [1418, 798],
+];
+const BADGE_POS: [number, number][] = [
+  [412, 428], [685, 264], [599, 824], [1116, 448], [933, 750], [1520, 371], [1441, 801],
+];
+
 export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { sans: SANS, serif: SERIF } = useBrand();
   const f = frame;
@@ -652,13 +660,20 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
         }}
       >
         <TracedArt name="worldMap" x={MAP.x} y={MAP.y} opacity={mapP} />
+        {/* r6/r7 probed at f3280 vs f700: map outline IDENTICAL (bbox
+            206-1711/60-1015) but hexes ~1.18x bigger at shifted centers
+            (fill-offset method); badges 104x102 at measured absolute spots,
+            35-badges GREY-BLUE #5A7593 / 50-badges TEAL #006F88 (corner-
+            sampled — r5's all-teal read was text-polluted). */}
         {MAP.hexes.map((hx, i) => {
           const pop = 3116 + i * 7;
           const s = lerp(f, [pop, pop + 10], [0, 1]);
           if (s <= 0) return null;
+          const [cx, cy] = BADGE_HEX_POS[i];
+          const w = 254 * s;
           return (
-            <div key={hx.art} style={{ position: "absolute", left: hx.cx - (MAP.hexW * s) / 2, top: hx.cy - (MAP.hexW * 0.906 * s) / 2 }}>
-              <TracedArt name={hx.art} scale={s} />
+            <div key={hx.art} style={{ position: "absolute", left: cx - w / 2, top: cy - (w * 0.906) / 2 }}>
+              <TracedArt name={hx.art} scale={(254 / 215) * s} />
             </div>
           );
         })}
@@ -667,26 +682,25 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
           const at = 3160 + i * 9;
           const op = lerp(f, [at, at + 8], [0, 1]);
           if (op <= 0) return null;
-          // r5: ref 35/50 assignment read per hex at f3280; all badge bodies
-          // are TEAL #006F88 (probed), not the title-card greys
           const fifty = [false, true, false, false, true, true, false][i];
+          const [bx, by] = BADGE_POS[i];
           return (
             <div
               key={`b${i}`}
               style={{
                 position: "absolute",
-                left: hx.cx + 40,
-                top: hx.cy + 10,
-                width: 92,
-                height: 94,
-                backgroundColor: "#006F88",
+                left: bx,
+                top: by,
+                width: 104,
+                height: 102,
+                backgroundColor: fifty ? "#006F88" : "#5A7593",
                 opacity: op,
-                padding: "8px 8px",
+                padding: "9px 9px",
               }}
             >
-              <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.1, color: C.white }}>FX Global{"\n"}Code</div>
-              <div style={{ fontFamily: SANS, fontSize: 10, color: C.cardText, marginTop: 2 }}>Principle</div>
-              <div style={{ fontFamily: SERIF, fontSize: 38, lineHeight: 0.9, color: "rgba(235,237,244,0.8)", textAlign: "right" }}>{fifty ? "50" : "35"}</div>
+              <div style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.1, color: C.white, textAlign: "center", whiteSpace: "pre" }}>{"FX Global\nCode"}</div>
+              <div style={{ fontFamily: SANS, fontSize: 11, color: "rgba(235,237,244,0.75)", marginTop: 1, textAlign: "center" }}>Principle</div>
+              <div style={{ fontFamily: SERIF, fontSize: 42, lineHeight: 0.85, color: "rgba(235,237,244,0.85)", textAlign: "center" }}>{fifty ? "50" : "35"}</div>
             </div>
           );
         })}
