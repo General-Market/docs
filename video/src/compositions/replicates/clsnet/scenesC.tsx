@@ -1,6 +1,7 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
-import { C, GANTT, DETAIL, MAP, SEG, ENDCARD } from "./data";
+import { AbsoluteFill, interpolate } from "remotion";
+import { C, CIRCLE, GANTT, DETAIL, LEDGE, MAP, REPORT, SEG, STRIP2, ENDCARD } from "./data";
+import { clamp } from "./ui";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { Badge, ClsNetBox, Doc, Elbow, Pill, SansText, SerifLabel, lerp } from "./ui";
@@ -13,17 +14,57 @@ const PILL_COL: Record<string, string> = {
   orangeDeep: C.orangeDeep,
 };
 
-// ═══ Scene 16: gantt cascade (f2212-2290) ═══
+// ═══ Scene 16: gantt cascade (f2127-2324) ═══
+// Measured: page rides up from below 2129-2143 (bracket at screen y≈892 at
+// f2133), rows cascade 2145+i*3.2, detail card 2240-2266, dissolves BACK into
+// the gantt 2279-2291, full gantt holds to 2303, then the whole panel shrinks
+// into a document (fr_2312 mid, settled fr_2330) while the CLSNet box slides in.
 export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
-  if (f < 2150 || f >= 2312) return null;
-  const bgOp = lerp(f, [2152, 2166], [0, 1]);
-  // rows cascade in staggered; collapse to detail at ~2290
-  const detailP = lerp(f, [2240, 2266], [0, 1]);
-  const out = lerp(f, [2292, 2306], [1, 0]);
+  if (f < 2129 || f >= 2324) return null;
+  // ride-in from below (p ≈ t^1.4 fits the f2133 measurement)
+  const rideT = lerp(f, [2129, 2143], [0, 1]);
+  const pageY = 1080 * (1 - Math.pow(rideT, 1.4));
+  const bracketP = lerp(f, [2131, 2142], [0, 1]);
+  // detail phase in, then reversed (ref restores the full gantt by 2291)
+  const detailP = lerp(f, [2240, 2266], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
+  // shrink-into-doc: full screen → mini panel inside the left doc (quadOut)
+  const st = lerp(f, [2303, 2324], [0, 1]);
+  const sp = 1 - (1 - st) * (1 - st);
+  const R = {
+    x: REPORT.panel.x * sp,
+    y: REPORT.panel.y * sp + pageY,
+    w: 1920 + (REPORT.panel.w - 1920) * sp,
+    h: 1080 + (REPORT.panel.h - 1080) * sp,
+  };
+  // doc outline keyframed through fr_2306 (offscreen-big) / fr_2312 / fr_2330
+  const docR = {
+    x: interpolate(f, [2306, 2312, 2324], [-150, 95, REPORT.docL.x], clamp),
+    y: interpolate(f, [2306, 2312, 2324], [-700, -30, REPORT.docL.y], clamp),
+    w: interpolate(f, [2306, 2312, 2324], [2600, 1040, REPORT.docL.w], clamp),
+    h: interpolate(f, [2306, 2312, 2324], [2900, 1070, REPORT.docL.h], clamp),
+  };
+  const docOp = lerp(f, [2306, 2312], [0, 1]);
+  const boxX = interpolate(f, [2313, 2323], [1920, REPORT.box.x], { ...clamp, easing: (t) => 1 - (1 - t) * (1 - t) });
   return (
-    <AbsoluteFill style={{ backgroundColor: C.navy, opacity: bgOp * out }}>
+    <AbsoluteFill>
+      {/* white ground appears behind the shrinking panel */}
+      {st > 0 && <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />}
+      {/* navy page (shrinks to the doc's mini panel) */}
+      <div
+        style={{
+          position: "absolute",
+          left: R.x,
+          top: R.y,
+          width: R.w,
+          height: R.h,
+          backgroundColor: C.navy,
+          borderRadius: 14 * sp,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, transform: `scale(${R.w / 1920}, ${R.h / 1080})`, transformOrigin: "0 0" }}>
       {/* top bracket ruler */}
       <svg width={1920} height={60} style={{ position: "absolute", top: GANTT.rulerY - 30 }}>
         <path
@@ -31,12 +72,14 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           fill="none"
           stroke={C.white}
           strokeWidth={2.5}
+          strokeDasharray={4700}
+          strokeDashoffset={4700 * (1 - bracketP)}
         />
       </svg>
       {/* rows */}
       {GANTT.rows.map((r, i) => {
-        const at = 2166 + i * 7;
-        const op = lerp(f, [at, at + 7], [0, 1]);
+        const at = 2145 + i * 3.2;
+        const op = lerp(f, [at, at + 5], [0, 1]);
         if (op <= 0) return null;
         // in detail phase only row 0 (EM9E) and row 2 (PO1I) remain
         const keep = i === 0 || i === 2;
@@ -47,21 +90,53 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
         const x = i === 2 ? r.x + detailP * (605 - r.x) : r.x;
         return (
           <div key={i} style={{ position: "absolute", left: 0, top: 0, opacity: rowOp }}>
-            <Pill x={x} y={y} w={i === 2 && detailP > 0.5 ? 130 : r.w} h={44} color={PILL_COL[r.color]} />
-            <SansText text={COPY.ganttIds[i]} x={x + (i === 2 && detailP > 0.5 ? 130 : r.w) + 24} y={y + 8} fs={GANTT.labelFs} color={C.white} />
+            <Pill x={x} y={y} w={i === 2 && detailP > 0.5 ? 130 : r.w} h={GANTT.pillH} color={PILL_COL[r.color]} />
+            <SansText text={COPY.ganttIds[i]} x={x + (i === 2 && detailP > 0.5 ? 130 : r.w) + 24} y={y + 11} fs={GANTT.labelFs} color={C.white} />
           </div>
         );
       })}
-      {/* footnote rules bottom-left (pre-detail only) */}
-      <div style={{ position: "absolute", left: 210, top: 980, width: 900, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2216, 2224], [0, 1]) }} />
-      <div style={{ position: "absolute", left: 210, top: 1012, width: 500, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2220, 2228], [0, 1]) }} />
-      {/* detail card */}
-      {detailP > 0 && <DetailCard opacity={lerp(f, [2248, 2268], [0, 1])} />}
+      {/* footnote rules bottom-left (pre-detail only; fr_2172: y971/1010) */}
+      <div style={{ position: "absolute", left: 193, top: 971, width: 530, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2166, 2172], [0, 1]) }} />
+      <div style={{ position: "absolute", left: 192, top: 1010, width: 395, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2170, 2176], [0, 1]) }} />
+      {/* detail card (text fades first on the way out) */}
+      {detailP > 0 && (
+        <DetailCard
+          opacity={lerp(f, [2248, 2268], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
+          textOpacity={lerp(f, [2279, 2286], [1, 0])}
+        />
+      )}
+        </div>
+      </div>
+      {/* document outline drawing around the shrinking panel */}
+      {docOp > 0 && (
+        <svg
+          width={docR.w}
+          height={docR.h}
+          viewBox="0 0 270 345"
+          preserveAspectRatio="none"
+          style={{ position: "absolute", left: docR.x, top: docR.y, opacity: docOp }}
+        >
+          <path
+            d="M4,4 H206 L266,64 V341 H44 Q4,341 4,301 Z"
+            fill="none"
+            stroke={C.navy}
+            strokeWidth={4}
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          <path d="M206,4 V64 H266" fill="none" stroke={C.navy} strokeWidth={4} vectorEffect="non-scaling-stroke" />
+          <rect x={24} y={22} width={62} height={6} fill={C.navy} />
+          <rect x={24} y={36} width={40} height={5} fill={C.navy} />
+          <rect x={177} y={293} width={67} height={22} rx={8} fill={C.orangeDeep} opacity={lerp(f, [2310, 2316], [0, 1])} />
+        </svg>
+      )}
+      {/* CLSNet box slides in from the right */}
+      {f >= 2313 && <ClsNetBox x={boxX} y={REPORT.box.y} w={REPORT.box.w} labelFs={48} />}
     </AbsoluteFill>
   );
 };
 
-const DetailCard: React.FC<{ opacity: number }> = ({ opacity }) => {
+const DetailCard: React.FC<{ opacity: number; textOpacity?: number }> = ({ opacity, textOpacity = 1 }) => {
   const COPY = useCopy();
   const { sans: SANS } = useBrand();
   if (opacity <= 0) return null;
@@ -90,6 +165,7 @@ const DetailCard: React.FC<{ opacity: number }> = ({ opacity }) => {
               fontFamily: SANS,
               fontSize: DETAIL.rowFs,
               color: C.navy,
+              opacity: textOpacity,
             }}
           >
             {k}
@@ -102,6 +178,7 @@ const DetailCard: React.FC<{ opacity: number }> = ({ opacity }) => {
               fontFamily: SANS,
               fontSize: DETAIL.rowFs,
               color: C.orangeDeep,
+              opacity: textOpacity,
             }}
           >
             {v}
@@ -134,31 +211,89 @@ const DetailCard: React.FC<{ opacity: number }> = ({ opacity }) => {
   );
 };
 
-// ═══ Scene 17: report out of CLSNet (f2290-2372 → white) ═══
-export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
-  const COPY = useCopy();
-  const f = frame;
-  if (f < 2296 || f >= SEG.handshake[0] + 40) return null;
-  const inOp = lerp(f, [2298, 2312], [0, 1]);
-  const out = lerp(f, [2396, 2412], [1, 0]);
+// ═══ Scene 17: report out of CLSNet (f2324-2412) ═══
+// Measured fr_2330 (settled) / fr_2360 (after +125px drift, mesh icons on docs):
+// left doc + CLSNet box + right doc, orange verticals from the top edge,
+// orange horizontal stubs at y547 between the elements.
+const ReportDoc: React.FC<{
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  pillColor: string;
+  meshP: number;
+}> = ({ x, y, w, h, pillColor, meshP }) => {
+  // deterministic scatter dots (processing) that give way to the mesh icon
+  const dots = [
+    [128, 78], [172, 96], [96, 108], [150, 126], [200, 118], [118, 142], [176, 150], [142, 88],
+  ] as const;
+  const mesh = [
+    [135, 55], [175, 62], [200, 90], [198, 125], [170, 152], [130, 155], [102, 128], [104, 88], [150, 105],
+  ] as const;
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp }}>
+    <svg width={w} height={h} viewBox="0 0 270 345" style={{ position: "absolute", left: x, top: y }}>
+      <path d="M4,4 H206 L266,64 V341 H44 Q4,341 4,301 Z" fill={C.white} stroke={C.navy} strokeWidth={4} strokeLinejoin="round" />
+      <path d="M206,4 V64 H266" fill="none" stroke={C.navy} strokeWidth={4} />
+      <rect x={24} y={22} width={62} height={6} fill={C.navy} />
+      <rect x={24} y={36} width={40} height={5} fill={C.navy} />
+      {/* scatter dots → geodesic mesh */}
+      {meshP < 1 && dots.map(([dx, dy], i) => (
+        <circle key={`d${i}`} cx={dx} cy={dy} r={2.5} fill={C.navy} opacity={1 - meshP} />
+      ))}
+      {meshP > 0 && (
+        <g opacity={meshP}>
+          {mesh.map(([mx, my], i) => (
+            <React.Fragment key={`m${i}`}>
+              {mesh.slice(i + 1).map(([nx, ny], j) => {
+                const dist = Math.hypot(nx - mx, ny - my);
+                if (dist > 78) return null;
+                return <line key={j} x1={mx} y1={my} x2={nx} y2={ny} stroke={C.navy} strokeWidth={1.2} />;
+              })}
+            </React.Fragment>
+          ))}
+        </g>
+      )}
+      {/* mini gantt panel */}
+      <rect x={40} y={155} width={205} height={120} rx={10} fill={C.navy} />
+      <path d={`M58,172 H228 M58,172 V178 M92,172 V178 M126,172 V178 M160,172 V178 M194,172 V178 M228,172 V178`} stroke={C.white} strokeWidth={1.5} fill="none" />
+      {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+        <rect
+          key={i}
+          x={56 + i * 16}
+          y={186 + i * 12}
+          width={34}
+          height={8}
+          rx={3}
+          fill={[C.lavender, C.lavender, C.tan, C.orangeDeep][i % 4]}
+        />
+      ))}
+      <rect x={177} y={293} width={67} height={22} rx={8} fill={pillColor} />
+    </svg>
+  );
+};
+
+export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
+  const f = frame;
+  if (f < 2324 || f >= SEG.handshake[0] + 40) return null;
+  const out = lerp(f, [2396, 2412], [1, 0]);
+  // whole group drifts +125px (fr_2330 → fr_2360)
+  const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]);
+  const meshP = lerp(f, [2342, 2352], [0, 1]);
+  const rightOp = lerp(f, [2324, 2330], [0, 1]);
+  return (
+    <AbsoluteFill style={{ backgroundColor: C.white }}>
       <div style={{ position: "absolute", inset: 0, opacity: out }}>
-        {/* big report doc with gantt mini-panel */}
-        <svg width={310} height={400} viewBox="0 0 310 400" style={{ position: "absolute", left: 160, top: 90 }}>
-          <path d="M3,3 H240 L307,70 V370 Q307,397 280,397 H3 Z" fill={C.white} stroke={C.navy} strokeWidth={4} strokeLinejoin="round" />
-          <rect x={38} y={22} width={90} height={8} fill={C.navy} />
-          <rect x={30} y={165} width={250} height={140} rx={10} fill={C.navy} />
-          <rect x={210} y={330} width={70} height={18} rx={9} fill={C.orangeDeep} />
-        </svg>
-        {/* mini gantt inside the doc */}
-        {COPY.ganttIds.slice(0, 9).map((id, i) => (
-          <div key={id} style={{ position: "absolute", left: 205 + i * 6, top: 268 + i * 13, width: 40, height: 7, borderRadius: 3, backgroundColor: [C.lavender, C.lavender, C.tan, C.orangeDeep][i % 4] }} />
-        ))}
-        <Elbow points={[[315, 60], [315, 0]]} opacity={1} />
-        <Elbow points={[[475, 285], [590, 285]]} opacity={1} />
-        {/* big CLSNet box */}
-        <ClsNetBox x={1145} y={95} w={620} labelFs={56} />
+        {/* orange verticals pinned to the top edge */}
+        <Elbow points={[[REPORT.vertLx, 0], [REPORT.vertLx, REPORT.docL.y + dy]]} />
+        <Elbow points={[[REPORT.vertRx, 0], [REPORT.vertRx, REPORT.docR.y + dy]]} opacity={rightOp} />
+        {/* horizontal stubs */}
+        <Elbow points={[[570, REPORT.horizY + dy], [712, REPORT.horizY + dy]]} />
+        <Elbow points={[[1195, REPORT.horizY + dy], [1385, REPORT.horizY + dy]]} opacity={rightOp} />
+        <ReportDoc x={REPORT.docL.x} y={REPORT.docL.y + dy} w={REPORT.docL.w} h={REPORT.docL.h} pillColor={C.orangeDeep} meshP={meshP} />
+        <div style={{ position: "absolute", inset: 0, opacity: rightOp }}>
+          <ReportDoc x={REPORT.docR.x} y={REPORT.docR.y + dy} w={REPORT.docR.w} h={REPORT.docR.h} pillColor={C.pillNavy} meshP={meshP} />
+        </div>
+        <ClsNetBox x={REPORT.box.x} y={REPORT.box.y + dy} w={REPORT.box.w} labelFs={48} />
       </div>
     </AbsoluteFill>
   );
@@ -242,142 +377,200 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ═══ Scene 20: strip reprise with navy band + CLSNet rider (f2612-2822) ═══
+// ═══ Scene 20: strip reprise with navy band + CLSNet box (f2612-2822) ═══
+// Measured regular_0218/0222/0226: band y405-680, scroll 9.76 px/f, the
+// orange-border CLSNet box FIXED at screen center; clusters anchored at f2775.
 export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.strip2[0] || f >= SEG.reportCard[0] + 14) return null;
   const inOp = lerp(f, [2612, 2626], [0, 1]);
-  const out = lerp(f, [2808, 2822], [1, 0]);
-  const bandY = 380;
-  const bandH = 240;
-  const hourX = (h: number) => 400 + h * 320 - (f - 2612) * 6.2;
-  const ups = [
-    { art: "rowBank", hour: 0.4, scale: 1.05 },
-    { art: "stripTowerUp", hour: 2.6, scale: 1.0 },
-    { art: "rowTowers", hour: 5.2, scale: 0.9 },
-    { art: "rowBank", hour: 8.2, scale: 1.05 },
-  ];
-  const dns = [
-    { art: "stripInvSail", hour: 0.9 },
-    { art: "stripInvBrick", hour: 3.6 },
-    { art: "stripInvCity", hour: 6.2 },
-    { art: "stripInvSail", hour: 9.0 },
-  ];
-  const boxX = Math.max(720, Math.min(1160, hourX(1.9)));
+  // ref cuts to the navy report card at ~2823 (white-fraction scan)
+  const out = lerp(f, [2820, 2826], [1, 0]);
+  const { bandY, bandH } = STRIP2;
+  const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * STRIP2.rate;
+  const artDims: Record<string, [number, number]> = {
+    rowOffice: [420, 210],
+    stripTowerUp: [370, 255],
+    rowSail: [760, 235],
+  };
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
-      {ups.map((u, i) => {
-        const x = hourX(u.hour);
-        if (x < -700 || x > 2100) return null;
-        const artH = { rowBank: 145, stripTowerUp: 255, rowTowers: 265 }[u.art] ?? 200;
-        return <TracedArt key={i} name={u.art} x={x} y={bandY - artH * u.scale + 3} scale={u.scale} />;
+      {STRIP2.ups.map((u, i) => {
+        const x = sx(u.cx);
+        if (x < -900 || x > 2400) return null;
+        const [aw, ah] = artDims[u.art];
+        const s = ("scale" in u ? u.scale : undefined) ?? 1;
+        return <TracedArt key={i} name={u.art} x={x - (aw * s) / 2} y={bandY - ah * s + 3} scale={s} />;
       })}
-      {dns.map((d, i) => {
-        const x = hourX(d.hour);
-        if (x < -700 || x > 2100) return null;
+      {STRIP2.dns.map((d, i) => {
+        const x = sx(d.cx);
+        if (x < -900 || x > 2400) return null;
+        const aw = { stripInvSail: 575, stripInvCity: 340, stripInvBrick: 300 }[d.art]!;
         return (
           <TracedArt
             key={i}
             name={d.art}
-            x={x}
+            x={x - aw / 2}
             y={bandY + bandH - 2}
             recolor={{ "#FFFFFF": C.navy }}
           />
         );
       })}
       <div style={{ position: "absolute", left: 0, top: bandY, width: 1920, height: bandH, backgroundColor: C.navy }} />
-      {/* CLSNet box riding the band, orange border, no label */}
-      <ClsNetBox x={boxX} y={bandY + 30} w={180} label={false} border="orange" markP={lerp(f, [2650, 2680], [0, 1])} />
-      {/* drifting pills in the band */}
-      <Pill x={hourX(0.2)} y={bandY + 150} w={90} h={34} color={C.orangeDeep} />
-      <Pill x={hourX(3.4)} y={bandY + 60} w={80} h={30} color={C.lavender} />
+      {/* pills riding the strip inside the band */}
+      {STRIP2.pills.map((p, i) => {
+        const x = sx(p.x);
+        if (x < -300 || x > 2000) return null;
+        return <Pill key={i} x={x} y={p.y} w={p.w} h={p.h} color={p.c} />;
+      })}
+      {/* CLSNet box fixed at center, orange border, no label */}
+      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2626, 2650], [0, 1])} />
     </AbsoluteFill>
   );
 };
 
-// ═══ Scene 21: netting report card (f2822-2990) ═══
+// ═══ Scene 21+22: netting report card → collapse → building pop (f2822-3104) ═══
+// Measured: card holds to 2976, collapses into a wide outline pill (fr_2982:
+// 365-1555 × 137-295), pill shrinks to (365,520,430,95) by ~3003; navy top edge
+// drops 0→390→543 (fr_3009 / fr_3021); cluster rides the edge; tan pill at
+// (210,540) by fr_3060; orange pill bottom-right (1355,940) from ~3018.
 export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.reportCard[0] - 12 || f >= SEG.buildPop[0] + 12) return null;
-  const bgOp = lerp(f, [2810, 2824], [0, 1]);
-  const cardP = lerp(f, [2830, 2856], [0, 1]);
-  const rowsP = lerp(f, [2862, 2886], [0, 1]);
-  // segments merge (netting) f2900-2950
-  const mergeP = lerp(f, [2900, 2950], [0, 1]);
-  const out = lerp(f, [2978, 2992], [1, 0]);
+  if (f < SEG.reportCard[0] - 12 || f >= SEG.mapBadges[0]) return null;
+  const bgOp = lerp(f, [2818, 2826], [0, 1]);
+  // ref: navy holds empty until the outline draws ~2875-2900 (white-frac scan)
+  const cardP = lerp(f, [2874, 2898], [0, 1]);
+  const rowsP = lerp(f, [2898, 2922], [0, 1]) * lerp(f, [2972, 2982], [1, 0]);
+  // segments merge (netting)
+  const mergeP = lerp(f, [2925, 2955], [0, 1]);
   const card = { x: 530, y: 190, w: 840, h: 700 };
   const rows = [
     { y: 390, color: C.lavender, segs: [90, 55, 120, 80, 60, 95] },
     { y: 480, color: C.orangeDeep, segs: [130, 70, 60, 100, 90, 70] },
     { y: 560, color: C.tan, segs: [75, 110, 140, 60, 85, 55] },
   ];
+  // navy ground edge drops, revealing white above (measured keys)
+  const edgeY = interpolate(f, [2997, 3009, 3015], [0, 390, 543], clamp);
+  // card outline → wide pill → small pill → slides left (keyframed rects)
+  const pill = {
+    x: interpolate(f, [2976, 2982, 3003, 3030], [card.x, 365, 365, 210], clamp),
+    y: interpolate(f, [2976, 2982, 3003, 3030], [card.y, 137, 520, 540], clamp),
+    w: interpolate(f, [2976, 2982, 3003, 3030], [card.w, 1190, 430, 345], clamp),
+    h: interpolate(f, [2976, 2982, 3003, 3030], [card.h, 158, 95, 95], clamp),
+  };
+  const collapseP = lerp(f, [2976, 2982], [0, 1]);
+  const outlineOp = lerp(f, [3012, 3022], [1, 0]);
+  const tanOp = lerp(f, [3040, 3052], [0, 1]);
+  // cluster rises from behind the dropping edge
+  const clipRise = lerp(f, [2999, 3010], [0, 1]);
+  const clusterS = 1.15;
+  const clusterH = 255 * clusterS;
+  const orangeOp = lerp(f, [3017, 3023], [0, 1]);
   return (
-    <AbsoluteFill style={{ backgroundColor: C.navy, opacity: bgOp * out }}>
-      <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <path
-          d={`M${card.x + 40},${card.y} H${card.x + card.w - 40} Q${card.x + card.w},${card.y} ${card.x + card.w},${card.y + 40} V${card.y + card.h - 40} Q${card.x + card.w},${card.y + card.h} ${card.x + card.w - 40},${card.y + card.h} H${card.x + 40} Q${card.x},${card.y + card.h} ${card.x},${card.y + card.h - 40} V${card.y + 40} Q${card.x},${card.y} ${card.x + 40},${card.y}`}
-          fill="none"
-          stroke={C.white}
-          strokeWidth={2.5}
-          strokeDasharray={3100}
-          strokeDashoffset={3100 * (1 - cardP)}
+    <AbsoluteFill style={{ opacity: bgOp }}>
+      {/* white ground above the dropping navy edge */}
+      <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />
+      <div style={{ position: "absolute", left: 0, top: edgeY, width: 1920, height: 1080 - edgeY, backgroundColor: C.navy }} />
+      {/* cluster pinned to the navy edge */}
+      {clipRise > 0 && (
+        <div style={{ position: "absolute", left: 960 - (370 * clusterS) / 2, top: edgeY - clusterH * clipRise, width: 370 * clusterS, height: clusterH * clipRise, overflow: "hidden" }}>
+          <TracedArt name="stripTowerUp" x={0} y={0} scale={clusterS} />
+        </div>
+      )}
+      {/* card outline (dash-draw, then it becomes the collapse pill) */}
+      {collapseP <= 0 ? (
+        <svg width={1920} height={1080} style={{ position: "absolute" }}>
+          <path
+            d={`M${card.x + 40},${card.y} H${card.x + card.w - 40} Q${card.x + card.w},${card.y} ${card.x + card.w},${card.y + 40} V${card.y + card.h - 40} Q${card.x + card.w},${card.y + card.h} ${card.x + card.w - 40},${card.y + card.h} H${card.x + 40} Q${card.x},${card.y + card.h} ${card.x},${card.y + card.h - 40} V${card.y + 40} Q${card.x},${card.y} ${card.x + 40},${card.y}`}
+            fill="none"
+            stroke={C.white}
+            strokeWidth={2.5}
+            strokeDasharray={3100}
+            strokeDashoffset={3100 * (1 - cardP)}
+          />
+        </svg>
+      ) : (
+        outlineOp > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: pill.x,
+              top: pill.y,
+              width: pill.w,
+              height: pill.h,
+              border: `3px solid ${C.white}`,
+              borderRadius: `${Math.min(80, pill.h / 2)}px ${Math.min(80, pill.h / 2)}px ${Math.min(80, pill.h / 2)}px 8px`,
+              opacity: outlineOp,
+            }}
+          />
+        )
+      )}
+      {/* tan pill straddling the edge (fr_3060) */}
+      {tanOp > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 210,
+            top: 540,
+            width: 345,
+            height: 95,
+            backgroundColor: C.tan,
+            border: `4px solid ${C.white}`,
+            borderRadius: "48px 48px 48px 8px",
+            opacity: tanOp,
+          }}
         />
-      </svg>
-      <div style={{ position: "absolute", left: card.x + 70, top: card.y + 75, width: (card.w - 140) * rowsP, height: 2.5, backgroundColor: C.white }} />
-      {rows.map((r, ri) => {
-        const total = r.segs.reduce((a, b) => a + b, 0) + (r.segs.length - 1) * 10;
-        // merged state: 3 wide segments
-        const merged = [total * 0.45, total * 0.3, total * 0.19];
-        const segs = mergeP < 0.5 ? r.segs : merged;
-        const gap = mergeP < 0.5 ? 10 : 14;
-        let xa = card.x + 70;
-        return (
-          <React.Fragment key={ri}>
-            {segs.map((wseg, i) => {
-              const el = (
-                <Pill
-                  key={`${ri}-${i}-${segs.length}`}
-                  x={xa}
-                  y={r.y}
-                  w={wseg}
-                  h={40}
-                  color={r.color}
-                  opacity={rowsP * lerp(f, [2862 + ri * 8 + i * 4, 2870 + ri * 8 + i * 4], [0, 1])}
-                />
-              );
-              xa += wseg + gap;
-              return el;
-            })}
-          </React.Fragment>
-        );
-      })}
-      <div style={{ position: "absolute", left: card.x + 70, top: card.y + 620, width: 130 * rowsP, height: 2.5, backgroundColor: C.white }} />
-      <div style={{ position: "absolute", left: card.x + 280, top: card.y + 620, width: 60 * rowsP, height: 2.5, backgroundColor: C.white }} />
-    </AbsoluteFill>
-  );
-};
-
-// ═══ Scene 22: building pop on split (f2990-3104) ═══
-export const BuildPopScene: React.FC<{ frame: number }> = ({ frame }) => {
-  const f = frame;
-  if (f < SEG.buildPop[0] || f >= SEG.mapBadges[0]) return null;
-  const inOp = lerp(f, [2990, 3002], [0, 1]);
-  const growP = lerp(f, [3006, 3040], [0, 1]);
-  const pillP = lerp(f, [3020, 3040], [0, 1]);
-  const orangeOp = lerp(f, [3052, 3064], [0, 1]);
-  return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp }}>
-      <div style={{ position: "absolute", left: 0, top: 505, width: 1920, height: 575, backgroundColor: C.navy }} />
-      {/* cluster pops up from behind the navy edge */}
-      <div style={{ position: "absolute", left: 640, top: 505 - 255 * growP, width: 640, height: 255 * growP, overflow: "hidden" }}>
-        <TracedArt name="stripTowerUp" x={160} y={0} scale={1} />
-      </div>
-      {/* white outline pill bottom-left */}
-      <svg width={260} height={80} viewBox="0 0 260 80" style={{ position: "absolute", left: 285, top: 585, opacity: pillP }}>
-        <path d={`M40,4 H220 Q256,4 256,40 Q256,76 220,76 H40 Q4,76 4,40 Q4,4 40,4`} fill="none" stroke={C.white} strokeWidth={3} strokeDasharray={620} strokeDashoffset={620 * (1 - pillP)} />
-      </svg>
-      {/* orange filled pill */}
-      <Pill x={1330} y={620} w={170} h={56} color={C.orangeDeep} opacity={orangeOp} />
+      )}
+      {/* orange filled pill bottom-right */}
+      {orangeOp > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 1355,
+            top: 940,
+            width: 170,
+            height: 100,
+            backgroundColor: C.orangeDeep,
+            border: `4px solid ${C.white}`,
+            borderRadius: "50px 50px 50px 8px",
+            opacity: orangeOp,
+          }}
+        />
+      )}
+      {/* card contents (rows + rules), gone by the collapse */}
+      {rowsP > 0 && (
+        <>
+          <div style={{ position: "absolute", left: card.x + 70, top: card.y + 75, width: (card.w - 140) * rowsP, height: 2.5, backgroundColor: C.white, opacity: rowsP }} />
+          {rows.map((r, ri) => {
+            const total = r.segs.reduce((a, b) => a + b, 0) + (r.segs.length - 1) * 10;
+            const merged = [total * 0.45, total * 0.3, total * 0.19];
+            const segs = mergeP < 0.5 ? r.segs : merged;
+            const gap = mergeP < 0.5 ? 10 : 14;
+            let xa = card.x + 70;
+            return (
+              <React.Fragment key={ri}>
+                {segs.map((wseg, i) => {
+                  const el = (
+                    <Pill
+                      key={`${ri}-${i}-${segs.length}`}
+                      x={xa}
+                      y={r.y}
+                      w={wseg}
+                      h={40}
+                      color={r.color}
+                      opacity={rowsP * lerp(f, [2898 + ri * 8 + i * 4, 2906 + ri * 8 + i * 4], [0, 1])}
+                    />
+                  );
+                  xa += wseg + gap;
+                  return el;
+                })}
+              </React.Fragment>
+            );
+          })}
+          <div style={{ position: "absolute", left: card.x + 70, top: card.y + 620, width: 130 * rowsP, height: 2.5, backgroundColor: C.white, opacity: rowsP }} />
+          <div style={{ position: "absolute", left: card.x + 280, top: card.y + 620, width: 60 * rowsP, height: 2.5, backgroundColor: C.white, opacity: rowsP }} />
+        </>
+      )}
     </AbsoluteFill>
   );
 };
@@ -386,27 +579,30 @@ export const BuildPopScene: React.FC<{ frame: number }> = ({ frame }) => {
 export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { sans: SANS, serif: SERIF } = useBrand();
   const f = frame;
-  if (f < SEG.mapBadges[0] || f >= SEG.circle[0] + 20) return null;
+  if (f < SEG.mapBadges[0] || f >= 3396) return null;
   const mapP = lerp(f, [3104, 3130], [0, 1]);
-  // implode: scale to dot f3290-3348
-  const implodeP = lerp(f, [3290, 3348], [0, 1]);
-  const scale = 1 - implodeP * 0.985;
-  const bgNavy = lerp(f, [3326, 3352], [0, 1]);
-  // circle grows back f3364-3396
-  const circleR = lerp(f, [3352, 3396], [16, 435]);
-  const showCircle = f >= 3352;
-  const circleCx = lerp(f, [3352, 3396], [960, 890]);
-  const circleCy = lerp(f, [3352, 3396], [640, 495]);
+  // implode: crisp shrink (no fade) — scale measured off the montage cells
+  const scale = interpolate(f, [3288, 3306, 3312, 3318], [1, 0.55, 0.15, 0], clamp);
+  // light-blue field collapses to a dot (fr_3350: r41 at 960,540), holds,
+  // then grows back to the settled circle (fr_3396: r≈458)
+  const navyBehind = f >= 3318;
+  const circleR = interpolate(
+    f,
+    [3320, 3327, 3331, 3336, 3342, 3375, 3396],
+    [1250, 560, 150, 50, CIRCLE.dotR, CIRCLE.dotR, CIRCLE.r],
+    clamp,
+  );
+  const showCircle = f >= 3320;
+  const circleCx = CIRCLE.cx;
+  const circleCy = interpolate(f, [3375, 3396], [540, CIRCLE.cy], clamp);
   return (
-    <AbsoluteFill style={{ backgroundColor: C.blue }}>
-      {bgNavy > 0 && <div style={{ position: "absolute", inset: 0, backgroundColor: C.navy, opacity: bgNavy }} />}
+    <AbsoluteFill style={{ backgroundColor: navyBehind ? C.navy : C.blue }}>
       <div
         style={{
           position: "absolute",
           inset: 0,
           transform: `scale(${scale})`,
-          transformOrigin: "960px 620px",
-          opacity: 1 - implodeP * 0.6,
+          transformOrigin: "960px 520px",
         }}
       >
         <TracedArt name="worldMap" x={MAP.x} y={MAP.y} opacity={mapP} />
@@ -464,27 +660,50 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ═══ Scene 24: circle handshake / PvP (f3364-3480) ═══
+// ═══ Scene 24: circle handshake / PvP (f3396-3480) ═══
+// Measured fr_3396/fr_3460: circle static at (960,540) r≈460; the navy
+// handshake pill GROWS from (875,505,180×92) to (790,460,350×185).
 export const CircleScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < 3396 || f >= SEG.mosaic[0] + 14) return null;
-  const drift = lerp(f, [3396, 3480], [0, 55]);
   const artOp = lerp(f, [3400, 3414], [0, 1]);
   const out = lerp(f, [3468, 3484], [1, 0]);
-  const cx = 890 + drift;
-  const cy = 495;
+  const { cx, cy, r } = CIRCLE;
+  const g = lerp(f, [3400, 3450], [0, 1]);
+  const pill = {
+    x: CIRCLE.pillFrom.x + (CIRCLE.pillTo.x - CIRCLE.pillFrom.x) * g,
+    y: CIRCLE.pillFrom.y + (CIRCLE.pillTo.y - CIRCLE.pillFrom.y) * g,
+    w: CIRCLE.pillFrom.w + (CIRCLE.pillTo.w - CIRCLE.pillFrom.w) * g,
+    h: CIRCLE.pillFrom.h + (CIRCLE.pillTo.h - CIRCLE.pillFrom.h) * g,
+  };
   return (
     <AbsoluteFill style={{ backgroundColor: C.navy, opacity: 1 }}>
-      <div style={{ position: "absolute", left: cx - 435, top: cy - 435, width: 870, height: 870, borderRadius: 435, backgroundColor: C.blue, opacity: out }} />
+      <div style={{ position: "absolute", left: cx - r, top: cy - r, width: r * 2, height: r * 2, borderRadius: r, backgroundColor: C.blue, opacity: out }} />
+      {/* navy handshake pill grows in place from the first frame of the scene */}
+      <div
+        style={{
+          position: "absolute",
+          left: pill.x,
+          top: pill.y,
+          width: pill.w,
+          height: pill.h,
+          backgroundColor: C.navy,
+          borderRadius: `${pill.h * 0.28}px ${pill.h * 0.28}px ${pill.h * 0.28}px ${pill.h * 0.55}px`,
+          opacity: out,
+        }}
+      >
+        <div style={{ position: "absolute", left: pill.w / 2 - (490 * 0.55 * (pill.w / 350)) / 2, top: pill.h / 2 - (320 * 0.55 * (pill.w / 350)) / 2 }}>
+          <TracedArt name="handshake" scale={0.55 * (pill.w / 350)} style={{ position: "relative" }} />
+        </div>
+      </div>
       <div style={{ position: "absolute", inset: 0, opacity: artOp * out }}>
-        {/* white dot + arrows + orange square + handshake pill */}
-        <div style={{ position: "absolute", left: cx - 190 - 22, top: cy - 165 - 22, width: 44, height: 44, borderRadius: 22, backgroundColor: C.white }} />
+        {/* white dot + elbows + orange square (fr_3460) */}
+        <div style={{ position: "absolute", left: CIRCLE.whiteDot.cx - CIRCLE.whiteDot.r, top: CIRCLE.whiteDot.cy - CIRCLE.whiteDot.r, width: CIRCLE.whiteDot.r * 2, height: CIRCLE.whiteDot.r * 2, borderRadius: CIRCLE.whiteDot.r, backgroundColor: C.white }} />
         <svg width={1920} height={1080} style={{ position: "absolute" }}>
-          <path d={`M${cx + 55},${cy - 165} H${cx - 145} M${cx - 145},${cy - 165} l14,-8 M${cx - 145},${cy - 165} l14,8`} stroke={C.white} strokeWidth={3} fill="none" />
-          <path d={`M${cx - 45},${cy + 160} H${cx + 155} M${cx + 155},${cy + 160} l-14,-8 M${cx + 155},${cy + 160} l-14,8`} stroke={C.white} strokeWidth={3} fill="none" />
+          <path d="M965,455 V388 H755 M755,388 l16,-9 M755,388 l16,9" stroke={C.white} strokeWidth={3} fill="none" />
+          <path d="M965,650 V712 H1160 M1160,712 l-16,-9 M1160,712 l-16,9" stroke={C.white} strokeWidth={3} fill="none" />
         </svg>
-        <div style={{ position: "absolute", left: cx + 170, top: cy + 138, width: 46, height: 46, backgroundColor: C.orangeDeep }} />
-        <TracedArt name="handshake" x={cx - 155} y={cy - 105} scale={0.63} />
+        <div style={{ position: "absolute", left: CIRCLE.square.x, top: CIRCLE.square.y, width: CIRCLE.square.w, height: CIRCLE.square.w, backgroundColor: C.orangeDeep }} />
       </div>
     </AbsoluteFill>
   );
@@ -509,8 +728,8 @@ const MOSAIC_DN: string[][] = [
 
 export const MosaicScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.mosaic[0] || f >= SEG.shield[0] + 10) return null;
-  const wipeP = lerp(f, [3600, 3652], [0, 1]);
+  if (f < SEG.mosaic[0] || f >= SEG.shield[0] + 6) return null;
+  const wipeP = lerp(f, [3600, 3644], [0, 1]);
   return (
     <AbsoluteFill style={{ backgroundColor: C.navy }}>
       {MOSAIC_ROWS.map((r, ri) => {
@@ -558,24 +777,50 @@ export const MosaicScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ═══ Scene 26: shield (f3688-3762) ═══
+// ═══ Scene 26: shield (f3641-3700) ═══
+// Probed: zipper draws at x930-966 from f3642; white wipes LEFT from it
+// (left edge 928→0 over 3645-3657, ≈t^2.1); shield pops 3661-3672, holds to
+// 3690, then shrinks away down-left while the band starts rotating (LedgeScene
+// owns the band from 3690 — this scene draws only the shield after that).
 export const ShieldScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.shield[0] || f >= SEG.ledge[0] + 10) return null;
-  const whiteP = lerp(f, [3690, 3712], [0, 1]);
-  const shieldP = lerp(f, [3706, 3726], [0, 1]);
-  const out = lerp(f, [3752, 3764], [1, 0]);
-  const split = 930;
+  if (f < 3641 || f >= 3702) return null;
+  const split = 928;
+  const zipDraw = lerp(f, [3641, 3645], [0, 1]);
+  const wipeT = lerp(f, [3645, 3657], [0, 1]);
+  const leftEdge = split * (1 - Math.pow(wipeT, 2.1));
+  const shieldP = lerp(f, [3661, 3672], [0, 1]);
+  // exit: shrink + fall down-left with a slight rotation (montage 3693-3699)
+  const exitP = lerp(f, [3690, 3700], [0, 1]);
+  const bg = f < 3690;
   return (
-    <AbsoluteFill style={{ backgroundColor: C.navy, opacity: 1 }}>
-      <div style={{ position: "absolute", left: 0, top: 0, width: split * whiteP, height: 1080, backgroundColor: C.white }} />
-      {/* zipper band */}
-      <div style={{ position: "absolute", left: split * whiteP, top: 0, width: 36, height: 1080, backgroundColor: C.band, opacity: whiteP }} />
-      {Array.from({ length: 12 }, (_, i) => (
-        <div key={i} style={{ position: "absolute", left: split * whiteP, top: i * 95 + 40, width: 36, height: 2, backgroundColor: C.navy, opacity: whiteP * 0.8 }} />
-      ))}
-      {shieldP > 0 && (
-        <div style={{ position: "absolute", left: 700, top: 225, width: 512, height: 640, opacity: out, transform: `scale(${shieldP})`, transformOrigin: "center" }}>
+    <AbsoluteFill style={{ backgroundColor: bg ? C.navy : undefined }}>
+      {bg && (
+        <>
+          {/* white region wiping left from the zipper */}
+          <div style={{ position: "absolute", left: leftEdge, top: 0, width: split - leftEdge, height: 1080, backgroundColor: C.white }} />
+          {/* zipper band, fixed at x930 (draws downward) */}
+          <div style={{ position: "absolute", left: 930, top: 0, width: 36, height: 1080 * zipDraw, backgroundColor: C.band }} />
+          {Array.from({ length: 9 }, (_, i) => {
+            const ty = i * 127 + 47;
+            if (ty > 1080 * zipDraw) return null;
+            return <div key={i} style={{ position: "absolute", left: 930, top: ty, width: 36, height: 2, backgroundColor: C.navy, opacity: 0.8 }} />;
+          })}
+        </>
+      )}
+      {shieldP > 0 && exitP < 1 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 690,
+            top: 222,
+            width: 520,
+            height: 643,
+            transform: `translate(${-250 * exitP}px, ${250 * exitP}px) scale(${shieldP * (1 - 0.8 * exitP)}) rotate(${-24 * exitP}deg)`,
+            transformOrigin: "46% 50%",
+            opacity: 1 - Math.pow(exitP, 1.5),
+          }}
+        >
           <ShieldSVG />
         </div>
       )}
@@ -583,129 +828,151 @@ export const ShieldScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// Shield re-shaped against fr_3672: square shoulders, near-vertical sides to
+// ~55% height, fill inset ~42px following the outline.
 const ShieldSVG: React.FC = () => (
-  <svg width={512} height={640} viewBox="0 0 512 640">
-    {/* left half: orange outline + fill on white */}
+  <svg width={520} height={643} viewBox="0 0 520 643">
+    {/* left half: orange outline + orange fill (sits on the white side) */}
     <g>
-      <path d="M256,20 C200,45 130,55 60,55 L60,330 C60,470 150,560 256,615 Z" fill="none" stroke={C.orange} strokeWidth={7} />
-      <path d="M256,75 C210,92 160,100 105,102 L105,330 C105,440 175,515 256,560 Z" fill={C.orangeDeep} />
+      <path d="M240,2 C185,32 105,48 4,50 L4,345 C4,470 100,570 240,640 Z" fill="none" stroke={C.orange} strokeWidth={6} />
+      <path d="M240,50 C190,74 128,87 46,90 L46,340 C46,445 125,528 240,590 Z" fill={C.orangeDeep} />
     </g>
-    {/* right half: white outline + fill on navy */}
+    {/* right half: white outline + white fill (sits on the navy side) */}
     <g>
-      <path d="M256,20 C312,45 382,55 452,55 L452,330 C452,470 362,560 256,615 Z" fill="none" stroke={C.white} strokeWidth={7} />
-      <path d="M256,75 C302,92 352,100 407,102 L407,330 C407,440 337,515 256,560 Z" fill={C.white} />
+      <path d="M280,2 C335,32 415,48 516,50 L516,345 C516,470 420,570 280,640 Z" fill="none" stroke={C.white} strokeWidth={6} />
+      <path d="M280,50 C330,74 392,87 474,90 L474,340 C474,445 395,528 280,590 Z" fill={C.white} />
     </g>
-    <path d="M440,395 h24 M452,383 v24" stroke={C.white} strokeWidth={3} />
+    {/* sparkle right of the outline */}
+    <path d="M505,168 l14,14 M519,168 l-14,14" stroke={C.white} strokeWidth={4} />
   </svg>
 );
 
-// ═══ Scene 27: ledge + stacks + cities (f3762-3926) ═══
+// ═══ Scene 27: band rotation + stacks + cities (f3690-3946) ═══
+// One continuous band: vertical zipper (θ=90 reproduces x928-968) rotating
+// through a see-saw to flat (θ keys probed at fr_3708/3732/3762, pivot
+// (948,575)). Stacks are axis-aligned leaf pills (135×62, pitch 90) dropping
+// in while the group settles; at ~3800 the stacks shrink+slide left/inward and
+// the two cities rise on the band (fr_3840).
 export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.ledge[0] || f >= SEG.outro[0] + 12) return null;
-  // ledge rotates from diagonal to flat f3762-3812
-  const tilt = lerp(f, [3766, 3812], [5.5, 0]);
-  const citiesOp = lerp(f, [3822, 3838], [0, 1]);
-  const out = lerp(f, [3914, 3928], [1, 0]);
-  const ledgeY = 505;
+  if (f < SEG.ledge[0] || f >= 3948) return null;
+  const theta = interpolate(
+    f,
+    LEDGE.thetaKeys as unknown as number[],
+    LEDGE.thetaVals as unknown as number[],
+    clamp,
+  );
+  const [pcx, pcy] = LEDGE.center;
+  // group settle: stacks ride slightly high, sink to rest (fr_3732 vs fr_3762)
+  const settleDy = interpolate(f, [3705, 3732, 3762], [90, 40, 0], clamp);
+  // citiesStacks phase: stacks shrink+slide, cities fade in on the band
+  const slideP = lerp(f, [3800, 3835], [0, 1]);
+  const citiesOp = lerp(f, [3815, 3838], [0, 1]);
+  const out = lerp(f, [3936, 3946], [1, 0]);
+  const S = LEDGE.stacks;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
+      {/* rotating band with attached navy half-plane below it */}
       <div
         style={{
           position: "absolute",
-          left: -200,
-          top: ledgeY,
-          width: 2400,
-          height: 1400,
-          backgroundColor: C.navy,
-          transform: `rotate(${-tilt}deg)`,
-          transformOrigin: "50% 0%",
-          borderTop: `14px solid ${C.band}`,
+          left: pcx - 2500,
+          top: pcy - LEDGE.bandH / 2,
+          width: 5000,
+          height: LEDGE.bandH,
+          backgroundColor: C.band,
+          transform: `rotate(${-theta}deg)`,
+          transformOrigin: "50% 50%",
         }}
       >
-        {Array.from({ length: 26 }, (_, i) => (
-          <div key={i} style={{ position: "absolute", left: i * 95, top: 0, width: 2, height: 16, backgroundColor: C.navy }} />
+        {Array.from({ length: 40 }, (_, i) => (
+          <div key={i} style={{ position: "absolute", left: i * LEDGE.tickEvery, top: 0, width: 2, height: LEDGE.bandH, backgroundColor: C.navy, opacity: 0.75 }} />
         ))}
+        {/* navy half-plane hanging off the band's lower side */}
+        <div style={{ position: "absolute", left: -1000, top: LEDGE.bandH, width: 7000, height: 4000, backgroundColor: C.navy }} />
       </div>
-      {/* stack groups (counter-rotated with the ledge) */}
-      <div style={{ position: "absolute", inset: 0, transform: `rotate(${-tilt}deg)`, transformOrigin: `760px ${ledgeY}px` }}>
-        <StackGroup x={130} baseY={ledgeY} cols={[[C.steel, C.steel, C.steelDark, C.pillNavy, C.pillNavy], [C.steel, C.steelDark, C.steel]]} f={f} at={3770} />
-        <StackGroup x={880} baseY={ledgeY} cols={[[C.tan, C.tan, C.tan], [C.tan, C.orangeDeep, C.tan, C.tan, C.orangeDeep]]} f={f} at={3782} />
-        {citiesOp > 0 && (
-          <>
-            <div style={{ position: "absolute", left: 330, top: ledgeY - 295 * 0.55, opacity: citiesOp }}>
-              <TracedArt name="cityA" scale={0.55} />
-            </div>
-            <div style={{ position: "absolute", left: 1180, top: ledgeY - 545 * 0.55, opacity: citiesOp }}>
-              <TracedArt name="cityB" scale={0.55} />
-            </div>
-          </>
-        )}
+      {/* stack groups (axis-aligned; drop in, settle, then shrink+slide) */}
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${-170 * slideP}px, 0) scale(${1 - 0.48 * slideP})`, transformOrigin: `${S.leftX}px ${S.baseline + 62}px` }}>
+        <StackCols
+          x={S.leftX}
+          cols={[[C.pillNavy, C.pillNavy, C.steel, C.steel, C.steel], [C.steel, C.steel, C.steel]]}
+          f={f}
+          at={3703}
+          dy={settleDy}
+        />
       </div>
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${-325 * slideP}px, 0) scale(${1 - 0.48 * slideP})`, transformOrigin: `${S.rightX}px ${S.baseline + 62}px` }}>
+        <StackCols
+          x={S.rightX}
+          cols={[[C.tan, C.tan, C.tan], [C.orangeDeep, C.orangeDeep, C.tan, C.tan, C.tan]]}
+          f={f}
+          at={3712}
+          dy={settleDy}
+        />
+      </div>
+      {/* cities standing on the flat band (fr_3840: bases at y555) */}
+      {citiesOp > 0 && (
+        <>
+          <div style={{ position: "absolute", left: 370, top: 557 - 295 * 0.44, opacity: citiesOp }}>
+            <TracedArt name="cityA" scale={0.44} />
+          </div>
+          <div style={{ position: "absolute", left: 1210, top: 557 - 545 * 0.42, opacity: citiesOp }}>
+            <TracedArt name="cityB" scale={0.42} />
+          </div>
+        </>
+      )}
     </AbsoluteFill>
   );
 };
 
-const StackGroup: React.FC<{
+// Columns of leaf pills dropping in bottom-up (per-pill fade + fall).
+const StackCols: React.FC<{
   x: number;
-  baseY: number;
   cols: string[][];
   f: number;
   at: number;
-}> = ({ x, baseY, cols, f, at }) => (
-  <>
-    {cols.map((col, ci) => (
-      <React.Fragment key={ci}>
-        {col.map((c, i) => {
-          const op = lerp(f, [at + ci * 8 + i * 5, at + ci * 8 + i * 5 + 6], [0, 1]);
-          if (op <= 0) return null;
-          return <Pill key={i} x={x + ci * 78} y={baseY - 40 - i * 44} w={68} h={36} color={c} opacity={op} />;
-        })}
-      </React.Fragment>
-    ))}
-  </>
-);
-
-// ═══ Scene 28: outro logo draw (f3926-4002) ═══
-export const OutroScene: React.FC<{ frame: number }> = ({ frame }) => {
-  const COPY = useCopy();
-  const { serif: SERIF, logoArt } = useBrand();
-  const f = frame;
-  if (f < SEG.outro[0] || f >= SEG.endcard[0] + 20) return null;
-  const logoP = lerp(f, [3932, 3960], [0, 1]);
-  const wordP = lerp(f, [3950, 3978], [0, 1]);
-  const toEnd = lerp(f, [3992, 4010], [0, 1]);
+  dy: number;
+}> = ({ x, cols, f, at, dy }) => {
+  const S = LEDGE.stacks;
   return (
-    <AbsoluteFill style={{ backgroundColor: C.navy, opacity: 1 - toEnd }}>
-      {logoArt && <TracedArt name={logoArt} x={947} y={105} opacity={logoP} />}
-      <div
-        style={{
-          position: "absolute",
-          left: 1075,
-          top: 700,
-          fontFamily: SERIF,
-          fontSize: 150,
-          lineHeight: 1,
-          color: C.white,
-          clipPath: `inset(0 0 0 ${(1 - wordP) * 100}%)`,
-        }}
-      >
-        {COPY.brand}
-      </div>
-    </AbsoluteFill>
+    <>
+      {cols.map((col, ci) => (
+        <React.Fragment key={ci}>
+          {col.map((c, i) => {
+            const start = at + ci * 9 + i * 6;
+            const p = lerp(f, [start, start + 12], [0, 1]);
+            if (p <= 0) return null;
+            const ease = 1 - (1 - p) * (1 - p);
+            const yFinal = S.baseline - S.pillH - i * S.pitch + dy;
+            return (
+              <Pill
+                key={i}
+                x={x + ci * S.colGap}
+                y={yFinal - 300 * (1 - ease)}
+                w={S.pillW}
+                h={S.pillH}
+                color={c}
+                opacity={p}
+              />
+            );
+          })}
+        </React.Fragment>
+      ))}
+    </>
   );
 };
 
-// ═══ Scene 29: end card (f4002-4168) ═══
+// ═══ Scene 28+29: end card assembles in place (f3926-4168) ═══
+// Measured w9 montage + fr_3966/fr_3981/fr_4011: empty navy to ~3957, then the
+// title layout assembles element by element on the SAME navy — no crossfade.
 export const EndCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const { sans: SANS } = useBrand();
   const f = frame;
-  if (f < SEG.endcard[0] - 12) return null;
-  const inOp = lerp(f, [3992, 4010], [0, 1]);
-  const extrasOp = lerp(f, [4055, 4075], [0, 1]);
+  if (f < SEG.outro[0]) return null;
+  const extrasOp = lerp(f, [4028, 4048], [0, 1]);
   return (
-    <AbsoluteFill style={{ opacity: inOp }}>
+    <AbsoluteFill>
       <TitleCard frame={f} endcard />
       <SansText
         text={COPY.disclaimer}

@@ -9,17 +9,29 @@ import { ClsNetBox, HexIcon, Pill, SansText, SerifLabel, lerp } from "./ui";
 // CLSNet reveals right-to-left; CLS logo + tagline fade; supporting text;
 // principle cards slide-fade in with transient loader bars; outro = slight
 // CCW tilt + white diagonal wipe (f130-150).
+// In endcard mode the SAME layout assembles element by element on navy
+// (measured fr_3966/fr_3981/fr_4011): logo 3957-3977, wordmark reveal
+// 3959-3973, supporting 3974-3980, card 35 as bar→body 3978-3996, card 50
+// 3997-4013.
 export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
   frame,
   endcard = false,
 }) => {
   const { copy: COPY, serif: SERIF, logoArt, logoText } = useBrand();
   const f = frame;
-  const logoOp = endcard ? 1 : lerp(f, [2, 18], [0, 1]);
-  const supportOp = endcard ? 1 : lerp(f, [10, 24], [0, 1]);
-  const wordP = endcard ? 1 : lerp(f, [0, 11], [0, 1]);
-  const card1Op = endcard ? 1 : lerp(f, [22, 38], [0, 1]);
-  const card2Op = endcard ? 1 : lerp(f, [40, 56], [0, 1]);
+  const logoOp = endcard ? lerp(f, [3957, 3977], [0, 1]) : lerp(f, [2, 18], [0, 1]);
+  const supportOp = endcard ? lerp(f, [3974, 3980], [0, 1]) : lerp(f, [10, 24], [0, 1]);
+  const wordP = endcard ? lerp(f, [3959, 3973], [0, 1]) : lerp(f, [0, 11], [0, 1]);
+  const card1Op = endcard ? lerp(f, [3979, 3983], [0, 1]) : lerp(f, [22, 38], [0, 1]);
+  const card2Op = endcard ? lerp(f, [3998, 4002], [0, 1]) : lerp(f, [40, 56], [0, 1]);
+  const card1Grow = endcard ? lerp(f, [3982, 3990], [0, 1]) : 1;
+  const card2Grow = endcard ? lerp(f, [4001, 4008], [0, 1]) : 1;
+  const card1Parts = endcard
+    ? { kicker: lerp(f, [3985, 3990], [0, 1]), num: lerp(f, [3988, 3993], [0, 1]), strip: lerp(f, [3991, 3996], [0, 1]) }
+    : undefined;
+  const card2Parts = endcard
+    ? { kicker: lerp(f, [4003, 4008], [0, 1]), num: lerp(f, [4005, 4010], [0, 1]), strip: lerp(f, [4008, 4013], [0, 1]) }
+    : undefined;
   const bar1Op = endcard ? 0 : lerp(f, [20, 26], [0, 1]) * lerp(f, [34, 40], [1, 0]);
   const bar2Op = endcard ? 0 : lerp(f, [34, 38], [0, 1]) * lerp(f, [46, 52], [1, 0]);
   const wmBarOp = endcard ? 0 : lerp(f, [4, 8], [0, 1]) * lerp(f, [26, 36], [1, 0]);
@@ -71,7 +83,8 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
             fontSize: 200,
             lineHeight: 1,
             color: C.white,
-            clipPath: `inset(0 ${(1 - wordP) * 100}% 0 0)`,
+            // ref reveals the trailing letters first (t=0 shows only "t")
+            clipPath: `inset(0 0 0 ${(1 - wordP) * 100}%)`,
             whiteSpace: "pre",
             transform: "scaleX(1.14)",
             transformOrigin: "left top",
@@ -105,6 +118,8 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         kicker={COPY.p35.kicker}
         stripText={COPY.p35.strip}
         opacity={card1Op}
+        growP={card1Grow}
+        parts={card1Parts}
       />
       <PrincipleCard
         x={TITLE.card2.x}
@@ -118,6 +133,8 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         kicker={COPY.p50.kicker}
         stripText={COPY.p50.strip}
         opacity={card2Op}
+        growP={card2Grow}
+        parts={card2Parts}
       />
       {/* transient loader bars under/next to cards */}
       <div style={{ position: "absolute", left: 875, top: 708, width: 430, height: 22, backgroundColor: "#8286A0", opacity: bar1Op }} />
@@ -138,12 +155,19 @@ export const PrincipleCard: React.FC<{
   kicker: string;
   stripText: string;
   opacity?: number;
-}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1 }) => {
+  // endcard assembly: body grows vertically out of a bar at y560 (fr_3981);
+  // kicker/num/strip fade in separately
+  growP?: number;
+  parts?: { kicker: number; num: number; strip: number };
+}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts }) => {
   const { serif: SERIF, sans: SANS } = useBrand();
   if (opacity <= 0) return null;
+  // bar rect in card-local coords: y 204-244 (screen 560-600)
+  const bodyTop = 204 * (1 - growP);
+  const bodyBottom = 244 + (h - 244) * growP;
   return (
     <div style={{ position: "absolute", left: x, top: y, width: w, height: h, opacity }}>
-      <div style={{ position: "absolute", inset: 0, backgroundColor: body }} />
+      <div style={{ position: "absolute", left: 0, top: bodyTop, width: w, height: bodyBottom - bodyTop, backgroundColor: body }} />
       <div
         style={{
           position: "absolute",
@@ -152,6 +176,7 @@ export const PrincipleCard: React.FC<{
           width: w,
           height: h - (stripY - y),
           backgroundColor: strip,
+          opacity: (parts?.strip ?? 1) * (growP >= 1 ? 1 : 0),
         }}
       />
       <div
@@ -163,6 +188,7 @@ export const PrincipleCard: React.FC<{
           fontSize: 44,
           color: C.cardText,
           lineHeight: 1,
+          opacity: parts?.kicker ?? 1,
         }}
       >
         {kicker}
@@ -176,6 +202,7 @@ export const PrincipleCard: React.FC<{
           fontSize: 195,
           lineHeight: 1,
           color: "rgba(230,232,240,0.55)",
+          opacity: parts?.num ?? 1,
         }}
       >
         {num}
@@ -190,6 +217,7 @@ export const PrincipleCard: React.FC<{
           lineHeight: 1.15,
           color: C.navy,
           whiteSpace: "pre-wrap",
+          opacity: (parts?.strip ?? 1) * (growP >= 1 ? 1 : 0),
         }}
       >
         {stripText}

@@ -10,13 +10,11 @@ import {
   PaymentScene,
   Strip2Scene,
   ReportCardScene,
-  BuildPopScene,
   MapBadgesScene,
   CircleScene,
   MosaicScene,
   ShieldScene,
   LedgeScene,
-  OutroScene,
   EndCardScene,
 } from "./scenesC";
 
@@ -47,13 +45,13 @@ export const ClsNetComposition: React.FC = () => {
       <PaymentScene frame={frame} />
       <Strip2Scene frame={frame} />
       <ReportCardScene frame={frame} />
-      <BuildPopScene frame={frame} />
       <MapBadgesScene frame={frame} />
       <CircleScene frame={frame} />
       <MosaicScene frame={frame} />
-      <ShieldScene frame={frame} />
+      {/* Ledge (rotating band world) under the Shield so the shield's exit
+          animation rides above the band it hands off to */}
       <LedgeScene frame={frame} />
-      <OutroScene frame={frame} />
+      <ShieldScene frame={frame} />
       <EndCardScene frame={frame} />
     </AbsoluteFill>
   );

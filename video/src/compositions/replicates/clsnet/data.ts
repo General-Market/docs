@@ -53,20 +53,20 @@ export const SEG = {
   matching: [1462, 1662],
   reportsUp: [1662, 1770],
   locks: [1770, 1930],
-  strip: [1930, 2212],
-  gantt: [2212, 2290],
-  reportOut: [2290, 2372],
+  strip: [1930, 2141], // ref pushes strip up 2127-2141 (measured f2133 mid-push)
+  gantt: [2127, 2324], // gantt page rides up from below; panel shrinks into doc by 2324
+  reportOut: [2324, 2412],
   handshake: [2372, 2480],
   payment: [2480, 2612],
   strip2: [2612, 2822],
-  reportCard: [2822, 2990],
+  reportCard: [2822, 3104], // owns bg through the card-collapse + build-pop phase
   buildPop: [2990, 3104],
   mapBadges: [3104, 3290],
   implode: [3290, 3364],
   circle: [3364, 3480],
   mosaic: [3480, 3688],
-  shield: [3688, 3762],
-  ledge: [3762, 3822],
+  shield: [3641, 3690], // zipper 3642, white wipe 3645-3657, shield 3661-3672 (probed)
+  ledge: [3690, 3822], // band rotates 90°→see-saw→flat (θ measured at 3708/3732/3762)
   citiesStacks: [3822, 3926],
   outro: [3926, 4002],
   endcard: [4002, 4168],
@@ -238,32 +238,127 @@ export const MATCH = {
 } as const;
 
 // ─── Day/night strip ───
+// Gridlines probed at f2000/2050/2100: rate exactly 9.0 px/f, pitch 288,
+// the "06:00" line at x=963 at f2000.
 export const STRIP = {
   bandY: 504,
   bandH: 64,
-  hourPx: 286, // px per hour on the strip (measured label spacing)
+  hourPx: 290.7, // h6→h9 span 872px at both f2000 and f2100
+  rate: 9.0,
+  anchorX: 963,
+  anchorHour: 6,
+  anchorF: 2000,
+  labelDx: 43,
   labelTopY: 235,
   labelBotY: 880,
   fs: 30,
 } as const;
 
-// ─── Gantt ───
+// Floating pill groups riding the strip (probed fr_2000 / fr_2133; x in
+// strip coords = screen x + rate*(f-2000); colors pixel-probed).
+export const STRIP_PILLS: { x: number; y: number; w: number; h: number; c: string }[] = [
+  // day group at h≈5.2 (above band)
+  { x: 730, y: 300, w: 95, h: 40, c: "#B5BDD6" },
+  { x: 735, y: 345, w: 220, h: 40, c: "#1A3E66" },
+  { x: 730, y: 400, w: 150, h: 40, c: "#D1542F" },
+  // night group at h≈6.2 (below band)
+  { x: 1010, y: 725, w: 115, h: 40, c: "#FDFDFD" },
+  { x: 1010, y: 775, w: 80, h: 40, c: "#CB3F17" },
+  // night group at h≈9.4 (muted, sits deep in the night half)
+  { x: 1947, y: 765, w: 75, h: 40, c: "#442F3D" },
+  { x: 1952, y: 810, w: 110, h: 40, c: "#58738F" },
+  { x: 1947, y: 855, w: 75, h: 40, c: "#442F3D" },
+  // night group at h≈10.2 (just below band)
+  { x: 2137, y: 595, w: 230, h: 42, c: "#FDFDFD" },
+  { x: 2142, y: 645, w: 115, h: 40, c: "#B5BDD6" },
+];
+
+// ─── Strip reprise (navy band) — measured regular_0218/0222/0226 ───
+// Band y 405-680; scroll 9.76 px/f (cluster 1443→955→460 across f2725/2775/2825);
+// CLSNet box FIXED at center; cluster inventory anchored at f2775.
+export const STRIP2 = {
+  bandY: 405,
+  bandH: 275,
+  rate: 9.76,
+  anchorF: 2762, // regular_NNNN sits at (N-1)*0.5s — anchor corrected 13f earlier
+  box: { x: 858, y: 437, w: 200 },
+  ups: [
+    { art: "rowOffice", cx: -328 },
+    { art: "stripTowerUp", cx: 955, scale: 1.15 },
+    { art: "rowSail", cx: 2238 },
+    { art: "rowOffice", cx: 3521 },
+  ],
+  dns: [
+    { art: "stripInvSail", cx: -996 },
+    { art: "stripInvCity", cx: 282 },
+    { art: "stripInvBrick", cx: 1560 },
+    { art: "stripInvSail", cx: 2838 },
+  ],
+  pills: [
+    { x: 97, y: 593, w: 190, h: 52, c: "#C74D33" },
+    { x: 385, y: 450, w: 100, h: 50, c: "#ABB1CC" },
+  ],
+} as const;
+
+// ─── Report-out (netting reports leave CLSNet) — measured fr_2330/fr_2360 ───
+export const REPORT = {
+  docL: { x: 300, y: 315, w: 270, h: 345 },
+  docR: { x: 1390, y: 315, w: 265, h: 345 },
+  box: { x: 805, y: 350, w: 345 },
+  panel: { x: 340, y: 470, w: 205, h: 120 }, // mini gantt inside docL
+  vertLx: 355,
+  vertRx: 1528,
+  horizY: 547,
+  driftY: 125, // whole group drifts +125px over 2332-2358 (fr_2330 vs fr_2360)
+} as const;
+
+// ─── Shield / ledge (probed zipper sweep + θ at fr_3708/3732/3762) ───
+export const LEDGE = {
+  center: [948, 575] as const, // band pivot; θ=90 reproduces the zipper at x928-968
+  bandH: 40,
+  tickEvery: 127,
+  thetaKeys: [3690, 3700, 3708, 3732, 3762] as const,
+  thetaVals: [90, 20, 7.1, -5.2, 0] as const,
+  stacks: {
+    baseline: 520, // pill bottoms (band top 555, 35px gap)
+    pillW: 135,
+    pillH: 62,
+    pitch: 90,
+    colGap: 175,
+    leftX: 320,
+    rightX: 1275,
+  },
+} as const;
+
+// ─── Circle scene (fr_3350 / fr_3396 / fr_3460) ───
+export const CIRCLE = {
+  cx: 960,
+  cy: 540,
+  r: 460,
+  dotR: 41,
+  pillFrom: { x: 875, y: 505, w: 180, h: 92 },
+  pillTo: { x: 790, y: 460, w: 350, h: 185 },
+  whiteDot: { cx: 668, cy: 388, r: 42 },
+  square: { x: 1237, y: 663, w: 73 },
+} as const;
+
+// ─── Gantt (row rects re-measured from fr_2172/fr_2300 color scans) ───
 export const GANTT = {
   rulerY: 108,
   rulerX: 210,
   rulerW: 1500,
   rows: [
-    { x: 211, y: 200, w: 160, color: "lavender" },
-    { x: 251, y: 275, w: 355, color: "lavender" },
-    { x: 465, y: 350, w: 165, color: "tan" },
-    { x: 545, y: 425, w: 215, color: "orangeDeep" },
-    { x: 680, y: 500, w: 330, color: "lavender" },
-    { x: 855, y: 575, w: 175, color: "orangeDeep" },
-    { x: 940, y: 650, w: 345, color: "lavender" },
-    { x: 1190, y: 725, w: 175, color: "tan" },
-    { x: 1305, y: 800, w: 175, color: "orangeDeep" },
+    { x: 212, y: 183, w: 134, color: "lavender" },
+    { x: 249, y: 274, w: 369, color: "lavender" },
+    { x: 500, y: 380, w: 165, color: "tan" },
+    { x: 598, y: 470, w: 209, color: "orangeDeep" },
+    { x: 724, y: 553, w: 338, color: "lavender" },
+    { x: 957, y: 632, w: 162, color: "orangeDeep" },
+    { x: 982, y: 715, w: 338, color: "lavender" },
+    { x: 1208, y: 810, w: 179, color: "tan" },
+    { x: 1313, y: 892, w: 112, color: "orangeDeep" },
   ],
-  pillH: 44,
+  pillH: 50,
   labelFs: 28,
 } as const;
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
-import { C, CITIES, MATCH, STRIP, SEG } from "./data";
+import { C, CITIES, MATCH, STRIP, STRIP_PILLS, SEG } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { interpolate } from "remotion";
@@ -405,21 +405,28 @@ const DocWithLock: React.FC<{ x: number; y: number; closed: number; opacity: num
   );
 };
 
-// ═══ Scene 15: day/night strip (f1930-2212) ═══
-// Strip scrolls left at measured rate; grey band divides white day / navy night.
-const STRIP_CLUSTERS_UP: { art: string; hour: number; w: number }[] = [
-  { art: "rowBank", hour: 3.95, w: 440 },
-  { art: "stripTowerUp", hour: 7.0, w: 370 },
-  { art: "rowOffice", hour: 10.6, w: 480 },
-  { art: "rowBank", hour: 14.6, w: 440 },
-  { art: "stripTowerUp", hour: 17.7, w: 370 },
+// ═══ Scene 15: day/night strip (f1930-2141) ═══
+// Strip scrolls left at probed 9.0 px/f (pitch 288, "06:00" line at x=963 @f2000).
+// Cluster hours re-anchored so screen positions at f2005 match the r1 calibration.
+// Cluster centers blob-scanned at f1950/2000/2050/2100/2131. Some clusters
+// POP IN during the scene (present at 2100, absent at 2000) — `at` is the
+// measured appear window start.
+const STRIP_CLUSTERS_UP: { art: string; hour: number; w: number; at?: number }[] = [
+  { art: "rowBank", hour: 4.27, w: 440 },
+  { art: "stripTowerUp", hour: 6.96, w: 370 },
+  { art: "rowSail", hour: 8.48, w: 235, at: 2062 },
+  { art: "rowOffice", hour: 10.16, w: 240 },
+  { art: "stripTowerUp", hour: 12.84, w: 370 },
+  { art: "rowBank", hour: 14.9, w: 440 },
 ];
-const STRIP_CLUSTERS_DN: { art: string; hour: number; w: number }[] = [
-  { art: "stripInvBrick", hour: 3.05, w: 300 },
-  { art: "stripInvSail", hour: 5.35, w: 575 },
-  { art: "stripInvCity", hour: 8.35, w: 340 },
-  { art: "stripInvBrick", hour: 12.5, w: 300 },
-  { art: "stripInvSail", hour: 15.8, w: 575 },
+const STRIP_CLUSTERS_DN: { art: string; hour: number; w: number; at?: number }[] = [
+  { art: "stripInvBrick", hour: 3.4, w: 300 },
+  { art: "stripInvSail", hour: 5.54, w: 575 },
+  { art: "stripInvCity", hour: 6.39, w: 260, at: 2062 },
+  { art: "stripInvBrick", hour: 7.49, w: 230, at: 2016 },
+  { art: "stripInvCity", hour: 8.86, w: 340 },
+  { art: "stripInvBrick", hour: 11.65, w: 300 },
+  { art: "stripInvSail", hour: 14.4, w: 575 },
 ];
 
 export const StripScene: React.FC<{ frame: number; from?: number; to?: number }> = ({
@@ -428,14 +435,18 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
   to = SEG.strip[1],
 }) => {
   const f = frame;
-  if (f < from || f >= to + 12) return null;
+  if (f < from || f >= to + 2) return null;
   const inOp = lerp(f, [from, from + 12], [0, 1]);
-  const out = lerp(f, [to - 12, to], [1, 0]);
-  // calibrated: at f=2005 hour 3 sits at x=85
-  const hourX = (h: number) => 85 + (h - 3) * 293 - (f - 2005) * 9.37;
+  // ref pushes the whole strip up (no fade): measured -200px at f2133, quad-in
+  const pushT = lerp(f, [2127, 2141], [0, 1]);
+  const pushY = -1080 * pushT * pushT;
+  const hourX = (h: number) =>
+    STRIP.anchorX + (h - STRIP.anchorHour) * STRIP.hourPx - (f - STRIP.anchorF) * STRIP.rate;
+  const stripX = (sx: number) => sx - (f - STRIP.anchorF) * STRIP.rate;
   const hours = Array.from({ length: 26 }, (_, i) => i);
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
+    <AbsoluteFill style={{ opacity: inOp }}>
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${pushY}px)`, backgroundColor: C.white }}>
       {/* night half */}
       <div style={{ position: "absolute", left: 0, top: STRIP.bandY + STRIP.bandH, width: 1920, height: 1080 - STRIP.bandY - STRIP.bandH, backgroundColor: C.navy }} />
       {/* hour grid + labels */}
@@ -446,8 +457,8 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
           <React.Fragment key={h}>
             <div style={{ position: "absolute", left: x, top: 210, width: 2, height: STRIP.bandY - 210, backgroundColor: C.navy, opacity: 0.8 }} />
             <div style={{ position: "absolute", left: x, top: STRIP.bandY + STRIP.bandH, width: 2, height: 905 - STRIP.bandY - STRIP.bandH, backgroundColor: C.white, opacity: 0.8 }} />
-            <SansText text={`${String(h % 24).padStart(2, "0")}:00`} x={x + 28} y={STRIP.labelTopY - 15} fs={STRIP.fs} color={C.navy} />
-            <SansText text={`${String((h + 12) % 24).padStart(2, "0")}:00`} x={x + 28} y={STRIP.labelBotY - 8} fs={STRIP.fs} color={C.white} />
+            <SansText text={`${String(h % 24).padStart(2, "0")}:00`} x={x + STRIP.labelDx} y={STRIP.labelTopY - 15} fs={STRIP.fs} color={C.navy} />
+            <SansText text={`${String((h + 12) % 24).padStart(2, "0")}:00`} x={x + STRIP.labelDx} y={STRIP.labelBotY - 8} fs={STRIP.fs} color={C.white} />
           </React.Fragment>
         );
       })}
@@ -455,21 +466,33 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
       {STRIP_CLUSTERS_UP.map((cl, i) => {
         const x = hourX(cl.hour);
         if (x < -700 || x > 2100) return null;
-        const artH = { rowBank: 145, stripTowerUp: 255, rowOffice: 210 }[cl.art] ?? 200;
-        const artW = { rowBank: 460, stripTowerUp: 370, rowOffice: 420 }[cl.art]!;
+        const op = cl.at ? lerp(f, [cl.at, cl.at + 10], [0, 1]) : 1;
+        if (op <= 0) return null;
+        const artH = { rowBank: 145, stripTowerUp: 255, rowOffice: 210, rowTowers: 265, rowSail: 235 }[cl.art] ?? 200;
+        const artW = { rowBank: 460, stripTowerUp: 370, rowOffice: 420, rowTowers: 560, rowSail: 760 }[cl.art]!;
         const scale = cl.w / artW;
-        return <TracedArt key={`u${i}`} name={cl.art} x={x - cl.w / 2} y={STRIP.bandY - artH * scale + 3} scale={scale} />;
+        return <TracedArt key={`u${i}`} name={cl.art} x={x - cl.w / 2} y={STRIP.bandY - artH * scale + 3} scale={scale} opacity={op} />;
       })}
       {/* inverted clusters (hang from band bottom) */}
       {STRIP_CLUSTERS_DN.map((cl, i) => {
         const x = hourX(cl.hour);
         if (x < -700 || x > 2100) return null;
-        return <TracedArt key={`d${i}`} name={cl.art} x={x - 150} y={STRIP.bandY + STRIP.bandH - 12} scale={1} />;
+        const op = cl.at ? lerp(f, [cl.at, cl.at + 10], [0, 1]) : 1;
+        if (op <= 0) return null;
+        const artW = { stripInvSail: 575, stripInvCity: 340, stripInvBrick: 300 }[cl.art]!;
+        const scale = cl.w / artW;
+        return <TracedArt key={`d${i}`} name={cl.art} x={x - cl.w / 2} y={STRIP.bandY + STRIP.bandH - 12} scale={scale} opacity={op} />;
+      })}
+      {/* floating pill groups riding the strip (probed) */}
+      {STRIP_PILLS.map((p, i) => {
+        const x = stripX(p.x);
+        if (x < -300 || x > 2000) return null;
+        return <Pill key={`p${i}`} x={x} y={p.y} w={p.w} h={p.h} color={p.c} />;
       })}
       {/* grey band on top of clusters */}
       <div style={{ position: "absolute", left: 0, top: STRIP.bandY, width: 1920, height: STRIP.bandH, backgroundColor: C.band }} />
-      {/* strip-fixed orange deadline lines */}
-      {[4.84, 8.79, 14.9].map((h, i) => {
+      {/* strip-fixed orange deadline lines (measured h 5.02/9.03/13.09) */}
+      {[5.02, 9.03, 13.09].map((h, i) => {
         const x = hourX(h);
         if (x < -20 || x > 1960) return null;
         return <div key={i} style={{ position: "absolute", left: x, top: 210, width: 4, height: 695, backgroundColor: "#D14B2B" }} />;
@@ -478,6 +501,7 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
       <svg width={56} height={40} viewBox="0 0 56 40" style={{ position: "absolute", left: 932, top: 152 }}>
         <path d="M6,5 H50 L28,35 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
       </svg>
+      </div>
     </AbsoluteFill>
   );
 };
