@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-import { COPY } from "./data";
+import { COPY, SANS } from "./data";
 import { SERIF } from "./fonts";
 
 // Brand layer: the replica (CLS) is the default; CrxNetting overrides via
@@ -18,7 +18,7 @@ export type Brand = {
 export const CLS_BRAND: Brand = {
   copy: COPY,
   serif: SERIF,
-  sans: "Helvetica Neue, Helvetica, Arial, sans-serif",
+  sans: SANS,
   boxLabel: "CLSNet",
   logoArt: "clsLogo",
 };

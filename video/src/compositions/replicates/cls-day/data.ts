@@ -6,34 +6,42 @@
 // .claude/rounds/work/cls-day/analysis/frames/regular_NNNN.png where
 // regular_N sits at t=(N-1)*0.5s → ref frame (N-1)*12.5.
 
+import { BRAND } from "../cls-shared/palette";
+import { HELVETICA } from "../cls-shared/fonts";
+
 export const FPS = 25;
 export const DURATION = 3750;
 export const W = 1920;
 export const H = 1080;
 
 // ─── Palette (probed) ───
+// Cross-lane brand constants (navy/white/blue/D9-grey) live in
+// cls-shared/palette.ts; every other value here measured cls-day-specific
+// (see .claude/rounds/work/cls-shared/INVENTORY.md).
 export const C = {
-  navyBg: "#002753", // intro/end card + dark panels (probe r0006 @960,140)
+  navyBg: BRAND.navy, // intro/end card + dark panels (probe r0006 @960,140)
   navyInk: "#12365E", // headline navy text (07:00 / big time labels)
   navyDeep: "#0B2341", // timeline ticks / thin line art
   red: "#CC441E", // serif currency red / red line art
   marker: "#D1451E", // timeline marker triangle + milestone lines
   bandGrey: "#D7D7D7", // timeline band strip
-  white: "#FDFDFD", // page background
-  blue: "#4CA0D3", // globe fill / donut scene bg / gantt fill
+  white: BRAND.white, // page background
+  blue: BRAND.blue, // globe fill / donut scene bg / gantt fill
   skyBlue: "#2E96D6", // "Trade executed" arrows + small blue labels
   chipGrey: "#8B9DAF",
   chipCream: "#F2C7A9",
   chipNavy: "#0E2C50",
   chipRed: "#CC441E",
-  donutGrey: "#D9D9D9",
+  donutGrey: BRAND.greyBand,
 } as const;
 
 // ─── Fonts ───
-// UI text is Helvetica across the reference (bold digits + regular labels).
-// Currency codes / percentages / "8.0+" are a high-contrast transitional
-// serif — Georgia is the closest deterministic system face (A/B'd).
-export const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+// UI text is Helvetica across the reference (bold digits + regular labels)
+// — shared stack in cls-shared/fonts.ts. Currency codes / percentages /
+// "8.0+" are a high-contrast transitional serif — Georgia is the lane's
+// measured stand-in (S2 calibration constants are Georgia-ink-measured;
+// see cls-shared/fonts.ts before swapping the face).
+export const SANS = HELVETICA;
 export const SERIF = "Georgia, 'Times New Roman', serif";
 
 // ─── Timeline band geometry (probed on regular_0149) ───

@@ -2,20 +2,26 @@
 // copy/colors/positions editable in one module; no invented numbers).
 // Measured from public/clsnet-original.mp4 (1920×1080, 25fps, 4168f).
 
+import { BRAND } from "../cls-shared/palette";
+import { HELVETICA } from "../cls-shared/fonts";
+
 export const FPS = 25;
 export const DURATION = 4168;
 export const W = 1920;
 export const H = 1080;
 
 // ─── Palette (pixel-probed) ───
+// Cross-lane brand constants (navy/white/blue/D9-grey) live in
+// cls-shared/palette.ts; every other value here measured clsnet-specific
+// (see .claude/rounds/work/cls-shared/INVENTORY.md).
 export const C = {
-  navy: "#002753", // background + strokes + wordmark boxes
-  white: "#FDFDFD",
-  blue: "#4CA0D3", // map/globe light blue (76,160,211)
+  navy: BRAND.navy, // background + strokes + wordmark boxes
+  white: BRAND.white,
+  blue: BRAND.blue, // map/globe light blue (76,160,211)
   orange: "#D45837", // illustration accent (212,88,55)
   orangeDeep: "#C74D33", // filled pills / labels
   grey: "#A8A8A8", // illustration shadow fill
-  band: "#D9D9D9", // timeline ruler band grey
+  band: BRAND.greyBand, // timeline ruler band grey
   panel: "#E8E8E8", // matching panel grey
   card35: "#646C8C", // Principle 35 card body
   card35Strip: "#82879F", // Principle 35 bottom strip
@@ -32,9 +38,10 @@ export const C = {
 } as const;
 
 // ─── Type ───
-// Wordmark/serif labels: Financier-like transitional serif (closest hosted match).
-// Body sans: Helvetica Neue (matches "Supporting adherence…" et al).
-export const SANS = "Helvetica Neue, Helvetica, Arial, sans-serif";
+// Wordmark/serif labels: Financier-like transitional serif (closest hosted
+// match, ./fonts.ts). Body sans: Helvetica Neue (matches "Supporting
+// adherence…" et al) — shared stack in cls-shared/fonts.ts.
+export const SANS = HELVETICA;
 
 // ─── Segment timeline (frames @25fps) ───
 export const SEG = {
