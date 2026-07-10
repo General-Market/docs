@@ -400,14 +400,21 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   const cityP = interpolate(frame, [2380, 2405], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [2370, 2390], [0, 1], clamp);
   const pathP = interpolate(frame, [2410, 2440], [0, 1], { ...clamp, easing: EASE });
-  // chip waves (anchors: red@480 f2550 arrived; slate@1412 f2550;
-  // cream@897 f2700; slate@1007 f2700)
-  const waves = [
-    { f0: 2482, dir: -1 as const, color: C.chipRed, end: 480 },
-    { f0: 2486, dir: 1 as const, color: C.chipGrey, end: 1420 },
-    { f0: 2693, dir: -1 as const, color: C.chipCream, end: 480 },
-    { f0: 2692, dir: 1 as const, color: C.chipGrey, end: 1420 },
-  ];
+  // chip schedule (r5, per-frame identity tracking f2490-2735): FOUR
+  // waves ~62f apart, each a TRIPLET per rail — top cream/cream/red
+  // leftward, bottom grey/navy/grey rightward. Chips ease out of the
+  // pill (offsets 0/10/21/39/63 then 27px/f) and are ABSORBED into the
+  // rail arrows (leading edge freezes at x393 / x1503, chip compresses).
+  const spawnD = (dt: number) => (dt <= 4 ? lut(dt, [[0, 0], [1, 10], [2, 21], [3, 39], [4, 63]]) : 63 + 27 * (dt - 4));
+  const waveT0 = [2510.6, 2572.5, 2634.8, 2696.6];
+  const waves = waveT0.flatMap((t0) => [
+    { t0, dir: -1 as const, color: C.chipCream },
+    { t0: t0 + 9.3, dir: -1 as const, color: C.chipCream },
+    { t0: t0 + 20.2, dir: -1 as const, color: C.chipRed },
+    { t0: t0 - 0.7, dir: 1 as const, color: C.chipGrey },
+    { t0: t0 + 8.8, dir: 1 as const, color: C.chipNavy },
+    { t0: t0 + 19.3, dir: 1 as const, color: C.chipGrey },
+  ]);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* band touches the top edge in this scene (y0 h57), static, no marker */}
@@ -425,13 +432,19 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
       </svg>
       <HandshakePill x={759} y={435} w={380} h={213} opacity={pillP} />
       {waves.map((w, i) => {
-        if (frame < w.f0) return null;
-        const raw = 950 + w.dir * 7.2 * (frame - w.f0);
-        const x = w.dir < 0 ? Math.max(raw, w.end) : Math.min(raw, w.end);
-        const arrived = w.dir < 0 ? raw <= w.end : raw >= w.end;
-        const hold = arrived ? interpolate(frame, [w.f0 + 68, w.f0 + 88], [1, 0], clamp) : 1;
-        const y = w.dir < 0 ? 290 : 770;
-        return <Chip key={i} x={x - 60} y={y - 27} w={120} h={55} color={w.color} opacity={hold * interpolate(frame, [w.f0, w.f0 + 8], [0, 1], clamp)} />;
+        const dt = frame - w.t0;
+        if (dt < 0) return null;
+        const d = spawnD(dt);
+        if (w.dir < 0) {
+          const right = 942 - d + 62.5;
+          const left = Math.max(942 - d - 62.5, 393);
+          if (right - left < 8) return null;
+          return <Chip key={i} x={left} y={262} w={right - left} h={55} color={w.color} />;
+        }
+        const left = 942 + d - 62.5;
+        const right = Math.min(942 + d + 62.5, 1503);
+        if (right - left < 8) return null;
+        return <Chip key={i} x={left} y={743} w={right - left} h={55} color={w.color} />;
       })}
     </div>
   );
