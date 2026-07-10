@@ -205,32 +205,111 @@ const travel = (frame: number, t0: number, t1: number) =>
   interpolate(frame, [t0, t1], [0, 1], { ...clamp, easing: Easing.inOut(Easing.quad) });
 
 // ─── S11: payment instruction docs row (f2075..2237) ───
+// Measured f2150 (row is STATIC once settled — f2150 == f2200): 6 regular
+// docs 228x285 at y390 (3 navy/grey-blue left, 3 red/cream right) + the
+// 2-page focus doc 355x457 at (750,288) under the 07:00 marker.
 export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2075 || frame >= 2250) return null;
-  const inP = interpolate(frame, [2075, 2090], [0, 1], clamp);
+  const inP = interpolate(frame, [2092, 2110], [0, 1], { ...clamp, easing: EASE });
   const outP = interpolate(frame, [2237, 2250], [0, 1], clamp);
-  const slide = interpolate(frame, [2085, 2237], [180, -420], clamp);
   const docs = [
-    { x: 0, w: 120, h: 150, accent: "navy" },
-    { x: 170, w: 150, h: 180, accent: "grey" },
-    { x: 380, w: 240, h: 300, accent: "big" },
-    { x: 700, w: 130, h: 160, accent: "red" },
-    { x: 880, w: 140, h: 170, accent: "tri" },
-    { x: 1070, w: 120, h: 150, accent: "reddot" },
-    { x: 1250, w: 150, h: 185, accent: "navy" },
-    { x: 1460, w: 130, h: 160, accent: "grey" },
-    { x: 1650, w: 145, h: 175, accent: "red" },
+    { x: -62, seal: "lines" as const, red: false },
+    { x: 208, seal: "square" as const, red: false },
+    { x: 475, seal: "circle" as const, red: false },
+    { x: 1228, seal: "square" as const, red: true },
+    { x: 1493, seal: "triangle" as const, red: true },
+    { x: 1763, seal: "circle" as const, red: true },
   ];
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.white, opacity: inP * (1 - outP) }}>
+    <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       <TimelineBand originX={958} originHour={7} pxPerHour={141.6} />
       <MarkerTriangle x={958} y={27} size={60} />
-      {docs.map((d, i) => (
-        <MiniDoc key={i} x={d.x + slide} yMid={700} w={d.w} h={d.h} big={d.accent === "big"} seed={i} />
-      ))}
+      <div style={{ opacity: inP, transform: `scale(${0.92 + 0.08 * inP})`, transformOrigin: "960px 500px" }}>
+        {docs.map((d, i) => (
+          <RefDoc key={i} x={d.x} y={390} seal={d.seal} red={d.red} />
+        ))}
+        <FocusDoc x={750} y={288} />
+      </div>
     </div>
   );
 };
+
+// regular instruction doc, 228x285 (traced f2150)
+const RefDoc: React.FC<{ x: number; y: number; seal: "lines" | "square" | "circle" | "triangle"; red: boolean }> = ({
+  x,
+  y,
+  seal,
+  red,
+}) => {
+  const acc = red ? C.red : C.navyBg;
+  const fill = red ? C.chipCream : C.chipGrey;
+  return (
+    <svg width={232} height={289} viewBox="0 0 232 289" style={{ position: "absolute", left: x, top: y }}>
+      <path d="M 2 287 L 2 2 L 190 2 L 230 42 L 230 287 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M 190 2 L 190 42 L 230 42" fill="none" stroke={C.navyDeep} strokeWidth="3" />
+      {seal === "square" && <rect x={24} y={20} width={26} height={26} fill={acc} />}
+      {seal === "circle" && <circle cx={37} cy={33} r={13} fill={acc} />}
+      {seal === "triangle" && <path d="M 37 19 L 51 46 L 23 46 Z" fill={acc} />}
+      {seal === "lines" && (
+        <>
+          <rect x={24} y={22} width={44} height={3} fill={C.navyDeep} />
+          <rect x={24} y={30} width={34} height={3} fill={C.navyDeep} />
+        </>
+      )}
+      <rect x={62} y={24} width={40} height={2.5} fill={C.navyDeep} />
+      <rect x={62} y={32} width={28} height={2.5} fill={C.navyDeep} />
+      {/* field row: filled + outline cells */}
+      <rect x={118} y={64} width={44} height={20} fill={fill} />
+      <rect x={162} y={64} width={44} height={20} fill="none" stroke={C.navyDeep} strokeWidth="2.5" />
+      {/* banner with filled inner bar */}
+      <rect x={18} y={105} width={192} height={62} fill="none" stroke={C.navyDeep} strokeWidth="3" />
+      <rect x={24} y={112} width={180} height={22} fill={fill} />
+      {/* text lines */}
+      <rect x={18} y={185} width={150} height={3} fill={C.navyDeep} />
+      <rect x={18} y={195} width={118} height={3} fill={C.navyDeep} />
+      <rect x={18} y={203} width={132} height={3} fill={C.navyDeep} />
+      {/* bottom: divider + lines + block */}
+      <rect x={36} y={240} width={3} height={32} fill={C.navyDeep} />
+      <rect x={46} y={245} width={70} height={2.5} fill={C.navyDeep} />
+      <rect x={46} y={253} width={54} height={2.5} fill={C.navyDeep} />
+      <rect x={150} y={238} width={56} height={36} fill={fill} />
+    </svg>
+  );
+};
+
+// 2-page focus doc, 355x457 + tabs/shadow (traced f2150)
+const FocusDoc: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <svg width={430} height={500} viewBox="0 0 430 500" style={{ position: "absolute", left: x - 5, top: y - 5 }}>
+    {/* page 2 behind + right tabs */}
+    <path d="M 22 490 L 22 35 L 320 35 L 390 105 L 390 490 Z" fill="#DFE3E8" stroke={C.navyDeep} strokeWidth="3" />
+    <rect x={390} y={145} width={30} height={52} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    <rect x={390} y={235} width={30} height={52} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    <rect x={390} y={330} width={30} height={52} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    {/* page 1 */}
+    <path d="M 5 462 L 5 5 L 290 5 L 360 75 L 360 462 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3.5" strokeLinejoin="round" />
+    <path d="M 290 5 L 290 75 L 360 75" fill="none" stroke={C.navyDeep} strokeWidth="3.5" />
+    {/* navy pill seal + heading lines */}
+    <rect x={32} y={27} width={93} height={40} rx={12} fill={C.navyBg} />
+    <rect x={135} y={30} width={75} height={3} fill={C.navyDeep} />
+    <rect x={135} y={38} width={58} height={3} fill={C.navyDeep} />
+    <rect x={135} y={46} width={66} height={3} fill={C.navyDeep} />
+    {/* field row */}
+    <rect x={190} y={110} width={70} height={34} fill={C.chipGrey} />
+    <rect x={260} y={110} width={70} height={34} fill="none" stroke={C.navyDeep} strokeWidth="3" />
+    {/* banner + inner bar */}
+    <rect x={32} y={172} width={298} height={85} fill="none" stroke={C.navyDeep} strokeWidth="3.5" />
+    <rect x={40} y={182} width={282} height={22} fill={C.chipGrey} />
+    {/* lines */}
+    <rect x={32} y={297} width={200} height={3.5} fill={C.navyDeep} />
+    <rect x={32} y={309} width={160} height={3.5} fill={C.navyDeep} />
+    <rect x={240} y={297} width={40} height={3.5} fill={C.navyDeep} />
+    {/* bottom: block + divider + lines */}
+    <rect x={32} y={367} width={103} height={30} fill={C.chipGrey} />
+    <rect x={165} y={367} width={3.5} height={35} fill={C.navyDeep} />
+    <rect x={178} y={372} width={150} height={3} fill={C.navyDeep} />
+    <rect x={178} y={382} width={120} height={3} fill={C.navyDeep} />
+  </svg>
+);
 
 export const MiniDoc: React.FC<{ x: number; yMid: number; w: number; h: number; big?: boolean; seed: number }> = ({
   x,
