@@ -645,8 +645,8 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
               const x = (i - 9) * px;
               return (
                 <React.Fragment key={i}>
-                  <div style={{ position: "absolute", left: x, top: 172, width: 3, height: bandY - 172, background: C.navyDeep }} />
-                  <div style={{ position: "absolute", left: x + 10, top: 178, fontFamily: "Helvetica", fontSize: 27, color: C.navyDeep }}>
+                  <div style={{ position: "absolute", left: x, top: 180, width: 3, height: bandY - 180, background: C.navyDeep }} />
+                  <div style={{ position: "absolute", left: x + 16, top: 176, fontFamily: "Helvetica", fontSize: 21, color: C.navyDeep }}>
                     {String(i).padStart(2, "0")}:00
                   </div>
                 </React.Fragment>
@@ -658,9 +658,9 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
               const x = (i - 9) * px;
               return (
                 <React.Fragment key={i}>
-                  <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 285, background: "#FDFDFD" }} />
+                  <div style={{ position: "absolute", left: x, top: bandY + bandH, width: 3, height: 308, background: "#FDFDFD" }} />
                   <div
-                    style={{ position: "absolute", left: x + 8, top: bandY + bandH + 290, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}
+                    style={{ position: "absolute", left: x + 19, top: bandY + bandH + 292, fontFamily: "Helvetica", fontSize: 21, color: "#FDFDFD" }}
                   >
                     {String((i + 6) % 24).padStart(2, "0")}:00
                   </div>
@@ -735,8 +735,8 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
                   const x = (i - 9) * px;
                   return (
                     <React.Fragment key={i}>
-                      <div style={{ position: "absolute", left: x, top: 172, width: 3, height: bandY - 172, background: "#FDFDFD" }} />
-                      <div style={{ position: "absolute", left: x + 10, top: 178, fontFamily: "Helvetica", fontSize: 27, color: "#FDFDFD" }}>
+                      <div style={{ position: "absolute", left: x, top: 180, width: 3, height: bandY - 180, background: "#FDFDFD" }} />
+                      <div style={{ position: "absolute", left: x + 16, top: 176, fontFamily: "Helvetica", fontSize: 21, color: "#FDFDFD" }}>
                         {String(i).padStart(2, "0")}:00
                       </div>
                     </React.Fragment>
