@@ -468,8 +468,10 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
         if (x < -300 || x > 2000) return null;
         return <Pill key={i} x={x} y={p.y} w={p.w} h={p.h} color={p.c} />;
       })}
-      {/* CLSNet box fixed at center, orange border, no label */}
-      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2668, 2690], [0, 1])} />
+      {/* CLSNet box fixed at center, orange border, no label. side/artD*
+          measured r8: ref outer 200.5² at (860,436), content +3/+4 vs
+          pure scaling */}
+      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2668, 2690], [0, 1])} side={200.5} artDx={3} artDy={4} />
       </div>
     </AbsoluteFill>
   );

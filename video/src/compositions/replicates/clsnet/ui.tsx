@@ -90,6 +90,15 @@ export const HexIcon: React.FC<{
 };
 
 // ─── CLSNet logo box ───
+// Geometry re-measured r8: the ref box is SQUARE at every site (f400
+// 268.5², f1520 154², f2330 335², f2600 164², f2762 200.5²) — the r1
+// h=(w/274)*300*0.94 formula rendered every box 3-6% too tall. `w` stays
+// the ART-crop width (274 native) so the traced diamond/dot alignment
+// (pixel-exact at f400) is untouched; the box rect is 0.98·w square.
+// `side` overrides the square for sites measured off the 0.98 ratio
+// (strip2 = 200.5 for w=200); artDx/artDy are per-site measured content
+// nudges (ref strip2 draws the diamond +3/+4 vs pure scaling — human
+// layout, confirmed dot AND diamond offset together).
 export const ClsNetBox: React.FC<{
   x: number;
   y: number;
@@ -100,36 +109,50 @@ export const ClsNetBox: React.FC<{
   border?: "none" | "orange";
   bg?: string;
   markP?: number;
-}> = ({ x, y, w = 274, opacity = 1, label = true, labelFs = 34, border = "none", bg = C.navy, markP = 1 }) => {
+  side?: number;
+  artDx?: number;
+  artDy?: number;
+}> = ({ x, y, w = 274, opacity = 1, label = true, labelFs, border = "none", bg = C.navy, markP = 1, side, artDx = 0, artDy = 0 }) => {
   const brand = useBrand();
   if (opacity <= 0) return null;
-  const h = (w / 274) * 300;
   const scale = w / 274;
+  const box = side ?? (268.5 / 274) * w;
   return (
     <div style={{ position: "absolute", left: x, top: y, opacity }}>
       <div
         style={{
           position: "absolute",
-          width: w,
-          height: h * 0.94,
-          borderRadius: 40 * scale,
+          width: box,
+          height: box,
+          // outer radius measured 21-22px native at BOTH f400 (navy box,
+          // arc ends 21px below top) and f2762 (orange border, arc 15px at
+          // scale .73); the r1 value 40 was eyeballed
+          borderRadius: 22 * scale,
           backgroundColor: bg,
-          border: border === "orange" ? `${3 * scale}px solid ${C.orange}` : undefined,
+          // ref strip2 border measured 6px thick at w=200 (x860-865 of
+          // x860-1059 outer) = 8px at native 274; border-box keeps the
+          // outer bounds at the measured x/y/w
+          border: border === "orange" ? `${8 * scale}px solid ${C.orange}` : undefined,
+          boxSizing: "border-box",
         }}
       />
       {markP > 0 && (
-        <TracedArt name="logoMark" x={0} y={0} scale={scale} opacity={markP} />
+        <TracedArt name="logoMark" x={artDx} y={artDy} scale={scale} opacity={markP} />
       )}
       {label && (
         <div
           style={{
             position: "absolute",
-            top: h * 0.94 + 10 * scale,
+            // label glyph top measured y975 at f400 (div y675) = CSS top
+            // 292·scale with the 8px strut — independent of box height
+            top: 292 * scale,
             width: w,
             textAlign: "center",
             fontFamily: brand.sans,
             fontWeight: 700,
-            fontSize: labelFs,
+            // ref f400 label ink 34px tall / 168 wide -> fs 48 at scale 1
+            // (old default 34 rendered 24/121)
+            fontSize: labelFs ?? 48 * scale,
             color: C.navy,
           }}
         >
