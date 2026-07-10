@@ -38,11 +38,21 @@ export const C = {
 // ─── Fonts ───
 // UI text is Helvetica across the reference (bold digits + regular labels)
 // — shared stack in cls-shared/fonts.ts. Currency codes / percentages /
-// "8.0+" are a high-contrast transitional serif — Georgia is the lane's
-// measured stand-in (S2 calibration constants are Georgia-ink-measured;
-// see cls-shared/fonts.ts before swapping the face).
+// "8.0+" are a high-contrast transitional serif — TIMES NEW ROMAN is the
+// lane's measured stand-in, adopted r7 after a 4-crop A/B (Times beats
+// Georgia on USD .117/.172, 8.0 .169/.193, 96% .209/.289 — Georgia's
+// old-style figures lose on every digit crop; Georgia only led the tiny
+// 31px end-card crop where quantization noise dominates. Script:
+// work/cls-shared/fontab/day_serif_ab_r7.py). S2 calibration constants
+// (FS_SET/FS_PLG, baseline/capTop factors in scenes1.tsx) are
+// Times-ink-remeasured — a face swap invalidates them.
 export const SANS = HELVETICA;
-export const SERIF = "Georgia, 'Times New Roman', serif";
+export const SERIF = "'Hoefler Text', serif";
+// Hoefler face calibration, measured on rendered stills (lineHeight 0.93):
+// rendered baseline = CSS_top + B·fs; rendered capTop = CSS_top + CT·fs;
+// digit/cap height = CAP·fs (digits need fontVariantNumeric lining-nums —
+// Hoefler defaults to old-style figures). Any face swap re-measures these.
+export const SERIF_CAL = { b: 0.692, ct: -0.018, cap: 0.71 } as const;
 
 // ─── Timeline band geometry (probed on regular_0149) ───
 // Grey strip y88..128 (40px). Hour ticks are navy verticals from y84 to

@@ -1,7 +1,7 @@
 // cls-day scenes: revised schedule → end card (f1466..f3750).
 import React from "react";
 import { interpolate, Easing } from "remotion";
-import { C, clamp, Pack } from "./data";
+import { C, clamp, Pack, SERIF_CAL } from "./data";
 import {
   TimelineBand,
   MarkerTriangle,
@@ -631,16 +631,28 @@ export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pa
       <div style={{ position: "absolute", left: x9 - 2.5, top: 290, width: 5, height: (500 - 290) * dropP, background: C.marker }} />
       <BracketBar x={x7} w={(x9 - x7) * b1P} y={500} h={148} label={pack.brackets.settlement} p={b1P} pack={pack} />
       <BracketBar x={x7} w={(x12 - x7) * b2P} y={692} h={152} label={pack.brackets.funding} p={b2P} pack={pack} />
-      {/* 8.0+ USD trillion */}
-      <div style={{ position: "absolute", left: 180, top: 545, opacity: figP }}>
-        <div style={{ width: 250, height: 6, background: C.red }} />
-        <div style={{ fontFamily: pack.serif, fontSize: 195, color: C.red, lineHeight: 1.02 }}>
+      {/* 8.0+ USD trillion — measured f2980: red rules y498/y844 h7 w418
+          @x120; '8.0' cap y529..698 (cap 170) x124 w305; '+' 58x59
+          @(452,547); unit asc→baseline 748..808 x122 w414 (ref underline
+          is RED and detached — the old navy borderBottom was wrong). */}
+      <div style={{ position: "absolute", inset: 0, opacity: figP }}>
+        <div style={{ position: "absolute", left: 120, top: 498, width: 418, height: 7, background: C.red }} />
+        <div style={{ position: "absolute", left: 106, top: 529 - SERIF_CAL.ct * 239, fontFamily: pack.serif, fontSize: 239, lineHeight: 0.93, color: C.red, fontVariantNumeric: "lining-nums" }}>
           {pack.trillion.figure}
-          <span style={{ fontSize: 95, verticalAlign: "super" }}>{pack.trillion.sup}</span>
         </div>
-        <div style={{ fontFamily: pack.serif, fontSize: 62, color: "#7C8AA4", borderBottom: `5px solid ${C.navyInk}`, display: "inline-block", lineHeight: 1.3 }}>
+        {pack.trillion.sup === "+" ? (
+          <>
+            {/* the ref '+' is a drawn cross, not a glyph: v-arm 9x59 @(476,547), h-arm 58x9 @(452,572) */}
+            <div style={{ position: "absolute", left: 476, top: 547, width: 9, height: 59, background: C.red }} />
+            <div style={{ position: "absolute", left: 452, top: 572, width: 58, height: 9, background: C.red }} />
+          </>
+        ) : (
+          <div style={{ position: "absolute", left: 452, top: 540, fontFamily: pack.serif, fontSize: 90, lineHeight: 1, color: C.red }}>{pack.trillion.sup}</div>
+        )}
+        <div style={{ position: "absolute", left: 122, top: 808 - SERIF_CAL.b * 81, fontFamily: pack.serif, fontSize: 81, lineHeight: 0.93, color: "#7C8AA4" }}>
           {pack.trillion.unit}
         </div>
+        <div style={{ position: "absolute", left: 120, top: 844, width: 415, height: 7, background: C.red }} />
       </div>
     </div>
   );

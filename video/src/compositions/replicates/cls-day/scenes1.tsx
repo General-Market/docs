@@ -186,10 +186,27 @@ const PLUNGES: PlungeLUT[] = [
   { i: 7, end: 277, base: [[266, -13], [267, 35], [268, 181], [269, 366], [270, 508], [271, 520], [274, 517]], xT: [[266, -180], [267, -290], [268, -330], [269, -350], [270, -370], [271, -420], [272, -480], [273, -540], [274, -600]], xB: [[268, 28], [269, -92], [270, -212], [271, -252], [272, -312], [273, -392], [274, -472]] },
   { i: 8, end: 277, base: [[271, 95], [272, 199], [273, 253], [274, 349], [275, 459], [276, 514]], xT: [[271, -150], [272, -270], [273, -390], [274, -520], [275, -650], [276, -780]], xB: [[274, -12], [275, -52], [276, -162]] },
 ];
-// serif calibration (measured on rendered stills vs ref): rendered
-// baseline = CSS_top + 0.825·fs; rendered cap-top = CSS_top + 0.122·fs.
-const FS_SET = 349; // settled pairs — ref cap 251
-const FS_PLG = 338; // plunging pairs — ref cap 242
+// serif calibration (r7, face-specific — measured on rendered stills vs
+// ref by probing JPY capTop + P/Y baselines): rendered baseline = CSS_top
+// + SER_B·fs; rendered cap-top = CSS_top + SER_CT·fs; cap = (SER_B −
+// SER_CT)·fs. Measured factor sets: Georgia 0.825/0.122 @FS 349/338 ·
+// Times NR 0.798/0.139 @381/367 · Hoefler Text 0.692/−0.018 @354/341.
+// SER_SX: the ref face is CONDENSED — every macOS serif renders codes
+// wide (ref JPY 507 vs Georgia 616 / Times 622 / Hoefler 627 at cap 251;
+// USD ref 686 vs 695/746/726). scaleX about the left edge pulls the ink
+// back toward the ref's width.
+const FS_PLG = 341; // plunging pairs — ref cap 242
+const SER_B = 0.692; // baseline factor
+const SER_CT = -0.018; // cap-top factor
+const SER_SX = 0.9; // plunge-code width compression (mean of measured pairs)
+// per-settled-pair calibration (ref ink probes f150/f200): pair1 DKK/GBP
+// is SMALLER than pair0 (cap 245 vs 251) and its bottom capTop sits at
+// 559 not 565. sx = ref ink width / Hoefler natural width at the pair fs
+// (USD 686/726, JPY 507/627 @fs354; DKK 749/819, GBP 645/697 @fs345).
+const SET_CAL = [
+  { fs: 354, topBase: 530, botCap: 565, sxTop: 0.945, sxBot: 0.809 },
+  { fs: 345, topBase: 530, botCap: 559, sxTop: 0.915, sxBot: 0.926 },
+] as const;
 // early chips sit on a FIXED lattice (rows identical at f150 and f220,
 // x drifting left with the assembly); occupancy/colors BLINK between the
 // two measured states ("-" = empty slot). Blink placed mid-hold (f185).
@@ -275,7 +292,7 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
               if (!pair || frame < P.base[0][0] || frame > P.end) return null;
               const base = lutS(P.base)(frame);
               return (
-                <div key={`pt${P.i}`} style={{ position: "absolute", left: lutS(P.xT)(frame), top: base - 0.825 * FS_PLG, fontFamily: pack.serif, fontSize: FS_PLG, lineHeight: 0.93, color: pairColor(pair.topColor) }}>
+                <div key={`pt${P.i}`} style={{ position: "absolute", left: lutS(P.xT)(frame), top: base - SER_B * FS_PLG, fontFamily: pack.serif, fontSize: FS_PLG, lineHeight: 0.93, color: pairColor(pair.topColor), transform: `scaleX(${SER_SX})`, transformOrigin: "0 0" }}>
                   {pair.top}
                 </div>
               );
@@ -302,7 +319,7 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
               if (!pair || frame < P.xB[0][0] || frame > P.end) return null;
               const capTop = 1081 - lutS(P.base)(frame);
               return (
-                <div key={`pb${P.i}`} style={{ position: "absolute", left: lutS(P.xB)(frame), top: capTop - 0.122 * FS_PLG, fontFamily: pack.serif, fontSize: FS_PLG, lineHeight: 0.93, color: pairColor(pair.topColor === "red" ? "navy" : "red") }}>
+                <div key={`pb${P.i}`} style={{ position: "absolute", left: lutS(P.xB)(frame), top: capTop - SER_CT * FS_PLG, fontFamily: pack.serif, fontSize: FS_PLG, lineHeight: 0.93, color: pairColor(pair.topColor === "red" ? "navy" : "red"), transform: `scaleX(${SER_SX})`, transformOrigin: "0 0" }}>
                   {pair.bottom}
                 </div>
               );
@@ -334,17 +351,19 @@ const SettledCode: React.FC<{ pack: Pack; i: number; top?: boolean; xIn: number;
   const pair = pack.currencyPairs[i];
   if (!pair) return null;
   const color = top ? pair.topColor : pair.topColor === "red" ? "navy" : "red";
+  const cal = SET_CAL[Math.min(i, 1)];
   return (
     <div
       style={{
         position: "absolute",
         left: x,
-        top: top ? 530 - 0.825 * FS_SET : 565 - 0.122 * FS_SET,
+        top: top ? cal.topBase - SER_B * cal.fs : cal.botCap - SER_CT * cal.fs,
         fontFamily: pack.serif,
-        fontSize: FS_SET,
+        fontSize: cal.fs,
         lineHeight: 0.93,
         color: color === "red" ? C.red : C.navyInk,
-        transform: `translate(${xIn}px, ${sink}px)`,
+        transform: `translate(${xIn}px, ${sink}px) scaleX(${top ? cal.sxTop : cal.sxBot})`,
+        transformOrigin: "0 50%",
       }}
     >
       {top ? pair.top : pair.bottom}
@@ -1416,7 +1435,8 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
         ringFg={C.navyBg}
         center="none"
         textColor="#FCFCFC"
-        fontSize={130}
+        fontSize={170}
+        pctDy={16}
         bgSweep={ringIn}
       />
       {progress > 0.2 && <MarkerTriangle x={cx} y={cy - 289.5 - 131 / 2 - 52} size={40} />}

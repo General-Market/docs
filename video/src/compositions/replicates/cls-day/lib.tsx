@@ -374,7 +374,8 @@ export const Donut: React.FC<{
   fontSize?: number;
   gapDeg?: number; // white gap at top when in-progress look
   bgSweep?: number; // grey ring draw-in 0..1 (clockwise from top)
-}> = ({ cx, cy, r, thick, progress, pct, ringBg = C.donutGrey, ringFg = C.navyBg, center = "none", textColor = "#FCFCFC", fontSize = 90, gapDeg = 14, bgSweep = 1 }) => {
+  pctDy?: number; // ink-measured vertical nudge (flex centers the line box, not the ink)
+}> = ({ cx, cy, r, thick, progress, pct, ringBg = C.donutGrey, ringFg = C.navyBg, center = "none", textColor = "#FCFCFC", fontSize = 90, gapDeg = 14, bgSweep = 1, pctDy = 0 }) => {
   const R = r;
   const circ = 2 * Math.PI * R;
   const sweep = Math.max(0, Math.min(1, progress));
@@ -416,6 +417,8 @@ export const Donut: React.FC<{
           fontFamily: SERIF,
           fontSize,
           color: textColor,
+          fontVariantNumeric: "lining-nums",
+          transform: `translateY(${pctDy}px)`,
         }}
       >
         {pct}

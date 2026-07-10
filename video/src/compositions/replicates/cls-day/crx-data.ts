@@ -4,7 +4,7 @@
 // of central-bank accounts, margin pushed to the zk-SIMM core instead of
 // pay-ins, atomic on-chain settlement instead of PvP over accounts.
 // Every name, number and line lives here — edit freely.
-import { Pack } from "./data";
+import { Pack, SERIF } from "./data";
 
 export const CRX_SANS = "Diatype, 'Helvetica Neue', Helvetica, sans-serif";
 
@@ -41,7 +41,7 @@ export const CRX_PACK: Pack = {
     { top: "USD", bottom: "SGD", topColor: "navy" },
     { top: "USD", bottom: "ZAR", topColor: "red" },
   ],
-  serif: "Georgia, 'Times New Roman', serif",
+  serif: SERIF, // the lane serif — scenes1/2 placement factors are calibrated to THIS face; never diverge
   sans: CRX_SANS,
   brand: "crx",
 };
