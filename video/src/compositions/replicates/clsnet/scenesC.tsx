@@ -47,7 +47,18 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
     h: interpolate(f, [2306, 2312, 2324], [2900, 1070, REPORT.docL.h], clamp),
   };
   const docOp = lerp(f, [2306, 2312], [0, 1]);
-  const boxX = interpolate(f, [2313, 2323], [1920, REPORT.box.x], { ...clamp, easing: (t) => 1 - (1 - t) * (1 - t) });
+  // r6 measured box entry (navy-blob track 2306-2335): a full-height navy BAR
+  // sweeps left ahead of the box (1834@2306 → 1504@2310, merges into the box
+  // left edge ~2314); the box arrives HUGE and shrinks while sliding —
+  // (cx,size): 1858,836@2315 · 1304,524@2320 · settle 977.5,345@2330 (r1 slid
+  // it in at settled size). Label + logo scale with the box. An orange stub
+  // trails from the box to the right edge, dropping y630→552.
+  const boxW = interpolate(f, [2313, 2315, 2320, 2324], [1000, 836, 524, 420], clamp);
+  const boxCx = interpolate(f, [2313, 2315, 2320, 2324], [2350, 1858, 1304, 1119], clamp);
+  const boxCy = interpolate(f, [2313, 2315, 2320, 2324], [540, 504, 515, 518], clamp);
+  const barX = interpolate(f, [2306, 2310, 2312], [1834, 1504, 1470], clamp);
+  const stubRY = interpolate(f, [2310, 2324], [630, 552], clamp);
+  const stubX0 = f < 2313 ? barX + 56 : boxCx + boxW / 2 + 30;
   return (
     <AbsoluteFill>
       {/* white ground appears behind the shrinking panel */}
@@ -131,8 +142,14 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           <rect x={177} y={293} width={67} height={22} rx={8} fill={C.orangeDeep} opacity={lerp(f, [2310, 2316], [0, 1])} />
         </svg>
       )}
-      {/* CLSNet box slides in from the right */}
-      {f >= 2313 && <ClsNetBox x={boxX} y={REPORT.box.y} w={REPORT.box.w} labelFs={48} />}
+      {/* CLSNet box arrives huge from the right and shrinks (r6 measured) */}
+      {f >= 2306 && f < 2314 && (
+        <div style={{ position: "absolute", left: barX, top: 0, width: 46, height: 1080, backgroundColor: C.navy }} />
+      )}
+      {f >= 2308 && stubX0 < 1910 && <Elbow points={[[stubX0, stubRY], [1920, stubRY]]} />}
+      {/* negative A/B (r6): a doc→box left stub at y572 scored −0.002 at
+          f2315 — the ref line's exact extent is unmeasured; leave it out */}
+      {f >= 2313 && <ClsNetBox x={boxCx - boxW / 2} y={boxCy - boxW / 2} w={boxW} labelFs={(48 * boxW) / 345} />}
     </AbsoluteFill>
   );
 };
@@ -281,6 +298,11 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
   const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]);
   const meshP = lerp(f, [2342, 2352], [0, 1]);
   const rightOp = lerp(f, [2324, 2330], [0, 1]);
+  // r6: continue the measured box convergence across the 2324 handoff
+  // (GanttScene ends at cx 1119 / w 420) to the settled square by 2330
+  const boxW = interpolate(f, [2324, 2325, 2330], [420, 394, REPORT.box.w], clamp);
+  const boxCx = interpolate(f, [2324, 2325, 2330], [1119, 1073, REPORT.box.x + REPORT.box.w / 2], clamp);
+  const boxCy = interpolate(f, [2324, 2325, 2330], [518, 519, REPORT.box.y + REPORT.box.w / 2], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
       <div style={{ position: "absolute", inset: 0, opacity: out }}>
@@ -294,7 +316,7 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
         <div style={{ position: "absolute", inset: 0, opacity: rightOp }}>
           <ReportDoc x={REPORT.docR.x} y={REPORT.docR.y + dy} w={REPORT.docR.w} h={REPORT.docR.h} pillColor={C.pillNavy} meshP={meshP} />
         </div>
-        <ClsNetBox x={REPORT.box.x} y={REPORT.box.y + dy} w={REPORT.box.w} labelFs={48} />
+        <ClsNetBox x={boxCx - boxW / 2} y={boxCy - boxW / 2 + dy} w={boxW} labelFs={(48 * boxW) / 345} />
       </div>
     </AbsoluteFill>
   );
