@@ -841,8 +841,10 @@ const ClB: React.FC = () => (
     {/* step-roof + main striped tower, rounded top-right */}
     <path d="M 235 65 L 235 53 L 264 53 L 264 65" fill="none" stroke={C.red} strokeWidth="3.5" />
     <path d="M 235 320 L 235 65 L 305 65 Q 325 65 325 85 L 325 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4, 5].map((c) => (
-      <line key={c} x1={244 + c * 12} y1={114} x2={244 + c * 12} y2={302} stroke={C.red} strokeWidth="3" />
+    {/* pinstripes measured f750: five at local x 249.5 + 14.5c (the sixth
+        "stripe" in the old model was the body's own right edge) */}
+    {[0, 1, 2, 3, 4].map((c) => (
+      <line key={c} x1={249.5 + c * 14.5} y1={114} x2={249.5 + c * 14.5} y2={302} stroke={C.red} strokeWidth="3" />
     ))}
     <path d="M 195 320 L 195 302.5 L 227.5 302.5 L 227.5 320" fill="none" stroke={C.red} strokeWidth="3.5" />
     {/* grey slab + right navy building w/ 2x3 square windows */}
