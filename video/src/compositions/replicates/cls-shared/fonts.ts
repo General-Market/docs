@@ -30,4 +30,17 @@
 // re-measure every serif calibration in the lane (cls-day S2 fs/baseline
 // model, clsnet capTop/scaleX/tracking) and still-gate the replica AND its
 // CRX cut. Never adopt inside a refactor round.
+//
+// cls-day r7 RESOLUTION (2026-07-10): the Times lead did NOT survive the
+// render — shape-normalized meandiff hides ASPECT, and Times ships
+// +8.7%/+23% wider than the ref's condensed face (S2 f150 SSIM fell
+// .907→.9006). Pillow widths understate Chromium's by ~7%: screen faces
+// IN-RENDER, never adopt on Pillow numbers alone. An 8-face in-render
+// screen picked HOEFLER TEXT + per-string scaleX compression (f150
+// .907→.9274); Hoefler needs fontVariantNumeric lining-nums on every
+// digit site (old-style figures by default). cls-day face + calibration
+// live in cls-day/data.ts (SERIF, SERIF_CAL) and scenes1.tsx (SET_CAL).
+// The same in-render screen + width discipline applies to any clsnet
+// serif quality round (its Georgia lead is also Pillow-based — verify
+// in-render with width before adopting).
 export const HELVETICA = "'Helvetica Neue', Helvetica, Arial, sans-serif";
