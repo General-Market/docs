@@ -308,54 +308,88 @@ const ROW_ART: {
   { art: "rowSail", y: 800, fKeys: [244, 250, 256, 262, 268], xKeys: [1412, 1246, 1118, 1100, 1100], growEnd: 262 },
 ];
 
+// converge → compact-row targets (gen11, measured from the ref VIDEO
+// f312-326): the four skylines slide off their four stacked lines into ONE
+// compact horizontal row BEFORE any hexagon draws. Per-city converged art
+// placement is ground-aligned to the compact row (each art_bottom = the
+// measured orange ground 389/422/435/439) and x-aligned on the defining
+// orange landmark (bank temple cx369, office tower cx770). Scale 0.88 (orange
+// widths shrink 221→195 / 117→103). The wide outer buildings drop as the hex
+// crops them — exactly the ref motion. cp is the ref temple-ground curve
+// (slow f312-318, fast f318-322, settled f326).
+const CONV_X = [214, 600, 897, 1150];
+const CONV_Y = [261, 237, 202, 232];
+const CONV_S = 0.88;
 export const RowsBuild: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.rows[0] || f >= SEG.hexRow[0] + 18) return null;
+  if (f < SEG.rows[0] || f >= 340) return null;
   const lineP = lerp(f, [148, 162], [0, 1]);
-  // rows collapse toward the hex row at the end (f318-336 crossfade out)
-  const out = lerp(f, [318, 334], [1, 0]);
+  const cp = interpolate(f, [312, 318, 320, 322, 326], [0, 0.2, 0.77, 0.92, 1], clamp);
+  // ground lines/ticks vanish as the cities lift off their lines (ref f320:
+  // no full-width lines, just cities on a converging staircase)
+  const lineFade = lerp(f, [311, 320], [1, 0]);
+  // whole layer fades under the incoming hexes AFTER the converge lands, so
+  // the hex art crossfades over cities already in position (not a dissolve).
+  // Fast fade (323-333) so the WIDE row skylines don't linger and spill ghost
+  // buildings between the hexes — the ref hexes are clean by f332.
+  const out = lerp(f, [323, 333], [1, 0]);
   return (
     <AbsoluteFill style={{ backgroundColor: "transparent", opacity: out }}>
-      {ROW_LINES.map((y, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: y,
-            width: 1920 * lineP,
-            height: 3,
-            backgroundColor: C.navy,
-          }}
-        />
-      ))}
-      {ROW_TICKS.map((ticks, li) => {
-        const op = lerp(f, [ROW_SETTLE[li] - 6, ROW_SETTLE[li]], [0, 1]);
-        if (op <= 0) return null;
-        return (
-          <React.Fragment key={`t${li}`}>
-            {ticks.map(([tx, tw, th], k) => (
-              <div key={k} style={{ position: "absolute", left: tx, top: ROW_LINES[li] - th, width: tw, height: th, backgroundColor: C.navy, opacity: op }} />
-            ))}
-          </React.Fragment>
-        );
-      })}
+      {lineFade > 0 &&
+        ROW_LINES.map((y, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: y,
+              width: 1920 * lineP,
+              height: 3,
+              backgroundColor: C.navy,
+              opacity: lineFade,
+            }}
+          />
+        ))}
+      {lineFade > 0 &&
+        ROW_TICKS.map((ticks, li) => {
+          const op = lerp(f, [ROW_SETTLE[li] - 6, ROW_SETTLE[li]], [0, 1]) * lineFade;
+          if (op <= 0) return null;
+          return (
+            <React.Fragment key={`t${li}`}>
+              {ticks.map(([tx, tw, th], k) => (
+                <div key={k} style={{ position: "absolute", left: tx, top: ROW_LINES[li] - th, width: tw, height: th, backgroundColor: C.navy, opacity: op }} />
+              ))}
+            </React.Fragment>
+          );
+        })}
       {ROW_ART.map((r, i) => {
         if (f < r.fKeys[0]) return null;
-        const x = interpolate(f, r.fKeys, r.xKeys, clamp);
+        const xr = interpolate(f, r.fKeys, r.xKeys, clamp);
+        const x = xr + (CONV_X[i] - xr) * cp;
+        const y = r.y + (CONV_Y[i] - r.y) * cp;
+        const scale = 1 + (CONV_S - 1) * cp;
         const grow = lerp(f, [r.fKeys[0], r.growEnd], [0, 1]);
         return (
           <React.Fragment key={i}>
             <TracedArt
               name={r.art}
               x={x}
-              y={r.y}
+              y={y}
+              scale={scale}
               opacity={1}
               style={{
                 clipPath: `inset(0 ${(1 - grow) * 60}% 0 ${(1 - grow) * 30}%)`,
               }}
             />
-            {r.left && <TracedArt name={r.left.art} x={x + r.left.dx} y={r.left.y} opacity={1} />}
+            {r.left && cp < 1 && (
+              <TracedArt
+                name={r.left.art}
+                x={x + r.left.dx * scale}
+                y={r.left.y + (CONV_Y[i] - r.y) * cp}
+                scale={scale}
+                opacity={1 - cp}
+              />
+            )}
           </React.Fragment>
         );
       })}
@@ -393,8 +427,10 @@ const FLOW_FIELD2: FlowPill[] = [
 export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.hexRow[0] || f >= 468) return null;
-  const inOp = lerp(f, [322, 336], [0, 1]);
-  const boxOp = lerp(f, [330, 344], [0, 1]);
+  const inOp = lerp(f, [322, 334], [0, 1]);
+  // box draws with the hexes (ref video: box bar starts ~f324, near-full by
+  // f332); the old 330-344 left it a faint grey ghost through the hexify
+  const boxOp = lerp(f, [324, 336], [0, 1]);
   // r6 measured exit (CLSNet-box left edge track): the whole layout slides
   // LEFT with acceleration, NO fade — content off by f466-467. Band stays.
   const shift = interpolate(
@@ -462,7 +498,10 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
           const sIn = fi === 0 ? lerp(f, [364, 372], [0.15, 1]) : lerp(f, [419, 428], [0.15, 1]);
           const sOut = fi === 0 ? 1 - Math.pow(lerp(f, [406, 412], [0, 1]), 2) : 1;
           const sc = sIn * sOut;
-          if (sc <= 0 || (fi === 0 && f >= 413) || (fi === 1 && f < 419)) return null;
+          // gen11: field0 sIn floors at 0.15 (r5), so the page leaked in at 15%
+          // from f320 through the hexify — the ref has NO pills there. Gate it
+          // to the flows phase (f>=363); r5's f364+ growth is untouched.
+          if (sc <= 0 || (fi === 0 && (f < 363 || f >= 413)) || (fi === 1 && f < 419)) return null;
           return (
             <div key={fi} style={{ position: "absolute", inset: 0, transform: `scaleY(${sc})`, transformOrigin: "960px 830px" }}>
               {field.map(([x, y, w, h, color], i) => (
