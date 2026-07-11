@@ -1608,38 +1608,50 @@ export const SchedDoc: React.FC<{
   );
 };
 
-// ─── S7: netting donuts (f1170..1466) ───
-// Measured: grey ring draws in at (958,517) f1170..1188, slides right to
-// (1352,517) f1192..1212 (outer R 355, thick 131); one big icon circle
-// r237 at (511,511), later two r150 circles; no dashed connectors.
+// ─── S7: netting donuts (f1170..1478) ───
+// Motion re-traced frame-exact (GEN-15, ref probes in work/cls-day/s7). The
+// grey ring draw-in (f1170..1188, r289.5/thick131/outer355 at 958,517) is
+// faithful and untouched; everything else was invented or mistimed:
+//   • "0%" label + donut SLIDE right 958→1352 measured f1200..1220 (old
+//     1192..1212 ran ~8f early; label was gated f1214 — ref shows it at f1194).
+//   • ONE icon circle (511,511 r237) DRAWS IN clockwise from the top f1206..1220
+//     (ref grows the stroke top→around; it never faded). Old code FADED it in
+//     ~32f late at f1238..1250.
+//   • dashed connector icon→donut (horiz at y517) wipes in f1222..1250, then
+//     morphs to a bracket at the split. The old code drew NO connector; the ref
+//     has one the whole scene.
+//   • count 0→96% f1230..1252 — measured 1/11/62/87/94/96 (ref digit reads).
+//     GEN-9's curve gave 21/48/75 across the 11→62 jump: too slow mid-sweep.
+//   • single icon SPLITS to two (516,313)+(515,721) r150 + bracket connector
+//     over f1300..1308 (old 1352..1364 crossfade ran ~50f late).
+//   • count 96→99% f1320..1340 (ref 96/97/98/99; old 1344..1360).
 export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 1170 || frame >= 1478) return null;
   const bgP = interpolate(frame, [1170, 1174], [0, 1], clamp);
   const outP = interpolate(frame, [1464, 1476], [0, 1], clamp);
   const ringIn = lutS([[1170, 0.05], [1172, 0.115], [1174, 0.26], [1176, 0.7], [1178, 0.86], [1180, 0.94], [1182, 0.975], [1188, 1]])(frame);
-  const cx = interpolate(frame, [1192, 1212], [958, 1352], { ...clamp, easing: EASE });
+  const cx = interpolate(frame, [1200, 1220], [958, 1352], { ...clamp, easing: EASE });
   const cy = 517;
-  // Donut COUNTS + fills in sync (r11 measured): holds 0% until f1230, then
-  // sweeps fast 0->96% over f1230-1252 (48%@f1240, 95%@f1250), holds, then
-  // 96->99% at f1344-1360. The old code started the fill at f1240 and ramped
-  // too slowly (empty grey where the ref was already navy). pack.percents
-  // endpoints (96/99) are the count targets; the label reads the live count.
   const t1 = parseFloat(pack.percents[1]) / 100;
   const t2 = parseFloat(pack.percents[2]) / 100;
-  const cnt1 = lutS([[1230, 0], [1233, 0.04], [1237, 0.27], [1240, 0.5], [1244, 0.78], [1248, 0.97], [1252, 1]])(frame) * t1;
-  const progress = frame < 1344 ? cnt1 : interpolate(frame, [1344, 1360], [t1, t2], clamp);
+  const cnt1 = lutS([[1229, 0], [1230, 0.01], [1236, 0.115], [1240, 0.646], [1244, 0.906], [1248, 0.979], [1252, 1]])(frame) * t1;
+  const progress = frame < 1320 ? cnt1 : interpolate(frame, [1320, 1340], [t1, t2], clamp);
   const pct = `${Math.round(progress * 100)}%`;
-  const icon1P = interpolate(frame, [1238, 1250], [0, 1], clamp);
-  const splitP = interpolate(frame, [1352, 1364], [0, 1], clamp);
+  const iconDraw = interpolate(frame, [1206, 1220], [0, 1], clamp); // clockwise arc draw-in
+  const connWipe = interpolate(frame, [1222, 1250], [0, 1], clamp); // connector left→right
+  const splitP = interpolate(frame, [1300, 1308], [0, 1], clamp);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.blue, opacity: bgP * (1 - outP) }}>
+      {/* dashed connectors sit behind the donut + icons */}
+      {frame >= 1206 && splitP < 1 && <NetConnector mode="single" wipe={connWipe} opacity={1 - splitP} />}
+      {splitP > 0 && <NetConnector mode="bracket" wipe={1} opacity={splitP} />}
       <Donut
         cx={cx}
         cy={cy}
         r={289.5}
         thick={131}
         progress={progress}
-        pct={frame >= 1214 ? pct : ""}
+        pct={frame >= 1192 ? pct : ""}
         ringBg={C.donutGrey}
         ringFg={C.navyBg}
         center="none"
@@ -1648,9 +1660,9 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
         pctDy={16}
         bgSweep={ringIn}
       />
-      {progress > 0.2 && <MarkerTriangle x={cx} y={cy - 289.5 - 131 / 2 - 52} size={40} />}
-      {/* icon circles (one big, then two) */}
-      {icon1P > 0 && splitP < 1 && <NetIcon x={511} y={511} r={237} p={icon1P * (1 - splitP)} kind="in" />}
+      {progress > 0.2 && <MarkerTriangle x={1352} y={cy - 289.5 - 131 / 2 - 55} size={40} />}
+      {/* icon circles: one (draws in), then two (split) */}
+      {frame >= 1206 && splitP < 1 && <NetIcon x={511} y={511} r={237} p={1 - splitP} draw={iconDraw} kind="in" />}
       {splitP > 0 && (
         <>
           <NetIcon x={516} y={313} r={150} p={splitP} kind="in" />
@@ -1661,14 +1673,45 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   );
 };
 
-const NetIcon: React.FC<{ x: number; y: number; r: number; p: number; kind: "in" | "out" }> = ({ x, y, r, p, kind }) => {
+// dashed netting connector — measured y517, x-band 765→998 (single) with a
+// vertical bracket at x827 once the icon splits (dash pitch 17 on / 19 off).
+const NetConnector: React.FC<{ mode: "single" | "bracket"; wipe: number; opacity: number }> = ({ mode, wipe, opacity }) => {
+  const dash = "17 19";
+  const stroke = "#FDFDFD";
+  const sw = 3;
+  const donutLeft = 998;
+  const midY = 517;
+  return (
+    <svg width={1920} height={1080} style={{ position: "absolute", opacity }}>
+      {mode === "single" ? (
+        <line x1={765} y1={midY} x2={765 + (donutLeft - 765) * wipe} y2={midY} stroke={stroke} strokeWidth={sw} strokeDasharray={dash} strokeLinecap="butt" />
+      ) : (
+        // upper icon → bar, lower icon → bar, bar spans the two, mid → donut
+        <path d={`M 668 313 H 827 M 667 721 H 827 M 827 313 V 721 M 827 ${midY} H ${donutLeft}`} fill="none" stroke={stroke} strokeWidth={sw} strokeDasharray={dash} />
+      )}
+    </svg>
+  );
+};
+
+const NetIcon: React.FC<{ x: number; y: number; r: number; p: number; kind: "in" | "out"; draw?: number }> = ({ x, y, r, p, kind, draw = 1 }) => {
   const s = r / 110; // glyph scale
+  const circ = 2 * Math.PI * r;
+  const glyphP = interpolate(draw, [0.4, 1], [0, 1], clamp); // glyph appears once the arc is mostly drawn
   return (
     <div style={{ position: "absolute", inset: 0, opacity: p }}>
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <circle cx={x} cy={y} r={r} fill="none" stroke="#FDFDFD" strokeWidth={4} />
+        <circle
+          cx={x}
+          cy={y}
+          r={r}
+          fill="none"
+          stroke="#FDFDFD"
+          strokeWidth={4}
+          strokeDasharray={draw >= 1 ? undefined : `${draw * circ} ${circ}`}
+          transform={draw >= 1 ? undefined : `rotate(-90 ${x} ${y})`}
+        />
         {/* chip stack glyph */}
-        <g transform={`translate(${x} ${y}) scale(${s}) translate(-56 -40)`}>
+        <g opacity={glyphP} transform={`translate(${x} ${y}) scale(${s}) translate(-56 -40)`}>
           {[0, 1, 2].map((row) => (
             <rect key={row} x={0} y={row * 30} width={58} height={21} rx={9} fill="none" stroke="#FDFDFD" strokeWidth={3.5} />
           ))}
