@@ -875,12 +875,19 @@ export const NET_MORPH_START: Record<string, number> = {
   mHexBank2: 758,
   mHexCity2: 756,
 };
-const NET_HEXES = [
-  { art: "mHexHeliL", from: [375, 405], to: [393, 409], f0: 758, f1: 770 },
+// GREY_FACE: the r6 network traces mis-classified the light-grey building
+// faces of the heli/bank2 hexes as tan #E9C8B0 (probed f890: ref neutral
+// grey ~215/215/215 where the trace paints peach). Recolour those two hexes'
+// tan layer back to light grey; the bank/city2 hexes keep tan (their few tan
+// px sit on genuinely warm orange edges — ref R−B ≈ 76 there, confirmed).
+const GREY_FACE: Record<string, string> = { "#E9C8B0": "#D6D6D6" };
+type NetHex = { art: string; from: [number, number]; to: [number, number]; f0: number; f1: number; recolor?: Record<string, string> };
+const NET_HEXES: NetHex[] = [
+  { art: "mHexHeliL", from: [375, 405], to: [393, 409], f0: 758, f1: 770, recolor: GREY_FACE },
   { art: "mHexBankL", from: [555, 765], to: [774, 678], f0: 760, f1: 772 },
-  { art: "mHexBank2L", from: [1105, 425], to: [1179, 414], f0: 758, f1: 770 },
+  { art: "mHexBank2L", from: [1105, 425], to: [1179, 414], f0: 758, f1: 770, recolor: GREY_FACE },
   { art: "mHexCity2L", from: [1460, 715], to: [1594, 650], f0: 756, f1: 768 },
-] as const;
+];
 
 // Elbow routes probed at f900 (4px navy, rounded corners); each draws
 // OUTWARD from its origin hex over f764-788.
@@ -980,7 +987,7 @@ export const NetworkScene: React.FC<{ frame: number }> = ({ frame }) => {
               top: cy - (360 * scale) / 2,
             }}
           >
-            <TracedArt name={hx.art} scale={scale} />
+            <TracedArt name={hx.art} scale={scale} recolor={hx.recolor} />
           </div>
         );
       })}
