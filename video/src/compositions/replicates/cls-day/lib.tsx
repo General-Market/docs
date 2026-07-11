@@ -115,6 +115,9 @@ export type BandProps = {
   tickAbove?: number; // tick extension above strip top
   tickBelow?: number; // tick extension below strip bottom
   labelSize?: number;
+  labelDx?: number; // label x offset from tick (default 8)
+  labelDy?: number; // label y offset below band bottom (default 2)
+  labelWeight?: number; // label font weight (default 400)
   ink?: string;
 };
 
@@ -128,6 +131,9 @@ export const TimelineBand: React.FC<BandProps> = ({
   tickAbove = 4,
   tickBelow = 20,
   labelSize = 30,
+  labelDx = 8,
+  labelDy = 2,
+  labelWeight = 400,
   ink = C.navyDeep,
 }) => {
   const ticks: React.ReactNode[] = [];
@@ -153,10 +159,11 @@ export const TimelineBand: React.FC<BandProps> = ({
           <div
             style={{
               position: "absolute",
-              left: x + 8,
-              top: y + h + 2,
+              left: x + labelDx,
+              top: y + h + labelDy,
               fontFamily: SANS,
               fontSize: labelSize,
+              fontWeight: labelWeight,
               color: ink,
               whiteSpace: "pre",
             }}

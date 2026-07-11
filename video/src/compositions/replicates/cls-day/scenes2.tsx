@@ -417,8 +417,13 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   ]);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      {/* band touches the top edge in this scene (y0 h57), static, no marker */}
-      <TimelineBand y={0} h={57} originX={101} originHour={4} pxPerHour={285.7} tickAbove={0} tickBelow={22} labelSize={30} />
+      {/* band touches the top edge (y0 h57), static, no marker. r8: labels
+          REMEASURED at f2550 — ref digits cap-height 29 (fs42, not 30),
+          cap-top y72, digit x-start 118 (labelDx 15), and the ticks run to
+          y102 (tickBelow 45, was 22). This label geometry repeats at all 7
+          ticks across the whole S13 window (f2362-2750), so it's a uniform
+          band-wide correction. */}
+      <TimelineBand y={0} h={57} originX={101} originHour={4} pxPerHour={286} tickAbove={0} tickBelow={45} labelSize={42} labelDx={15} labelDy={4} />
       <div style={{ opacity: cityP }}>
         <PvpLeftCity />
         <PvpRightCity />
@@ -467,17 +472,24 @@ const PvpLeftCity: React.FC = () => (
         <rect key={`${r}${c}`} x={22 + c * 26} y={425 + r * 36} width={6} height={19} fill={C.navyDeep} />
       )),
     )}
-    {/* red temple tower: crown + door slots */}
-    <line x1={177} y1={252} x2={177} y2={268} stroke={C.red} strokeWidth={3.5} />
-    <rect x={107} y={268} width={140} height={18} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    <rect x={100} y={286} width={152} height={16} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    <rect x={115} y={302} width={124} height={183} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    <line x1={130} y1={302} x2={130} y2={485} stroke={C.red} strokeWidth={3.5} />
-    <line x1={224} y1={302} x2={224} y2={485} stroke={C.red} strokeWidth={3.5} />
-    <rect x={143} y={330} width={28} height={155} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    <rect x={181} y={330} width={28} height={155} fill="#F2C7A9" stroke={C.red} strokeWidth={3.5} />
-    <line x1={143} y1={395} x2={171} y2={395} stroke={C.red} strokeWidth={3.5} />
-    <line x1={181} y1={395} x2={209} y2={395} stroke={C.red} strokeWidth={3.5} />
+    {/* red temple tower — r8 re-trace from the f2550 silhouette (min/max red
+        per row): body is x102-248 (w146, was 124 too narrow), crown box
+        x102-250 y282-310, inner frame x124-228 y358. TWO windows: LEFT has a
+        white top + RED-SOLID middle + white bottom; RIGHT has a CREAM top +
+        white bottom with a low divider (r7 had them swapped/plain). Twin mast. */}
+    <line x1={172} y1={266} x2={172} y2={282} stroke={C.red} strokeWidth={3.5} />
+    <line x1={182} y1={266} x2={182} y2={282} stroke={C.red} strokeWidth={3.5} />
+    <rect x={102} y={282} width={148} height={28} fill={C.white} stroke={C.red} strokeWidth={4} />
+    <line x1={116} y1={318} x2={236} y2={318} stroke={C.red} strokeWidth={3.5} />
+    <rect x={102} y={324} width={146} height={158} fill={C.white} stroke={C.red} strokeWidth={4} />
+    <rect x={124} y={358} width={104} height={124} fill="none" stroke={C.red} strokeWidth={3.5} />
+    {/* left window: white / red-solid / white */}
+    <rect x={144} y={378} width={26} height={104} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={144} y={404} width={26} height={58} fill={C.red} />
+    {/* right window: cream top, white below, low divider */}
+    <rect x={181} y={378} width={26} height={104} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={181} y={381} width={26} height={46} fill="#F2C7A9" />
+    <line x1={181} y1={456} x2={207} y2={456} stroke={C.red} strokeWidth={3.5} />
     {/* red dash-window block below */}
     <path d="M 85 660 L 85 500 Q 85 485 100 485 L 265 485 L 265 660" fill={C.white} stroke={C.red} strokeWidth={3.5} />
     {[0, 1, 2].map((r) =>
