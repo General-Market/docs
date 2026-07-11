@@ -19,28 +19,76 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
 }) => {
   const { copy: COPY, serif: SERIF, logoArt, logoText } = useBrand();
   const f = frame;
-  const logoOp = endcard ? lerp(f, [3957, 3977], [0, 1]) : lerp(f, [2, 18], [0, 1]);
-  const supportOp = endcard ? lerp(f, [3974, 3980], [0, 1]) : lerp(f, [10, 24], [0, 1]);
-  const wordP = endcard ? lerp(f, [3959, 3973], [0, 1]) : lerp(f, [0, 11], [0, 1]);
-  const card1Op = endcard ? lerp(f, [3979, 3983], [0, 1]) : lerp(f, [22, 38], [0, 1]);
-  const card2Op = endcard ? lerp(f, [3998, 4002], [0, 1]) : lerp(f, [40, 56], [0, 1]);
-  const card1Grow = endcard ? lerp(f, [3982, 3990], [0, 1]) : 1;
-  const card2Grow = endcard ? lerp(f, [4001, 4008], [0, 1]) : 1;
+  // ── Intro reveal, all timings ink-scanned from the exact ref video
+  // (work/clsnet/anim). The logo lockup DRAWS ITSELF IN: swirl mark first
+  // (f0-6), the CLS letters wipe LEFT→RIGHT (f4-20: C→CL→CLS), the tagline
+  // fades (f16-24). The wordmark reveals RIGHT→LEFT (f5-14, ~"…et" at f8,
+  // whole by f14 — measured leftmost-ink column, was a too-fast f0-11 wipe).
+  // The two Principle cards GROW out of a loader bar, staggered (card35
+  // f23-31, card50 f43-52), content filling AFTER each box grows.
+  const logoOp = endcard ? lerp(f, [3957, 3977], [0, 1]) : lerp(f, [2, 18], [0, 1]); // text-logo fallback (CRX)
+  const markOp = endcard ? lerp(f, [3957, 3963], [0, 1]) : lerp(f, [0, 6], [0, 1]);
+  const lettersWipe = endcard ? lerp(f, [3960, 3974], [0, 1]) : lerp(f, [4, 20], [0, 1]);
+  const taglineOp = endcard ? lerp(f, [3974, 3980], [0, 1]) : lerp(f, [17, 24], [0, 1]);
+  // supporting line ("Supporting adherence to the FX Global Code:") ink-ramps
+  // f20-28 in the ref (8→61→165→203 at f18/22/24/26).
+  const supportOp = endcard ? lerp(f, [3974, 3980], [0, 1]) : lerp(f, [20, 28], [0, 1]);
+  const wordP = endcard
+    ? lerp(f, [3959, 3973], [0, 1])
+    : interpolate(f, [5, 6, 8, 10, 12, 14], [0, 0.01, 0.14, 0.63, 0.82, 1], clamp);
+  const card1Op = endcard ? lerp(f, [3979, 3983], [0, 1]) : lerp(f, [20, 23], [0, 1]);
+  const card2Op = endcard ? lerp(f, [3998, 4002], [0, 1]) : lerp(f, [40, 43], [0, 1]);
+  const card1Grow = endcard ? lerp(f, [3982, 3990], [0, 1]) : lerp(f, [23, 30], [0, 1]);
+  const card2Grow = endcard ? lerp(f, [4001, 4008], [0, 1]) : lerp(f, [43, 51], [0, 1]);
   const card1Parts = endcard
     ? { kicker: lerp(f, [3985, 3990], [0, 1]), num: lerp(f, [3988, 3993], [0, 1]), strip: lerp(f, [3991, 3996], [0, 1]) }
-    : undefined;
+    : { kicker: lerp(f, [26, 31], [0, 1]), num: lerp(f, [28, 32], [0, 1]), strip: lerp(f, [30, 34], [0, 1]) };
   const card2Parts = endcard
     ? { kicker: lerp(f, [4003, 4008], [0, 1]), num: lerp(f, [4005, 4010], [0, 1]), strip: lerp(f, [4008, 4013], [0, 1]) }
-    : undefined;
-  const bar1Op = endcard ? 0 : lerp(f, [20, 26], [0, 1]) * lerp(f, [34, 40], [1, 0]);
+    : { kicker: lerp(f, [47, 51], [0, 1]), num: lerp(f, [49, 53], [0, 1]), strip: lerp(f, [50, 54], [0, 1]) };
+  // bar1Op removed: it drew a spurious second grey bar at the card's bottom
+  // edge that the ref never shows — the real card now grows out of its own
+  // bar (growP), so the fake loader is redundant.
+  const bar1Op = 0;
   const bar2Op = endcard ? 0 : lerp(f, [34, 38], [0, 1]) * lerp(f, [46, 52], [1, 0]);
-  const wmBarOp = endcard ? 0 : lerp(f, [4, 8], [0, 1]) * lerp(f, [26, 36], [1, 0]);
+  const wmBarOp = endcard ? 0 : lerp(f, [15, 18], [0, 1]) * lerp(f, [21, 24], [1, 0]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: C.navy }}>
       {/* CLS logo (traced white art) + tagline */}
       {logoArt ? (
-        <TracedArt name={logoArt} x={TITLE.logo.x} y={TITLE.logo.y} scale={1} opacity={logoOp} />
+        // Staged draw-on over the measured traced lockup. Three disjoint
+        // region-clips of the SAME traced asset — mark (art-x 0-71), CLS
+        // letters (art-x 71-300, y 0-55), tagline (art-y 55-100) — so the
+        // settled pixels are byte-unchanged and only the reveal is new.
+        // 76.3% = (1 − 71/300); 23.7% = 71/300; 45% = 1 − 55/100. Letters
+        // wipe L→R by shrinking the right inset from 76.3%→0.
+        <>
+          <TracedArt
+            name={logoArt}
+            x={TITLE.logo.x}
+            y={TITLE.logo.y}
+            scale={1}
+            opacity={markOp}
+            style={{ clipPath: "inset(0 76.3% 45% 0)" }}
+          />
+          <TracedArt
+            name={logoArt}
+            x={TITLE.logo.x}
+            y={TITLE.logo.y}
+            scale={1}
+            opacity={lettersWipe > 0 ? 1 : 0}
+            style={{ clipPath: `inset(0 ${(1 - lettersWipe) * 76.3}% 45% 23.7%)` }}
+          />
+          <TracedArt
+            name={logoArt}
+            x={TITLE.logo.x}
+            y={TITLE.logo.y}
+            scale={1}
+            opacity={taglineOp}
+            style={{ clipPath: "inset(55% 0 0 0)" }}
+          />
+        </>
       ) : (
         <div
           style={{
