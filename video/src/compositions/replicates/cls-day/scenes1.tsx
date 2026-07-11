@@ -482,8 +482,11 @@ export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
   const scroll = interpolate(frame, [300, 460], [0, -170], clamp); // continent longitude
   const theta = -0.93 * (frame - 330.5); // clock-face rotation (deg)
   const lockClosed = frame >= 400;
-  const padSlide = interpolate(frame, [333, 352], [190, 0], { ...clamp, easing: EASE });
-  const padIn = interpolate(frame, [333, 348], [0, 1], clamp);
+  // padlock DRAWS ON in place (measured ref f330..350) — NOT a slide-in.
+  // shackle+body+navy dots fade f330..339; red combination dashes populate
+  // f340..351 (ref: the red dashes appear only after the body is solid).
+  const padIn = interpolate(frame, [330, 339], [0, 1], clamp);
+  const padDash = interpolate(frame, [340, 351], [0, 1], clamp);
   const cx = G_BCX;
   const cy = G_BCY;
   const r = G_DISK;
@@ -535,9 +538,9 @@ export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
         })}
         <MarkerTriangle x={cx} y={cy - 466} size={62} />
       </div>
-      {/* padlock — slides in from the right as the globe pans left */}
-      <div style={{ position: "absolute", inset: 0, opacity: padIn * (1 - exitP), transform: `translateX(${padSlide}px)` }}>
-        <Padlock x={1338} y={372} size={163} closed={lockClosed} />
+      {/* padlock — draws on in place (shackle→body→dots→red dashes), measured */}
+      <div style={{ position: "absolute", inset: 0, opacity: padIn * (1 - exitP) }}>
+        <Padlock x={1338} y={372} size={163} closed={lockClosed} dashOpacity={padDash} />
       </div>
     </>
   );

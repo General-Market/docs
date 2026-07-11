@@ -113,15 +113,49 @@ match). What WAS invented was the **entry/exit of the two SETTLED pairs**:
   error; out of this invented-motion round's scope. Fold into any S2 position
   re-cal.
 
+Fourth animation eye-passed: the **S3 globe clock (f283..352)**. Dense ref
+pull (f283..352 every ~3-6f) + a blue-disk centroid tracker + a red-milestone-
+tick angular tracker adjudicated every phase against a fresh replica render.
+VERDICT: the GEN-9 dock/rotation/pan are MEASURED-FAITHFUL, not invented — I
+confirmed them per-pixel and left them; the ONE invented motion was the
+**padlock slide-in**, now deleted.
+- **Dock-in trajectory FAITHFUL (verified, unchanged):** the blue-disk centroid
+  cx/cy match the `G_CX`/`G_CY` LUTs to 1-3px at every keyframe (globe enters
+  from the right sliver cx1893@f283 → settles cx958 r282 by f305, cy495→554);
+  scale ramp matches to ~0.01-0.06 (slightly low f286-289, negligible). The
+  globe arrives right→center + scales up + drops onto the S2 timeline exactly
+  as GEN-9 built it.
+- **CCW rotation FAITHFUL (verified, unchanged):** the red milestone ticks'
+  measured angular positions match `θ=-0.93·(f-330.5)` to within 1-2° across
+  the WHOLE window f292..350 — a steady CCW spin through both dock-in and pan.
+- **Pan-left FAITHFUL (verified, unchanged):** cx pans 958→716 over f330..350
+  matching the measured centroid (1px).
+- **Padlock slide DELETED — was invented (scenes1.tsx + lib.tsx):** cropped
+  ref f326..350 proved the padlock DRAWS ON IN PLACE at a fixed position, NOT
+  a slide. Measured stages: shackle-top hints ~f330 → shackle+body+navy dots
+  solid by ~f338 → red combination dashes populate f340..350 → drop-shadow
+  ~f350. The old code slid it 190px translateX (f333..352) AND faded it too
+  late (full only f348). Replaced: fixed position, `padIn` fade f330..339,
+  new `padDash` (0→1 over f340..351) wired to a `dashOpacity` prop on Padlock
+  so the red dashes appear only after the body is solid. Settled padlock
+  (f400+, closed) byte-unchanged; GEN-9's (1338,372) position preserved.
+- **Filmstrip (eye gate):** `work/cls-day/anim/s3_globe_filmstrip.png` (ref/
+  replica, f283 292 301 310 320 330 338 346 352 — dock→rotate→pan→padlock
+  draw-on all match). Padlock A/B `work/cls-day/s3/` (padcrop_* ref vs att2
+  post-fix). tsc clean (cls-day scope).
+- **Documented residuals (NOT fixed — static geometry, GEN-9 remit):** the
+  replica continents are cruder (two strokes vs the ref's fuller landmasses);
+  the padlock body is slightly smaller and lacks the f350 drop-shadow; the
+  f283 entry sliver is ~2 frames too large. None are motion errors.
+
 - **Still needing the same eye-pass (invented/weird motion vs ref clean
-  animation), next priorities:** S3 globe DOCK-IN + pan-left + padlock slide
-  (f285..352); S4 hex spread + badge back-ease + arrow draw + pill
-  (f462..618); S7/S13 donut ring sweeps + chip runs. (S1 intro + S18 outro +
-  S2 carousel DONE.) Each: extract dense ref frames, identify mechanism
-  (draw/slide/scale), rebuild, filmstrip-gate. NEXT recommended: **S3 globe
-  clock dock-in (f283..352)** — the globe docks onto the S2 timeline from the
-  top-right then pans left with a padlock slide; verify the dock trajectory
-  and pan read as the ref's, not invented, by the same dense-frame eye method.
+  animation), next priorities:** S4 hex spread + badge back-ease + arrow draw
+  + pill (f462..618); S7/S13 donut ring sweeps + chip runs. (S1 intro + S18
+  outro + S2 carousel + S3 globe DONE.) Each: extract dense ref frames,
+  identify mechanism (draw/slide/scale), rebuild, filmstrip-gate. NEXT
+  recommended: **S4 trade diagram (f462..618)** — verify the hex-badge spread,
+  the badge back-ease, the blue arrow draw-on, and the pill assembly read as
+  the ref's actual motion, not invented, by the same dense-frame eye method.
 
 ## Architecture (all in the lane)
 

@@ -728,7 +728,8 @@ export const Padlock: React.FC<{
   size?: number;
   closed: boolean;
   opacity?: number;
-}> = ({ x, y, size = 150, closed, opacity = 1 }) => (
+  dashOpacity?: number;
+}> = ({ x, y, size = 150, closed, opacity = 1, dashOpacity = 1 }) => (
   <div style={{ position: "absolute", left: x, top: y, width: size, height: size * 1.2, opacity }}>
     <svg width={size} height={size * 1.2} viewBox="0 0 100 120">
       <rect x="12" y="46" width="76" height="66" rx="10" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="4" />
@@ -740,7 +741,7 @@ export const Padlock: React.FC<{
       {[62, 78, 94].map((ly, i) => (
         <React.Fragment key={i}>
           <circle cx="28" cy={ly} r="3.5" fill="none" stroke={C.navyDeep} strokeWidth="2.5" />
-          <line x1="38" y1={ly} x2="72" y2={ly} stroke={C.red} strokeWidth="3.5" />
+          <line x1="38" y1={ly} x2="72" y2={ly} stroke={C.red} strokeWidth="3.5" opacity={dashOpacity} />
         </React.Fragment>
       ))}
     </svg>
