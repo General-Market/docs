@@ -506,7 +506,13 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
     clamp
   );
   const out = lerp(f, [556, 566], [1, 0]);
-  // globe rotation: crossfade globeA→globeB over the scene
+  // globe rotation: crossfade globeA→globeB over the scene. The two traced
+  // states are distinct rotational snapshots (f487.5 / f537.5); the crossfade
+  // carries the spin and a lateral slide models the continents' real leftward
+  // drift. gen-8 grid-searched the slide on the mid ref frames (regular_0041/
+  // 0042/0043): 48→0.897, 160→0.905, 200→0.903 avg-whole; 200 wins 2/3, slide
+  // term is spin-clamped so endpoints (spin≈0/1) are unaffected.
+  const GLOBE_SLIDE = 200;
   const spin = lerp(f, [478, 545], [0, 1]);
   const ringSpin = lerp(f, [478, 566], [0, -38]);
   const lockState = f < 500 ? "lockOpen" : f < 528 ? "lockList" : "lockClosed";
@@ -599,7 +605,7 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             })}
           </g>
         </svg>
-        {/* globe disc + rotating continents (crossfade of two traced states) */}
+        {/* globe blue disc fill */}
         <div
           style={{
             position: "absolute",
@@ -609,23 +615,40 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             height: 2 * GLOBE.r,
             borderRadius: GLOBE.r,
             backgroundColor: C.blue,
-            border: `4px solid ${C.navy}`,
           }}
         />
+        {/* rotating continents: crossfade of two disc-centred traced states
+            (gen-8 re-trace — white continents only, tight disc crop
+            668,250,586 = 2*GLOBE.r; native fills the clip at scale 1). The old
+            720-crop art baked the white background + navy border = the swoosh
+            arc + disc-spill defect (r6 gap 6). Clipped to the disc. */}
         <div
           style={{
             position: "absolute",
-            left: GLOBE.cx - 360,
-            top: GLOBE.cy - 360,
-            width: 720,
-            height: 720,
-            borderRadius: 360,
+            left: GLOBE.cx - GLOBE.r,
+            top: GLOBE.cy - GLOBE.r,
+            width: 2 * GLOBE.r,
+            height: 2 * GLOBE.r,
+            borderRadius: GLOBE.r,
             overflow: "hidden",
           }}
         >
-          <TracedArt name="globeA" x={0} y={-170 + 0} scale={1} opacity={1 - spin} style={{ left: -22 - spin * 160 }} />
-          <TracedArt name="globeB" x={0} y={-170} scale={1} opacity={spin} style={{ left: -22 + (1 - spin) * 160 }} />
+          <TracedArt name="globeA" x={0} y={0} scale={1} opacity={1 - spin} style={{ left: -spin * GLOBE_SLIDE }} />
+          <TracedArt name="globeB" x={0} y={0} scale={1} opacity={spin} style={{ left: (1 - spin) * GLOBE_SLIDE }} />
         </div>
+        {/* navy border on top — covers any edge sliver of the clipped art */}
+        <div
+          style={{
+            position: "absolute",
+            left: GLOBE.cx - GLOBE.r,
+            top: GLOBE.cy - GLOBE.r,
+            width: 2 * GLOBE.r,
+            height: 2 * GLOBE.r,
+            borderRadius: GLOBE.r,
+            border: `4px solid ${C.navy}`,
+            boxSizing: "border-box",
+          }}
+        />
         {/* orange triangle marker (r6 probed f486: 60x52 at x931-991 y81-133) */}
         <svg width={60} height={52} viewBox="0 0 60 52" style={{ position: "absolute", left: GLOBE.triangle.x - 30, top: GLOBE.triangle.y }}>
           <path d="M4,4 H56 L30,48 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
