@@ -1401,3 +1401,53 @@ was MISSING entirely.
   crescent mark was the rushed model, not the letters.
 - Build-only gate (remotion still bundled + rendered all five comps clean).
   Not a full verify.
+
+## MODEL-DETAIL round — 2026-07-11 (rushed line-art models, eye-judged, IGNORE SSIM)
+
+Owner directive: motion is faithful but the line-art MODELS read rushed vs the
+original. Rebuild them, judged by side-by-side crops (ref f80 vs replica), not
+SSIM. Crops + montages in `work/cls-day/models/{ref,att,mont}`.
+
+**The three S1 pillar icons** (Settlement/Processing/Data; commit a7c550b78):
+- FIRST found + fixed the "grey right edge" defect: the icon draw-on fronts
+  (ICON_S/P/D) topped out only ~8px past each icon's right edge, so the soft
+  reveal-mask left the icon's right edge PERMANENTLY at ~27% opacity through all
+  of S1 (commit dc654a765 — extend the fronts to icon_right+46). This alone
+  killed most of the "rushed" read. `mont/icons3_80b_ab.png`.
+- Fitted each icon's left/top/size to the ref f80 INK BBOX (measured, not label
+  centres): handshake at (600,666), process (856,653), data (1148,645) — the
+  ref sits handshake right+low of its label, data left of its; shifted the
+  reveal-front LUTs by the same deltas so the draw-on stays faithful.
+- **Handshake = the worst.** Was a tangled straight-line rake. Rebuilt the white
+  hand (6 finger iterations, grid-measured + white-ink overlays): 4 EVENLY-spaced
+  (~15 pitch), DIAGONAL (~55° down-left) fingers wrapping over the red hand into
+  the clasp, each a medium up-curling J-hook; dropped the spurious red arm curl;
+  lowered the fingers onto the measured knuckle ridge (svg_y~64). Now reads as a
+  clean two-hand clasp. `mont/hs_normal_hs6.png` = FAITHFUL.
+- Process: raised the triangle ~14u to the ref height. Data: extended the
+  stem/node ~14u. Both FAITHFUL. `mont/icons3_pos2_ab.png`.
+- Verified no S1-animation regression: f50 mid-draw, f95 settled, f3600 endcard,
+  f2550 HandshakePill all clean (`mont/regression_check.png`, `pill_2550_ab.png`).
+
+**Buildings / HexCity** (S4/S10/S17; audit commit 6e7e759ff): the gen12 re-trace
+is STRUCTURALLY FAITHFUL — line weight and vertical proportions (red-tower tops)
+match the ref within ~4px; only a subtle horizontal-fill nuance remains (ref city
+fills marginally wider). Judged NOT worth a risky per-building layout re-trace for
+a secondary, small, animated element. `mont/hexA_1950_ab.png`, `hexB_1950_ab.png`,
+`redtower_hexA.png`.
+
+**Other line-art** (commit 2f44170a1):
+- **Globe continents (S3) = the worst other model.** Were two crude blobs.
+  Rebuilt `Continents` as recognisable stylised-angular coastlines (N.America,
+  S.America via the isthmus, Africa w/ west bulge tapering south, Europe,
+  Greenland, an island), traced from ref globe f380 in the 470-space, enlarged
+  ~13% to match fill, and REGISTERED the pattern longitude to the ref (+85) with
+  a third tiling copy so the scroll never bares a disk edge. `mont/globe_full_380.png`
+  (before), `globe_v3_registered.png` (after) = FAITHFUL.
+- Docs (S11): FAITHFUL as-is (`mont/docs_2150_ab.png`).
+- Chip leaf primitive: FAITHFUL shape/colour. NOTED (not fixed, out of line-art
+  scope): S16 payout stacks read smaller/compressed vs ref at f3100 — a
+  scene-assembly layout matter, flag for a future S16 pass. `mont/payouts_3100_ab.png`.
+
+Build-only (remotion still, slim path). Not a full verify. Commits:
+dc654a765 (grey-edge), a7c550b78 (icons), 2f44170a1 (globe), 6e7e759ff (audit).
