@@ -504,3 +504,65 @@ still needs the flows-handoff + title reveal; 96 still walls on the city/
 building line-art re-trace (a pipeline, not a round). RECOMMEND next gen: run the
 official gen10 verify FIRST (confirm the two windows moved), then measure the
 flows-handoff rows->hexRow morph against EXACT VIDEO frames (not the plate grid).
+
+### gen11 FLOWS-HANDOFF climb — 2026-07-11 (sole clsnet agent) — landed 1 commit
+
+Mandate: the biggest deferred choreography lever — the flows-handoff (rows->
+hexify->flows, f314-464, windows #3/#5/#7). gen10 diagnosed it and deferred: at
+f324 the ref lines the four skylines up HORIZONTALLY in a compact row BEFORE any
+hexagon, while my HexRowFlows crossfaded a stacked 4-line layout into a different
+hex layout AND leaked flow-pills. Measured & GATED against EXACT ref-VIDEO frames
+only (gen10 plate-offset law); instruments in `work/clsnet/gen11/` (vf/ = exact
+video frames f302-460, measure_converge.py = orange-cluster trajectory,
+measure_bands.py/measure_compact.py = per-city landmarks, ssim.sh gates vs vf/).
+
+- **`3c8cc521b` converge morph — r-baseline WORST choreography window #3
+  (f314-364, 0.876) + the crater seam.** The true motion (orange-ink trajectory
+  f312-326): the four skylines slide OFF their four stacked lines (grounds
+  [220,462,765,1035]) into ONE compact horizontal row (grounds converge to
+  [389,422,435,439] ~y420), x under the hex centers, orange widths shrink ~0.88x;
+  THEN the hexagons draw around the settled cities and the CLSNet box draws
+  (f324-336). Mine had NO slide — RowsBuild crossfaded out (opacity) while
+  HexRowFlows crossfaded in the combined hex art (city+border baked) at a fixed
+  layout, so f318-332 showed a 4-stack dissolve, not a row. Rebuild:
+  - RowsBuild now carries the whole converge. cp = ref temple-ground curve
+    interpolate(f,[312,318,320,322,326],[0,0.2,0.77,0.92,1]); per-city converged
+    art placement ground-aligned to the compact row (CONV_X=[214,600,897,1150],
+    CONV_Y=[261,237,202,232], scale 0.88 — art_bottom hits each measured orange
+    ground, x on the defining orange landmark). Ground lines/ticks fade f311-320
+    (ref f320 has no full-width lines). Layer fades FAST 323-333 so the WIDE row
+    skylines don't linger and spill ghost buildings between the hexes.
+  - HexRowFlows: box retimed 330-344 -> 324-336 (ref box is near-full by f332;
+    old left a faint grey ghost through the hexify); hex inOp 322-336 -> 322-334;
+    flow-pill field0 sIn floored at 0.15 (r5) so the page LEAKED in at 15% from
+    f320 through the hexify — gated to the flows phase (f>=363), r5's f364+ growth
+    untouched.
+  - **Still-gate vs EXACT ref video (before -> after):** f312 .932->.932 (edge) ·
+    f316 .822->.822 (both near-rows, correct) · f318 .790->.833 · f320 .797->.895
+    (+.098) · f324 **.795->.896 (+.101)** · f328 crater->.874 · f332 .811->.871
+    (+.060) · f336 ->.887 (box fix) · f340 ->.892 · f344 .890->.897 (edge, pill/
+    box). Every gated frame flat-or-up; **no frame regressed**; the crater trough
+    (f318-336) gains +.04..+.10. **VERDICT: WIN** — the single biggest keyframe
+    gain (+.101 at f324) this campaign. CrxNetting clean at f332 (converge carries
+    to the brand variant; box "CRX", geometry intact).
+
+**Honest headroom (lesson 9):** gen11 landed the flows-handoff crater — the
+biggest remaining choreography lever, deferred by gen9 AND gen10. The crater is
+now filled cleanly. Rough score estimate: the fix lifts window #3 (f314-364) from
+0.876 toward ~0.90 (the ~12 crater frames gain +.04..+.10) plus small edge gains
+into #5 — roughly +0.05..+0.15 global (per the ~1/83-per-window rule). Remaining
+on this cluster:
+- **f328-332 spillover residual (~0.87):** the wide row skylines fade rather than
+  get CLIPPED to the hexagon during the crossfade, so faint ghost buildings sit
+  between the hexes f326-332. A next-gen refinement: clip each converged city to
+  its hex horizontal extent as cp->1 (per-frame clipPath in the scaled local
+  coords) — maybe +.01..+.02 at f324-332. Fiddly; left for a clean pass.
+- **flows PROPER — windows #5 (f364-414) + #7 (f414-464) UNTOUCHED.** These are
+  the pill-field page-flip + label swap + exit slide (r5/r6 timing, gap 2 "growth
+  approximate"), NOT the crater. The remaining flows-handoff choreography lead.
+- The hex-interior building TRACES (locks-pass method) are the texture floor here
+  too; the f332+ settled hexes cap ~0.887 on trace fidelity, not placement.
+RECOMMEND next gen: run the official gen11 verify FIRST (confirm window #3 moved),
+then either the converge-clip refinement (cheap) or attack flows-proper #5/#7
+(pill page-flip timing) against EXACT video. ~94.5 asymptote still holds; 96 still
+walls on the city/building line-art re-trace pipeline.
