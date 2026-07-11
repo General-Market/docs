@@ -30,14 +30,20 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88),
   // then reversed (ref restores the full gantt by 2291)
   const detailP = lerp(f, [2188, 2202], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
-  // shrink-into-doc: full screen → mini panel inside the left doc (quadOut)
-  const st = lerp(f, [2303, 2324], [0, 1]);
-  const sp = 1 - (1 - st) * (1 - st);
+  // shrink-into-doc: r9 ground truth (measure_gantt.py, navy-panel bbox). The
+  // panel starts shrinking at f2288 — r1/r2 held it full to 2303, so f2288-2303
+  // showed a full-bleed navy panel while the ref was already inset (f2300 scored
+  // 0.689, the single worst frame in the video). Measured rect: f2288 full ·
+  // f2300 (51,72,1838,933) · f2312.5 (305,427,415,213 filled mini-gantt) ·
+  // f2324 handoff into REPORT.panel (340,470,205,120). The old proportional
+  // quadOut collapsed the width far too fast (720 vs measured 1522 at f2312).
+  const shrinkP = lerp(f, [2288, 2324], [0, 1]);
+  const SK = [2288, 2300, 2312.5, 2324];
   const R = {
-    x: REPORT.panel.x * sp,
-    y: REPORT.panel.y * sp + pageY,
-    w: 1920 + (REPORT.panel.w - 1920) * sp,
-    h: 1080 + (REPORT.panel.h - 1080) * sp,
+    x: interpolate(f, SK, [0, 51, 305, REPORT.panel.x], clamp),
+    y: interpolate(f, SK, [0, 72, 427, REPORT.panel.y], clamp) + pageY,
+    w: interpolate(f, SK, [1920, 1838, 415, REPORT.panel.w], clamp),
+    h: interpolate(f, SK, [1080, 933, 213, REPORT.panel.h], clamp),
   };
   // doc outline keyframed through fr_2306 (offscreen-big) / fr_2312 / fr_2330
   const docR = {
@@ -62,7 +68,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill>
       {/* white ground appears behind the shrinking panel */}
-      {st > 0 && <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />}
+      {shrinkP > 0 && <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />}
       {/* navy page (shrinks to the doc's mini panel) */}
       <div
         style={{
@@ -72,7 +78,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           width: R.w,
           height: R.h,
           backgroundColor: C.navy,
-          borderRadius: 14 * sp,
+          borderRadius: 14 * shrinkP,
           overflow: "hidden",
         }}
       >
