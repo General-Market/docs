@@ -427,3 +427,80 @@ exact stroke geometry (a pipeline project, not a round). Every remaining top-12
 window is now a geometry/timing fix, not a re-trace. Recommend: run the official
 gen-9 verify, then the next gen attacks CHOREOGRAPHY (detrep/payment/flows-
 handoff), not more hex re-traces — the hex families are done.
+
+### gen-10 CHOREOGRAPHY climb — 2026-07-11 (sole clsnet agent, r11 baseline 93.9)
+
+Mandate: attack CHOREOGRAPHY (timing/motion), NOT texture (hex vein exhausted).
+Re-ranked r11 worst windows: 1 f2270-2320 detrep (0.868) · 2 f100-150 title
+(0.870) · 3 f314-364 flows-handoff (0.876) · 4 f2352-2402 reportOut (0.876) · 5
+f364-414 flows · 6 f2590-2640 payment · 7 f414-464 flows→globe · 10 f1601-1651
+matching. Two windows LANDED (both scene-transition TIMING bugs), flows-handoff
+DIAGNOSED-but-deferred.
+
+**THE decisive instrument fix (applies to every future gen):** the ref
+`regular_NNNN` plate grid is **~+3f offset** from the SCORED ref VIDEO and is
+coarse (every 12.5f). Three rounds mis-measured the detrep transition against it
+(the "box entered 10f late" read was an artifact of the plate offset). gen10
+gates against EXACT ref-VIDEO frames: `ffmpeg -i ref.mp4 -vf select=eq(n\,F)
+-vframes 1 v_F.png` then ffmpeg-ssim vs the render still. The video is the axis
+the SCORE measures; the plate grid can neither place a motion nor gate it.
+Instruments in `work/clsnet/gen10/` (still.sh/ssim.sh, measure_box.py/
+measure_detrep.py, vf/ = exact video frames).
+
+- **`a2806aa32` detrep transition re-timed — r11 WORST window #1 (f2270-2320).**
+  The real bug (measured from the video): the ref HOLDS the full gantt to ~f2306
+  then shrinks FAST 2306-2315; the CLSNet box slides in from the RIGHT EDGE big
+  (clipped, ~w980@2314) and shrinks as it travels (Lx/side 1440/836@2315 ->
+  1232/674@2317 -> 997/488@2321), settling cx959/w329@2334. Mine shrank slowly
+  from 2303 (panel too small at f2306) and the box entered 2313 offscreen at
+  cx2350. sp(f) rewritten as a measured table that maps the navy-panel bbox
+  EXACTLY onto REPORT.panel (the proportional model was already right — only the
+  timing was wrong); box driven by left-edge; REPORT.box 805/350/345 ->
+  795/357/329. The r6 "navy bar sweep" was a mis-read of the shrinking panel's
+  own right edge — deleted. Still-gate vs EXACT video (HEAD -> gen10): **f2306
+  .726->.872 (+.146) · f2309 .675->.854 (+.179) · f2312 .832->.878 · f2314
+  .854->.872 · f2317 .833->.861 · f2321 .887->.901 · f2334 .904->.915**; f2325/
+  2330 flat; reportOut window also +.002..+.006 from REPORT.box. **VERDICT: WIN**
+  (the worst window, trough +.05..+.18). CrxNetting clean f2312.
+- **`d29cbdc32` report-exit + handshake-rise re-timed — r11 window #4 (f2352-
+  2402).** The ref holds the settled report to ~f2360, EXITS the docs f2362-2377
+  (slide down + out), then the A/B hexes RISE from below and settle 2372-2392;
+  the handshake graphic + horizontal arrows form LATER ~2405-2425. Mine held the
+  report 3-doc layout to f2396 and faded the WHOLE handshake in 2404-2420 -> the
+  report lingered f2372-2404 while the ref showed rising hexes. Fix: ReportOut
+  out lerp[2396,2412]->[2363,2377] + a +360 downward exit slide; HandshakeScene
+  split the single inOp into bgOp[2372,2384] + hexOp[2370,2379] with a rise
+  (translateY 210->0 over [2372,2392]) + graphicOp[2405,2420] (settled timing
+  untouched). Still-gate vs EXACT video (a2806 -> this): **f2367 .857->.880 ·
+  f2375 .844->.875 (+.032) · f2385 .850->.887 (+.037) · f2395 .842->.879 (+.037)
+  · f2405 .866->.892**; settled handshake f2420/f2440 EXACTLY unchanged (.898/
+  .896). **VERDICT: WIN** (trough +.023..+.037, zero regression). CrxNetting
+  clean f2385. KNOWN RESIDUAL: my SETTLED hex positions (cityA cx427 / cityB
+  cx1512) sit ~200-340px off the video's during the rise (structure right, x off)
+  — a refinement, and the settled handshake caps ~0.898 (building-trace texture
+  inside the hexes = floor).
+
+**flows-handoff (windows #3/#5/#7, f314-464) — DIAGNOSED, DEFERRED.** The sharp
+crater is the rows->hexRow cut: f312 0.94 -> f320 0.82 -> recover f344 0.90.
+Video vs mine at f324: the ref lines the FOUR skylines up HORIZONTALLY in a
+compact row (no hexagons yet) while MY HexRowScene already forms the hexagons +
+leaves gantt pills. So my hexRow hexes form too EARLY and the rows->row-line
+arrangement differs. This is a genuine MULTI-STAGE morph (RowsScene ->
+horizontal-line arrangement -> HexRowScene hexify -> FlowsScene), 3 windows,
+NOT a single timing tweak — a full round's measurement (skyline-row positions
+across the transition + hex-formation timing). gen-9 deferred it for the same
+reason. Left for the next gen; it is the biggest remaining choreography cluster.
+
+**Honest headroom (lesson 9):** gen10 landed the two cleanest scene-cut TIMING
+bugs (worst + 4th windows), each a clear measured win with zero regression,
+gated frame-exact against the video. Remaining CHOREOGRAPHY leads, worst-first:
+(a) **flows-handoff f314-464** (3 windows, multi-stage morph — biggest lever,
+diagnosed above); (b) **title f100-150** (R->L reveal timing, gap 4, still a
+guess); (c) **payment f2590-2640** (r5-dense already — likely near floor); (d)
+**matching centre-panel f1601-1651** (counts panel drives it). The detrep/
+reportOut wins should lift the global ~93.9 by roughly +0.1-0.2 (both trough
+windows rose ~+0.02-0.03 mean; each ~1/83 of the keyframe/video terms). ~94.5
+still needs the flows-handoff + title reveal; 96 still walls on the city/
+building line-art re-trace (a pipeline, not a round). RECOMMEND next gen: run the
+official gen10 verify FIRST (confirm the two windows moved), then measure the
+flows-handoff rows->hexRow morph against EXACT VIDEO frames (not the plate grid).
