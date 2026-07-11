@@ -16,17 +16,58 @@ import { SchedDoc, ClsPillSlot, LogoCard } from "./scenes1";
 
 const EASE = Easing.bezier(0.4, 0, 0.2, 1);
 
-// ─── S8: revised pay-in schedule 06:30 (f1466..1700) ───
+// Shared revised-schedule Gantt bars (geometry only) — used by S8's spread AND
+// S9's staircase, so the S8→S9 handoff at f1700 is byte-continuous. Measured
+// settled off ref f1700 (probe_s8.py): fill tops 411/496/590/690/799, band
+// pitch 309, 07:00 tick x176; hs/he are the hour-tick-snapped bar extents.
+const SCHED_BARS = [
+  { hs: 7, he: 8, top: 402, h: 65 },
+  { hs: 8, he: 9, top: 497, h: 65 },
+  { hs: 9, he: 9.5, top: 591, h: 65 },
+  { hs: 9.5, he: 11, top: 691, h: 65 },
+  { hs: 11, he: 12, top: 790, h: 122 },
+] as const;
+
+// ─── S8: revised pay-in schedule 06:30 (f1466..1712) ───
+// GEN-11 REBUILD of the milestone→staircase choreography (old phaseB/C were pure
+// invention: a short band with 03:00-08:00 labels + a stray chip stack + fs110
+// "06:30", and 5 bars sliding in at the BOTTOM from the right — none matched the
+// ref). Measured ref (exact video frames; probe_s8.py / probe_milestone.py in
+// work/cls-day/gen11):
+//   • milestone view (f1540-1600): tall grey band y0..259 (NO hour ticks), red
+//     playhead x913 (y0..925), big "06:30" fs245 (cap176) at x196 + subtitle;
+//   • the 5 bars GROW rightward out of the playhead (f1585-1600), landing ~140px
+//     wide stacked vertically at their FINAL staircase y-levels (SCHED_BARS.top);
+//   • band pans+zooms out (playhead 913→98, 07:00 tick →176, pitch→309, ticks +
+//     labels fade in ~f1605-1640) while the bar STACK translates left to x176;
+//   • bars then unfold left→right into the Gantt staircase (SCHED_BARS), staggered,
+//     settled by ~f1680 == ref f1700 == S9's opening frame (S9's opaque white bg
+//     covers S8 from f1700 — clean handoff, no doubling).
 export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 1466 || frame >= 1712) return null;
   const outP = interpolate(frame, [1700, 1712], [0, 1], clamp);
-  // phase A (1466..1500): standard band + gantt doc; zooms in 1500..1522
-  // (measured f1520: band h173 pitch ~507 = 3.58×, doc fold at 446..670/570..800)
-  // phase B (1535..1600): 06:30 text + chip stack; phase C: revised staircase
+  // phase A (1466..1535): standard band zooms into the pay-in doc (unchanged).
   const zoom = interpolate(frame, [1500, 1522], [1, 3.58], { ...clamp, easing: EASE });
   const phaseB = interpolate(frame, [1535, 1550], [0, 1], clamp);
-  const phaseC = interpolate(frame, [1595, 1612], [0, 1], clamp);
   const hourAt = interpolate(frame, [1466, 1535], [3.2, 4.4], clamp);
+
+  // milestone→staircase band + playhead. Measured (probe_s8.py): the 07:00 hour
+  // grid, the red playhead and the bar stack are DECOUPLED during the collapse —
+  // 07:00 tick pans 834(f1620)→176(f1640); playhead 913→98; bars stay near the
+  // playhead (474@f1620) and only rejoin 07:00 at x176 by f1640.
+  const pitch = 309;
+  const originX = interpolate(frame, [1600, 1620, 1640], [1400, 834, 176], clamp); // 07:00 tick x
+  const redX = interpolate(frame, [1600, 1620, 1640], [913, 399, 98], clamp); // red playhead
+  const stackLeft = interpolate(frame, [1595, 1600, 1620, 1640], [911, 962, 474, 176], clamp);
+  const hx = (h: number) => originX + (h - 7) * pitch;
+  const textOpacity = 1 - interpolate(frame, [1621, 1630], [0, 1], clamp); // 06:30 full through f1620 (measured), gone by f1630
+  const ticksP = interpolate(frame, [1606, 1620], [0, 1], clamp); // hour ticks/labels fade in
+
+  const STACK_W = 140; // measured stacked bar width during the collapse
+  // per-bar grow (unfold from the playhead), staggered, all ~140px wide by f1600 (measured f1590/1595)
+  const GROW: [number, number][] = [[1588, 1596], [1592, 1599], [1593, 1600], [1594, 1600], [1595, 1600]];
+  const SPREAD: [number, number][] = [[1640, 1656], [1645, 1661], [1648, 1662], [1649, 1666], [1654, 1671]];
+
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {phaseB < 1 && (
@@ -44,57 +85,49 @@ export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
           <SchedDoc frame={frame} docP={1} axisP={1} bars={[0, 1, 2, 3, 4]} x={140} y={560} w={500} h={480} fillFrom={0} />
         </div>
       )}
-      {/* 06:30 milestone view */}
-      {phaseB > 0 && phaseC < 1 && (
-        <div style={{ opacity: phaseB * (1 - phaseC) }}>
-          <TimelineBand y={0} h={110} originX={1140} originHour={6.5} pxPerHour={340} labelSize={44} tickBelow={34} />
-          <Milestone x={1140} lineTop={0} lineBottom={780} />
-          <div style={{ position: "absolute", left: 540, top: 660, fontFamily: pack.sans, fontWeight: 700, fontSize: 110, color: C.navyInk }}>
-            {pack.milestones.m0630.time}
-          </div>
-          <div style={{ position: "absolute", left: 546, top: 800, fontFamily: pack.sans, fontSize: 34, color: C.navyInk, lineHeight: 1.3 }}>
-            {pack.milestones.m0630.label.map((l, i) => (
-              <div key={i}>{l}</div>
-            ))}
-          </div>
-          {/* chip stack right */}
-          {[0, 1, 2, 3, 4, 5].map((k) => {
-            const p = interpolate(frame, [1552 + k * 5, 1560 + k * 5], [0, 1], clamp);
-            return (
-              <Chip
-                key={k}
-                x={1218}
-                y={640 + k * 54}
-                w={90}
-                h={42}
-                color={k === 5 ? C.chipNavy : C.chipGrey}
-                opacity={p * 0.95}
-              />
-            );
-          })}
-        </div>
-      )}
-      {/* revised staircase bars (zoomed schedule, grey → navy) */}
-      {phaseC > 0 && (
-        <div style={{ opacity: phaseC }}>
-          <TimelineBand y={0} h={110} originX={interpolate(frame, [1600, 1700], [980, 620], clamp)} originHour={7} pxPerHour={340} labelSize={44} tickBelow={34} />
-          <Milestone x={interpolate(frame, [1600, 1700], [980, 620], clamp) - 170} lineTop={0} lineBottom={1080} />
-          {[0, 1, 2, 3, 4].map((b) => {
-            const navyAt = 1640 + b * 10;
-            const isNavy = frame >= navyAt;
-            const slide = interpolate(frame, [1600 + b * 6, 1622 + b * 6], [300, 0], { ...clamp, easing: EASE });
+      {phaseB > 0 && (
+        <div style={{ opacity: phaseB }}>
+          {/* grey strip (y0..259, static full width); TimelineBand adds ticks after the zoom-out */}
+          <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 259, background: C.bandGrey }} />
+          {ticksP > 0 && (
+            <div style={{ opacity: ticksP }}>
+              <TimelineBand y={0} h={259} originX={originX} originHour={7} pxPerHour={pitch} labelSize={44} tickAbove={0} tickBelow={198} hMin={7} hMax={12} />
+            </div>
+          )}
+          {/* red playhead */}
+          <div style={{ position: "absolute", left: redX - 2, top: 0, width: 4, height: 925, background: C.marker }} />
+          {/* 06:30 milestone text (fades out as the staircase spreads) */}
+          {textOpacity > 0 && (
+            <div style={{ opacity: textOpacity }}>
+              <div style={{ position: "absolute", left: 196, top: 524, fontFamily: pack.sans, fontWeight: 700, fontSize: 245, color: C.navyInk }}>
+                {pack.milestones.m0630.time}
+              </div>
+              <div style={{ position: "absolute", left: 417, top: 792, fontFamily: pack.sans, fontSize: 42, color: C.navyInk, lineHeight: 1.3 }}>
+                {pack.milestones.m0630.label.map((l, i) => (
+                  <div key={i}>{l}</div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* 5 revised-schedule bars: grow out of the playhead → collapse-left → spread into staircase */}
+          {SCHED_BARS.map((b, i) => {
+            const growW = interpolate(frame, GROW[i], [0, STACK_W], { ...clamp, easing: EASE });
+            const sp = interpolate(frame, SPREAD[i], [0, 1], { ...clamp, easing: EASE });
+            const finalLeft = hx(b.hs) - 4;
+            const finalW = (b.he - b.hs) * pitch + 8;
             return (
               <div
-                key={b}
+                key={i}
                 style={{
                   position: "absolute",
-                  left: 40 + b * 330 + slide,
-                  top: 905 - (4 - b) * 60,
-                  width: 300 + (b === 4 ? 80 : 0),
-                  height: 52,
-                  borderRadius: 16,
-                  background: isNavy ? C.navyBg : C.chipGrey,
-                  border: `3px solid ${C.navyDeep}`,
+                  left: stackLeft + (finalLeft - stackLeft) * sp,
+                  top: b.top,
+                  width: growW + (finalW - growW) * sp,
+                  height: b.h,
+                  boxSizing: "border-box",
+                  border: `4px solid ${C.navyDeep}`,
+                  borderRadius: 15,
+                  background: C.chipGrey,
                 }}
               />
             );
@@ -119,14 +152,7 @@ export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
 //   • the band zooms out (NON-uniform: grey height 259→40 shrinks faster than
 //     the horizontal pan) + pans right, landing on the S10 band (07:00 x958,
 //     y88 h40, pitch141.6) by ~f1815 and holding to the S10 handoff at f1837.
-const S9_BARS = [
-  // hStart, hEnd (both hour-tick snapped), outer top/height, fill-start frame
-  { hs: 7, he: 8, top: 402, h: 65, fill: 1723 },
-  { hs: 8, he: 9, top: 497, h: 65, fill: 1728 },
-  { hs: 9, he: 9.5, top: 591, h: 65, fill: 1734 },
-  { hs: 9.5, he: 11, top: 691, h: 65, fill: 1739 },
-  { hs: 11, he: 12, top: 790, h: 122, fill: 1744 },
-] as const;
+const S9_FILL = [1723, 1728, 1734, 1739, 1744] as const; // per-bar navy fill-start (left→right)
 const S9_CLEAR = [1766, 1769, 1775, 1781, 1784] as const; // fade-start; gone by +3
 
 export const S9ZoomTimes: React.FC<{ frame: number; pack: Pack }> = ({ frame }) => {
@@ -161,10 +187,10 @@ export const S9ZoomTimes: React.FC<{ frame: number; pack: Pack }> = ({ frame }) 
         tickAbove={tickAbove}
         tickBelow={tickBelow}
       />
-      {S9_BARS.map((b, i) => {
+      {SCHED_BARS.map((b, i) => {
         const clearP = interpolate(frame, [S9_CLEAR[i], S9_CLEAR[i] + 3], [0, 1], clamp);
         if (clearP >= 1) return null;
-        const fillPx = interpolate(frame, [b.fill, b.fill + 15], [0, 1], clamp) * ((b.he - b.hs) * pitch + 8);
+        const fillPx = interpolate(frame, [S9_FILL[i], S9_FILL[i] + 15], [0, 1], clamp) * ((b.he - b.hs) * pitch + 8);
         return (
           <div
             key={i}

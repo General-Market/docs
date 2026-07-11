@@ -118,6 +118,8 @@ export type BandProps = {
   labelDx?: number; // label x offset from tick (default 8)
   labelDy?: number; // label y offset below band bottom (default 2)
   labelWeight?: number; // label font weight (default 400)
+  hMin?: number; // clamp drawn hours to >= hMin (default: none)
+  hMax?: number; // clamp drawn hours to <= hMax (default: none)
   ink?: string;
 };
 
@@ -134,12 +136,14 @@ export const TimelineBand: React.FC<BandProps> = ({
   labelDx = 8,
   labelDy = 2,
   labelWeight = 400,
+  hMin,
+  hMax,
   ink = C.navyDeep,
 }) => {
   const ticks: React.ReactNode[] = [];
   // hours visible: solve originX + (k-originHour)*pxPerHour in [-50, 1970]
-  const kMin = Math.floor(originHour + (-80 - originX) / pxPerHour);
-  const kMax = Math.ceil(originHour + (2000 - originX) / pxPerHour);
+  const kMin = Math.max(hMin ?? -Infinity, Math.floor(originHour + (-80 - originX) / pxPerHour));
+  const kMax = Math.min(hMax ?? Infinity, Math.ceil(originHour + (2000 - originX) / pxPerHour));
   for (let k = kMin; k <= kMax; k++) {
     const x = originX + (k - originHour) * pxPerHour;
     const hh = ((k % 24) + 24) % 24;
