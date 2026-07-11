@@ -523,60 +523,68 @@ const PvpRightCity: React.FC = () => (
       stroke={C.navyDeep}
       strokeWidth={4}
     />
-    {/* background building top-left w/ hanging verticals */}
-    <rect x={1495} y={440} width={125} height={385} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[0, 1, 2].map((c) => (
-      <line key={c} x1={1520 + c * 24} y1={440} x2={1520 + c * 24} y2={498} stroke={C.navyDeep} strokeWidth={3} />
+    {/* r7 re-trace from the f2550 two-color ink map (rows/cols probed at
+        1px): bg building top is y512 NOT 440 with verticals HANGING BELOW
+        it; the front building has 4 WIDE window boxes (not 2x4 small); the
+        red tower is 162 wide with a legged base (ledges y640, dash columns
+        x1657/x1829, navy-grilled door); right building has ONE dash column
+        at the frame edge. */}
+    {/* background building: top y512 x1489..1621, 3 verticals hanging to the front building's roof */}
+    <rect x={1489} y={512} width={132} height={313} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[1509, 1545, 1581].map((x) => (
+      <line key={x} x1={x} y1={516} x2={x} y2={592} stroke={C.navyDeep} strokeWidth={3} />
     ))}
-    {/* navy rounded building w/ double-line window rows */}
-    <path d="M 1465 825 L 1465 530 Q 1465 515 1480 515 L 1580 515 Q 1595 515 1595 530 L 1595 825" fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[0, 1, 2, 3].map((r) => (
-      <React.Fragment key={r}>
-        <rect x={1487} y={600 + r * 44} width={34} height={20} fill="none" stroke={C.navyDeep} strokeWidth={3} />
-        <rect x={1537} y={600 + r * 44} width={34} height={20} fill="none" stroke={C.navyDeep} strokeWidth={3} />
-      </React.Fragment>
+    {/* front building: top rail y592 runs to the red tower; body x1469..1567; 4 wide outlined windows */}
+    <rect x={1469} y={592} width={192} height={4} fill={C.navyDeep} />
+    <rect x={1469} y={592} width={98} height={236} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[616, 652, 688, 724].map((y) => (
+      <rect key={y} x={1493} y={y} width={56} height={18} fill="none" stroke={C.navyDeep} strokeWidth={3} />
     ))}
     {/* grey slabs */}
     <rect x={1635} y={540} width={20} height={285} fill="#DCDCDC" />
     <rect x={1820} y={620} width={35} height={205} fill="#DCDCDC" />
-    {/* central banded red tower */}
-    <line x1={1716} y1={390} x2={1716} y2={412} stroke={C.red} strokeWidth={3.5} />
-    <rect x={1685} y={412} width={70} height={38} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    <rect x={1665} y={450} width={120} height={375} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    {[0, 1, 2, 3, 4].map((c) => (
-      <line key={c} x1={1695 + c * 22} y1={468} x2={1695 + c * 22} y2={515} stroke={C.red} strokeWidth={3.5} />
+    {/* central red tower — mast, crown, round-shouldered shaft, 6 ticks */}
+    <line x1={1693} y1={410} x2={1693} y2={428} stroke={C.red} strokeWidth={3.5} />
+    <rect x={1677} y={428} width={70} height={24} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <path d="M 1663 640 L 1663 456 L 1799 456 Q 1811 456 1816 466 L 1821 478 L 1821 640" fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    {[1697, 1721, 1741, 1765, 1785, 1801].map((x) => (
+      <line key={x} x1={x} y1={476} x2={x} y2={508} stroke={C.red} strokeWidth={3} />
     ))}
-    <line x1={1665} y1={530} x2={1785} y2={530} stroke={C.red} strokeWidth={3} />
-    <rect x={1665} y={552} width={95} height={22} fill="#F2C7A9" />
-    <line x1={1665} y1={588} x2={1785} y2={588} stroke={C.red} strokeWidth={3} />
-    <rect x={1665} y={595} width={120} height={28} fill={C.red} />
-    <rect x={1690} y={600} width={26} height={17} fill={C.white} />
-    <rect x={1735} y={600} width={26} height={17} fill={C.white} />
-    <line x1={1665} y1={648} x2={1785} y2={648} stroke={C.red} strokeWidth={3} />
-    <line x1={1665} y1={668} x2={1785} y2={668} stroke={C.red} strokeWidth={3} />
-    {/* lower body w/ dashed columns + door */}
-    <line x1={1692} y1={690} x2={1692} y2={808} stroke={C.red} strokeWidth={3.5} strokeDasharray="10 9" />
-    <line x1={1758} y1={690} x2={1758} y2={808} stroke={C.red} strokeWidth={3.5} strokeDasharray="10 9" />
-    <rect x={1718} y={788} width={45} height={37} fill="none" stroke={C.red} strokeWidth={3.5} />
-    {[0, 1, 2, 3].map((i) => (
-      <rect key={i} x={1724 + i * 9} y={806} width={4} height={19} fill={C.navyDeep} />
+    {/* inner panel: rails, cream band, gate row w/ right solid block */}
+    <rect x={1681} y={516} width={128} height={112} fill="none" stroke={C.red} strokeWidth={3.5} />
+    <line x1={1681} y1={550} x2={1809} y2={550} stroke={C.red} strokeWidth={3} />
+    <rect x={1705} y={556} width={84} height={14} fill="#F2C7A9" />
+    <line x1={1681} y1={574} x2={1809} y2={574} stroke={C.red} strokeWidth={3} />
+    <line x1={1681} y1={602} x2={1809} y2={602} stroke={C.red} strokeWidth={3} />
+    <rect x={1781} y={604} width={28} height={20} fill={C.red} />
+    <rect x={1687} y={606} width={8} height={14} fill={C.red} />
+    <rect x={1701} y={606} width={5} height={14} fill={C.red} />
+    {/* legged base: ledges y640, band w/ solid center, legs + dash columns to ground */}
+    <rect x={1633} y={640} width={52} height={8} fill={C.red} />
+    <rect x={1805} y={640} width={52} height={8} fill={C.red} />
+    <rect x={1661} y={648} width={148} height={28} fill="none" stroke={C.red} strokeWidth={3.5} />
+    <rect x={1705} y={656} width={84} height={12} fill={C.red} />
+    <line x1={1633} y1={648} x2={1633} y2={825} stroke={C.red} strokeWidth={3} />
+    <line x1={1683} y1={676} x2={1683} y2={825} stroke={C.red} strokeWidth={3.5} />
+    <line x1={1807} y1={676} x2={1807} y2={825} stroke={C.red} strokeWidth={3.5} />
+    <line x1={1855} y1={648} x2={1855} y2={825} stroke={C.red} strokeWidth={3} />
+    <line x1={1657} y1={656} x2={1657} y2={810} stroke={C.red} strokeWidth={3} strokeDasharray="11 10" />
+    <line x1={1829} y1={656} x2={1829} y2={810} stroke={C.red} strokeWidth={3} strokeDasharray="11 10" />
+    {/* door: red frame + navy grill block */}
+    <path d="M 1725 825 L 1725 802 L 1775 802 L 1775 825" fill="none" stroke={C.red} strokeWidth={3.5} />
+    <rect x={1749} y={806} width={28} height={19} fill={C.navyDeep} />
+    {/* right white building: high roof, step at y560, ONE dash column at the frame edge */}
+    <path d="M 1857 825 L 1857 566 L 1881 566 L 1881 540 L 1920 540" fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((r) => (
+      <rect key={r} x={1908} y={590 + r * 25} width={12} height={5} fill={C.navyDeep} />
     ))}
-    {/* right white building w/ double-dash rows */}
-    <path d="M 1855 825 L 1855 560 L 1880 560 L 1880 540 L 1920 540" fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[0, 1, 2, 3, 4, 5, 6, 7].map((r) => (
-      <React.Fragment key={r}>
-        <rect x={1868} y={592 + r * 21} width={12} height={5} fill={C.navyDeep} />
-        <rect x={1888} y={592 + r * 21} width={12} height={5} fill={C.navyDeep} />
-      </React.Fragment>
-    ))}
-    {/* street: truck, bollards, shed, posts */}
-    <path d="M 1472 820 Q 1472 800 1490 800 L 1495 800 L 1495 775 Q 1495 765 1505 765 L 1560 765 Q 1572 765 1572 777 L 1572 820" fill="none" stroke={C.red} strokeWidth={3.5} />
-    <line x1={1495} y1={790} x2={1572} y2={790} stroke={C.red} strokeWidth={3} />
-    <circle cx={1492} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
-    <circle cx={1552} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
-    {[0, 1, 2].map((i) => (
-      <rect key={i} x={1588 + i * 11} y={800} width={5} height={25} fill={C.navyDeep} />
-    ))}
+    {/* street: truck (measured 25px right of the r3 guess), post + shed, posts */}
+    <path d="M 1497 820 Q 1497 800 1515 800 L 1520 800 L 1520 775 Q 1520 765 1530 765 L 1585 765 Q 1597 765 1597 777 L 1597 820" fill="none" stroke={C.red} strokeWidth={3.5} />
+    <line x1={1520} y1={790} x2={1597} y2={790} stroke={C.red} strokeWidth={3} />
+    <circle cx={1517} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    <circle cx={1577} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    <rect x={1589} y={804} width={5} height={21} fill={C.navyDeep} />
+    <rect x={1605} y={804} width={13} height={22} fill={C.navyDeep} />
     <rect x={1710} y={800} width={5} height={25} fill={C.blue} />
     <rect x={1795} y={800} width={5} height={25} fill={C.blue} />
     {/* ground */}
