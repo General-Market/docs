@@ -341,7 +341,11 @@ export const SmallHex: React.FC<{
   opacity?: number;
   badge?: { dx: number; dy: number; r: number }; // fractions of w + radius
   artScale?: number; // override: ref locks hexes CLIP a ~0.6-scale city
-}> = ({ art, cx, cy, w, artW, letter, opacity = 1, badge, artScale }) => {
+  // fillHex: art was traced at the hex bounding box (native artW = hex bbox
+  // width) so it fills the hex 1:1 — used by the locks hexes, whose interiors
+  // are re-traced native-scale (gen-8) instead of clipping a downscaled city.
+  fillHex?: boolean;
+}> = ({ art, cx, cy, w, artW, letter, opacity = 1, badge, artScale, fillHex }) => {
   if (opacity <= 0) return null;
   const h = w * 0.906;
   const scale = artScale ?? (w * 0.92) / artW;
@@ -358,9 +362,13 @@ export const SmallHex: React.FC<{
           backgroundColor: C.white,
         }}
       >
-        <div style={{ position: "absolute", left: w / 2 - (artW * scale) / 2, bottom: h * 0.16 }}>
-          <TracedArt name={art} scale={scale} style={{ position: "relative" }} />
-        </div>
+        {fillHex ? (
+          <TracedArt name={art} scale={w / artW} style={{ position: "absolute", left: 0, top: 0 }} />
+        ) : (
+          <div style={{ position: "absolute", left: w / 2 - (artW * scale) / 2, bottom: h * 0.16 }}>
+            <TracedArt name={art} scale={scale} style={{ position: "relative" }} />
+          </div>
+        )}
       </div>
       <Hexagon cx={cx} cy={cy} w={w} />
       {letter && <Badge letter={letter} cx={cx + w * (badge?.dx ?? -0.38)} cy={cy + w * (badge?.dy ?? -0.40)} r={badge?.r ?? 30} />}
@@ -472,8 +480,8 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
           <Elbow points={[[1512, 636], [1512, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
         </>
       )}
-      <SmallHex art="cityA" cx={hexAx} cy={hexY} w={hexW} artW={1150} letter="A" badge={{ dx: -0.312, dy: -0.314, r: 36 }} artScale={0.6 * (hexW / 385)} />
-      <SmallHex art="cityB" cx={hexBx} cy={hexY} w={hexW} artW={1190} letter="B" badge={{ dx: -0.312, dy: -0.314, r: 36 }} artScale={0.6 * (hexW / 385)} />
+      <SmallHex art="lockCityA" cx={hexAx} cy={hexY} w={hexW} artW={385} letter="A" badge={{ dx: -0.312, dy: -0.314, r: 36 }} fillHex />
+      <SmallHex art="lockCityB" cx={hexBx} cy={hexY} w={hexW} artW={385} letter="B" badge={{ dx: -0.312, dy: -0.314, r: 36 }} fillHex />
       {/* orange rising lines under the doc+lock groups (ref x632/1313, from y872) */}
       {!phase1 && (
         <>
