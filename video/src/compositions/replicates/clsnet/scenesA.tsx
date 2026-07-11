@@ -4,6 +4,14 @@ import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG, W, H } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { ClsNetBox, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
+import { ClsMark } from "../cls-shared/logo";
+
+// Faithful swirl mark placement (measured from ref f110: white-swirl bbox
+// frame x135-198 / y83-147, ~63px square). The potrace `clsLogo` mark was a
+// thin crescent missing the inner comma; the shared ClsMark is the real
+// swirl-with-inner-comma. Its navy disc (= background navy) also covers the
+// old mark's bottom-half that still rides in the clsLogo tagline clip.
+const MARK = { x: 132, y: 81, size: 68 };
 
 // ═══ Scene 1: Title (f0-150) ═══
 // CLSNet reveals right-to-left; CLS logo + tagline fade; supporting text;
@@ -64,14 +72,12 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         // 76.3% = (1 − 71/300); 23.7% = 71/300; 45% = 1 − 55/100. Letters
         // wipe L→R by shrinking the right inset from 76.3%→0.
         <>
-          <TracedArt
-            name={logoArt}
-            x={TITLE.logo.x}
-            y={TITLE.logo.y}
-            scale={1}
-            opacity={markOp}
-            style={{ clipPath: "inset(0 76.3% 45% 0)" }}
-          />
+          {/* mark: faithful shared swirl (replaces the rushed potrace
+              crescent). Drawn first so its opaque navy disc covers the old
+              mark's lower sliver that persists in the tagline clip below. */}
+          <div style={{ position: "absolute", left: MARK.x, top: MARK.y, opacity: markOp }}>
+            <ClsMark size={MARK.size} ink={C.white} bg={C.navy} />
+          </div>
           <TracedArt
             name={logoArt}
             x={TITLE.logo.x}
@@ -80,13 +86,25 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
             opacity={lettersWipe > 0 ? 1 : 0}
             style={{ clipPath: `inset(0 ${(1 - lettersWipe) * 76.3}% 45% 23.7%)` }}
           />
+          {/* bottom band, split to exclude the mark column: right part =
+              CLS letter bottoms + tagline right of the mark */}
           <TracedArt
             name={logoArt}
             x={TITLE.logo.x}
             y={TITLE.logo.y}
             scale={1}
             opacity={taglineOp}
-            style={{ clipPath: "inset(55% 0 0 0)" }}
+            style={{ clipPath: "inset(55% 0 0 23.7%)" }}
+          />
+          {/* tagline directly under the mark ("tru…") — top at 73% (frame
+              y151) clears the old mark bottom (y147), tagline starts y156 */}
+          <TracedArt
+            name={logoArt}
+            x={TITLE.logo.x}
+            y={TITLE.logo.y}
+            scale={1}
+            opacity={taglineOp}
+            style={{ clipPath: "inset(73% 76.3% 0 0)" }}
           />
         </>
       ) : (
