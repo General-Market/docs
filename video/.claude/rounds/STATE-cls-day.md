@@ -1371,3 +1371,33 @@ timing, S13 chips. Then re-verify; expect ≥91.
 - **SCORE 91.4** (video_ssim 0.8963 ·40% / keyframe 0.8776 ·35% / color 0.9860 ·15% / duration 0.9997 ·10%). Trajectory 89.8 → 91.0 → 91.4. Freshness confirmed (differs from r2 across components).
 - The gen-3 agent died on a session limit AFTER committing everything: r2 audit keepers (2e904d9fe) + four r3 commits (d2a887ad4 skyline per-tower traces, c4e14d48a PvP traced rebuild, 113d4db99 docs row relayout, 6838b83ad S17 summary corrections). Tree clean at death; artifacts `cls-day-{verify,keyframes,framessim}-r3.*` copied by its runner.
 - Next inheritor: re-rank windows from `cls-day-framessim-r3.txt` (`scripts/rolling-ssim.py --fps 25 --window-sec 2 --top 12`) — the r2 worst blocks (skyline, PvP, docs, S17, outro) were all attacked in r3; find what leads now before touching anything.
+
+## MODEL-DETAIL round — CLS swirl mark rebuild (2026-07-11)
+
+Owner: the line-art models felt rushed. `ClsMark` in `cls-shared/logo.tsx`
+rendered a plain CRESCENT (ring + bite) — the real CLS mark's inner comma
+was MISSING entirely.
+
+- Rebuilt `ClsMark` as a high-fidelity trace of the actual mark. Method:
+  extract the settled intro lockup (cls-day f60, 214px master) → isolate the
+  white swirl → clean binary → upscale ×3 + blur + `potrace` → normalise
+  potrace's 681-space, y-up output into the unchanged `0 0 235 235` viewBox
+  via `translate(0,235) scale(±0.034508)`. Path baked as `MARK_D` (evenodd,
+  navy negative space revealed by the `bg` backing disc r=111.5 @117.5,117.5).
+  Component API (`size`/`ink`/`bg`) and viewBox held — all mounts unchanged.
+- The mark is TWO interlocking crescent-swooshes spiralling a navy core:
+  outer left-heavy crescent + inner comma whose rounded head sits right of
+  centre, split by a navy spiral gap. Eye-gate montage
+  `work/cls-shared/mark/EG_clsday_f60_refTop_repBottom.png`: ref==replica —
+  inner comma present, proportions/orientation/taper points match.
+- Scope: `ClsMark` drives cls-day ONLY. clsnet uses its own `art.ts` potrace
+  (already a swirl, NOT the crescent) — outside file scope, left untouched.
+  CRX cuts (CrxSettlementDay = crx-lockup image, CrxNetting = "CRX" text)
+  don't use ClsMark. All five gated frames render clean (f60 intro, f3600
+  endcard, clsnet f24, CrxSettlementDay f60, CrxNetting f110).
+- `ClsLetters` left as-is: eye-gate
+  `work/cls-shared/mark/EG_letters_refTop_repBottom.png` shows the rounded
+  C/L/S face already faithful (slightly heavier weight, not a defect) — the
+  crescent mark was the rushed model, not the letters.
+- Build-only gate (remotion still bundled + rendered all five comps clean).
+  Not a full verify.
