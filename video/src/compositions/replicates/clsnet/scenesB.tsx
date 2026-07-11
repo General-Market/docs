@@ -368,11 +368,24 @@ export const SmallHex: React.FC<{
   );
 };
 
-// Edge time rulers (grey verticals + hour labels + orange hour lines)
+// Edge time rulers (grey verticals + hour labels + orange hour lines).
+// r8 ground-truth (orange deadline-line scan regular_0120..0152): the ruler
+// glides UP and DECELERATES to rest by ~f1900 (velocity 4.8->0 px/f), not a
+// constant drift. pitch 113.9px/hour; deadline lines at hours ≡1 mod4 (01,05,
+// 09,13,17,21). y21 = measured screen-y of the 21:00 tick per frame. Labels
+// derive from POSITION and wrap mod 24 — the old code pinned each label to a
+// row index over a 14h (1540px) modulus, so every wrap jumped the sequence 14h
+// (the 14:00->02:00 break, and the shared 21:00 line ~380px off in y).
+const RULER_F = [1462, 1487.5, 1512.5, 1537.5, 1562.5, 1587.5, 1612.5, 1637.5, 1662.5, 1687.5, 1712.5, 1737.5, 1762.5, 1787.5, 1812.5, 1837.5, 1862.5, 1887.5, 1930];
+const RULER_Y21 = [1812, 1754, 1637, 1507, 1387, 1267, 1150, 1035, 925, 821, 722, 630, 546, 471, 407, 358, 323, 308, 305];
+const RULER_PITCH = 113.9;
+
 export const EdgeRulers: React.FC<{ f: number }> = ({ f }) => {
   const { sans: SANS } = useBrand();
-  const scroll = (f - 1462) * 1.35; // px downward drift
-  const rows = Array.from({ length: 14 }, (_, i) => i);
+  const y21 = interpolate(f, RULER_F, RULER_Y21, { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const kMin = Math.ceil((y21 - 1130) / RULER_PITCH);
+  const kMax = Math.floor((y21 + 40) / RULER_PITCH);
+  const ks = Array.from({ length: Math.max(0, kMax - kMin + 1) }, (_, i) => kMin + i);
   return (
     <>
       {/* r5: both edges carry a 36px #A8A8A8 band through the whole
@@ -381,18 +394,18 @@ export const EdgeRulers: React.FC<{ f: number }> = ({ f }) => {
       <div style={{ position: "absolute", left: 1884, top: 0, width: 36, height: 1080, backgroundColor: C.grey }} />
       {[14, 1906].map((x, side) => (
         <div key={side} style={{ position: "absolute", left: x - 12, top: 0, width: 24, height: 1080, overflow: "visible" }}>
-          {rows.map((i) => {
-            const y = ((i * 110 + scroll) % 1540) - 230;
-            const hour = (26 - i + 24 * 10) % 24;
+          {ks.map((k) => {
+            const y = y21 - k * RULER_PITCH;
+            const hour = (((21 + k) % 24) + 24) % 24;
             const isOrange = hour % 4 === 1;
             return (
-              <React.Fragment key={i}>
+              <React.Fragment key={k}>
                 <div
                   style={{
                     position: "absolute",
                     left: side === 0 ? 10 : -66,
                     top: y,
-                    width: side === 0 ? 88 : 88,
+                    width: 88,
                     height: isOrange ? 3 : 1.5,
                     backgroundColor: isOrange ? C.orangeDeep : C.navy,
                   }}
@@ -401,7 +414,10 @@ export const EdgeRulers: React.FC<{ f: number }> = ({ f }) => {
                   style={{
                     position: "absolute",
                     left: side === 0 ? 14 : -60,
-                    top: y - 30,
+                    // r8: label sits ~13px BELOW its tick line (ref regular_0146:
+                    // "21:00" text top y424 vs its red line top y405). The old
+                    // y-30 put every label above its line — a ~48px miss.
+                    top: y + 13,
                     fontFamily: SANS,
                     fontSize: 22,
                     color: C.navy,
@@ -428,7 +444,11 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const hexW = 230 + 155 * growP;
   const hexAx = 415 + (612 - 415) * growP;
   const hexBx = 1512 + (1306 - 1512) * growP;
-  const hexY = 400 + (385 - 400) * growP;
+  // r8: top-anchored. Ref hex outline top holds ~239 through the window while
+  // the hex grows DOWNWARD (regular_0142..0153 navy-edge scan). The old
+  // center-lerp (400->385) settled the hex 28px too HIGH (top 211 vs 239) —
+  // the doubled-perimeter defect in the locks-window diff. cy = top + 0.453*w.
+  const hexY = 239 + hexW * 0.453;
   const docOp = lerp(f, [1800, 1815], [0, 1]);
   const lockClosedP = f >= 1838 ? 1 : 0;
   // no exit fade: ref keeps the locks layout intact until the strip's band
