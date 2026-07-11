@@ -852,3 +852,49 @@ IDs, Payment complete) intact. tsc clean; scenesC.tsx ONLY (35+/13−).
 - SSIM impact of this round is ~nil (all three are sub-keyframe-sample trough
   frames + the eye-fixes trade a hair of SSIM for correct motion) — this was an
   EYE round per the owner directive, gated on filmstrips not the metric.
+
+### MODEL-DETAIL round (2026-07-11) — line-art fidelity, eye-judged (crops in work/clsnet/models/)
+Owner directive: motion is faithful but the LINE-ART MODELS read rushed. Judge
+by eye (ref-vs-replica crops), NOT SSIM. Three targets — mark / globe / hexes.
+
+1. **Title mark — RUSHED → FAITHFUL. Commit `4e5829388`.** The potrace `clsLogo`
+   mark rendered a thin crescent MISSING the inner comma (the whole point of the
+   CLS swirl). Rewired the title+endcard mark to the sibling's faithful
+   `cls-shared/logo.tsx` `ClsMark` (real swirl-with-inner-comma, commit
+   `8f6ba8e76`). Placed pixel-true from f110 (measured white-swirl bbox frame
+   x135-198/y83-147, ~63px sq): `MARK={x:132,y:81,size:68}` in scenesA. Replica
+   bbox x134-198/y83-147 (≡ref); ink mass ref 1946 vs rep 2001 (≡, if anything a
+   hair heavier — the 10x "thinner" read was gap DISTRIBUTION not weight). Split
+   the lockup bottom clip (`inset(55% 0 0 23.7%)` + `inset(73% 76.3% 0 0)`) so the
+   tagline "tru…" under the mark survives while the OLD potrace mark drops
+   entirely (mark bottom y147, tagline top y156 → clean 9px gap). Crops:
+   mark_cmp_v1 / mark_sbs_v1 / logo_cmp_v1 / logo_cmp_end. VERDICT: **now faithful.**
+2. **Globe continents — ALREADY CLEAN, no change.** The globe continents are NOT
+   globeA/globeB (that broken-swoosh defect was superseded by the r6 worldMap-
+   window rewrite) — they are the shared `worldMap` trace disc-clipped + scrolled.
+   Overlaid ref-vs-replica worldMap at scale 1.0 (f700 Africa): coastlines
+   near-IDENTICAL (same stroke width, same blocky shapes) — the trace is faithful,
+   not sketchy. The f540 disc difference is purely SCROLL POSITION (motion, out of
+   scope) + a ~0.76× stroke-width from the disc-window scaling (architecture — the
+   ref draws globe coastlines at ~constant width, we downscale the map; fixing it
+   would break the r6 zoom-seam). Crops: disc_sbs / africa_sbs / globe555_sbs.
+   VERDICT: **already faithful — re-tracing a clean asset would only risk regression.**
+3. **Hex interiors — one real defect FIXED, rest is the texture floor. Commit
+   `c956a745e`.** matching/locks hexes (`lockCityA/lockCityB`, no tan layer) read
+   faithful. NETWORK hexes (`mHex*L`, r6 re-trace) had a mis-traced colour: the
+   light-grey building faces of the heli(hex1)/bank2(hex3) hexes were classified
+   as tan #E9C8B0 (probed f890: ref neutral grey ~215/215/215 where the trace
+   paints peach 233/200/176). Recoloured those two hexes' tan → #D6D6D6 grey via a
+   per-hex `recolor` on the NET_HEXES mount; left bank(hex2)/city2(hex4) tan
+   (their few tan px sit on genuinely warm orange edges, ref R−B ~76). On STROKE
+   WEIGHT: measured navy-line widths ref-vs-replica along scanlines — the widths
+   already MATCH (ref [12,3,3,4…42,4] ≡ rep); the residual gap is MISSING FINE
+   DETAIL LINES (window mullions the potrace dropped at scale), so a dilation
+   would over-thicken the matching strokes without recovering detail — the wrong
+   fix, and the documented re-trace-pipeline floor (lesson 9). Crops: hex1_sbs
+   (before) / hex1_sbs_v2 / hex3_sbs_v2 / net_before_after. VERDICT: **improved
+   (colour now correct); fine-detail line count is the texture floor.**
+
+tsc clean (0 errors). Build-only round, no full verify. Commits staged clsnet-
+only paths (scenesA.tsx twice) — lane isolation held vs the parallel cls-day
+builder (its commit `dc654a765` interleaved cleanly).
