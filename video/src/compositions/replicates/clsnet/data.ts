@@ -228,8 +228,13 @@ export const CITIES = {
 
 // ─── Matching scene ───
 export const MATCH = {
-  hexA: { cx: 415, cy: 290, w: 230 },
-  hexB: { cx: 1516, cy: 290, w: 230 },
+  // gen13: measured from EXACT ref video (right-tip = clean hex vertical center;
+  // flat-bottom outline confirms). Ref hex OUTLINE cy≈290 (already correct — the
+  // gen12 "40px low, cy→250" read was the skyline/plate, not the outline), cx
+  // 413/1513, w=214. The r8 w=230 was OVERSIZED by 16px (outline bottom sat 7px
+  // low, top 12px high; fillHex scaled the building too big with it).
+  hexA: { cx: 413, cy: 290, w: 214 },
+  hexB: { cx: 1513, cy: 290, w: 214 },
   panel: { x: 776, y: 420, w: 405, h: 330 },
   box: { x: 768, y: 350, w: 155, h: 170, r: 24 },
   rows: [
