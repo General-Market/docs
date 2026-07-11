@@ -303,6 +303,51 @@ contrast / wider compromise.
   PlayfairDisplay"; const {fontFamily}=loadFont("normal",{weights:["400"],
   subsets:["latin"]}); export const SERIF=fontFamily;` in clsnet/fonts.ts.
 
+### gen-8 LINE-ART front — 2026-07-11 (display-scale re-trace: globe + locks hexes)
+Two ART-shape defects re-traced at display scale (the r8 "ink SHAPE, not
+placement" floor). Both real wins, both gated on stills + eyes + CrxNetting.
+
+- **`070e3ad5f` globe art re-trace (r6 gap 6 / r8 lead 4).** globeA/globeB were
+  traced from a 720 crop with the white BACKGROUND + navy border baked in, then
+  offset in code — rendering as a white swoosh arc across the disc + a blue
+  disc-spill below the ring (broken f472-540, ~80f). Re-traced WHITE CONTINENTS
+  ONLY, tight disc-centred crop (668,250,586 = 2*GLOBE.r) from regular_0040/0044.
+  Scene rewired: disc-centred clip, blue fill under, navy border on top (covers
+  edge sliver). Crossfade slide grid-searched on mid ref frames (regular_0041/
+  0042/0043): 200 models the continents' leftward drift best (48→.897, 160→.905,
+  200→.903 avg-whole, 200 wins 2/3). Still-gate before(r8)->after WHOLE: f475
+  .870->.879 · f487 .892->.903 · f500 .888->.904 · f513 .887->.904 · f525 .887->
+  .902 · f537 .895->.907 (+.009..+.017 across the window); globe-crop +.04..+.07.
+  RESIDUAL globe-crop still ~0.6 = the RING rotation + label layout (invented, r6
+  gap 6) and the crossfade approximating true rotation — NOT the ink shape.
+- **`e7bf84ace` locks hex interiors re-trace (r8/r9 lead 2 — worst-texture floor).**
+  The locks A/B hexes clipped the MIDDLE of the big cityA/cityB traces (native
+  1150/1190) downscaled to 0.6 — the r5 downscale-loses-strokes pattern AND wrong
+  content (temple too low/small, ref flanking skyscrapers absent). Re-traced
+  lockCityA/lockCityB from the settled frame regular_0148 at the hex bbox
+  (385x349, native scale): temple+flankers+ground, hex-inset masked, badge corner
+  + perimeter painted out. New SmallHex `fillHex` mode renders 1:1 into the hex.
+  Still-gate before(r8)->after, settled window f1819-1923: WHOLE f1825 .849->.902
+  · f1837 .854->.907 · f1862 .851->.904 · f1900 .858->.911 (**+.053 flat**);
+  HEX-REGION .655->.886 (**+.23**). f1780 phase-1 neutral. Hits r9 worst windows
+  #4 (f1819-1869) / #5 (f1873-1923) / #11 (f1769-1819). Verdict: a REAL WIN, not
+  the floor — the locks-hex "texture" was actually downscale + wrong-content, both
+  fixable; the true residual (temple column hairlines) is minor.
+- **HAZARD (shared-branch clobber):** the locks landing was first swept into a
+  parallel typeface commit, then a parallel art.ts regeneration dropped it out of
+  HEAD; re-committed cleanly (`e7bf84ace`, purely additive). art.ts is generated
+  — parallel regens race; verify lockCityA/globeA survive after any sibling push.
+- **Headroom toward 96:** these two were the biggest ART-shape (not geometry)
+  levers left and both landed real gains on their windows (~+.05 locks, ~+.014
+  globe over ~180 combined frames). Still-open line-art at the floor: the hex
+  BUILDING hairlines inside cities/network/mbadge hexes (map-scale traces, could
+  re-trace like the locks hexes — mbadge f3258-3308 is r9 worst window #1), the
+  globe RING/label layout (invented), and the serif hairlines (typeface front:
+  floor confirmed, Playfair needs off-scope geometry). 96 still needs the broad
+  city/building re-trace across every remaining hex — the locks pass proves the
+  method works and yields ~+.05/window; repeating it on mbadge + network + cities
+  hexes is the remaining path, one hex-family per pass.
+
 ## r5 official verify — logged by orchestrator (2026-07-10 01:22)
 
 - **SCORE 92.7** (video_ssim 0.9131 ·40% / keyframe 0.8964 ·35% / color 0.9896 ·15% / duration 0.9997 ·10%). Trajectory 87.7 → 90.7 → 91.1 → 91.6 → **92.7**. Freshness confirmed vs r4.
