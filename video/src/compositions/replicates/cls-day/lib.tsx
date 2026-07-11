@@ -458,6 +458,11 @@ export const CheckCircle: React.FC<{ x: number; y: number; size?: number; opacit
 
 // ─── Building line-art ───
 // Simplified two-tower block: red-detail tower + navy neighbor, ground line.
+// gen12 re-trace: the settled ref skyline (identical design in S4/S10/S17) is a
+// DENSE ~7-building city, not the old 3-tower sketch — a center red tower flanked
+// by navy towers, light grey slabs behind, blue ground ticks and a red car. Traced
+// per-building from ref f1900 (probes in work/cls-day/gen12; vb = ref−(290,310),
+// viewBox 378×282 = the S10 hex, stretched to fill each hex; clip is the caller's).
 export const Buildings: React.FC<{
   w: number;
   h: number;
@@ -465,78 +470,130 @@ export const Buildings: React.FC<{
   accent?: string;
   variant?: 0 | 1;
   strokeW?: number;
-  dense?: boolean; // S17 hexes: mini-city extras (slabs, vehicle, sliver)
-}> = ({ w, h, ink = C.navyDeep, accent = C.red, variant = 0, strokeW = 2.5, dense }) => (
-  <svg width={w} height={h} viewBox="0 0 200 160">
-    {dense && variant === 0 && (
-      <>
-        <rect x={46} y={70} width={10} height={70} fill="#DCDCDC" />
-        <rect x={8} y={62} width={18} height={78} fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        {[0, 1, 2, 3].map((r) => (
-          <line key={r} x1={11} y1={72 + r * 14} x2={23} y2={72 + r * 14} stroke={ink} strokeWidth={2} />
-        ))}
-        <rect x={160} y={96} width={30} height={44} fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        <path d="M 18 138 L 18 128 Q 18 124 22 124 L 44 124 Q 48 124 48 128 L 48 138" fill="none" stroke={accent} strokeWidth={2.2} />
-        <circle cx={25} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
-        <circle cx={41} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
-      </>
-    )}
-    {dense && variant === 1 && (
-      <>
-        <rect x={94} y={58} width={8} height={82} fill="#DCDCDC" />
-        <rect x={12} y={72} width={30} height={68} fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        {[0, 1, 2].map((r) =>
-          [0, 1].map((c) => <rect key={`${r}${c}`} x={18 + c * 12} y={80 + r * 16} width={5} height={7} fill={ink} />),
-        )}
-        <path d="M 152 138 L 152 128 Q 152 124 156 124 L 178 124 Q 182 124 182 128 L 182 138" fill="none" stroke={accent} strokeWidth={2.2} />
-        <circle cx={159} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
-        <circle cx={175} cy={138} r={3} fill="none" stroke={accent} strokeWidth={2} />
-      </>
-    )}
-    {variant === 0 ? (
-      <>
-        {/* red tower center-left */}
-        <rect x="55" y="20" width="52" height="120" fill="#FDFDFD" stroke={accent} strokeWidth={strokeW} />
-        <rect x="66" y="8" width="30" height="12" fill="none" stroke={accent} strokeWidth={strokeW} />
-        {[0, 1, 2, 3, 4, 5].map((r) =>
-          [0, 1, 2].map((c) => (
-            <rect key={`${r}-${c}`} x={63 + c * 13} y={30 + r * 17} width="8" height="10" fill={accent} />
-          )),
-        )}
-        {/* navy building right */}
-        <rect x="112" y="52" width="46" height="88" fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        {[0, 1, 2, 3].map((r) => (
-          <line key={r} x1="118" y1={64 + r * 20} x2="152" y2={64 + r * 20} stroke={ink} strokeWidth={strokeW} />
-        ))}
-        {/* small block left */}
-        <rect x="26" y="84" width="29" height="56" fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        <line x1="10" y1="140" x2="190" y2="140" stroke={ink} strokeWidth={strokeW} />
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-          <line key={i} x1={18 + i * 22} y1="140" x2={18 + i * 22} y2="146" stroke={ink} strokeWidth={strokeW} />
-        ))}
-      </>
-    ) : (
-      <>
-        {/* variant B: red tower right, stepped navy left */}
-        <rect x="100" y="14" width="54" height="126" fill="#FDFDFD" stroke={accent} strokeWidth={strokeW} />
-        {[0, 1, 2, 3, 4, 5, 6].map((r) =>
-          [0, 1].map((c) => (
-            <rect key={`${r}-${c}`} x={112 + c * 20} y={24 + r * 16} width="10" height="9" fill={accent} />
-          )),
-        )}
-        <rect x="44" y="46" width="56" height="94" fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        {[0, 1, 2, 3, 4].map((r) => (
-          <rect key={r} x={52} y={56 + r * 17} width="12" height="8" fill="none" stroke={ink} strokeWidth={strokeW} />
-        ))}
-        <rect x="154" y="70" width="26" height="70" fill="#FDFDFD" stroke={ink} strokeWidth={strokeW} />
-        <line x1="14" y1="140" x2="192" y2="140" stroke={ink} strokeWidth={strokeW} />
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-          <line key={i} x1={22 + i * 22} y1="140" x2={22 + i * 22} y2="146" stroke={ink} strokeWidth={strokeW} />
-        ))}
-      </>
-    )}
-  </svg>
-);
+  dense?: boolean; // legacy prop — the re-traced skyline is always dense
+}> = ({ w, h, ink = C.navyDeep, accent = C.red, variant = 0, strokeW = 2.5 }) => {
+  const salmon = "#EEC9AF";
+  const slab = "#DDD7D8";
+  const paper = "#FDFDFD";
+  const sw = strokeW;
+  return (
+    <svg width={w} height={h} viewBox="0 0 378 282" preserveAspectRatio="none">
+      {variant === 0 ? (
+        <>
+          {/* grey slabs behind the right cluster */}
+          <rect x={232} y={128} width={20} height={130} fill={slab} />
+          <rect x={286} y={158} width={30} height={100} fill={slab} />
+          {/* far-left slender navy tower + mast, horizontal windows */}
+          <line x1={44} y1={56} x2={44} y2={76} stroke={ink} strokeWidth={2} />
+          <rect x={26} y={76} width={38} height={182} fill={paper} stroke={ink} strokeWidth={sw} />
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <line key={i} x1={31} y1={94 + i * 18} x2={59} y2={94 + i * 18} stroke={ink} strokeWidth={1.6} />
+          ))}
+          {/* plain navy building behind-left */}
+          <rect x={60} y={150} width={30} height={108} fill={paper} stroke={ink} strokeWidth={sw} />
+          {/* dots building, rounded top-left */}
+          <path d={`M 88 258 L 88 122 Q 88 112 98 112 L 140 112 L 140 258 Z`} fill={paper} stroke={ink} strokeWidth={sw} />
+          {[0, 1].map((c) =>
+            [0, 1, 2, 3].map((r) => <rect key={`${c}${r}`} x={104 + c * 20} y={148 + r * 26} width={4} height={12} fill={ink} />),
+          )}
+          {/* right navy building (2 floor bands) */}
+          <rect x={238} y={80} width={40} height={178} fill={paper} stroke={ink} strokeWidth={sw} />
+          {[0, 1, 2].map((r) => (
+            <line key={r} x1={238} y1={120 + r * 46} x2={278} y2={120 + r * 46} stroke={ink} strokeWidth={sw} />
+          ))}
+          {/* far-right stepped navy structure (under the right chamfer) */}
+          <path d={`M 282 258 L 282 168 L 318 168 L 318 200 L 336 200 L 336 258 Z`} fill={paper} stroke={ink} strokeWidth={sw} />
+          {/* center red tower: cap + antennae, body w/ inner windows, wide base grid, door */}
+          <line x1={184} y1={26} x2={184} y2={40} stroke={accent} strokeWidth={2} />
+          <line x1={196} y1={26} x2={196} y2={40} stroke={accent} strokeWidth={2} />
+          <rect x={148} y={40} width={84} height={26} fill={paper} stroke={accent} strokeWidth={sw} />
+          <line x1={150} y1={58} x2={230} y2={58} stroke={accent} strokeWidth={sw} />
+          <rect x={150} y={70} width={80} height={90} fill={paper} stroke={accent} strokeWidth={sw} />
+          <rect x={162} y={92} width={56} height={68} fill={paper} stroke={accent} strokeWidth={2} />
+          <rect x={168} y={98} width={16} height={54} fill={accent} />
+          <rect x={190} y={98} width={16} height={54} fill={salmon} />
+          <rect x={140} y={160} width={102} height={98} fill={paper} stroke={accent} strokeWidth={sw} />
+          {[0, 1, 2, 3].map((c) =>
+            [0, 1, 2, 3].map((r) => <rect key={`b${c}${r}`} x={158 + c * 22} y={178 + r * 20} width={5} height={12} fill={accent} />),
+          )}
+          <rect x={176} y={238} width={22} height={20} fill={paper} stroke={accent} strokeWidth={2} />
+          <line x1={187} y1={238} x2={187} y2={258} stroke={accent} strokeWidth={1.6} />
+          {/* red car bottom-left */}
+          <path d={`M 52 254 L 52 236 Q 52 228 60 228 L 96 228 Q 104 228 104 236 L 104 254 Z`} fill={paper} stroke={accent} strokeWidth={2.2} />
+          <line x1={56} y1={240} x2={100} y2={240} stroke={accent} strokeWidth={1.6} />
+          <circle cx={66} cy={254} r={6} fill={paper} stroke={accent} strokeWidth={2} />
+          <circle cx={92} cy={254} r={6} fill={paper} stroke={accent} strokeWidth={2} />
+          {/* ground line + blue/navy ticks */}
+          <line x1={20} y1={258} x2={358} y2={258} stroke={ink} strokeWidth={sw} />
+          {[128, 142, 156, 206, 220, 234].map((x, i) => (
+            <line key={`bt${i}`} x1={x} y1={244} x2={x} y2={258} stroke={C.blue} strokeWidth={3} />
+          ))}
+          {[113, 250, 264].map((x, i) => (
+            <line key={`nt${i}`} x1={x} y1={246} x2={x} y2={258} stroke={ink} strokeWidth={2.5} />
+          ))}
+        </>
+      ) : (
+        <>
+          {/* grey slabs behind the red tower + far right */}
+          <rect x={236} y={112} width={28} height={146} fill={slab} />
+          <rect x={322} y={150} width={26} height={108} fill={slab} />
+          {/* far-left wide navy building, rounded top-left, vertical window bars */}
+          <path d={`M 30 258 L 30 62 Q 30 50 42 50 L 116 50 L 116 258 Z`} fill={paper} stroke={ink} strokeWidth={sw} />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <line key={`vb${i}`} x1={52 + i * 11} y1={84} x2={52 + i * 11} y2={114} stroke={ink} strokeWidth={2} />
+          ))}
+          <line x1={30} y1={122} x2={116} y2={122} stroke={ink} strokeWidth={sw} />
+          {/* navy ladder building (foreground left) */}
+          <rect x={38} y={124} width={50} height={134} fill={paper} stroke={ink} strokeWidth={sw} />
+          {[0, 1, 2, 3].map((i) => (
+            <line key={`lr${i}`} x1={44} y1={140 + i * 22} x2={82} y2={140 + i * 22} stroke={ink} strokeWidth={sw} />
+          ))}
+          {/* right navy building: top box + antenna, ladder windows */}
+          <line x1={288} y1={70} x2={288} y2={96} stroke={ink} strokeWidth={2} />
+          <rect x={268} y={96} width={50} height={28} fill={paper} stroke={ink} strokeWidth={sw} />
+          <rect x={268} y={124} width={50} height={134} fill={paper} stroke={ink} strokeWidth={sw} />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <line key={`rr${i}`} x1={276} y1={140 + i * 22} x2={310} y2={140 + i * 22} stroke={ink} strokeWidth={sw} />
+          ))}
+          {/* center red tower B: antenna, crown of bars, banded head, twin dashed columns */}
+          <rect x={160} y={16} width={10} height={28} fill={paper} stroke={accent} strokeWidth={2} />
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <line key={`cr${i}`} x1={162 + i * 9} y1={56} x2={162 + i * 9} y2={78} stroke={accent} strokeWidth={2.4} />
+          ))}
+          <rect x={158} y={78} width={66} height={78} fill={paper} stroke={accent} strokeWidth={sw} />
+          <rect x={162} y={96} width={58} height={12} fill={salmon} />
+          <line x1={158} y1={118} x2={224} y2={118} stroke={accent} strokeWidth={sw} />
+          <rect x={160} y={128} width={30} height={12} fill={accent} />
+          <line x1={158} y1={144} x2={224} y2={144} stroke={accent} strokeWidth={sw} />
+          <rect x={158} y={156} width={66} height={14} fill={accent} />
+          <rect x={130} y={150} width={28} height={108} fill={paper} stroke={accent} strokeWidth={sw} />
+          <rect x={224} y={150} width={28} height={108} fill={paper} stroke={accent} strokeWidth={sw} />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <line key={`dl${i}`} x1={144} y1={166 + i * 18} x2={144} y2={176 + i * 18} stroke={accent} strokeWidth={2} />
+          ))}
+          {[0, 1, 2, 3, 4].map((i) => (
+            <line key={`dr${i}`} x1={238} y1={166 + i * 18} x2={238} y2={176 + i * 18} stroke={accent} strokeWidth={2} />
+          ))}
+          <rect x={176} y={236} width={30} height={22} fill={paper} stroke={accent} strokeWidth={2} />
+          <line x1={186} y1={236} x2={186} y2={258} stroke={accent} strokeWidth={1.6} />
+          <line x1={196} y1={236} x2={196} y2={258} stroke={accent} strokeWidth={1.6} />
+          {/* red car bottom-left */}
+          <path d={`M 92 256 L 92 240 Q 92 232 100 232 L 122 232 Q 130 232 130 240 L 130 256 Z`} fill={paper} stroke={accent} strokeWidth={2.2} />
+          <circle cx={104} cy={256} r={5} fill={paper} stroke={accent} strokeWidth={2} />
+          <circle cx={122} cy={256} r={5} fill={paper} stroke={accent} strokeWidth={2} />
+          {/* ground line + blue/navy ticks */}
+          <line x1={20} y1={258} x2={358} y2={258} stroke={ink} strokeWidth={sw} />
+          {[64, 82, 172, 200, 258, 278].map((x, i) => (
+            <line key={`bt${i}`} x1={x} y1={244} x2={x} y2={258} stroke={C.blue} strokeWidth={3} />
+          ))}
+          {[150, 228, 300, 316].map((x, i) => (
+            <line key={`nt${i}`} x1={x} y1={246} x2={x} y2={258} stroke={ink} strokeWidth={2.5} />
+          ))}
+        </>
+      )}
+    </svg>
+  );
+};
 
 // Hexagon city: elongated hex outline + buildings + letter badge.
 export const HexCity: React.FC<{
@@ -566,8 +623,16 @@ export const HexCity: React.FC<{
           strokeLinejoin="round"
         />
       </svg>
-      <div style={{ position: "absolute", left: w * 0.17, top: h * 0.12, width: w * 0.66, height: h * 0.76 }}>
-        <Buildings w={w * 0.66} h={h * 0.76} variant={variant} dense={dense} />
+      {/* gen12: the re-traced skyline fills the hex interior; clip to the hex so
+          edge buildings under the chamfer read as white (as the ref does). */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          clipPath: "polygon(23% 3%, 77% 3%, 97% 50%, 77% 97%, 23% 97%, 3% 50%)",
+        }}
+      >
+        <Buildings w={w} h={h} variant={variant} dense={dense} />
       </div>
       {letter && badgeP > 0 && (
         <div
