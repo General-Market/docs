@@ -299,9 +299,12 @@ const ReportDoc: React.FC<{
 export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < 2324 || f >= SEG.handshake[0] + 40) return null;
-  const out = lerp(f, [2396, 2412], [1, 0]);
-  // whole group drifts +125px (fr_2330 → fr_2360)
-  const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]);
+  // gen10: the ref holds the settled report to ~f2360 then EXITS it f2362-2377
+  // (docs slide DOWN + out as the handshake hexes rise) — was held to f2396,
+  // the r11 worst window #4 f2352-2402 (report layout lingered vs rising hexes).
+  const out = lerp(f, [2363, 2377], [1, 0]);
+  // whole group drifts +125px (fr_2330 → fr_2360), then slides down on exit
+  const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]) + lerp(f, [2362, 2377], [0, 360]);
   const meshP = lerp(f, [2342, 2352], [0, 1]);
   const rightOp = lerp(f, [2324, 2330], [0, 1]);
   // gen10: continue the measured box slide across the 2324 handoff (GanttScene
@@ -333,19 +336,33 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
 export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.handshake[0] || f >= SEG.payment[0] + 16) return null;
-  const inOp = lerp(f, [2404, 2420], [0, 1]);
+  // gen10: the ref exits the report docs ~f2362-2372, then the A/B hexes RISE
+  // from below and settle 2372-2392 (measured montage_hsrise: hexes solid, not
+  // fading; near-final by ~f2385); the handshake graphic + horizontal arrows
+  // form LATER ~2405-2425. Was inOp=lerp[2404,2420] for the WHOLE scene = the
+  // report 3-doc layout held f2372-2404 while the ref showed rising hexes (r11
+  // worst window #4 f2352-2402). ReportOut's white bg backs us until f2412.
+  const bgOp = lerp(f, [2372, 2384], [0, 1]);
+  const hexOp = lerp(f, [2370, 2379], [0, 1]);
+  const hexRise = lerp(f, [2372, 2392], [210, 0]);
   const out = lerp(f, [2470, 2484], [1, 0]);
+  const graphicOp = lerp(f, [2405, 2420], [0, 1]);
   const arrowP = lerp(f, [2424, 2440], [0, 1]);
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
-      <SmallHex art="cityA" cx={427} cy={372} w={385} artW={1150} letter="A" />
-      <SmallHex art="cityB" cx={1512} cy={755} w={396} artW={1190} letter="B" />
-      <Doc x={255} y={510} w={91} h={110} />
-      <Doc x={1611} y={900} w={90} h={110} />
-      {/* handshake pill (traced: navy pill + white/orange hands) */}
-      <TracedArt name="handshake" x={715} y={490} />
-      <Elbow points={[[1010, 460], [690, 460]]} arrow="end" drawP={arrowP} />
-      <Elbow points={[[930, 830], [1245, 830]]} arrow="end" drawP={arrowP} />
+    <AbsoluteFill style={{ opacity: out }}>
+      <div style={{ position: "absolute", inset: 0, backgroundColor: C.white, opacity: bgOp }} />
+      <div style={{ position: "absolute", inset: 0, opacity: hexOp, transform: `translateY(${hexRise}px)` }}>
+        <SmallHex art="cityA" cx={427} cy={372} w={385} artW={1150} letter="A" />
+        <SmallHex art="cityB" cx={1512} cy={755} w={396} artW={1190} letter="B" />
+        <Doc x={255} y={510} w={91} h={110} />
+        <Doc x={1611} y={900} w={90} h={110} />
+      </div>
+      {/* handshake graphic + horizontal arrows form later (~2405-2425) */}
+      <div style={{ position: "absolute", inset: 0, opacity: graphicOp }}>
+        <TracedArt name="handshake" x={715} y={490} />
+        <Elbow points={[[1010, 460], [690, 460]]} arrow="end" drawP={arrowP} />
+        <Elbow points={[[930, 830], [1245, 830]]} arrow="end" drawP={arrowP} />
+      </div>
     </AbsoluteFill>
   );
 };
