@@ -232,15 +232,21 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
   const pillP = interpolate(frame, [1872, 1890], [0, 1], clamp);
   const bankP = interpolate(frame, [1900, 1916], [0, 1], clamp);
   const connP = interpolate(frame, [1890, 1912], [0, 1], clamp);
-  const ax = 571;
-  const bx = 1438;
-  const hy = 404;
+  // gen12: hexes re-registered to the exact ref (A cx479 cy451, B cx1434 cy449;
+  // outline flat-to-flat 274 → HH282, vertex-to-vertex 362 → HW378). Old geom
+  // (571/1438, hy404, 380×390) sat A 92px right, both 47px high, 108px too tall.
+  const ax = 479;
+  const bx = 1434;
+  const hy = 451;
+  const HW = 378;
+  const HH = 282;
+  const hexBot = hy + HH / 2; // 592 — hex bottom (≈ old 590, connectors unmoved)
   // chips travel: A→pill (red, pay-in), central bank→pill, pill→both (pay-outs)
   const chips: { p: number; from: [number, number]; to: [number, number]; color: string }[] = [
-    { p: travel(frame, 1930, 1990), from: [ax, hy + 190], to: [880, 812], color: C.chipRed },
+    { p: travel(frame, 1930, 1990), from: [ax, hexBot], to: [880, 812], color: C.chipRed },
     { p: travel(frame, 1960, 2020), from: [1370, 700], to: [1130, 812], color: C.chipGrey },
-    { p: travel(frame, 1990, 2050), from: [1060, 812], to: [bx, hy + 190], color: C.chipNavy },
-    { p: travel(frame, 2010, 2065), from: [900, 812], to: [ax, hy + 190], color: C.chipCream },
+    { p: travel(frame, 1990, 2050), from: [1060, 812], to: [bx, hexBot], color: C.chipNavy },
+    { p: travel(frame, 2010, 2065), from: [900, 812], to: [ax, hexBot], color: C.chipCream },
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
@@ -249,16 +255,16 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
       <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
       <Milestone x={958} lineTop={84} lineBottom={148} time={pack.milestones.m0700.time} label={pack.milestones.m0700.label} textY={160} timeSize={28} labelSize={18} />
-      <HexCity x={ax} y={hy} w={380} h={390} letter="A" variant={0} opacity={hexP} />
-      <HexCity x={bx} y={hy} w={380} h={390} letter="B" badge="tr" variant={1} opacity={hexP} />
+      <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" variant={0} opacity={hexP} />
+      <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" variant={1} opacity={hexP} />
       {bankP > 0 && <BankHex x={1370} y={648} size={100} opacity={bankP} />}
       {connP > 0 && (
         <svg width={1920} height={1080} style={{ position: "absolute", opacity: connP }}>
-          <path d={`M ${ax + 10} ${hy + 186} L ${ax + 10} 782 Q ${ax + 10} 812 ${ax + 40} 812 L 796 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+          <path d={`M ${ax + 10} ${hexBot} L ${ax + 10} 782 Q ${ax + 10} 812 ${ax + 40} 812 L 796 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
           <path d="M 796 812 l -22 -12 v 24 z" fill={C.navyDeep} transform="translate(22 0)" />
           <path d={`M 1370 698 L 1370 782 Q 1370 812 1340 812 L 1124 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
           <path d={`M 1124 812 l 22 -12 v 24 z`} fill={C.navyDeep} transform="translate(-22 0)" />
-          <path d={`M ${bx - 10} ${hy + 186} L ${bx - 10} 598`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+          <path d={`M ${bx - 10} ${hexBot} L ${bx - 10} 598`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
         </svg>
       )}
       {pillP > 0 && <ClsPillSlot x={826} y={759} w={250} h={107} p={pillP} PillLogo={PillLogo} />}
@@ -934,8 +940,8 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
         {/* STATIC central diagram — fades in after the band, exits by sliding off */}
         <div style={{ position: "absolute", inset: 0, opacity: diagP }}>
           {/* hexes + pill + shield (measured centers) */}
-          <HexCity x={547} y={413} w={290} h={235} variant={0} dense />
-          <HexCity x={1351} y={413} w={290} h={235} variant={1} dense />
+          <HexCity x={561} y={404} w={307} h={226} variant={0} dense />
+          <HexCity x={1360} y={404} w={307} h={226} variant={1} dense />
           {/* trade executed arrow y393 */}
           <svg width={1920} height={1080} style={{ position: "absolute" }}>
             <line x1={710} y1={393} x2={1195} y2={393} stroke={C.skyBlue} strokeWidth={3.5} />

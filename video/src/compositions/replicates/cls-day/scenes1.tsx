@@ -499,11 +499,14 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   const pillP = interpolate(frame, [548, 566], [0, 1], clamp);
   const connP = interpolate(frame, [560, 585], [0, 1], { ...clamp, easing: EASE });
   const coinP = interpolate(frame, [606, 618], [0, 1], clamp);
-  const ax = interpolate(hexSpread, [0, 1], [700, 435]);
-  const bx = interpolate(hexSpread, [0, 1], [1220, 1473]);
-  const hy = 475;
-  const HW = 402;
-  const HH = 415;
+  // gen12: settled hexes re-registered to ref f640 (A cx471 cy527, B cx1450;
+  // outline flat-to-flat 273 → HH282, vertex 370 → HW382). Old geom sat the
+  // hexes 52px high and 133px too tall.
+  const ax = interpolate(hexSpread, [0, 1], [720, 471]);
+  const bx = interpolate(hexSpread, [0, 1], [1200, 1450]);
+  const hy = 527;
+  const HW = 382;
+  const HH = 282;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       {frame < 656 ? (
