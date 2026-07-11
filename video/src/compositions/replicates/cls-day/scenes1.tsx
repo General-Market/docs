@@ -1487,11 +1487,16 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   const ringIn = lutS([[1170, 0.05], [1172, 0.115], [1174, 0.26], [1176, 0.7], [1178, 0.86], [1180, 0.94], [1182, 0.975], [1188, 1]])(frame);
   const cx = interpolate(frame, [1192, 1212], [958, 1352], { ...clamp, easing: EASE });
   const cy = 517;
-  // phases
-  const p96 = interpolate(frame, [1240, 1285], [0, 0.96], { ...clamp, easing: EASE });
-  const p99 = interpolate(frame, [1345, 1385], [0.96, 0.99], clamp);
-  const progress = frame < 1240 ? 0 : frame < 1345 ? p96 : p99;
-  const pct = frame < 1248 ? pack.percents[0] : frame < 1352 ? pack.percents[1] : pack.percents[2];
+  // Donut COUNTS + fills in sync (r11 measured): holds 0% until f1230, then
+  // sweeps fast 0->96% over f1230-1252 (48%@f1240, 95%@f1250), holds, then
+  // 96->99% at f1344-1360. The old code started the fill at f1240 and ramped
+  // too slowly (empty grey where the ref was already navy). pack.percents
+  // endpoints (96/99) are the count targets; the label reads the live count.
+  const t1 = parseFloat(pack.percents[1]) / 100;
+  const t2 = parseFloat(pack.percents[2]) / 100;
+  const cnt1 = lutS([[1230, 0], [1233, 0.04], [1237, 0.27], [1240, 0.5], [1244, 0.78], [1248, 0.97], [1252, 1]])(frame) * t1;
+  const progress = frame < 1344 ? cnt1 : interpolate(frame, [1344, 1360], [t1, t2], clamp);
+  const pct = `${Math.round(progress * 100)}%`;
   const icon1P = interpolate(frame, [1238, 1250], [0, 1], clamp);
   const splitP = interpolate(frame, [1352, 1364], [0, 1], clamp);
   return (
@@ -1502,7 +1507,7 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
         r={289.5}
         thick={131}
         progress={progress}
-        pct={frame >= 1230 ? pct : ""}
+        pct={frame >= 1214 ? pct : ""}
         ringBg={C.donutGrey}
         ringFg={C.navyBg}
         center="none"
