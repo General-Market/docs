@@ -1080,21 +1080,30 @@ const ClD: React.FC = () => (
       [0, 1, 2, 3].map((c) => <rect key={`${r}${c}`} x={112 + c * 12} y={90 + r * 15} width={5.5} height={6.5} fill={WHT} />),
     )}
     <path d="M 0 47.5 L 40 47.5" fill="none" stroke={WHT} strokeWidth="3.5" />
-    {/* red hanging tower */}
-    <rect x={212.5} y={0} width={37.5} height={22.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <line x1={231} y1={0} x2={231} y2={22.5} stroke={C.red} strokeWidth="3" />
-    <rect x={155} y={0} width={90} height={250} fill={C.navyBg} stroke={C.red} strokeWidth="4" />
-    <rect x={245} y={0} width={60} height={250} fill={C.navyBg} stroke={C.red} strokeWidth="4" />
-    {([[75, 0, 0, 0], [104, 1, 0, 0], [133, 0, 0, 0], [162, 0, 1, 1], [191, 0, 0, 0], [220, 0, 0, 0], [249, 1, 0, 1]] as const).map(([y, s1, s2, s3], i) => (
+    {/* red hanging tower — r10 re-trace (ref f750, per-pixel): outer walls
+        y6..282, roof beam y45, crown box y6..21, base beam y282 + left foot
+        + twin right masts. The r7 body stopped at y250 (32px short → base
+        sat high, tower read compressed) — this was the S5 PERSISTENT worst
+        cluster (crop SSIM .52 vs .70-.75 for every other cluster). Grid
+        re-registered: left cols x167.5/197.5 (w19), right x271.5 (w18);
+        7 rows tops 70..237 (pitch 28, h19); solids per-row unchanged. */}
+    <line x1={156.5} y1={6} x2={156.5} y2={282} stroke={C.red} strokeWidth="4" />
+    <line x1={303} y1={6} x2={303} y2={282} stroke={C.red} strokeWidth="4" />
+    <rect x={211.5} y={6} width={35} height={15} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <line x1={229.5} y1={6} x2={229.5} y2={21} stroke={C.red} strokeWidth="3" />
+    <line x1={155} y1={45} x2={304.5} y2={45} stroke={C.red} strokeWidth="4" />
+    <line x1={244.5} y1={45} x2={244.5} y2={282} stroke={C.red} strokeWidth="3.5" />
+    {([[70, 0, 0, 0], [98, 1, 0, 0], [126, 0, 0, 0], [154, 0, 1, 1], [182, 0, 0, 0], [209, 0, 0, 0], [237, 1, 0, 1]] as const).map(([y, s1, s2, s3], i) => (
       <React.Fragment key={i}>
-        <rect x={167} y={y - 10} width={18} height={17} fill={s1 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-        <rect x={195} y={y - 10} width={18} height={17} fill={s2 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-        <rect x={266} y={y - 10} width={18} height={17} fill={s3 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+        <rect x={167.5} y={y} width={19} height={19} fill={s1 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+        <rect x={197.5} y={y} width={19} height={19} fill={s2 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
+        <rect x={271.5} y={y} width={18} height={19} fill={s3 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
       </React.Fragment>
     ))}
-    {/* stepped hanging base + mast */}
-    <path d="M 155 250 L 180 250 L 180 270 L 220 270 L 220 250 L 305 250" fill="none" stroke={C.red} strokeWidth="4" />
-    <line x1={280} y1={250} x2={280} y2={317} stroke={C.red} strokeWidth="3.5" />
+    {/* base beam w/ left foot notch + twin right masts (measured y282..315) */}
+    <path d="M 155 282 L 182.5 282 L 182.5 300 L 222.5 300 L 222.5 282 L 304.5 282" fill="none" stroke={C.red} strokeWidth="4" />
+    <line x1={272.5} y1={282} x2={272.5} y2={297} stroke={C.red} strokeWidth="3" />
+    <line x1={288.5} y1={282} x2={288.5} y2={315} stroke={C.red} strokeWidth="3.5" />
     {/* right white building w/ comb marks */}
     <path d="M 305 0 L 305 157 Q 305 165 313 165 L 372 165 Q 380 165 380 157 L 380 0" fill="none" stroke={WHT} strokeWidth="3.5" />
     {[0, 1, 2, 3].map((r) => (
