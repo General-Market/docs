@@ -568,12 +568,25 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   const bandIn = interpolate(frame, [440, 462], [0, 1], clamp);
   // measured: marker fixed at 960; 23:00 under it at f550; pan -1.3px/f
   const hourAt = 23 + (frame - 550) * 0.00917;
-  const hexIn = interpolate(frame, [462, 486], [0, 1], { ...clamp, easing: EASE });
-  const hexSpread = interpolate(frame, [500, 528], [0, 1], { ...clamp, easing: EASE });
-  const badgeP = interpolate(frame, [528, 540], [0, 1], { ...clamp, easing: Easing.out(Easing.back(1.6)) });
-  const arrowP = interpolate(frame, [540, 562], [0, 1], { ...clamp, easing: EASE });
-  const pillP = interpolate(frame, [548, 566], [0, 1], clamp);
-  const connP = interpolate(frame, [560, 585], [0, 1], { ...clamp, easing: EASE });
+  // ANIM-FIDELITY (ref f440-618, dense-frame traced): the hexes draw in place
+  // at overlap positions (right/B leads ~f446, left/A ~f452), badges snap on
+  // full-size and STAGGERED (B~f458, A~f461, NO overshoot — the old back(1.6)
+  // pop at f528-540 was invented), the hexes SPREAD f483-506 (measured f486
+  // A680/B1200 → f504 A480/B1450), the arrow draws CENTRE-OUTWARD f506-514
+  // (not left→right from A), connectors lead the pill f544-560, and the CLS
+  // pill/logo WIPES on left→right f551-573 (box grows L→R + logo O→C→L→S — not
+  // an opacity fade). Coin timing unchanged. See work/cls-day/s4/*_strip.png.
+  const hexInB = interpolate(frame, [446, 466], [0, 1], { ...clamp, easing: EASE });
+  const hexInA = interpolate(frame, [452, 472], [0, 1], { ...clamp, easing: EASE });
+  const hexSpread = interpolate(frame, [483, 506], [0, 1], clamp); // measured ~linear
+  const badgePB = interpolate(frame, [456, 462], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const badgePA = interpolate(frame, [460, 466], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const arrowP = interpolate(frame, [506, 514], [0, 1], { ...clamp, easing: EASE });
+  // pill L→R assembly in two measured rates: box fast (f550-560, ease-out),
+  // logo O→C→L→S slower (f551-572, linear).
+  const pillBoxP = interpolate(frame, [550, 560], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
+  const pillP = interpolate(frame, [551, 572], [0, 1], clamp);
+  const connP = interpolate(frame, [544, 560], [0, 1], { ...clamp, easing: EASE });
   const coinP = interpolate(frame, [606, 618], [0, 1], clamp);
   // gen12: settled hexes re-registered to ref f640 (A cx471 cy527, B cx1450;
   // outline flat-to-flat 273 → HH282, vertex 370 → HW382). Old geom sat the
@@ -583,6 +596,12 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   const hy = 527;
   const HW = 382;
   const HH = 282;
+  // ANIM-FIDELITY: the ref diagram ZOOMS OUT — each hex-group enters ~1.5x and
+  // shrinks to settled 1.0x by ~f560, decelerating (measured A-hex ink width /
+  // settled: f486 1.49 · f520 1.10 · f560 1.00). Scale each group about its own
+  // centre so the spread x-track is preserved; identity (no wrapper) once
+  // settled so f560-674 stay byte-identical to the banked registration.
+  const hexScale = lutS([[446, 1.5], [486, 1.49], [504, 1.29], [520, 1.1], [540, 1.03], [560, 1.0]])(frame);
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       {frame < 656 ? (
@@ -595,15 +614,38 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
       )}
       {/* diagram content dies behind the incoming S5 front (f667..673) */}
       <div style={{ position: "absolute", inset: 0, clipPath: frame >= 666 ? `inset(0 ${Math.max(0, 1920 - lutS(S4X_FRONT)(frame))}px 0 0)` : undefined }}>
-      <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" badgeP={badgeP} variant={0} opacity={hexIn} />
-      <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" badgeP={badgeP} variant={1} opacity={hexIn} />
+      {(() => {
+        const hexA = <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" badgeP={badgePA} variant={0} opacity={hexInA} />;
+        const hexB = <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" badgeP={badgePB} variant={1} opacity={hexInB} />;
+        if (hexScale === 1) return <>{hexA}{hexB}</>;
+        return (
+          <>
+            <div style={{ position: "absolute", inset: 0, transform: `scale(${hexScale})`, transformOrigin: `${ax}px ${hy}px` }}>{hexA}</div>
+            <div style={{ position: "absolute", inset: 0, transform: `scale(${hexScale})`, transformOrigin: `${bx}px ${hy}px` }}>{hexB}</div>
+          </>
+        );
+      })()}
       {/* trade executed arrow y531 */}
       {arrowP > 0 && (
         <>
-          <svg width={1920} height={1080} style={{ position: "absolute", opacity: arrowP }}>
-            <line x1={ax + HW / 2 + 10} y1={531} x2={ax + HW / 2 + 10 + (bx - ax - HW - 20) * arrowP} y2={531} stroke={C.skyBlue} strokeWidth={4} />
-            <path d={`M ${ax + HW / 2 + 24} 531 l 20 -11 v 22 z`} fill={C.skyBlue} transform={`rotate(180 ${ax + HW / 2 + 34} 531)`} />
-            <path d={`M ${bx - HW / 2 - 44} 531 l 20 -11 v 22 z`} fill={C.skyBlue} />
+          {/* ref draws the arrow CENTRE-OUTWARD: both ends grow from x960 to
+              the hex edges (f507 tiny centre mark → f513 full). Line stays
+              solid (geometry reveals); only the label fades. */}
+          <svg width={1920} height={1080} style={{ position: "absolute" }}>
+            {(() => {
+              const L = ax + HW / 2 + 24;
+              const R = bx - HW / 2 - 24;
+              const cx = (L + R) / 2;
+              const x1 = cx - (cx - L) * arrowP;
+              const x2 = cx + (R - cx) * arrowP;
+              return (
+                <>
+                  <line x1={x1} y1={531} x2={x2} y2={531} stroke={C.skyBlue} strokeWidth={4} />
+                  <path d={`M ${x1} 531 l 20 -11 v 22 z`} fill={C.skyBlue} />
+                  <path d={`M ${x2} 531 l -20 -11 v 22 z`} fill={C.skyBlue} />
+                </>
+              );
+            })()}
           </svg>
           <div
             style={{
@@ -641,7 +683,18 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
           <path d={`M 1124 812 l 22 -12 v 24 z`} fill={C.navyDeep} transform="translate(-22 0)" />
         </svg>
       )}
-      {pillP > 0 && <ClsPillSlot x={826} y={759} w={250} h={107} p={pillP} PillLogo={PillLogo} />}
+      {pillP > 0 && (
+        // ref assembles the pill left→right in TWO rates, not an opacity fade:
+        // the navy BOX wipes on fast (full by ~f560) while the LOGO draws
+        // O→C→L→S slower (to ~f572). A fast-clipped box behind + the
+        // slow-clipped full slot on top (same navy) gives both from one slot.
+        <div style={{ position: "absolute", left: 826, top: 759, width: 250, height: 107 }}>
+          <div style={{ position: "absolute", inset: 0, background: C.navyBg, borderRadius: 107 * 0.28, clipPath: `inset(0 ${(1 - pillBoxP) * 100}% 0 0)` }} />
+          <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${(1 - pillP) * 100}% 0 0)` }}>
+            <ClsPillSlot x={0} y={0} w={250} h={107} p={1} PillLogo={PillLogo} />
+          </div>
+        </div>
+      )}
       {/* money icon under A */}
       {coinP > 0 && (
         <svg width={64} height={64} viewBox="0 0 60 60" style={{ position: "absolute", left: ax - 90, top: hy + HH / 2 + 20, opacity: coinP }}>

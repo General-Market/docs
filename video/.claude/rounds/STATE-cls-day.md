@@ -148,14 +148,51 @@ confirmed them per-pixel and left them; the ONE invented motion was the
   the padlock body is slightly smaller and lacks the f350 drop-shadow; the
   f283 entry sliver is ~2 frames too large. None are motion errors.
 
+Fifth animation eye-passed: the **S4 trade diagram (f440..618)**. Dense ref
+pull (f432..618 → `work/cls-day/s4/*_strip.png`) + isolated A-hex ink-width
+tracking adjudicated every element against fresh replica renders. FIVE motions
+were invented/mistimed; all now measured-faithful. The old code was ~40-60f
+LATE across the first half and used a badge OVERSHOOT the ref never has.
+- **Ref motion (dense read, 25fps 1:1):** (1) the two hexes DRAW ON IN PLACE at
+  overlap positions (right/B fills ~f446, left/A ~f452), buildings filling; (2)
+  the A/B badges snap on FULL-SIZE, staggered (B~f458, A~f461), **no overshoot**;
+  (3) the whole diagram ZOOMS OUT — each hex-group enters ~1.5x and SHRINKS to
+  settled 1.0x by ~f560, decelerating (measured A-hex ink-width / settled: f486
+  1.49 · f520 1.10 · f560 1.00); (4) the hexes SPREAD f483..506 (measured centre
+  A680→471 / B1200→1450); (5) the "Trade executed" arrow draws CENTRE-OUTWARD
+  f507..513 (tiny centre mark → both ends grow to the hex edges), not L→R from A;
+  (6) connectors draw f544..556 (lead the pill); (7) the CLS pill assembles in
+  TWO rates left→right — box wipes on fast (full ~f560), logo draws O→C→L→S
+  slower to ~f572 — NOT an opacity fade.
+- **Replaced (scenes1.tsx only):** deleted `Easing.out(Easing.back(1.6))` badge
+  pop at f528-540 (invented) → per-hex `badgePA`/`badgePB` clean cubic snaps at
+  f456-466; retimed `hexIn`→staggered `hexInA/B` (f446-472), `hexSpread`
+  500-528→483-506; added `hexScale` LUT (1.5→1.0 by f560) wrapping each HexCity
+  in a per-centre `transform:scale` (identity/no-wrapper once settled →
+  f560-674 byte-preserved); rewrote the arrow to grow from x960 outward
+  (f506-514, solid line, label fades); connP 560-585→544-560; pill opacity-fade
+  → two-rate L→R clip wipe (`pillBoxP` fast f550-560 + `pillP` logo f551-572,
+  fast navy box behind the slow-clipped slot). HexCity/ClsPill/ClsPillSlot
+  (shared S10/S13/S17) UNTOUCHED — all timing/scale/clip lives in S4Trade.
+- **Filmstrip (eye gate):** `work/cls-day/anim/s4_trade_filmstrip.png` (ref row /
+  replica row, 28 frames f462..618) — badges early+staggered+no-pop, hex
+  grow-then-shrink, spread, centre-out arrow, two-rate pill all MATCH. Supporting
+  crops in `work/cls-day/s4/` (hexscale_pair2, arrow_pair2, pill_pair4). tsc
+  clean (cls-day scope).
+- **Documented residuals (NOT fixed):** the money icon under A is a single navy
+  `$` coin — the ref draws TWO red DOCUMENT sheets ($ left, € right); STATIC
+  CONTENT, not a motion error, left for a content pass. Entrance building-fill is
+  an opacity fade of the filled hex, not the ref's one-by-one building draw-on
+  (the S10 dense-ink-loses precedent — the scale+fade reads as "appear"). Arrow
+  endpoints use unscaled hex edges, so f507-513 (hexes still ~1.0-1.13x) the arrow
+  lands a few px shy of the scaled edge. Pill box ~1-2f behind ref at f552-556.
+
 - **Still needing the same eye-pass (invented/weird motion vs ref clean
-  animation), next priorities:** S4 hex spread + badge back-ease + arrow draw
-  + pill (f462..618); S7/S13 donut ring sweeps + chip runs. (S1 intro + S18
-  outro + S2 carousel + S3 globe DONE.) Each: extract dense ref frames,
-  identify mechanism (draw/slide/scale), rebuild, filmstrip-gate. NEXT
-  recommended: **S4 trade diagram (f462..618)** — verify the hex-badge spread,
-  the badge back-ease, the blue arrow draw-on, and the pill assembly read as
-  the ref's actual motion, not invented, by the same dense-frame eye method.
+  animation), next priorities:** S7/S13 donut ring sweeps + chip runs. (S1 intro
+  + S18 outro + S2 carousel + S3 globe + S4 trade DONE.) Each: extract dense ref
+  frames, identify mechanism (draw/slide/scale), rebuild, filmstrip-gate. NEXT
+  recommended: **S7 netting donuts** — verify the donut ring sweep + chip runs
+  read as the ref's actual motion, not invented, by the same dense-frame method.
 
 ## Architecture (all in the lane)
 
