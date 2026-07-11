@@ -467,6 +467,12 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const hexY = 283 + (413 - 283) * growP;
   const boxOut = lerp(f, [1756, 1772], [1, 0]); // box drops away as hexes grow
   const docOp = lerp(f, [1800, 1815], [0, 1]);
+  // gen13: the A/B badge GROWS with the hex (measured EXACT video: r≈0.14·w —
+  // phase1 w215→r29, settled w385→r54; the old fixed r36 was too big at phase1
+  // and 18px too SMALL + 26px too LOW settled). Offset ratio drifts across the
+  // grow (badge sits on the top-left vertex of the growing hex): dy -0.335@phase1
+  // → -0.382@settled lands the disk on the ref at BOTH ends (cy 211→266).
+  const badge = { dx: -0.31, dy: lerp(f, [1752, 1785], [-0.335, -0.382]), r: hexW * 0.14 };
   const lockClosedP = f >= 1838 ? 1 : 0;
   // no exit fade: ref keeps the locks layout intact until the strip's band
   // wipe (1909-1930) has fully covered it (measured: content static at f1914)
@@ -488,8 +494,8 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
           <Elbow points={[[1512, 636], [1512, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
         </>
       )}
-      <SmallHex art="lockCityA" cx={hexAx} cy={hexY} w={hexW} artW={385} letter="A" badge={{ dx: -0.312, dy: -0.314, r: 36 }} fillHex />
-      <SmallHex art="lockCityB" cx={hexBx} cy={hexY} w={hexW} artW={385} letter="B" badge={{ dx: -0.312, dy: -0.314, r: 36 }} fillHex />
+      <SmallHex art="lockCityA" cx={hexAx} cy={hexY} w={hexW} artW={385} letter="A" badge={badge} fillHex />
+      <SmallHex art="lockCityB" cx={hexBx} cy={hexY} w={hexW} artW={385} letter="B" badge={badge} fillHex />
       {/* orange rising lines under the doc+lock groups (ref x632/1313, from y872) */}
       {!phase1 && (
         <>
