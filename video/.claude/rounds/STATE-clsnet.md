@@ -786,3 +786,69 @@ disc under MapScene's expanding blue rect — but now that the globe IS a 0.76-
 scaled worldMap window, it can MORPH: ramp scale 0.76→1.0 and origin→(MAP.x,
 MAP.y) over f556-575 so the disc's map hands off SEAMLESSLY to MapScene's full
 worldMap (a real zoom, not a fade). Then: cities shrink+hexify (gap 7).
+
+### anim gen-3 — 2026-07-11 (LATER scenes, scenesC f1462+, eye-judged) — 1 commit
+
+Owner directive: final animation-fidelity audit of the LATER scenes (Gantt/
+matching, handshake, payment, shield/mosaic, endcard) — reproduce the ACTUAL
+motion, delete invented fade/late/wrong-direction motion. JUDGE BY EYE via ref-
+over-replica filmstrips, not SSIM. Method (gen10 plate-offset law): EXACT ref
+video frames only (`vf.sh` = mid-frame seek `(F-0.4)/25`, verified AE=0 vs the
+slow select method; 25fps so ref n = comp n). Extracted 130+ ref frames across
+every scenesC entrance, built ref-only strips per scene, read them, rendered
+replica stills for the suspects, montaged (yellow=ref over cyan=replica),
+diagnosed, fixed, re-gated. Instruments + all strips/montages in
+`work/clsnet/anim/` (vf.sh, refstrip.sh, mont.sh; ref_*.png diagnosis strips;
+ab_*.png before montages; gate_*.png after montages; crx_check.png brand cut).
+
+**Surveyed ALL 12 scenesC scenes; found THREE invented motions (commit
+`10eaabb63`), the rest FAITHFUL:**
+- **Detail card (gantt, f2188-2208) — fade→GROW.** Ref grows an OPAQUE card out
+  of the collapsing gantt rows (medium@2190 → full@2196) THEN populates the
+  field text (Counterparty/Unique Identifier/… @2200-2208). Code faded a fixed
+  full-size card via opacity — gantt rows GHOSTED through the translucent card
+  and text appeared with it (ab_detail.png). Fix: DetailCard gains growP (scale
+  from 0.14 about card-centre over 2188-2196) + fast opaque entrance
+  ([2188,2193]) + a contentOpacity wrapper delaying ALL internal ink (labels/
+  values/rules/dividers) to [2198,2207]; detailP entrance tightened [2188,2202]
+  →[2188,2196] (rows collapse + PO1I drop faster, matching ref). Exit unchanged.
+  gate_detail.png: card empty@2196, text@2202, NO ghost rows. **WIN.**
+- **Payment entry (f2472-2492) — crossfade DIP killed.** Ref un-hexes A/B into
+  the two cities-on-a-line so they are SOLID at the scene's first frame (~f2480,
+  boundary scan vf 2474/2478/2480). Code: handshake out[2470,2484] vs payment
+  in[2482,2496] = a DIP — empty ghost-hexes at f2480, cities only 29% at f2486
+  (ab_payment.png). Fix: handshake out→[2472,2482] over the SAME window payment
+  now enters (in→[2472,2482], mount guard −8f) so opacity-sum holds ~1 (reads as
+  the morph); cities solid by 2482. gate_payment.png: no dip. **WIN.** (Residual:
+  ~20% ghost-hex at the single f2480 frame — sum-1 no-dip preferred over a hard
+  cut; within eye tolerance.)
+- **Map entry (f3104-3130) — dim slow fade→bright on-time draw.** Ref draws the
+  world map BRIGHT/full by ~f3112 with hex-1 present; code ran a 26f dim grey
+  fade to 3130 with the hex cascade late (ab_map.png). Fix: mapP→[3104,3113];
+  hex pops 3116+i*7 (10f grow) → 3106+i*9 (8f grow). gate_map.png: bright map,
+  hexes on-time. **WIN.** (Residual: hex APPEARANCE ORDER/positions are the
+  pre-existing measured MB_HEXES layout, not motion — out of scope.)
+
+**FAITHFUL (eye-confirmed vs ref strips, NOT touched):** gantt ride-up + row
+cascade (top→bottom fully-formed pops); report-out exit + handshake hexes rise +
+graphic form (gen10 d29cbdc32); circle handshake-pill GROW (not fade); mosaic 4
+pop-pages (r5); shield zipper-draw/white-wipe-left/shield-pop; ledge band
+see-saw rotation + stacks drop-in; strip2 line-descend→band-grow entry (r3).
+
+**CrxNetting brand cut eye-checked clean** at all three fix frames (2196/2480/
+3112 — crx_check.png): grow, crossfade, bright map all carry; brand copy (RFQ
+IDs, Payment complete) intact. tsc clean; scenesC.tsx ONLY (35+/13−).
+
+**Remaining anim leads (documented, NOT fixed — risk/scope):**
+- **Endcard url-box (f4028-4050):** ref reveals it L→R fast (cl@4030 → full
+  @4038) with the disclaimer appearing LATER (~4044); code slow-fades a fixed
+  box + shows the disclaimer early (ab_endcard.png). A clean fade-vs-wipe, but
+  ENDCARD.urlBox is 910px wide vs a ~330px ref box — a possible GEOMETRY confound
+  that a pure-motion clip-reveal would expose. Measure the box width first.
+- **buildPop→map seam (f3104):** ref HOLDS the buildPop hexagon at f3104 and the
+  world map draws AROUND it (it becomes the map's centre hex); code goes blank at
+  3104 then fades the map. A held-element morph — structural, touches the
+  measured buildPop end. Left to avoid regressing reportCard/buildPop.
+- SSIM impact of this round is ~nil (all three are sub-keyframe-sample trough
+  frames + the eye-fixes trade a hair of SSIM for correct motion) — this was an
+  EYE round per the owner directive, gated on filmstrips not the metric.
