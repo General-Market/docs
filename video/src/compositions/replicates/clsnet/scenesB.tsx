@@ -27,8 +27,12 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const badgeB = { cx: lerp(f, SHRINK, [1578, 1670]), cy: lerp(f, SHRINK, [745, 770]), r: lerp(f, SHRINK, [69, 45]) };
   const aX = lerp(f, SHRINK, [CITIES.cityA.x, 525 - (CITIES.cityA.w * CITIES.smallScale) / 2]);
   const bX = lerp(f, SHRINK, [CITIES.cityB.x, CITIES.bSmallCx - (CITIES.cityB.w * CITIES.smallScale) / 2]);
-  // hexify: everything fades as hex scene takes over (f1302-1330)
-  const out = lerp(f, [1302, 1326], [1, 0]);
+  // hexify handoff: the ref fades the horizon LINES + pill stacks + currency
+  // labels out (f1290-1304) while the CITIES stay put; then HexifyScene draws
+  // hexagons around the stationary cities (its opaque bg takes the frame at
+  // f1302). So only the lines/pills/labels fade here — the cities hold to the
+  // handoff (matching hex-cities appear at their exact positions).
+  const linesOut = lerp(f, [1290, 1303], [1, 0]);
 
   // pair carousel: old fades in place, next rises ~90px into the slots
   const sched = COPY.pairSchedule;
@@ -43,10 +47,10 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const stacksOp = lerp(f, [1085, 1100], [0, 1]);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
+    <AbsoluteFill style={{ backgroundColor: C.white }}>
       {/* horizon lines */}
-      <div style={{ position: "absolute", left: 0, top: line1, width: 1920, height: 3, backgroundColor: C.navy, opacity: aOp }} />
-      <div style={{ position: "absolute", left: 0, top: line2, width: 1920, height: 3, backgroundColor: C.navy, opacity: bOp }} />
+      <div style={{ position: "absolute", left: 0, top: line1, width: 1920, height: 3, backgroundColor: C.navy, opacity: aOp * linesOut }} />
+      <div style={{ position: "absolute", left: 0, top: line2, width: 1920, height: 3, backgroundColor: C.navy, opacity: bOp * linesOut }} />
       {/* cities (anchor to their ground lines while scaling); once settled the
           scaled big traces swap to cityASmall/cityBSmall traced AT final scale
           from fr_1150 (downscaling the big traces blurs the ~1.5px strokes) */}
@@ -70,17 +74,17 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* pair labels hug the lines (fr_1150: cap −64 above, +5 below) */}
       {activePairs.map((p, i) => (
         <React.Fragment key={`${p.top}${p.bottom}${i}`}>
-          <SerifLabel text={p.top} x={1648} capTop={line1 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op} />
-          <SerifLabel text={p.bottom} x={1648} capTop={line1 + 5 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op} />
-          <SerifLabel text={p.bottom} x={113} capTop={line2 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op} />
-          <SerifLabel text={p.top} x={113} capTop={line2 + 2 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op} />
+          <SerifLabel text={p.top} x={1648} capTop={line1 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op * linesOut} />
+          <SerifLabel text={p.bottom} x={1648} capTop={line1 + 5 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op * linesOut} />
+          <SerifLabel text={p.bottom} x={113} capTop={line2 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op * linesOut} />
+          <SerifLabel text={p.top} x={113} capTop={line2 + 2 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op * linesOut} />
         </React.Fragment>
       ))}
       {/* pill stacks at measured column centers (fr_1150) */}
       {stacksOp > 0 && (
         <>
-          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={1085} opacity={stacksOp} />
-          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={1095} opacity={stacksOp} />
+          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={1085} opacity={stacksOp * linesOut} />
+          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={1095} opacity={stacksOp * linesOut} />
         </>
       )}
     </AbsoluteFill>
@@ -165,15 +169,20 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
   if (f < SEG.hexify[0] || f >= SEG.matching[0] + 20) return null;
-  // hexagons draw around shrunken cities, then settle to final layout
-  const drawP = lerp(f, [1306, 1330], [0, 1]);
-  // A hex: large at (430,690) → settles (300,510); B: (1140,900) → (1660,510)
-  const t = lerp(f, [1340, 1372], [0, 1]);
-  const ax = 430 + (300 - 430) * t;
-  const ay = 690 + (505 - 690) * t;
-  const bx = 1140 + (1655 - 1140) * t;
-  const by = 900 + (505 - 900) * t;
-  const hexW = 260 - 30 * t;
+  // HEXAGONS DRAW around the two STATIONARY cities, in place (measured city/hex
+  // centres A 549/282, B 1255/730, hex w~479 — the ref draws the outline on
+  // around the cities, which do NOT move), HOLD to f1334, then TRAVEL + shrink
+  // to the trade-executed row (A 508/408, B 1425/403, w~359) by f1348. Per-frame
+  // measured travel table (work/clsnet/anim/hexify). Replaces the invented fade
+  // where tiny hexes rose at the wrong spot while the cities faded out.
+  const drawP = lerp(f, [1306, 1320], [0, 1]);
+  const TF = [1334, 1336, 1338, 1340, 1342, 1344, 1346, 1348];
+  const ax = interpolate(f, TF, [549, 548, 546, 539, 518, 512, 509, 508], clamp);
+  const ay = interpolate(f, TF, [282, 286, 293, 313, 376, 396, 404, 408], clamp);
+  const bx = interpolate(f, TF, [1255, 1261, 1271, 1298, 1383, 1410, 1419, 1425], clamp);
+  const by = interpolate(f, TF, [730, 720, 701, 649, 485, 433, 413, 403], clamp);
+  const hexW = interpolate(f, TF, [479, 475, 468, 449, 389, 370, 363, 359], clamp);
+  const badgeR = hexW * 0.11;
   const labelOp = lerp(f, [1380, 1392], [0, 1]);
   const boxOp = lerp(f, [1385, 1398], [0, 1]);
   const docsP = lerp(f, [1412, 1450], [0, 1]);
@@ -184,10 +193,10 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
           f1420 .868->.861) — during the hexify the ref city is still mid-
           compression, so the crushed-clip matches better than a filled hex.
           Kept clip mode; the fill win is steady-state only (MatchingScene). */}
-      <HexCity art="cityA" cx={ax} cy={ay} w={hexW} drawP={drawP} artW={1150} />
-      <HexCity art="cityB" cx={bx} cy={by} w={hexW} drawP={drawP} artW={1190} />
-      <Badge letter="A" cx={ax - hexW * 0.42} cy={ay - hexW * 0.42} r={34} />
-      <Badge letter="B" cx={bx + hexW * 0.42} cy={by - hexW * 0.42} r={34} />
+      <HexCity art="cityA" cx={ax} cy={ay} w={hexW} drawP={drawP} artW={1150} artH={295} dxFrac={-0.065} />
+      <HexCity art="cityB" cx={bx} cy={by} w={hexW} drawP={drawP} artW={1190} artH={545} dxFrac={0.084} dyFrac={0.061} />
+      <Badge letter="A" cx={ax - hexW * 0.42} cy={ay - hexW * 0.42} r={badgeR} />
+      <Badge letter="B" cx={bx + hexW * 0.42} cy={by - hexW * 0.42} r={badgeR} />
       {/* Trade executed arrow */}
       {labelOp > 0 && (
         <>
@@ -215,9 +224,20 @@ const HexCity: React.FC<{
   w: number;
   drawP: number;
   artW: number;
-}> = ({ art, cx, cy, w, drawP, artW }) => {
+  artH: number;
+  dxFrac?: number;
+  dyFrac?: number;
+}> = ({ art, cx, cy, w, drawP, artW, artH, dxFrac = 0, dyFrac = 0 }) => {
   const h = w * 0.906;
-  const scale = (w * 0.92) / artW;
+  // The city fills the hex the way the ref does — measured: cityA orange
+  // building ~62% of hex width, vertically centred (orange cy == hex cy). K
+  // lands cityA orange at w295 inside the w479 draw hex (was ~0.34 fill,
+  // bottom-anchored and tiny). Scales with the hex through the travel-shrink.
+  // dxFrac/dyFrac (× hex width) nudge each building onto the measured ref
+  // centre — the illustration is not centred in its own art canvas.
+  const scale = (w * 1.67) / artW;
+  const aw = artW * scale;
+  const ah = artH * scale;
   return (
     <div style={{ position: "absolute", left: 0, top: 0 }}>
       <div
@@ -232,7 +252,7 @@ const HexCity: React.FC<{
           backgroundColor: C.white,
         }}
       >
-        <TracedArt name={art} x={w / 2 - (artW * scale) / 2} y={h * 0.62 - 0} scale={scale} style={{ top: undefined, bottom: h * 0.18 }} />
+        <TracedArt name={art} x={w / 2 - aw / 2 + dxFrac * w} y={h / 2 - ah / 2 + dyFrac * w} scale={scale} />
       </div>
       <Hexagon cx={cx} cy={cy} w={w} drawP={drawP} />
     </div>
