@@ -105,6 +105,78 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 
 ## Round log
 
+### r10 — 2026-07-11 (gen-8 "go further" session, BUILD COMPLETE; official verify PENDING orchestrator)
+
+**Front: THE S5 SKYLINE. Landed the LAST clean structural bug in S5 —
+ClD (below-15:00 hanging tower) was 32px too short.** Commit **07bc7750d**
+(single commit, ClD re-trace in scenes1.tsx). BUILD ONLY per brief — did
+NOT run the full 3750f verify. Measurement + gate artifacts in
+`work/cls-day/r10/` (att/ new stills, att_old/ HEAD stills, ref_f*.png,
+grid/ + strips/ crops & diffs, probe_*.py).
+
+**Re-rank of `cls-day-framessim-r9.txt` confirmed S5 is still worst-texture:**
+top-12 windows led by 876-926 (.8578, #1), 634-684 (.8598, #2, S4→S5),
+767-817 (#6), 825-875 (#7), 686-736 (#9) — S5 cruise dominates. Docs
+2102-2215 (#3/#4), S13 tail 2687-2737 (#8), S17 tail (#10/#11).
+
+**Per-cluster crop SSIM (the real lever) at f750 & f900 isolated ClD as the
+persistent worst by a wide margin:**
+
+| cluster | f750 crop | f900 crop |
+|---|---|---|
+| ClB 10:00 | .702 | .742 |
+| ClC 12:00 | .705 | .704 |
+| ClG 14:00 | — | .645 |
+| ClD 15:00 | **.518** | **.516** |
+| ClE 17:00 | .731 | .704 |
+| ClF 19:00 | — | .634 |
+
+Every other cluster sat .70-.75; ClD alone was .52. Per-pixel trace of
+ref f750 (probe_cld*.py) found the cause: **ClD's r3-era body rects stopped
+at y250 while the ref walls span local y6..282** — the tower rendered 32px
+short, base sat high, whole thing read compressed. Also re-registered the
+window grid (was 18px, right col 5.5px left): cols x167.5/197.5 (w19) +
+right x271.5 (w18), 7 rows tops 70/98/126/154/182/209/237 (pitch 28, h19),
+roof beam y45, crown box y6..21, base beam y282 + left foot notch
+(x182.5..222.5 to y300) + twin masts (x272.5→297, x288.5→315). Solid
+per-row pattern (A:r2,r7 · B:r4 · R:r4,r7) confirmed correct, unchanged.
+
+**A/B still-gate (full-frame ffmpeg SSIM, ref vs OLD-HEAD → NEW), 4 frames
+in the target window — the OFFICIAL-style metric rose at EVERY frame:**
+
+| frame | OLD full | NEW full | Δ | ClD-crop OLD→NEW |
+|---|---|---|---|---|
+| f750 | .8508 | .8566 | **+.0058** | .55→.66 |
+| f820 | .8516 | .8568 | **+.0052** | .54→.63 |
+| f860 | .8504 | .8549 | **+.0045** | .49→.58 |
+| f900 | .8513 | .8558 | **+.0046** | .52→.60 |
+
+Real metric win (~+.005 mean full-frame across the window), NOT a texture-
+floor illusion — this was pure REGISTRATION (matching exact size/position),
+which collapses the diff-doubling. The campaign trap (dense near-miss <
+sparse) was avoided precisely because no NEW ink was invented; the existing
+dense grid was moved onto the ref. Score move ~sub-hundredth global
+(video_ssim +.005 over the ~230f ClD-visible span ≈ +.0003), consistent
+with the r8/r9 asymptote framing. ClD crop climbed from worst-in-S5 (.52)
+into the .58-.66 pack.
+
+**Floor honesty (lesson 9): ClD was the last CLEAN structural bug in S5.**
+Assessed the 2nd/3rd-worst below-band towers (ClF 19:00 .634, ClG 14:00
+.645) after the fix — NOT gross structural bugs. ClF's block width (~121)
+and shaft positions already match ref (probe_clf.py); its remaining deficit
+is finer registration (window size 15→19, fin extents, ±3px) PLUS the
+below-band SSIM floor — navy bg + thin white/red lines score structurally
+lower than the white-bg above-band towers regardless of accuracy. Chasing
+ClF/ClG is speculative dense-ink at real dense-near-miss risk for sub-
+hundredth yield — NOT worth a session. **Remaining cls-day headroom toward
+96 is unchanged from the r8 wall analysis:** color (.986) + duration (.9997)
+are near-max, so +3.6 to 96 needs ~+0.04 mean SSIM across all 3750f from an
+already-flat .858-.872 worst-window / .909-mean distribution held by hand-
+drawn-texture micro-registration + the differently-encoded-mp4 SSIM floor
+(~.004, encoding trap). 96 remains WALLED. Next levers (all sub-hundredth):
+ClF/ClG below-band grinds, S4→S5 entry tiles (#2 window, recycled guesses),
+S11/S12 doc hairlines.
+
 ### r9 — 2026-07-11 (gen-8 inheritor session, BUILD COMPLETE; official verify PENDING orchestrator)
 
 **Attacked the ONE fixable lever from the r8 verdict: S17 summary EXIT PAN
