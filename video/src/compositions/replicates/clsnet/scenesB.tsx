@@ -261,8 +261,11 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
             of clipping the 1150/1190 full-city traces at 0.184 — the ref hex is
             FILLED by the building, mine was crushed tiny at the bottom (the
             r5 downscale-loses-strokes defect, same as the pre-r8 locks hexes). */}
-        <SmallHex art="lockCityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={385} letter="A" fillHex />
-        <SmallHex art="lockCityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={385} letter="B" fillHex />
+        {/* gen13: matching badge measured EXACT video: A (344,210) B (1442,210)
+            r30 — the SmallHex default (dx-0.38/dy-0.40) sat 11px left + 6px high.
+            dx-0.327/dy-0.374 lands both on the ref; r stays 0.14*w=30. */}
+        <SmallHex art="lockCityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={385} letter="A" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex />
+        <SmallHex art="lockCityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={385} letter="B" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex />
         {/* elbows + pill columns */}
         <Elbow points={[[MATCH.hexA.cx, 400], [MATCH.hexA.cx, 648], [652, 648]]} arrow="end" opacity={panelOp} />
         <Elbow points={[[MATCH.hexB.cx, 400], [MATCH.hexB.cx, 648], [1298, 648]]} arrow="end" opacity={panelOp} />
