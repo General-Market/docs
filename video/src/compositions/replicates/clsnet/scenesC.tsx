@@ -614,9 +614,21 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 23: map with FX Global Code badges (f3104-3364) ═══
-// r7 measured second-map geometry (hex order = MAP.hexes order)
-const BADGE_HEX_POS: [number, number][] = [
-  [402, 410], [664, 259], [583, 791], [1092, 421], [915, 727], [1507, 335], [1418, 798],
+// gen9 re-trace: the second-map hexes carried the FIRST-map r1 traces
+// (wrong buildings — temple where the ref shows a city cluster) UPSCALED to
+// 254 (r7's "1.18x bigger" read was wrong — measured native is ~215×190, the
+// same size as the first map). Re-traced from the settled badge-free frame
+// regular_0254 (f3162) at each hex's measured centre + native bbox.
+const MB_AW = 216;
+const MB_AH = 196;
+const MB_HEXES: { art: string; cx: number; cy: number }[] = [
+  { art: "mbHexHeli", cx: 386, cy: 410 },
+  { art: "mbHexOffice", cx: 662, cy: 248 },
+  { art: "mbHexBank", cx: 577, cy: 788 },
+  { art: "mbHexBank2", cx: 1092, cy: 418 },
+  { art: "mbHexTowers2", cx: 916, cy: 725 },
+  { art: "mbHexSail", cx: 1513, cy: 344 },
+  { art: "mbHexCity2", cx: 1432, cy: 768 },
 ];
 const BADGE_POS: [number, number][] = [
   [412, 428], [685, 264], [599, 824], [1116, 448], [933, 750], [1520, 371], [1441, 801],
@@ -661,20 +673,18 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
             (fill-offset method); badges 104x102 at measured absolute spots,
             35-badges GREY-BLUE #5A7593 / 50-badges TEAL #006F88 (corner-
             sampled — r5's all-teal read was text-polluted). */}
-        {MAP.hexes.map((hx, i) => {
+        {MB_HEXES.map((hx, i) => {
           const pop = 3116 + i * 7;
           const s = lerp(f, [pop, pop + 10], [0, 1]);
           if (s <= 0) return null;
-          const [cx, cy] = BADGE_HEX_POS[i];
-          const w = 254 * s;
           return (
-            <div key={hx.art} style={{ position: "absolute", left: cx - w / 2, top: cy - (w * 0.906) / 2 }}>
-              <TracedArt name={hx.art} scale={(254 / 215) * s} />
+            <div key={hx.art} style={{ position: "absolute", left: hx.cx - (MB_AW * s) / 2, top: hx.cy - (MB_AH * s) / 2 }}>
+              <TracedArt name={hx.art} scale={s} />
             </div>
           );
         })}
         {/* badges */}
-        {MAP.hexes.map((hx, i) => {
+        {MB_HEXES.map((hx, i) => {
           const at = 3160 + i * 9;
           const op = lerp(f, [at, at + 8], [0, 1]);
           if (op <= 0) return null;
@@ -682,7 +692,7 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
           const [bx, by] = BADGE_POS[i];
           return (
             <div
-              key={`b${i}`}
+              key={`b${hx.art}`}
               style={{
                 position: "absolute",
                 left: bx,
