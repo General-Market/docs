@@ -439,16 +439,17 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.reportsUp[0] - 10 || f >= SEG.strip[0] + 10) return null;
   const phase1 = f < 1770; // reports beside CLSNet box, arrows up to small hexes
-  const growP = lerp(f, [1755, 1785], [0, 1]);
-  // r5 targets measured at f1840: hexes (612,385)/(1306,385) w385
-  const hexW = 230 + 155 * growP;
-  const hexAx = 415 + (612 - 415) * growP;
+  const growP = lerp(f, [1752, 1785], [0, 1]);
+  // r9 phase-1 ground truth (regular_0137-0139, f1700-1725; measure_phase1.py):
+  // hexes cx413/1512 cy283 w215 — the whole triple GROWS+drops into the r8
+  // locks-settled cx612/1306 w385 cy413 (=239 top-anchor + 385*0.453). r8 had
+  // phase-1 pinned to the locks top-anchor (cy 343) — 60px too low, the biggest
+  // ink-mass miss in the f1720-1770 window (whole layout sat ~75px low).
+  const hexW = 215 + (385 - 215) * growP;
+  const hexAx = 413 + (612 - 413) * growP;
   const hexBx = 1512 + (1306 - 1512) * growP;
-  // r8: top-anchored. Ref hex outline top holds ~239 through the window while
-  // the hex grows DOWNWARD (regular_0142..0153 navy-edge scan). The old
-  // center-lerp (400->385) settled the hex 28px too HIGH (top 211 vs 239) —
-  // the doubled-perimeter defect in the locks-window diff. cy = top + 0.453*w.
-  const hexY = 239 + hexW * 0.453;
+  const hexY = 283 + (413 - 283) * growP;
+  const boxOut = lerp(f, [1756, 1772], [1, 0]); // box drops away as hexes grow
   const docOp = lerp(f, [1800, 1815], [0, 1]);
   const lockClosedP = f >= 1838 ? 1 : 0;
   // no exit fade: ref keeps the locks layout intact until the strip's band
@@ -458,11 +459,17 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
       <EdgeRulers f={f} />
       {phase1 && (
         <>
-          <ClsNetBox x={823} y={620} opacity={lerp(f, [1662, 1672], [0, 1])} />
-          <Doc x={610} y={640} w={110} h={135} opacity={lerp(f, [1668, 1680], [0, 1])} />
-          <Doc x={1200} y={640} w={110} h={135} opacity={lerp(f, [1668, 1680], [0, 1])} />
-          <Elbow points={[[560, 700], [415, 700], [415, 520]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1])} />
-          <Elbow points={[[1360, 700], [1512, 700], [1512, 515]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1])} />
+          {/* r9 measured (regular_0137-0139): navy box (850,550) side 219=>w224;
+              docs (439/1340,556) 149x198; horizontal doc<->box connectors at
+              y666 (stop at the box edges 850/1069); up-arrow risers on each
+              hex-cx (413/1512) from y636 into the hex bottom (y418). */}
+          <ClsNetBox x={850} y={550} w={224} opacity={lerp(f, [1662, 1672], [0, 1]) * boxOut} />
+          <Doc x={439} y={556} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
+          <Doc x={1340} y={556} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
+          <Elbow points={[[588, 666], [850, 666]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
+          <Elbow points={[[1069, 666], [1340, 666]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
+          <Elbow points={[[413, 636], [413, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
+          <Elbow points={[[1512, 636], [1512, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
         </>
       )}
       <SmallHex art="cityA" cx={hexAx} cy={hexY} w={hexW} artW={1150} letter="A" badge={{ dx: -0.312, dy: -0.314, r: 36 }} artScale={0.6 * (hexW / 385)} />
