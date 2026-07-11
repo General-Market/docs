@@ -521,7 +521,10 @@ export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
           {/* globe disk + scrolling continents */}
           <circle cx={cx} cy={cy} r={r} fill={C.blue} />
           <g clipPath="url(#globeClip)">
-            <g transform={`translate(${scroll} 0)`}>
+            {/* +85 registers the traced pattern (read off the f380 view) to the
+                ref's longitude; a third tile guards the left edge under the offset */}
+            <g transform={`translate(${scroll + 85} 0)`}>
+              <Continents cx={cx - 2 * r} cy={cy} r={r} />
               <Continents cx={cx} cy={cy} r={r} />
               <Continents cx={cx + 2 * r} cy={cy} r={r} />
             </g>
@@ -551,13 +554,28 @@ export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// white map outlines (very simplified continents, stroke only)
+// white map outlines — stylized ANGULAR coastlines (flat-design world map),
+// traced from the ref globe f380 in this 470-space: recognizable N.America,
+// S.America (via the isthmus), Africa (west bulge tapering to a south point),
+// Europe, Greenland and an island. The old two blobs read as rushed.
 const Continents: React.FC<{ cx: number; cy: number; r: number }> = ({ cx, cy, r }) => (
-  <g transform={`translate(${cx - r} ${cy - r}) scale(${(r * 2) / 470})`} fill="none" stroke="#FDFDFD" strokeWidth={5} strokeLinejoin="round">
-    {/* americas */}
-    <path d="M 120 40 L 180 55 L 175 95 L 145 130 L 150 175 L 125 225 L 130 280 L 105 340 L 95 400 L 80 340 L 88 270 L 70 210 L 85 150 L 70 95 Z" />
-    {/* europe/africa */}
-    <path d="M 300 60 L 360 70 L 385 110 L 360 150 L 390 200 L 375 270 L 340 330 L 315 290 L 300 220 L 280 160 L 295 110 Z" />
+  <g transform={`translate(${cx - r} ${cy - r}) scale(${(r * 2) / 470})`} fill="none" stroke="#FDFDFD" strokeWidth={4.6} strokeLinejoin="round" strokeLinecap="round">
+    {/* enlarged ~13% about the disk centre so the landmasses fill the disk like
+        the ref (the traced shapes alone read a touch small/sparse) */}
+    <g transform="translate(235 235) scale(1.13) translate(-235 -235)">
+      {/* north america */}
+      <path d="M 92 30 L 128 34 L 126 54 L 150 50 L 176 72 L 170 100 L 140 116 L 152 142 L 124 172 L 104 150 L 112 122 L 82 128 L 66 98 L 90 86 L 64 66 L 74 40 Z" />
+      {/* south america — chunky at the north, tapering south (isthmus from central america) */}
+      <path d="M 146 198 L 196 204 L 212 234 L 230 284 L 220 334 L 202 388 L 184 446 L 166 400 L 158 350 L 142 304 L 152 258 L 138 224 Z" />
+      {/* greenland */}
+      <path d="M 246 16 L 288 20 L 282 44 L 252 52 L 238 34 Z" />
+      {/* europe */}
+      <path d="M 352 104 L 402 100 L 424 120 L 402 140 L 372 134 L 356 148 L 340 132 L 352 116 Z" />
+      {/* island (uk/iceland) */}
+      <path d="M 350 130 L 366 128 L 370 150 L 356 160 L 348 146 Z" />
+      {/* africa */}
+      <path d="M 342 162 L 398 156 L 428 184 L 418 224 L 432 258 L 414 302 L 388 352 L 366 408 L 350 452 L 336 406 L 326 350 L 310 302 L 296 252 L 308 206 L 326 178 Z" />
+    </g>
   </g>
 );
 
