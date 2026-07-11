@@ -29,7 +29,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const bracketP = lerp(f, [2131, 2142], [0, 1]);
   // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88),
   // then reversed (ref restores the full gantt by 2291)
-  const detailP = lerp(f, [2188, 2202], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
+  const detailP = lerp(f, [2188, 2196], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
   // shrink-into-doc: full gantt → mini panel inside the left doc. gen10 MEASURED
   // per-frame from the ref VIDEO (the regular_NNNN plate grid is ~+3f offset and
   // gave a false ~10f-late read for three rounds). The ref HOLDS the full gantt
@@ -119,11 +119,17 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* footnote rules bottom-left (pre-detail only; fr_2172: y971/1010) */}
       <div style={{ position: "absolute", left: 193, top: 971, width: 530, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2166, 2172], [0, 1]) }} />
       <div style={{ position: "absolute", left: 192, top: 1010, width: 395, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2170, 2176], [0, 1]) }} />
-      {/* detail card (text fades first on the way out) */}
+      {/* detail card: ref GROWS it out of the collapsing gantt rows (opaque,
+          full by ~f2196), THEN populates the field text (~2200-2208) — was an
+          opacity crossfade of a fixed full-size card (ghost rows showed through
+          the translucent card; text appeared with the card). Now: fast opaque
+          entrance + scale-grow + delayed content reveal (eye-audit vs vf 2190/
+          2196/2202). Exit unchanged (text fades first, then card). */}
       {detailP > 0 && (
         <DetailCard
-          opacity={lerp(f, [2192, 2208], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
-          textOpacity={lerp(f, [2279, 2286], [1, 0])}
+          opacity={lerp(f, [2188, 2193], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
+          growP={lerp(f, [2188, 2196], [0.14, 1])}
+          contentOpacity={lerp(f, [2198, 2207], [0, 1]) * lerp(f, [2279, 2286], [1, 0])}
         />
       )}
         </div>
@@ -160,7 +166,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-const DetailCard: React.FC<{ opacity: number; textOpacity?: number }> = ({ opacity, textOpacity = 1 }) => {
+const DetailCard: React.FC<{ opacity: number; growP?: number; contentOpacity?: number }> = ({ opacity, growP = 1, contentOpacity = 1 }) => {
   const COPY = useCopy();
   const { sans: SANS } = useBrand();
   if (opacity <= 0) return null;
@@ -177,8 +183,11 @@ const DetailCard: React.FC<{ opacity: number; textOpacity?: number }> = ({ opaci
         borderRadius: `4px 4px ${card.r + 14}px 4px`,
         backgroundColor: C.lavender,
         opacity,
+        transform: `scale(${growP})`,
+        transformOrigin: "50% 50%",
       }}
     >
+      <div style={{ position: "absolute", inset: 0, opacity: contentOpacity }}>
       {COPY.detail.map(([k, v], i) => (
         <React.Fragment key={k}>
           <div
@@ -189,7 +198,6 @@ const DetailCard: React.FC<{ opacity: number; textOpacity?: number }> = ({ opaci
               fontFamily: SANS,
               fontSize: DETAIL.rowFs,
               color: C.navy,
-              opacity: textOpacity,
             }}
           >
             {k}
@@ -202,7 +210,6 @@ const DetailCard: React.FC<{ opacity: number; textOpacity?: number }> = ({ opaci
               fontFamily: SANS,
               fontSize: DETAIL.rowFs,
               color: C.orangeDeep,
-              opacity: textOpacity,
             }}
           >
             {v}
@@ -231,6 +238,7 @@ const DetailCard: React.FC<{ opacity: number; textOpacity?: number }> = ({ opaci
           />
         </React.Fragment>
       ))}
+      </div>
     </div>
   );
 };
@@ -345,7 +353,13 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const bgOp = lerp(f, [2372, 2384], [0, 1]);
   const hexOp = lerp(f, [2370, 2379], [0, 1]);
   const hexRise = lerp(f, [2372, 2392], [210, 0]);
-  const out = lerp(f, [2470, 2484], [1, 0]);
+  // ref un-hexes A/B into the two cities-on-a-line by ~f2480 (boundary scan
+  // vf 2474/2478/2480): the cities are SOLID at the payment scene's first frame.
+  // Was out=[2470,2484] + payment in=[2482,2496] = a crossfade DIP (ghost hexes
+  // at f2480, cities only 29% at f2486). Now handshake exits over the SAME
+  // window payment enters (2472-2482) so the sum holds ~1 (reads as the un-hex
+  // morph) and the cities are solid by 2482.
+  const out = lerp(f, [2472, 2482], [1, 0]);
   const graphicOp = lerp(f, [2405, 2420], [0, 1]);
   const arrowP = lerp(f, [2424, 2440], [0, 1]);
   return (
@@ -371,8 +385,10 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
 export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
-  if (f < SEG.payment[0] || f >= 2652) return null;
-  const inOp = lerp(f, [2482, 2496], [0, 1]);
+  // mount 8f early so the cities crossfade in as the handshake hexes un-hex
+  // (kills the f2480 dip — cities solid by 2482 like the ref)
+  if (f < SEG.payment[0] - 8 || f >= 2652) return null;
+  const inOp = lerp(f, [2472, 2482], [0, 1]);
   // ref holds the payment layout well past 2612 (fr_2630 still shows the
   // below-line plumbing), everything cleared by 2650 (fr_2650 = bare line)
   const out = lerp(f, [2636, 2650], [1, 0]);
@@ -662,7 +678,10 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { sans: SANS, serif: SERIF } = useBrand();
   const f = frame;
   if (f < SEG.mapBadges[0] || f >= 3396) return null;
-  const mapP = lerp(f, [3104, 3130], [0, 1]);
+  // ref: the world map is BRIGHT/full by ~f3112 (vf 3104/3112/3120), not a 26f
+  // dim fade to 3130 — the old ramp left a grey half-lit map through the whole
+  // hex cascade. Draw it in fast.
+  const mapP = lerp(f, [3104, 3113], [0, 1]);
   // implode: crisp shrink (no fade). r9 ground truth (measure_implode.py,
   // white map-content bbox ratio vs settled 0264): scale 0.804 at f3300,
   // 0.037 at f3312.5, gone by 3318 — a slow lead-in then a fast collapse.
@@ -698,8 +717,11 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
             35-badges GREY-BLUE #5A7593 / 50-badges TEAL #006F88 (corner-
             sampled — r5's all-teal read was text-polluted). */}
         {MB_HEXES.map((hx, i) => {
-          const pop = 3116 + i * 7;
-          const s = lerp(f, [pop, pop + 10], [0, 1]);
+          // ref has the first hex present WITH the map (~f3112) then ~1 more
+          // every 9f (vf 3112→1, 3120→2, 3160→6, 3180→7). Old 3116+i*7 with a
+          // 10f grow put hex0 full only at ~f3126 — the whole cascade ran late.
+          const pop = 3106 + i * 9;
+          const s = lerp(f, [pop, pop + 8], [0, 1]);
           if (s <= 0) return null;
           return (
             <div key={hx.art} style={{ position: "absolute", left: hx.cx - (MB_AW * s) / 2, top: hx.cy - (MB_AH * s) / 2 }}>
