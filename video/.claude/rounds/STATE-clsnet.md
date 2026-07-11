@@ -628,3 +628,122 @@ r8/r9/gen9 — is now PROVEN at the floor by direct before→after against the e
   measured geometry fixes for a future gen — and unlike interior texture they can
   actually win. (c) True texture gain needs re-DRAWN (not re-traced) vector line-art
   to the ref's exact hairline geometry — a pipeline project, not a round; still walls 96.
+
+### gen13 HEX/BADGE REGISTRATION — 2026-07-11 (sole clsnet agent, r-baseline 93.9) — landed 3 commits
+
+Mandate: fix the BROAD geometry-registration bugs gen12 surfaced (mis-PLACEMENT,
+not texture). gen12's numbers were measured against the badge-POLLUTED navy
+vertical-extent midpoint (the badge sits above the hex top, dragging the extent
+up) — so its "cy 40px/18px low" reads were WRONG. Re-measured everything from the
+EXACT ref video using the CLEAN right-tip (the hex's pointy right vertex = its
+true vertical center, no building/badge nearby) + the flat-bottom outline.
+Instruments in `work/clsnet/gen13/` (measure_hex.py = navy-mask right-tip/tip/
+extent finder; badge-disk finder via erosion; still.sh/ssim.sh gate helpers;
+vf/ = exact ref video frames). All gated vs EXACT video (gen10 plate-offset law),
+≥4 frames across each window.
+
+- **`2d22f6354` matching hexes were OVERSIZED, not low — the broadest lever.**
+  gen12 said "cy 290→250, 40px low". FALSE. Direct render-vs-video at f1560:
+  the hex OUTLINE center cy is ALREADY right (render right-tip 289.5, ref 291);
+  the r8 `w=230` was 16px too WIDE, so the outline bottom sat 7px low, the top
+  12px high, and fillHex scaled the A/B building too big. Measured ref outline
+  (right-tip + flat-bottom): cy 290, w **214**, cx **413/1513** (was 415/1516).
+  MATCH.hexA/hexB → {cx 413/1513, cy 290, w 214}. Still-gate vs exact video:
+  **f1500 .8968→.9066 · f1560 .8795→.8893 · f1600 .8697→.8796 · f1620 .8723→.8822
+  (+.0098..+.0099 flat across the ~200f matching window f1462-1662).** BROAD WIN.
+- **`41fbc2f9f` locks A/B badges grow with the hex (r fixed 36 → 0.14·w).**
+  gen12's "outline 18px low (cy 413→395)" was again the badge-polluted midpoint;
+  the true ref locks outline center = **410** (render 413, only 3px) and its size
+  is right (383). The real locks defect is the BADGE: measured ref r54 @ cy266
+  settled (f1900), r29 @ cy211 phase1 (f1700) — it GROWS with the hexagon at
+  r≈0.14·w. The hardcoded r36 was 18px too small + 26px too LOW settled, slightly
+  big in phase1. Radius now tracks 0.14·hexW (54 settled / 30 phase1); offset
+  ratio drifts dy -0.335→-0.382 across the grow so the disk lands on the ref at
+  BOTH ends. Still-gate vs exact video: **f1700 .9002→.9013 · f1750 .8839→.8850
+  (phase1/transition, NO regression) · f1800 .9024→.9058 · f1825 .9003→.9037 ·
+  f1862 .9004→.9038 · f1900 .9111→.9144 (+.0034 across the ~110f settled window
+  f1819-1930).** BROAD WIN.
+- **`5f31eb9e6` matching A/B badges to measured position (dx/dy -0.327/-0.374).**
+  The SmallHex default badge (dx-0.38/dy-0.40) put the matching disks 11px left +
+  6px high of the ref. Measured EXACT video (consistent f1500/1560/1600): A
+  (344,210), B (1442,210), r30. Still-gate vs exact video: **f1500 .9066→.9089 ·
+  f1560 .8893→.8916 · f1600 .8796→.8819 · f1620 .8822→.8846 (+.0023 flat across
+  the ~200f matching window).** BROAD WIN. (Matching window total this gen:
+  +.010 size +.0023 badge ≈ **+.012**.)
+
+**Tested-and-rejected (evidence, not theory):**
+- **Locks outline cy 3px** — the render outline sits 3px low vs the ref (413 vs
+  410), but it CANNOT be moved: the hex art (temple, correctly at 323=ref) moves
+  WITH the outline in fillHex. Test cy 413→409 (badge dy-compensated to stay on
+  ref) **LOST −0.024 at f1825 AND f1900** — displacing the correctly-placed
+  temple/skyline (the dominant high-contrast ink) costs far more than the 3px
+  outline stroke gains. Reverted byte-identical. A clean fix would need to
+  DECOUPLE the Hexagon stroke from the art inside SmallHex for a ~+.001 gain —
+  low-yield, not worth the risk to the art registration. Floor.
+
+**Confirmed floor (diff composites `work/clsnet/gen13/diff_{match,locks}.png`,
+current-best vs exact video):**
+- **hexB skyline ~39px low** — NOT a placement bug: the ground/base is aligned
+  (both y559), only the building TOP differs (ref 286, render 325) → the traced
+  lockCityB building is too SHORT. gen12 already re-traced it 1:1 and LOST on
+  SSIM (fattening). Moving the whole hex loses (above). True texture floor.
+- Remaining diff brightness = hexB skyline height + badge-edge antialiasing
+  (near-floor after the r54 fix) + hex-interior hairlines + the ClsNetBox logo
+  detail (out of hex/badge scope). NO further BROAD geometry error in either
+  window — both hexes/badges now register cleanly (faint in the diff).
+
+**Honest headroom:** the three broad registration levers gen12 surfaced are now
+SPENT — two matching (size + badge, ~+.012 over 200f) and one locks (badge,
++.0034 over 110f), all gated frame-exact and confirmed uniform across their
+windows. CrxNetting brand variant eye-checked clean at f1560 (matching) + f1900
+(locks) — geometry carries. What remains in these windows is texture floor
+(hexB skyline height, hex hairlines) that gen12 proved re-tracing can't win.
+The next broad levers are OUTSIDE matching/locks (the flows-handoff #5/#7 pill
+page-flip, title R→L reveal — gen11's leads). 96 still walls on the re-DRAWN
+line-art pipeline.
+
+### gen14 ANIMATION-FIDELITY — 2026-07-11 (owner directive: reproduce the real TITLE animations, eye-judged not SSIM) — landed 2 commits
+
+Owner overrode the SSIM-registration approach for the TITLE scene: these are
+MOTION-DESIGN videos; the intro was doing invented/weak motion where the ref
+cleanly animates elements in. JUDGE = the EYE via side-by-side ref/replica
+filmstrips (SSIM is motion-blind). Every timing ink-scanned from the EXACT ref
+video (25fps, so ref frame n = comp frame n). Instruments + all filmstrips in
+`work/clsnet/anim/` (vf/ = exact video frames, still.sh, the cmp_*.png strips).
+
+- **`71d0d625b` TITLE reveal (f0-56) — the three real motions.**
+  1. **Logo lockup DRAWS ITSELF IN.** Was ONE opacity fade of the traced
+     `clsLogo` blob. Now three DISJOINT region-clips of the SAME traced asset
+     (settled pixels byte-unchanged, zero shape risk): swirl mark first (f0-6),
+     CLS letters wipe LEFT→RIGHT (f4-20: C→CL→CLS via a right-inset that shrinks
+     76.3%→0), tagline fades (f17-24). Splits at art-x71 (mark|letters, =23.7%)
+     and art-y55 (letters|tagline, =55%), measured: letters y84-132, tagline
+     y134-144. Mark clip carries bottom 45% so the tagline's left half no longer
+     leaks under the mark.
+  2. **Wordmark reveals RIGHT→LEFT.** Mechanism (clip inset from left) was
+     already right; TIMING was a too-fast f0-11 wipe (73% done by f8). Retimed
+     to the measured leftmost-white-ink curve interpolate([5,6,8,10,12,14],
+     [0,.01,.14,.63,.82,1]) — "…et" at f8, whole by f14.
+  3. **Principle cards GROW out of a loader bar, staggered** (card35 growP
+     f23-30, card50 f43-51), content (kicker/num/strip) filling AFTER each box
+     grows — measured card-body vertical extent (card35 bar y577-602@f22 →
+     full y357-723@f30). Intro previously hard-set growP=1 so cards just faded
+     in fully-formed; now it uses the SAME bar→body grow the endcard already had.
+     Removed bar1Op (a spurious 2nd grey bar the ref never shows).
+  CRX untouched (logoArt=null → text-logo fallback); CrxNetting eye-checked
+  clean f16/f32/f142 (Pillar-01 card grows, exit wipes). Eye-verdict: reveal
+  MATCHES across f0-56 (clsnet_reveal_final_strip.png).
+- **`7cd64a88e` TITLE outro (f139-152).** Was invented: −10° panel rotation +
+  white wipe from the LEFT. Measured: wordmark stays HORIZONTAL (no rotation),
+  drifts UP ~57px by f142; white DIAGONAL wipe sweeps in from the RIGHT
+  (navy→white left edge top 1920→0 / bottom 1920→0, top leading). Reproduced by
+  CLIPPING the title away along the measured diagonal polygon (exposing the real
+  RowsBuild/white bg, like the ref) + the up/right drift. Eye-verdict: MATCHES
+  f142/146/150 (cmp_exit2.png).
+
+**Other animations still needing the same eye-audit (leads for a next pass):**
+globe rotation (STATE gap 6 — approximated by crossfading two traced states, an
+INVENTED motion, ~f462-566); scene→scene transitions that are linear fades where
+the ref uses slides/marks (STATE gap 7 — map→network hex morph, cities
+shrink+hexify); flows pill-field page-flip #5/#7 (gen11 lead). These are motion,
+not texture — judge by filmstrip, not SSIM.
