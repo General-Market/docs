@@ -105,6 +105,84 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 
 ## Round log
 
+### r14 — 2026-07-11 (gen-12 "HexCity re-trace + fiction sweep" session, BUILD COMPLETE; official verify PENDING orchestrator)
+
+**Instrument law obeyed:** measured/gated against EXACT REF VIDEO FRAMES only
+(`ffmpeg select=eq(n\,F)` → `remotion still` frame F → ffmpeg-ssim PNG). 25fps ref =
+1:1 frame map (no clock conversion). Tools + all ref/att stills in `work/cls-day/gen12/`
+(probe_hexedge.py, silhouette.py, masses.py, render.sh, ssim.sh; crops cropA2/cropB2).
+
+**Blast radius correction:** HexCity is shared by **S4 (scenes1:519-520) / S10 / S17**,
+NOT S13 as the brief said — S13 is the PvP handshake (different primitives). So the
+re-trace lifts S4+S10+S17 (even broader: S4 is a big early scene). Two BROAD wins landed:
+
+**WIN 1 — hex RE-REGISTRATION (commit f5852bb1d, scenes1+scenes2).** All three
+consumers were mis-registered — measured the outline bboxes from ref f560/f640/f1837/
+f1900/f3240 (probe_hexedge: flat top/bottom edges + vertices):
+- S10: A cx **571→479** (92px right), both hy **404→451** (47px high), h **390→282**
+  (108px too tall — the "pointy tall" look was pure oversize; inset-0.22 flat-top
+  shape proportions were already correct). w380→378. Connectors/chips re-anchored to a
+  `hexBot` const (old bottom 599 ≈ new 592, so they barely moved).
+- S4: hy **475→527** (52px high), HH **415→282** (133px too tall), HW402→382, settled
+  ax435→471 / bx1473→1450.
+- S17: (547,413)→(561,404), w290→307 (was already close; small win).
+- **Still-gate (ref vs old→reg), EVERY frame rises, none regress:** f560 +.017 · f640
+  +.017 · f1850 +.009 · f1868 +.015 · f1900 +.015 · f1960 +.015 · f2050 +.014 · f3240
+  +.007 · f3260 +.007.
+
+**WIN 2 — dense HexCity SKYLINE re-trace (commit 0a8ea200d, lib.tsx).** The settled
+ref hex interior is a dense ~7-building city (IDENTICAL design across S4/S10/S17), not
+the old 3-tower sketch. Rebuilt `Buildings` per-building from ref f1900 (viewBox 378×282
+= the S10 hex, `preserveAspectRatio="none"`; vb = ref−(290,310)): center red tower
+(cap+antennae, inner solid-red + salmon #EEC9AF windows, base 4×4 grid, door), flanking
+navy towers, dots/ladder buildings, light grey slabs #DDD7D8, red car, blue+navy ground
+ticks — variant 0 (A) and variant 1 (B) traced separately. Buildings now FILLS the hex,
+CSS-`clipPath`ed to the hex polygon so chamfer overhang reads white (as the ref does).
+`dense` prop is now moot (skyline always full), so S4/S10 inherit it too.
+- **Still-gate vs registration-only, every frame rises, none regress:** f560 +.003 ·
+  f640 +.003 · f1868 +.003 · f1900 +.003 · f1960 +.003 · f2050 +.003 · f3240 +.001 ·
+  f3260 +.004. **COMBINED vs old HEAD: S4/S10 +.017–.020, S17 +.008–.011.**
+- gen12 directly attacks **6 of the r12 top-14 windows** (all S4 hex windows 631-681
+  [rank 1], 581-631 [5], 531-581 [11], 681-731 [12], + S17 windows 3340/3290/3240
+  [9/10/14]). CrxSettlementDay smoke-clean at f1900 (dense skyline + CRX lockup/copy,
+  no pack issues).
+
+**NO-GO 1 — S10 progressive build / entry retiming (target 1's choreography): still a
+LOSS, NOT shipped.** Confirmed the gen-11 root-cause reasoning survives the artwork fix.
+The build window f1820-1868 is mostly white, so SSIM is background-dominated: current
+faint/late unit-fade scores f1830 .972 · f1840 .945 · f1850 .929 · f1860 .900 (blank
+bias). Our SETTLED skyline now matches ref at only **.889** (not the ~.95+ needed).
+Showing correct dense ink EARLIER (progressive build) would drag these frames DOWN
+toward .889 — a ~−.04 loss at f1850. The artwork fix lifted the settled match (.871→.889)
+but not enough to flip early-ink from loss to win. Badge stagger is invisible (badges
+ride the ≈0 opacity there). So the retiming stays reverted — absent/faint ink still
+beats .889-settled ink (lesson 4). Reinstating the `textOpacity` prop / f1818-over-S9
+entry would only carry this loss forward; left alone.
+
+**DOCUMENTED SPEND — S4 entry (f486-530), −.003 avg:** ref settles the S4 hexes CLOSE
+then SPREADS them apart + settles by ~f504 (measured: f486 A≈680/B≈1200 → f504 A≈480/
+B≈1450), while our code spreads late (500-528) with badges even later (528-540). The
+accurate settled geometry exposed this pre-existing spread-timing gap: entry f486 −.003 ·
+f510 −.007 · f530 −.001, while the actual top-1 window (531-681, settled) gained +.020.
+Retiming the spread is a NARROW transition tweak (the brief's own lesson: narrow doesn't
+move the metric; ~−.00004 global) with real risk to the arrow/pill choreography — NOT
+taken. Net S4 strongly positive.
+
+**TARGET 2 — fiction/wrong-scale sweep: NO further broad win found.** Re-ranked r12
+framessim (rolling 2s, top-14). Un-addressed top windows are all at the texture/encoding
+floor, NOT invented/mis-scaled: S5 skyline (877-927/772-822/827-877 — encoding floor per
+gen-8/r11), S11 docs row (2102-2215 — rendered current vs ref f2190: layout is a CLOSE
+structural match, 6 docs + correct seals + focus doc; .845 is fine hairline texture, the
+dense-ink trap), S13 PvP tail (2687-2737 — texture), S1 intro (66-116). None warrant a
+rebuild.
+
+**Honest headroom after gen12:** the hex board (S4/S10/S17) moved from mis-placed sparse
+ink to registered dense ink; residual is window-level texture (exact hairlines/window
+grids inside the buildings) — the settled hexes still cap ~.889 because the ref line-art
+carries per-window detail SSIM can't be pushed past without the dense-ink-loses trap. The
+remaining top windows are all S5/S11/S13 texture + encoding floor. 96 stays WALLED. The
+two banked wins hit 6 of 14 worst windows; expect the official verify to clear >92.8.
+
 ### r13 — 2026-07-11 (gen-11 "attack the two flagged choreography wins" session, BUILD COMPLETE; official verify PENDING orchestrator)
 
 **Instrument law obeyed (gen-10 discovery):** measured/gated against EXACT REF
