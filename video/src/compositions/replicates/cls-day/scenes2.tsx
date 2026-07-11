@@ -175,7 +175,9 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} />
+      {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
+          the default 30); at fs21 the label auto-sits at ref cap-top y135. */}
+      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
       <Milestone x={958} lineTop={84} lineBottom={148} time={pack.milestones.m0700.time} label={pack.milestones.m0700.label} textY={160} timeSize={28} labelSize={18} />
       <HexCity x={ax} y={hy} w={380} h={390} letter="A" variant={0} opacity={hexP} />
@@ -222,7 +224,9 @@ export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} />
+      {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
+          the default 30); at fs21 the label auto-sits at ref cap-top y135. */}
+      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
       <div style={{ opacity: inP, transform: `scale(${0.92 + 0.08 * inP})`, transformOrigin: "960px 500px" }}>
         {docs.map((d, i) => (
@@ -367,7 +371,9 @@ export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} />
+      {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
+          the default 30); at fs21 the label auto-sits at ref cap-top y135. */}
+      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
       <MiniDoc x={840} yMid={720} w={260} h={330} big seed={0} />
       {checks.map((c, i) => {
