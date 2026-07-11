@@ -584,14 +584,23 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
     clamp
   );
   const out = lerp(f, [556, 566], [1, 0]);
-  // globe rotation: crossfade globeA→globeB over the scene. The two traced
-  // states are distinct rotational snapshots (f487.5 / f537.5); the crossfade
-  // carries the spin and a lateral slide models the continents' real leftward
-  // drift. gen-8 grid-searched the slide on the mid ref frames (regular_0041/
-  // 0042/0043): 48→0.897, 160→0.905, 200→0.903 avg-whole; 200 wins 2/3, slide
-  // term is spin-clamped so endpoints (spin≈0/1) are unaffected.
-  const GLOBE_SLIDE = 200;
-  const spin = lerp(f, [478, 545], [0, 1]);
+  // GLOBE ROTATION — real longitude scroll (anim round, eye-measured).
+  // The ref globe is a disc-clipped WINDOW onto the SAME worldMap the scene
+  // zooms into at f566+ (proven: the f562-566 disc continents == the f582 full
+  // map). Its continents scroll RIGHTWARD, decelerating from ~5.5px/f at f486
+  // to rest by ~f550 (2D phase-corr of the white-line masks: dy=0, ~206px
+  // total; work/clsnet/anim/measure2d.py). The prior build CROSSFADED two disc
+  // snapshots sliding LEFTWARD — invented motion AND the wrong direction.
+  // Now: worldMap scaled 0.76 (grid-fit vs the f582 full map, score .88),
+  // vertically centred (oy 174), x-origin scrolled per the measured ox table.
+  const MAP_SCALE = 0.76;
+  const mapOx = interpolate(
+    f,
+    [478, 486, 494, 502, 510, 518, 526, 534, 542, 550, 558],
+    [300, 319, 362, 401, 435, 464, 487, 504, 516, 523, 525],
+    clamp
+  );
+  const mapOy = 174;
   const ringSpin = lerp(f, [478, 566], [0, -38]);
   const lockState = f < 500 ? "lockOpen" : f < 528 ? "lockList" : "lockClosed";
   const lockOp = lerp(f, [470, 480], [0, 1]);
@@ -695,11 +704,11 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             backgroundColor: C.blue,
           }}
         />
-        {/* rotating continents: crossfade of two disc-centred traced states
-            (gen-8 re-trace — white continents only, tight disc crop
-            668,250,586 = 2*GLOBE.r; native fills the clip at scale 1). The old
-            720-crop art baked the white background + navy border = the swoosh
-            arc + disc-spill defect (r6 gap 6). Clipped to the disc. */}
+        {/* rotating continents: a disc-clipped WINDOW onto worldMap (the same
+            map the scene zooms into at f566+), scaled 0.76 and scrolled right
+            per mapOx. Replaces the old globeA/globeB crossfade (invented +
+            wrong-direction) and retires the broken globeA swoosh-arc art
+            (r6 gap 6 — that defect is gone with the snapshot). */}
         <div
           style={{
             position: "absolute",
@@ -711,8 +720,13 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             overflow: "hidden",
           }}
         >
-          <TracedArt name="globeA" x={0} y={0} scale={1} opacity={1 - spin} style={{ left: -spin * GLOBE_SLIDE }} />
-          <TracedArt name="globeB" x={0} y={0} scale={1} opacity={spin} style={{ left: (1 - spin) * GLOBE_SLIDE }} />
+          <TracedArt
+            name="worldMap"
+            x={mapOx - (GLOBE.cx - GLOBE.r)}
+            y={mapOy - (GLOBE.cy - GLOBE.r)}
+            scale={MAP_SCALE}
+            recolor={{ "#FFFFFF": C.white }}
+          />
         </div>
         {/* navy border on top — covers any edge sliver of the clipped art */}
         <div

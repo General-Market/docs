@@ -747,3 +747,42 @@ INVENTED motion, ~f462-566); scene→scene transitions that are linear fades whe
 the ref uses slides/marks (STATE gap 7 — map→network hex morph, cities
 shrink+hexify); flows pill-field page-flip #5/#7 (gen11 lead). These are motion,
 not texture — judge by filmstrip, not SSIM.
+
+### anim gen-2 — 2026-07-11 (GlobeScene rotation, GlobeScene→worldMap unify)
+
+- **`<globe-rotation>` GLOBE rotation (STATE gap 6, f462-566) — the INVENTED
+  crossfade is gone; a REAL longitude scroll replaces it.**
+  - **What the ref ACTUALLY does:** the globe disc is a scaled, disc-clipped
+    WINDOW onto the SAME worldMap the scene zooms into at f566+ (proven: the
+    f562-566 disc continents == the f582 full-frame map — the "zoom-out" reveals
+    the whole map the disc was showing). Its continents scroll RIGHTWARD,
+    decelerating from ~5.5 px/f at f486 to rest by ~f550 (~206px total). 2D
+    phase-corr of the white-line masks gives a clean monotone deceleration,
+    dy=0 (`work/clsnet/anim/measure2d.py`).
+  - **What was invented:** `spin=lerp(478,545,[0,1])` crossfaded two disc
+    snapshots (globeA/globeB) while sliding them LEFTWARD (`left:-spin*200`).
+    Two wrongs: a crossfade is not a rotation, AND the slide was the WRONG
+    DIRECTION (ref goes right). globeA also carried the broken swoosh-arc/disc-
+    spill art (r6 gap-6 defect).
+  - **The fix:** one `worldMap` TracedArt, scaled 0.76 (grid-fit vs the f582 map,
+    score .88; `fit_scale.py`), vertically centred (oy 174), x-origin scrolled
+    per a measured `mapOx` keyframe table [478..558]→[300..525]. Clipped to the
+    disc. globeA/globeB no longer referenced (left in art.ts, harmless); the
+    swoosh defect is retired with the snapshot. tsc clean; scenesA.tsx only.
+  - **Eye-verdict — MATCHES.** f510 anchor overlay is near-perfect (ref-red /
+    replica-blue continents coincide as black across the whole disc,
+    `ov_ref_rep_510.png`). 5-frame ref-over-replica filmstrip through the motion
+    = `work/clsnet/anim/globe_strip_final.png` (f486/502/518/534/550): continents
+    scroll right + decelerate, shapes track. Entry(f482)/exit(f556) clean, disc
+    clip tight = `entry_exit.png`. Residual end-drift ≤ one coastline cell
+    (~40px) — alias-limited (quasi-periodic coastlines defeat sub-cell
+    correlation); within eye tolerance, SSIM secondary per mandate.
+  - **KNOWN pre-existing (NOT motion, left alone):** the ring TICK density is
+    denser than the ref (code draws 48 ticks; ref ~24) — a trace/geometry detail
+    that has ridden since r1, out of scope for a motion round.
+
+**Next anim to fix:** the GLOBE→MAP zoom (f556-568) is still a FADE-out of the
+disc under MapScene's expanding blue rect — but now that the globe IS a 0.76-
+scaled worldMap window, it can MORPH: ramp scale 0.76→1.0 and origin→(MAP.x,
+MAP.y) over f556-575 so the disc's map hands off SEAMLESSLY to MapScene's full
+worldMap (a real zoom, not a fade). Then: cities shrink+hexify (gap 7).
