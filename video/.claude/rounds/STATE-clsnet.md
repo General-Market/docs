@@ -245,8 +245,7 @@ Commit `c25b076a8` map-badges measured pass: second map outline = IDENTICAL to f
 2. ~~title serif~~ DONE r8 (Georgia swap, e63fb9729) — intro-reveal timing still open (see r8 lead 3a).
 3. ~~locks settled geometry~~ DONE r8 (ruler+hex, 09ce8bbec) — phase1 still open (see r8 lead 2).
 4. **Globe art re-trace — STILL OPEN** (broken white swoosh + disc spill in globeA — work/clsnet/r6/flowseam/oldnew_472.png; ~80f at ~0.89). Not in the r8 top-12 but a visible defect.
-5. ~~mbadge implode~~ now r8 lead 0 (NEW worst window).
-5. mbadge implode keys f3288-3318 (re-measure with the 1.18x hexes; f3300 read −0.003 after the badge pass).
+5. ~~mbadge implode~~ now r8 lead 0 (NEW worst window — see r8 lead 0: re-measure shrink keys f3288-3318 with the 1.18x BADGE_HEX_POS hexes).
 
 ## r5 official verify — logged by orchestrator (2026-07-10 01:22)
 
