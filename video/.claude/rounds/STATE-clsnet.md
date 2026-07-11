@@ -355,3 +355,75 @@ placement" floor). Both real wins, both gated on stills + eyes + CrxNetting.
 - **DIRTY FILE AT DEATH:** `scenesB.tsx`, 46 lines (+26/−20), uncommitted. The agent's last words: "Flat scores — verifying the bands actually render." It was mid-investigation of whether some band change actually renders. Inheritor: audit this hunk hunk-by-hunk per doctrine (tsc → A/B stills vs HEAD in the affected windows → keep/finish/revert). Do not assume the worry was confirmed — the official r5 verify is healthy and moved on every component.
 - Verify artifacts: `clsnet-{verify,keyframes,framessim}-r5.*`; render + logs at `work/clsnet/r5/` (attempt renders + `mb/` bench dir).
 - Next: re-rank from `clsnet-framessim-r5.txt`; r4's list was rows-build f250–300, mosaic f3540–3590, cities-entry (attacked in r5 — likely moved), flows (attacked), payment (attacked). Expect a new leaderboard.
+
+### gen-9 FULL CLIMB — 2026-07-11 (hex-family re-trace, sole clsnet agent) — landed 2 commits
+
+Mandate: climb every remaining fixable HEX family via native re-trace (mbadge →
+network → cities), r10 baseline 93.7. Sole clsnet agent this gen — owned art.ts
++ trace pipeline, no regen race. Instruments in `work/clsnet/gen9/` (mbtrace.py
+= crop→hex-mask→trace driver; still.sh/ssim.sh gate helpers).
+
+- **`03c529274` mbadge hexes re-traced native — r10 WORST window #1 (f3257-3307,
+  0.8657) + #10 (f3192-3242, 0.8865). THE big lever.** The second-map
+  (MapBadgesScene f3104-3364) hexes carried the FIRST-map r1 traces with THREE
+  defects: (1) WRONG buildings — a Greek temple where the ref shows a city
+  cluster (mHexBank), a dense multi-tower where the ref shows a sparse office
+  (mHexOffice); (2) OVERSIZED — r7's "1.18x bigger → 254" read was WRONG,
+  measured native is ~215×190 (SAME size as the first map, confirmed by navy-
+  border bbox at f3162); (3) centres off up to 30px (mHexCity2 cy 798→768).
+  Re-traced all 7 (mbHex*) from the clean settled frame regular_0254 (f3162 —
+  all hexes drawn, NO badges occluding, the ideal source) at each hex's measured
+  centre + native bbox (216×196), hexagon-masked (grow 6px) to kill map-line/
+  neighbour corner intrusions. Purely additive: first-map mHex* + network
+  L-variants untouched. Still-gate whole-frame (stash-isolated OLD@254 → NEW
+  native PNGs): **f3200 .874→.959 · f3262 .875→.954 · f3275 .875→.954 · f3287
+  .862→.916 · f3300 .909→.952** (+.043..+.085 across the window; the settled
+  hexes gain ~+.08, the implode frames ~+.05). CrxNetting clean at f3262. Both
+  mbadge windows should leave the top-12; the worst KEYFRAME idx66 t132/f3300
+  should rise from 0.803 toward ~0.90.
+- **`9f8b6ea64` matching hexes reuse native lock traces — r10 window #12
+  (f1601-1651, 0.8900).** MatchingScene (f1462-1662) clipped the 1150/1190
+  full-city traces into the 230px A/B hexes at scale 0.184 — buildings crushed
+  tiny at the hex bottom while the ref hex is FILLED (same r5 downscale defect
+  the r8 locks pass fixed). Reused the native lockCityA/lockCityB (385 bbox, r8)
+  via SmallHex fillHex — same A/B buildings, correct fill. Still-gate whole-frame
+  **f1560 .8814→.8827 · f1600 .8746→.8758 · f1625 .8792→.8805** (+.0013 flat —
+  modest because the window is dominated by the centre counts-panel, NOT the
+  hexes, but it RISES at all 3 gated frames and is a clear visual correction).
+  CrxNetting clean at f1625.
+  - **NEGATIVE A/B logged:** the SAME fill REGRESSED the HexifyScene transition
+    (f1350 .917→.909, f1420 .868→.861) — during the hexify the ref city is still
+    mid-compression, so the crushed-clip matches better than a filled hex. Kept
+    clip mode in hexify; the fill win is steady-state only. Reverted (in-code
+    comment at the HexCity call site).
+
+**Families verified AT FLOOR this gen (logged, skipped):**
+- **network hexes (f744-912):** settled state already native — the 4 keeper
+  hexes were re-traced to mHex*L (396) in r6. Only network window in play is the
+  ENTRY-MORPH seam f723-773 (rank 32, 0.917) which shows the transient map minis
+  by design — a choreography/timing item, not a texture re-trace. Skipped.
+- **cities (CitiesScene f1041-1302):** cityA/cityB + Small variants already
+  native (r5). Eye-checked f1100 — temple(A)+sail(B) render full-size, content
+  matches. At floor. (The city-in-hex USES were the levers: matching DONE,
+  hexify tried+reverted.)
+- **flows HexRow (f320-468, windows #4/#6/#8):** hexBank/hexOffice/hexTowers/
+  hexSail are native 340 → displayed 320 (0.94, NOT a downscale defect). Grid of
+  f340/f430 showed the SSIM driver is the top-row content at 0.01 SSIM = a
+  scene-handoff TIMING/layout mismatch (rows→hexRow→flows), not hex texture.
+  Out of the hex-re-trace mandate; a measured-choreography lead for a later gen.
+
+**Honest floor (lesson 9):** the two clean hex-texture levers left in the r10
+top-12 are SPENT — mbadge was the big one (worst window, ~+.06-.08/window over
+~180 frames), matching a small correct-content top-up. Rough score estimate
+93.7 → **~93.9-94.1** (mbadge dominates: it lifts window #1 + #10 and the worst
+keyframe t132; matching adds a sliver). This lands at/near the honest ~94.5
+ceiling the r8/r9 agents predicted. What REMAINS above the top-12 is NOT hex
+texture: it is measured CHOREOGRAPHY/geometry (detrep-tail #2, reportOut #5,
+payment #7, flows-handoff #4/#6/#8, matching centre-panel, mosaic-tail #9) plus
+the confirmed-floor items (serif hairlines, globe ring/label layout, the first-
+map mini content — same wrong-content as the old mbadge but transient & unscored).
+96 still walls without re-drawing the entire city/building line-art to the ref's
+exact stroke geometry (a pipeline project, not a round). Every remaining top-12
+window is now a geometry/timing fix, not a re-trace. Recommend: run the official
+gen-9 verify, then the next gen attacks CHOREOGRAPHY (detrep/payment/flows-
+handoff), not more hex re-traces — the hex families are done.
