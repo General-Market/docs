@@ -105,6 +105,102 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 
 ## Round log
 
+### r13 — 2026-07-11 (gen-11 "attack the two flagged choreography wins" session, BUILD COMPLETE; official verify PENDING orchestrator)
+
+**Instrument law obeyed (gen-10 discovery):** measured/gated against EXACT REF
+VIDEO FRAMES only (`ffmpeg select=eq(n\,F)` → render frame F → ffmpeg-ssim), never
+the coarse +3f `regular_NNNN` plate grid. Instruments + all ref/att stills in
+`work/cls-day/gen11/` (probe_s8.py, probe_milestone.py, render.sh, ssim.sh).
+
+**TARGET 1 — S8 milestone→staircase REBUILT (f1466-1712). LANDED, commit ab75bbce5**
+(scenes2.tsx + lib.tsx). The old S8 phaseB/C were the last big invented block in
+S8: a short band with 03:00-08:00 hour labels + a stray chip stack + fs110 "06:30",
+and the 5 bars sliding in at the BOTTOM from the RIGHT — none matched the ref (the
+STATE gap the gen-10 handoff flagged). Rebuilt the whole move from measured video
+frames:
+- milestone view (f1540-1600): tall grey band y0-259 (NO hour ticks), red playhead
+  x913 (y0-925), big "06:30" **fs245** (cap176, measured — NOT the "110px" STATE
+  had) at x196 + subtitle at x417 fs42;
+- the 5 bars GROW rightward out of the playhead (per-bar f1585-1600, staggered),
+  landing ~140px wide stacked vertically at their FINAL staircase y-levels;
+- band pans+zooms out — 07:00 tick 834(f1620)→176(f1640), playhead 913→98, hour
+  ticks/labels fade in **07:00-12:00 only** (added hMin/hMax to TimelineBand;
+  defaults preserve every other scene) — while the bar STACK translates left to
+  x176 (the hour grid, the playhead and the bars are DECOUPLED during the collapse
+  and converge at f1640);
+- bars then unfold left→right into the Gantt staircase, staggered, settled by ~f1680
+  == ref f1700 == S9's opening frame.
+- **SCHED_BARS is now the single shared geometry source** for S8's spread AND S9's
+  staircase, so the f1700 handoff is byte-continuous. S9 render VERIFIED byte-
+  identical after the refactor (f1700 AND f1750 fill-phase both All:1.0 vs the gen-10
+  S9 render). S9's opaque white bg covers S8 from f1700 — no doubling (the "boundary
+  pop" the handoff feared was never a doubling; it was purely S8's wrong f1600-1699
+  content).
+
+A/B still-gate (ffmpeg SSIM PNG, ref vs OLD-HEAD → NEW), EVERY frame rises:
+
+| frame | OLD | NEW | Δ | phase |
+|---|---|---|---|---|
+| f1560 | .9140 | .9582 | +.044 | 06:30 milestone view |
+| f1590 | ~.90 | .9577 | +.05 | bars growing |
+| f1595 | .9032 | .9522 | +.049 | bars growing |
+| f1600 | .8741 | .9426 | **+.069** | bars stacked, band panning |
+| f1620 | .8954 | .9296 | +.034 | mid-collapse (hardest frame — full overlap) |
+| f1630 | ~.89 | .9304 | +.04 | text gone, collapsing |
+| f1640 | .8984 | .9595 | **+.061** | stack landed at 07:00 |
+| f1650 | .8921 | .9551 | +.063 | spread underway |
+| f1660 | .8817 | .9421 | +.059 | spread |
+| f1680 | .8724 | .9499 | **+.078** | staircase settled |
+| f1700 | .9495 | .9495 | ±.000 | S9 handoff (byte-identical) |
+
+**Mean +.057 over the changed window (~120/3750 frames).** No regression anywhere.
+tsc clean; CrxSettlementDay smoke-clean at f1620 (CRX copy, same choreography, no
+pack issues). Est. global gain sub-hundredth (video_ssim +.057 over ~120f ≈ +.0018)
+but the whole S8 staircase is no longer visibly fictional and the S8/S9 boundary is
+seamless.
+
+**TARGET 2 — S10 arrival lag (f1837+): MEASURED, ATTEMPTED, REVERTED as a LOSS.**
+The handoff was RIGHT about the ref choreography — measured exactly (probe over
+f1815-1868): the two hexagons fade in **f1820-1845** (outlines→buildings→detail),
+and the "07:00 Start of settlement and funding" label appears LATE, **f1840-1860**,
+AFTER the hexagons; the current S10 has hexagons at f1845-1868 (late) + label from
+f1837 (early). Built the retiming cleanly (S10 enters f1818 over S9's white bg so S9
+stays byte-identical; hexP 1820-1842; added Milestone `textOpacity` so the label
+fades independently of the red line).
+
+**But the retiming LOSES on SSIM and was REVERTED** (rule: absent ink beats misplaced
+ink; a measured retiming can lose). ref-vs-OLD→NEW:
+
+| frame | OLD | NEW(retimed) | Δ |
+|---|---|---|---|
+| f1830 | .9722 | .9429 | **−.029** |
+| f1836 | .9586 | .9315 | −.027 |
+| f1837 | .9539 | .9303 | −.024 |
+| f1845 | .9355 | .9123 | −.023 |
+| f1850 | .9194 | .9112 | −.008 |
+| f1868 | .8787 | .8787 | ±.000 (both full hexagons) |
+
+**Root cause = HexCity ARTWORK, not timing.** The settled hexagons score only **~.88**
+vs ref (OLD and NEW identical at f1868). Diffing NEW f1837 vs ref (images in gen11/):
+our HexCity is **mis-registered** (A hex center ~560/y185-585 vs ref ~475/y285-590 —
+~85px right, ~100px high, and too tall), it draws the "A" badge **immediately** while
+the ref's A badge appears **LATE** (~f1868, not f1837), and — the big one — **the ref
+hexagons BUILD UP PROGRESSIVELY** (f1837 = one central building; f1868 = a dense
+skyline with side towers), whereas our HexCity fades the whole complete (sparser,
+mis-placed) icon in as a unit. So showing our hexagons on the ref's earlier schedule
+drags the transition frames from ~.95 (blank) toward the ~.88 hexagon-texture floor —
+blank beats our mismatched ink (lesson 4 / the dense-near-miss trap).
+
+**THE REAL S10 LEVER (for a dedicated round, NOT a retiming):** re-trace HexCity to the
+ref — (1) register position/size (A center ~475 y~435, hex ~360 wide; measure B), (2)
+delay the A badge to ~f1865, (3) model the **progressive building-by-building growth**
+(f1820 outline → central building f1830 → side skyline f1845-1868), (4) match the
+denser settled skyline. Only THEN does the correct timing (hexagons f1820-1845, label
+f1840-1860) become a win. HexCity is shared with S13/S17 — re-trace once, gate all
+three. The `textOpacity` Milestone prop + the S10-over-S9 f1818 entry pattern are
+proven and can be reinstated alongside the artwork fix. Reverted files clean; no S10
+change shipped.
+
 ### r12 — 2026-07-11 (gen-10 "attack CHOREOGRAPHY" session, BUILD COMPLETE; official verify PENDING orchestrator)
 
 **S9 (f1700-1837) REBUILT — the last fully-INVENTED scene on the board (STATE
