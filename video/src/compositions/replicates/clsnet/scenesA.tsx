@@ -583,7 +583,6 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
     [1750, 1250, 802, 465, 272, 152, 76, 33, 6, 0],
     clamp
   );
-  const out = lerp(f, [556, 566], [1, 0]);
   // GLOBE ROTATION — real longitude scroll (anim round, eye-measured).
   // The ref globe is a disc-clipped WINDOW onto the SAME worldMap the scene
   // zooms into at f566+ (proven: the f562-566 disc continents == the f582 full
@@ -604,6 +603,28 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const ringSpin = lerp(f, [478, 566], [0, -38]);
   const lockState = f < 500 ? "lockOpen" : f < 528 ? "lockList" : "lockClosed";
   const lockOp = lerp(f, [470, 480], [0, 1]);
+  // GLOBE→MAP ZOOM (anim round, eye-measured; work/clsnet/anim/zoom). The disc
+  // is a WINDOW onto the same worldMap the MapScene shows in full. At the
+  // handoff the disc GROWS to full-bleed (center pinned 960/539) while its map
+  // ramps to MapScene's scale (0.76→1.0) and origin (→MAP.x/y), so continents
+  // zoom SEAMLESSLY into the full map — the disc IS the zoom. Radius measured
+  // clean from the disc's left edge (ring hides it ≤f561): r 293 held to f556,
+  // then 424(f562) 569(f564) 830(f566) → full-bleed f568. Replaces the old
+  // cross-dissolve (globe FADED out under an expanding blue rect + fading map).
+  const dr = interpolate(
+    f,
+    [556, 558, 560, 562, 564, 566, 568],
+    [GLOBE.r, 330, 375, 424, 569, 830, 1200],
+    clamp
+  );
+  const mapScale = interpolate(f, [556, 568], [MAP_SCALE, 1], clamp);
+  const mox = f < 556 ? mapOx : interpolate(f, [556, 568], [525, MAP.x], clamp);
+  const moy = interpolate(f, [556, 568], [mapOy, MAP.y], clamp);
+  const discLeft = GLOBE.cx - dr;
+  const discTop = GLOBE.cy - dr;
+  // ring fades as the disc grows over it. The triangle + lock are drawn BENEATH
+  // the disc fill (below) so the growing disc OVERTAKES them — exactly the ref.
+  const ringFade = lerp(f, [556, 561], [1, 0]);
   // r6 probed band choreography: drops y805→846 (468-480); right end retreats
   // with the globe to x~1028; holds to ~f506; reels IN rightward ~77px/f from
   // f508 until absorbed (~f521). Ticks ride both the landing decel + reel-in.
@@ -612,7 +633,7 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const bandRight = interpolate(f, [468, 470, 472, 474, 476, 480, 486], [1831, 1493, 1299, 1179, 1103, 1032, 1028], clamp);
   const bandLeft = interpolate(f, [507.8, 521.5], [0, 1060], clamp);
   return (
-    <AbsoluteFill style={{ opacity: out }}>
+    <AbsoluteFill>
       {f >= 468 && bandRight - bandLeft > 0 && (
         <>
           <div style={{ position: "absolute", left: bandLeft, top: bandTop, width: bandRight - bandLeft, height: 40, backgroundColor: C.band }} />
@@ -645,6 +666,7 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             position: "absolute",
             left: GLOBE.cx - GLOBE.ringR - 20,
             top: GLOBE.cy - GLOBE.ringR - 20,
+            opacity: ringFade,
           }}
         >
           <g transform={`rotate(${ringSpin} ${GLOBE.ringR + 20} ${GLOBE.ringR + 20})`}>
@@ -692,77 +714,75 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             })}
           </g>
         </svg>
-        {/* globe blue disc fill */}
+        {/* orange triangle marker (r6 probed f486: 60x52 at x931-991 y81-133) —
+            drawn beneath the disc so the growing disc overtakes it */}
+        <svg width={60} height={52} viewBox="0 0 60 52" style={{ position: "absolute", left: GLOBE.triangle.x - 30, top: GLOBE.triangle.y }}>
+          <path d="M4,4 H56 L30,48 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
+        </svg>
+        {/* lock — beneath the disc; covered as the disc grows past it */}
+        <TracedArt name={lockState} x={GLOBE.lock.x} y={GLOBE.lock.y} opacity={lockOp} />
+        {/* globe blue disc fill — grows with dr through the zoom */}
         <div
           style={{
             position: "absolute",
-            left: GLOBE.cx - GLOBE.r,
-            top: GLOBE.cy - GLOBE.r,
-            width: 2 * GLOBE.r,
-            height: 2 * GLOBE.r,
-            borderRadius: GLOBE.r,
+            left: discLeft,
+            top: discTop,
+            width: 2 * dr,
+            height: 2 * dr,
+            borderRadius: dr,
             backgroundColor: C.blue,
           }}
         />
-        {/* rotating continents: a disc-clipped WINDOW onto worldMap (the same
-            map the scene zooms into at f566+), scaled 0.76 and scrolled right
-            per mapOx. Replaces the old globeA/globeB crossfade (invented +
-            wrong-direction) and retires the broken globeA swoosh-arc art
-            (r6 gap 6 — that defect is gone with the snapshot). */}
+        {/* continents: a disc-clipped WINDOW onto worldMap. Through the zoom
+            the disc grows (dr) and the map ramps to scale 1.0 / MAP origin, so
+            at full-bleed (f568) it equals MapScene's full map — continents
+            zoom in continuously. Replaces the old crossfade. */}
         <div
           style={{
             position: "absolute",
-            left: GLOBE.cx - GLOBE.r,
-            top: GLOBE.cy - GLOBE.r,
-            width: 2 * GLOBE.r,
-            height: 2 * GLOBE.r,
-            borderRadius: GLOBE.r,
+            left: discLeft,
+            top: discTop,
+            width: 2 * dr,
+            height: 2 * dr,
+            borderRadius: dr,
             overflow: "hidden",
           }}
         >
           <TracedArt
             name="worldMap"
-            x={mapOx - (GLOBE.cx - GLOBE.r)}
-            y={mapOy - (GLOBE.cy - GLOBE.r)}
-            scale={MAP_SCALE}
+            x={mox - discLeft}
+            y={moy - discTop}
+            scale={mapScale}
             recolor={{ "#FFFFFF": C.white }}
           />
         </div>
-        {/* navy border on top — covers any edge sliver of the clipped art */}
+        {/* navy border rides the disc edge outward and sweeps off-frame as the
+            disc fills the screen */}
         <div
           style={{
             position: "absolute",
-            left: GLOBE.cx - GLOBE.r,
-            top: GLOBE.cy - GLOBE.r,
-            width: 2 * GLOBE.r,
-            height: 2 * GLOBE.r,
-            borderRadius: GLOBE.r,
+            left: discLeft,
+            top: discTop,
+            width: 2 * dr,
+            height: 2 * dr,
+            borderRadius: dr,
             border: `4px solid ${C.navy}`,
             boxSizing: "border-box",
           }}
         />
-        {/* orange triangle marker (r6 probed f486: 60x52 at x931-991 y81-133) */}
-        <svg width={60} height={52} viewBox="0 0 60 52" style={{ position: "absolute", left: GLOBE.triangle.x - 30, top: GLOBE.triangle.y }}>
-          <path d="M4,4 H56 L30,48 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
-        </svg>
-        {/* lock */}
-        <TracedArt name={lockState} x={GLOBE.lock.x} y={GLOBE.lock.y} opacity={lockOp} />
       </div>
     </AbsoluteFill>
   );
 };
 
-// ═══ Scenes 6-7: blue expand, map draw, hexes, 120 currencies (f560-745) ═══
+// ═══ Scenes 6-7: full-bleed map, hexes, 120 currencies (f568-745) ═══
 export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
-  if (f < SEG.mapDraw[0] || f >= 766) return null;
-  // blue rounded rect expands to full bleed f560-586
-  const expand = lerp(f, [560, 586], [0, 1]);
-  const radius = lerp(f, [560, 590], [400, 0]);
-  const mapP = lerp(f, [575, 605], [0, 1]);
-  const w = 1120 + 800 * expand;
-  const h = 630 + 450 * expand;
+  // Picks up exactly where the GlobeScene zoom ends (f568): full-bleed blue +
+  // the full worldMap at scale 1.0 / MAP origin — identical to the disc's
+  // final state, so the handoff is a seamless continuation, not a cross-fade.
+  if (f < 568 || f >= 766) return null;
   const labelOp = lerp(f, [672, 684], [0, 1]) * lerp(f, [756, 764], [1, 0]);
   // r6 measured map-out (ref f746 full / f758 mid / f766 gone): the map is
   // ERASED edges-inward 750-764 (not faded); non-morphing minis pop out
@@ -775,12 +795,8 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
       <div
         style={{
           position: "absolute",
-          left: 960 - w / 2,
-          top: 540 - h / 2,
-          width: w,
-          height: h,
+          inset: 0,
           backgroundColor: C.blue,
-          borderRadius: radius,
         }}
       />
       <div style={{ position: "absolute", inset: 0 }}>
@@ -789,7 +805,6 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
             name="worldMap"
             x={MAP.x}
             y={MAP.y}
-            opacity={mapP}
             recolor={{ "#FFFFFF": C.white }}
           />
         </div>
