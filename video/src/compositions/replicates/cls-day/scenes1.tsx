@@ -372,62 +372,101 @@ const SettledCode: React.FC<{ pack: Pack; i: number; top?: boolean; xIn: number;
 };
 
 // ─── S3: globe clock (f300..460) ───
-// Globe cx960 cy690: blue disc r235, grey ring r240..276, ticks, red
-// time marks; marker triangle above y560. Padlock right x1310 y610.
-const GLOBE = { cx: 960, cy: 690, r: 235, ringW: 36 };
+// ─── S3: globe clock (f283..470) — MEASURED per-pixel (r11) ───
+// Docks in from upper-right (f285-305), settles at cx958, then PANS LEFT
+// to cx715 (f333-350) and holds while the padlock slides in from the
+// right. Blue disk r291 cy554; grey annulus r303-349 + navy hairline r300;
+// 24 hourly navy ticks (base deg 7+15k) + red milestone ticks/labels at
+// 23:00/00:00/06:00/06:30/09:00 + navy 07:00; marker fixed at globe top.
+// The whole clock face (ticks + labels) ROTATES CCW rigidly at
+// θ = -0.93·(f-330.5)° (all 6 milestones fit at f410 θ=-74.6); continents
+// scroll horizontally (longitude); marker does NOT rotate.
+const G_CX = lutS([[285, 1819], [290, 1349], [295, 1102], [300, 1004], [305, 965], [320, 958], [330, 948], [335, 919], [340, 783], [345, 731], [350, 717], [410, 716], [420, 701], [435, 560]]);
+const G_CY = lutS([[285, 495], [290, 529], [295, 545], [300, 552], [305, 554], [420, 552], [435, 505]]);
+const G_S = lutS([[285, 0.505], [290, 0.829], [295, 0.936], [300, 0.982], [305, 1], [420, 1], [435, 0.95]]);
+const G_DISK = 291;
+const G_BCX = 715;
+const G_BCY = 554;
+// hourly ticks at base deg 7+15k; milestone hours drawn separately
+const G_HOURS = Array.from({ length: 24 }, (_, k) => 7 + 15 * k);
+const G_MDEG = new Set([22, 37, 127, 142, 172]);
+const G_MILE: { deg: number; red: boolean; label: string }[] = [
+  { deg: 22, red: true, label: "23:00" },
+  { deg: 37, red: true, label: "00:00" },
+  { deg: 127, red: true, label: "06:00" },
+  { deg: 134.5, red: true, label: "06:30" },
+  { deg: 142, red: false, label: "07:00" },
+  { deg: 172, red: true, label: "09:00" },
+];
+const gpt = (cx: number, cy: number, deg: number, rad: number): [number, number] => [
+  cx + Math.sin((deg * Math.PI) / 180) * rad,
+  cy - Math.cos((deg * Math.PI) / 180) * rad,
+];
 
 export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 283 || frame >= 470) return null;
-  // dock from the top right, smaller (measured f285: cx≈1870 cy≈490 r≈180)
-  const dockP = 1 - interpolate(frame, [283, 310], [1, 0], { ...clamp, easing: Easing.bezier(0.6, 0, 0.2, 1) });
-  const exitP = interpolate(frame, [452, 468], [0, 1], clamp);
-  const rot = interpolate(frame, [300, 460], [0, -120], clamp); // map drift
-  const lockIn = interpolate(frame, [345, 358], [0, 1], clamp);
+  const exitP = interpolate(frame, [424, 440], [0, 1], clamp); // gone by f440 (S4 enters)
+  const scroll = interpolate(frame, [300, 460], [0, -170], clamp); // continent longitude
+  const theta = -0.93 * (frame - 330.5); // clock-face rotation (deg)
   const lockClosed = frame >= 400;
-  const { cx, cy, r, ringW } = GLOBE;
+  const padSlide = interpolate(frame, [333, 352], [190, 0], { ...clamp, easing: EASE });
+  const padIn = interpolate(frame, [333, 348], [0, 1], clamp);
+  const cx = G_BCX;
+  const cy = G_BCY;
+  const r = G_DISK;
+  const tx = G_CX(frame) - cx;
+  const ty = G_CY(frame) - cy;
+  const s = G_S(frame);
   return (
-    <div style={{ position: "absolute", inset: 0, transform: `translate(${910 * (1 - dockP)}px, ${-200 * (1 - dockP)}px) scale(${0.77 + 0.23 * dockP})`, transformOrigin: `${cx}px ${cy}px`, opacity: 1 - exitP }}>
-      {/* ring */}
-      <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <circle cx={cx} cy={cy} r={r + ringW / 2 + 2} fill="none" stroke={C.bandGrey} strokeWidth={ringW} />
-        {Array.from({ length: 24 }, (_, i) => {
-          const a = (i / 24) * Math.PI * 2 - Math.PI / 2;
-          const r0 = r + 2;
-          const r1 = r + ringW + 6;
+    <>
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${tx}px, ${ty}px) scale(${s})`, transformOrigin: `${cx}px ${cy}px`, opacity: 1 - exitP }}>
+        <svg width={1920} height={1080} style={{ position: "absolute" }}>
+          {/* grey annulus */}
+          <circle cx={cx} cy={cy} r={326} fill="none" stroke={C.bandGrey} strokeWidth={46} />
+          {/* hourly navy ticks (skip milestone hours) */}
+          {G_HOURS.filter((d) => !G_MDEG.has(d)).map((d, i) => {
+            const [x0, y0] = gpt(cx, cy, d + theta, 305);
+            const [x1, y1] = gpt(cx, cy, d + theta, 360);
+            return <line key={"h" + i} x1={x0} y1={y0} x2={x1} y2={y1} stroke={C.navyDeep} strokeWidth={2} />;
+          })}
+          {/* milestone ticks (long) */}
+          {G_MILE.map((m, i) => {
+            const [x0, y0] = gpt(cx, cy, m.deg + theta, 303);
+            const [x1, y1] = gpt(cx, cy, m.deg + theta, m.red ? 394 : 378);
+            return <line key={"m" + i} x1={x0} y1={y0} x2={x1} y2={y1} stroke={m.red ? C.red : C.navyDeep} strokeWidth={m.red ? 4 : 3} />;
+          })}
+          {/* navy hairline ring */}
+          <circle cx={cx} cy={cy} r={300} fill="none" stroke={C.navyInk} strokeWidth={7} />
+          {/* globe disk + scrolling continents */}
+          <circle cx={cx} cy={cy} r={r} fill={C.blue} />
+          <g clipPath="url(#globeClip)">
+            <g transform={`translate(${scroll} 0)`}>
+              <Continents cx={cx} cy={cy} r={r} />
+              <Continents cx={cx + 2 * r} cy={cy} r={r} />
+            </g>
+          </g>
+          <defs>
+            <clipPath id="globeClip">
+              <circle cx={cx} cy={cy} r={r - 2} />
+            </clipPath>
+          </defs>
+        </svg>
+        {/* clock labels — tangential, rotate with the face */}
+        {G_MILE.map((m, i) => {
+          const [lx, ly] = gpt(cx, cy, m.deg + theta, 400);
           return (
-            <line
-              key={i}
-              x1={cx + Math.cos(a) * r0}
-              y1={cy + Math.sin(a) * r0}
-              x2={cx + Math.cos(a) * r1}
-              y2={cy + Math.sin(a) * r1}
-              stroke={i % 6 === 0 ? C.red : C.navyDeep}
-              strokeWidth={i % 6 === 0 ? 3.5 : 2}
-            />
+            <div key={"l" + i} style={{ position: "absolute", left: lx, top: ly, fontFamily: SANS, fontSize: 30, color: C.navyInk, whiteSpace: "nowrap", transform: `translateY(-50%) rotate(${m.deg + theta}deg)`, transformOrigin: "0 50%" }}>
+              {m.label}
+            </div>
           );
         })}
-        {/* globe */}
-        <circle cx={cx} cy={cy} r={r} fill={C.blue} />
-        {/* simplified drifting continents */}
-        <g clipPath="url(#globeClip)">
-          <g transform={`translate(${rot} 0)`}>
-            <Continents cx={cx} cy={cy} r={r} />
-            <Continents cx={cx + 940} cy={cy} r={r} />
-          </g>
-        </g>
-        <defs>
-          <clipPath id="globeClip">
-            <circle cx={cx} cy={cy} r={r - 2} />
-          </clipPath>
-        </defs>
-      </svg>
-      {/* clock labels */}
-      <div style={{ position: "absolute", left: cx + r + 28, top: cy - r - 10, fontFamily: "Helvetica", fontSize: 17, color: C.navyDeep, transform: "rotate(55deg)" }}>
-        00:00
+        <MarkerTriangle x={cx} y={cy - 466} size={62} />
       </div>
-      <MarkerTriangle x={cx} y={cy - r - ringW - 46} size={34} />
-      <Padlock x={1290} y={600} closed={lockClosed} opacity={lockIn} />
-    </div>
+      {/* padlock — slides in from the right as the globe pans left */}
+      <div style={{ position: "absolute", inset: 0, opacity: padIn * (1 - exitP), transform: `translateX(${padSlide}px)` }}>
+        <Padlock x={1338} y={372} size={163} closed={lockClosed} />
+      </div>
+    </>
   );
 };
 
