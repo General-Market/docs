@@ -52,14 +52,45 @@ landed: the **S1 intro draw-on reveal** (was invented opacity fades).
   across all four phases; rise offsets align at f38/f48. Regression check
   `work/cls-day/anim/s1_sanity_settle_exit.png` (f100 settled, f114 exit,
   f3600 endcard all clean).
+
+Second animation eye-passed: the **S18 outro (f3394..3561)**. Dense ref pull
+(f3390..3560 → `work/cls-day/s18/ref/r_<frame>.png`) + per-frame replica stills
+proved the r2 measured rebuild is STRUCTURALLY FAITHFUL end-to-end — band settle
+→ rotate-up-to-vertical (navy plate slides in, split red/white shield straddles)
+→ reverse to horizontal (navy now on top) → gauge slides in → red wedge sweeps
+0→180° → world flips 180° → payout-chip matrix assembles → rise off. Every phase
+MATCHES by eye; the brief's "rotation/gauge invented" was the r1 state, already
+superseded by r2's LUTs. The ONE remaining invented motion was the **chip
+cascade**: r1/r2 flew all 16 chips in as a single rigid flock (baked CHIP_DX/DY)
+from f3496, entering from the wrong side ~10f early.
+- **Ref motion (dense read f3497..3544):** chips arrive in TWO measured waves,
+  right-to-left. The RIGHT cluster (both right columns, x≈1002 grey + x≈1207
+  cream/red) snaps in together, crisp by ~f3500; the LEFT cluster (x≈590 grey/navy
+  + x≈782 cream) snaps in by ~f3517; each fades clean→crisp over ~3 frames; the
+  full matrix settles by ~f3528. Net world rotation is ~identity here (θ+180°), so
+  layout-x == screen-x.
+- **Replaced (scenes2.tsx):** deleted the CHIP_DX/CHIP_DY flock LUTs; the chip map
+  now gives each chip a per-chip `startF` (`x>=900 ? 3497 : 3514`), a 3f opacity
+  snap, and a small -30px settle drop. chipsOn 3496→3497. Settled matrix (f3528+)
+  byte-preserved — same CHIP_LAYOUT at 0 offset.
+- **Filmstrip (eye gate):** `work/cls-day/anim/s18_outro_filmstrip.png` (ref/
+  replica, one frame per phase f3394..3558) — motion matches across all phases.
+  Onset A/B `work/cls-day/s18/pair/s18_final_onset.png`: right cluster crisp at
+  f3500, left onset at f3516, both settling — aligned to the ref. tsc clean.
+- **Documented residual (NOT fixed):** at f3558 the ref bleeds the S19 end-card
+  mark in from the bottom during the rise; the replica reveals its own white bg.
+  3 frames at the S18/S19 cut — a cross-scene seam detail, out of this window's
+  core choreography; fold into any future S18/S19 seam touch.
 - **Still needing the same eye-pass (invented/weird motion vs ref clean
   animation), next priorities:** S2 currency pairs pan/plunge (heavily
   LUT'd — verify the pan-in + funnel read as the ref's carousel, not
   invented); S3 globe DOCK-IN + pan-left + padlock slide (f285..352); S4
   hex spread + badge back-ease + arrow draw + pill (f462..618); S7/S13
-  donut ring sweeps + chip runs; S18 outro rotation (r1's worst window,
-  choreography invented). Each: extract dense ref frames, identify
-  mechanism (draw/slide/scale), rebuild, filmstrip-gate.
+  donut ring sweeps + chip runs. (S1 intro + S18 outro DONE.) Each: extract
+  dense ref frames, identify mechanism (draw/slide/scale), rebuild,
+  filmstrip-gate. NEXT recommended: S2 currency carousel pan-in/funnel
+  (f100..306, heavily LUT'd, most likely to still read invented vs the ref's
+  measured carousel) — verify by the same dense-frame eye method.
 
 ## Architecture (all in the lane)
 

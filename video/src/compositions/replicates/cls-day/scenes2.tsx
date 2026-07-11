@@ -1098,17 +1098,12 @@ const SHIELD_X: Lut = [
   [3437, -119], [3438, -157], [3439, -203], [3440, -260], [3441, -327],
   [3442, -394], [3443, -491], [3444, -685], [3445, -1000], [3446, -1350],
 ];
-// chip flock glide (flip-frame offset rel. settled layout; L-path: drop then glide left)
-const CHIP_DX: Lut = [
-  [3496, 300], [3499, 306], [3502, 322], [3505, 330], [3508, 332], [3511, 334],
-  [3514, 342], [3517, 346], [3520, 342], [3523, 327], [3526, 297], [3529, 244],
-  [3532, 167], [3535, 102], [3538, 59], [3541, 29], [3544, 13], [3547, 3], [3550, 0],
-];
-const CHIP_DY: Lut = [
-  [3496, -300], [3499, -202], [3502, -107], [3505, -49], [3508, -27], [3511, -22],
-  [3514, -13], [3517, -5], [3520, 1], [3523, 8], [3526, 11], [3529, 13], [3532, 15],
-  [3535, 14], [3538, 12], [3541, 6], [3544, 3], [3547, 2], [3550, 0],
-];
+// chip cascade: measured right→left staggered fill (dense ref read f3497..3544).
+// r1/r2 flew all 16 chips in as ONE rigid flock from f3496 — the ref instead
+// lands the RIGHT cluster first (top-right, ~f3500..3512) then the LEFT cluster
+// (~f3516..3528). Per-chip start below is keyed on the settled screen-x (net
+// world rotation is ~identity here, so layout-x == screen-x): right columns
+// crisp by ~f3500, left columns by ~f3517.
 // exit rise into the end-card cut (band centerline 575→426)
 const RISE: Lut = [[3552, -1], [3553, -3], [3554, -7], [3555, -14], [3556, -24], [3557, -37], [3558, -58], [3559, -91], [3560, -149]];
 
@@ -1138,7 +1133,7 @@ export const S18Outro: React.FC<{ frame: number }> = ({ frame }) => {
   const preTicks = frame < 3495;
   const gaugeOn = frame >= 3444 && frame < 3497;
   const shieldOn = frame >= 3414 && frame < 3447;
-  const chipsOn = frame >= 3496;
+  const chipsOn = frame >= 3497;
   // gauge geometry (probed f3475): chord at band bottom, disc R198,
   // hairline arc R210, annulus 232..282, base ring r20 at bandC+43
   const chordY = bandC + 25;
@@ -1233,16 +1228,27 @@ export const S18Outro: React.FC<{ frame: number }> = ({ frame }) => {
               <div key={i} style={{ position: "absolute", left: 140.5 + i * 166, top: 552, width: 3, height: 46, background: C.navyDeep }} />
             ))}
           {chipsOn &&
-            CHIP_LAYOUT.map(([x, y, k], i) => (
-              <Chip
-                key={i}
-                x={x + lut(frame, CHIP_DX)}
-                y={y + lut(frame, CHIP_DY)}
-                w={133}
-                h={61}
-                color={k === "g" ? C.chipGrey : k === "n" ? C.chipNavy : k === "c" ? C.chipCream : C.chipRed}
-              />
-            ))}
+            CHIP_LAYOUT.map(([x, y, k], i) => {
+              // two measured waves (ref dense read f3497..3524): the RIGHT
+              // cluster (both right columns x≈1002+1207) snaps in TOGETHER, crisp
+              // by ~f3500; the LEFT cluster (x≈590+782) crisp by ~f3517. A fast
+              // ~3f fade matches the ref's clean→crisp snap-in over 3 frames.
+              const startF = x >= 900 ? 3497 : 3514;
+              const op = interpolate(frame, [startF, startF + 3], [0, 1], clamp);
+              const drop = interpolate(frame, [startF, startF + 8], [0, 1], { ...clamp, easing: EASE });
+              const dy = (1 - drop) * -30; // enter from slightly above, settle down
+              return (
+                <Chip
+                  key={i}
+                  x={x}
+                  y={y + dy}
+                  w={133}
+                  h={61}
+                  opacity={op}
+                  color={k === "g" ? C.chipGrey : k === "n" ? C.chipNavy : k === "c" ? C.chipCream : C.chipRed}
+                />
+              );
+            })}
         </div>
       </div>
     </div>
