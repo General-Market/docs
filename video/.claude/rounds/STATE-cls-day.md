@@ -105,6 +105,72 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 
 ## Round log
 
+### r11 — 2026-07-11 (gen-9 "hunt more ClD-style bugs" session, BUILD COMPLETE; official verify PENDING orchestrator)
+
+**Found + fixed the TWO biggest hidden structural bugs left in cls-day — both
+FAR larger than r10's ClD (+.005). Both DOM/SVG, both airtight-gated (full-frame
+ffmpeg SSIM ref vs OLD-HEAD→NEW, every frame RISES or holds, none regress).**
+GEN-8 was right that S5 below-band towers are at the encoding floor — I looked
+ELSEWHERE, at the two scenes STATE had flagged UNMEASURED/guessed.
+
+**1. S3 GLOBE CLOCK — commit dd6e7dfac (scenes1.tsx).** The globe was a STATIC
+guess at `(960,690) r235` with ONE clock label. The ref is a rotating settlement
+clock, per-pixel measured (r11 work/ref + probes):
+- disk r**291** cy**554** (was 136px TOO LOW, 56px too small);
+- it PANS left cx 958→715 over f333-350 then HOLDS (was static — up to 245px
+  mis-placed horizontally for ~75 frames of hold);
+- the whole clock FACE (24 hourly navy ticks + 6 milestone red/navy ticks +
+  labels) ROTATES CCW rigidly at **θ=-0.93·(f-330.5)°** (all 6 milestones fit
+  at f410 θ=-74.6); continents scroll by longitude; marker fixed at top;
+- ring rebuilt: grey annulus r303-349 + navy hairline r300; blue disk r291;
+- milestone ticks/labels at 23:00/00:00/06:00/06:30/09:00 (red) + 07:00 (navy),
+  labels tangential rotate(deg+θ) — read upright top, upside-down bottom;
+- padlock (design already correct) repositioned to (1338,372) size163 + slides
+  in from the right f333-352; globe exits (fades) by f440 so S4 enters clean
+  (old code held the wrong globe opaque until f452).
+- **A/B, 9 frames dock→settle→pan→hold→exit, ALL ROSE (mean ~+.032):** f290
+  .897→.927 · f300 .894→.915 · f330 .915→.941 · f350 .889→.926 · f380 .888→.931
+  · f410 .890→.930 · f430 .879→.886 · f440 .930→.970 · f450 .902→.941. Pure
+  registration (no invented ink) — the ~600px clock moved onto the ref.
+  CrxSettlementDay smoke-clean at f380 (globe takes no pack). Est. global score
+  gain the single largest since the early rounds (~+.05–.10 vs r9/r10's sub-.01).
+
+**2. S7 DONUT FILL/COUNT — commit 081f42fed (scenes1.tsx).** The donut sat empty
+grey until f1240, then filled SLOWLY to f1285 and SNAPPED the label 0%→96%. Ref
+(measured): holds 0% until f1230, then sweeps navy 0→96% FAST over f1230-1252
+(48%@f1240, 95%@f1250) with the serif number COUNTING in sync, holds, then
+96→99% at f1344-1360. Rebuilt: one measured count LUT drives BOTH fill and the
+live label; pack.percents endpoints (96/99) are the count targets (CRX pack
+identical). Label held until post-slide (f1214) to avoid a mid-slide regression.
+- **A/B:** f1210 .9538→.9538 (flat) · f1240 .9059→.9410 (+.035) · f1250
+  .8779→.9377 (**+.060**, worst donut frame) · f1260 .9148→.9381 (+.023) ·
+  f1290/f1300 flat · f1360 +.001. Perceptual strip at f1250 matches (95% fill,
+  grey gap, "95%"). Residual: ref has a thin navy INNER-ring outline the Donut
+  primitive still lacks (negligible; left for a future donut touch).
+
+**Windows checked and found at genuine FLOOR (do NOT re-check):**
+- **S4 trade band** (worst non-S5 window 631-681): the timeline band is CORRECT
+  — 23:00 tick sits at x967≈marker960 @f550, 00:00 at 1110 vs coded 1102 (8px,
+  in tolerance); STATE's "23:00 under marker" stands. S4's deficit is the SPARSE
+  HexCity interiors (3 buildings vs the ref's dense ~8-building skylines) — pure
+  TEXTURE, the dense-near-miss-loses trap; plus the f656-673 whip (logged spend
+  r4/r6). Not a structural bug.
+- **S13 f2722** (.799, worst candidate frame): near the scene-end chip flight —
+  chip-timing + city-interior TEXTURE after the r3/r5/r8 re-traces. No gross
+  structural bug. At timing/texture floor.
+- **S17** (f3230/3260): the exit pan was measured+fixed in r9; residual is
+  diagram-interior texture.
+
+**True reachable ceiling (honest):** the globe + donut are the last CLEAN
+structural registration bugs in the non-S5 board — both were scenes STATE had
+left UNMEASURED (globe) / animation-guessed (donut), which is exactly where a
+ClD-class bug hides. After r11 the remaining top windows are all S5 below-band
+towers (encoding floor per gen-8), S4/S13 city interiors (hand-drawn texture,
+dense-ink trap), and the S4→S5 whip (logged spend). ≥96 stays WALLED (r8
+analysis holds); but r11's two fixes should bank the biggest score move in many
+rounds — verify to confirm. Artifacts: `work/cls-day/r11/` (ref/ dense globe+
+donut frames, att/ + att_old/ gate stills, strips/, render-stills.sh).
+
 ### gen-8 TYPEFACE front — 2026-07-11 (serif screen, COMPLETE — no change)
 
 **The serif is at its floor for cls-day; Hoefler Text stays.** Screened the
