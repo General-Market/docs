@@ -204,8 +204,13 @@ export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC
 export const WipeIn: React.FC<{ frame: number }> = () => null;
 
 // ─── S2: currency carousel (f100..300) — r5 measured rebuild ───
-// Early phase f118..224: pairs pan in from the right and settle with the
-// top baseline ON the ruler (ref caps 251px → fs349; ref f150 USD x337,
+// Early phase f118..224: the FIRST pair (USD/JPY) SLIDES in from the right
+// over f119..150 (long ease-out tail — measured USD_XIN, not the r5 f119..129
+// slam) and settles with the top baseline ON the ruler; the SECOND pair
+// (DKK/GBP) does NOT slide — it CROSSFADES in at the settled straddle
+// f167..173 (ref shows no off-frame navy at f170, DKK already at x298 by
+// f172). USD/JPY holds then sinks into the line f160..169 (USD_SINK), DKK/GBP
+// is swallowed f224..231. (ref caps 251px → fs349; ref f150 USD x337,
 // JPY x431 cap-top 565). The whole assembly (codes, chips, ticks) drifts
 // left ~1.5px/f throughout (DKK x246@f190 → 199@f220; cream column
 // 1561@f150 → 1457@f220). Chips are w129 h58, tight pitch ~78, and creep
@@ -280,6 +285,16 @@ const DESCENT = lutS([[253, 0], [256, 1], [258, 3], [260, 5], [262, 7], [264, 9]
 // band stretch: tick pitch + grid phase (probed rows f230-288)
 const TICK_P = lutS([[255, 49.5], [260, 51], [265, 54], [270, 58], [274, 63.5], [278, 71.5], [282, 85], [285, 100.7], [288, 125.6], [292, 150]]);
 const TICK_PHI = lutS([[150, 36], [230, 39], [250, 14.5], [270, -8], [278, -32.5], [285, -52.7], [288, -87.6], [292, -120]]);
+// USD/JPY pan-in — measured ref left-edge minus our settled edge (356),
+// a SLOW right-to-left slide with a long ease-out tail (settles ~f150, not
+// f129). The r5 rebuild slid it in over f119..129 and then parked it for
+// ~25f; the ref keeps creeping until f148 (USD left 1672@f122 → 550@f134 →
+// 360@f150). xIn shared by top+bottom code (they pan as one).
+const USD_XIN = lutS([[119, 1548], [122, 1316], [124, 1084], [126, 786], [128, 544], [130, 382], [132, 272], [134, 194], [136, 136], [138, 94], [140, 62], [142, 38], [145, 18], [150, 2]]);
+// USD/JPY exit — HOLDS on the ruler until ~f160, then sinks into the line
+// (top-code cap-top 283→414 over f162..169, bottom pinned at the line; ref
+// measured). Was f154..168 — started the sink ~7f early.
+const USD_SINK = lutS([[160, 0], [162, 6], [164, 20], [166, 58], [168, 135], [169, 200], [171, 320], [173, 430]]);
 
 export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 96 || frame >= 308) return null;
@@ -332,13 +347,16 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
         {/* above-the-line clip */}
         <div style={{ position: "absolute", left: 0, top: -1200, width: 1920, height: 1734, overflow: "hidden" }}>
           <div style={{ position: "absolute", left: 0, top: 1200 }}>
-            {/* settled pairs: USD/JPY pans in f119, collapses f154-168;
-                DKK/GBP pans in f168, swallowed f224-230 (measured LUT) */}
+            {/* settled pairs: USD/JPY SLIDES in from the right f119..150
+                (measured LUT), holds, then sinks into the line f160..169;
+                DKK/GBP CROSSFADES in at the settled straddle f167..173 (the
+                ref does NOT slide it in — measured: no navy off-frame at f170,
+                DKK already at x298 by f172), holds, swallowed f224..231 */}
             {frame >= 119 && frame <= 172 && (
-              <SettledCode pack={pack} i={0} top xIn={interpolate(frame, [119, 129], [1500, 0], { ...clamp, easing: EASE })} x={325} sink={interpolate(frame, [154, 168], [0, 350], { ...clamp, easing: Easing.in(Easing.quad) })} />
+              <SettledCode pack={pack} i={0} top xIn={USD_XIN(frame)} x={325} sink={USD_SINK(frame)} />
             )}
             {frame >= 168 && frame <= 232 && (
-              <SettledCode pack={pack} i={1} top xIn={interpolate(frame, [168, 180], [1500, 0], { ...clamp, easing: EASE })} x={234 - 1.55 * (frame - 190)} sink={lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
+              <SettledCode pack={pack} i={1} top xIn={0} opacity={interpolate(frame, [167, 173], [0, 1], clamp)} x={234 - 1.55 * (frame - 190)} sink={lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
             )}
             {/* plunging top codes */}
             {PLUNGES.map((P) => {
@@ -362,10 +380,10 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
         <div style={{ position: "absolute", left: 0, top: 548, width: 1920, height: 1300, overflow: "hidden" }}>
           <div style={{ position: "absolute", left: 0, top: -548 }}>
             {frame >= 119 && frame <= 172 && (
-              <SettledCode pack={pack} i={0} xIn={interpolate(frame, [119, 129], [1500, 0], { ...clamp, easing: EASE })} x={419} sink={-interpolate(frame, [154, 168], [0, 350], { ...clamp, easing: Easing.in(Easing.quad) })} />
+              <SettledCode pack={pack} i={0} xIn={USD_XIN(frame)} x={419} sink={-USD_SINK(frame)} />
             )}
             {frame >= 168 && frame <= 232 && (
-              <SettledCode pack={pack} i={1} xIn={interpolate(frame, [168, 180], [1500, 0], { ...clamp, easing: EASE })} x={287 - 1.55 * (frame - 190)} sink={-lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
+              <SettledCode pack={pack} i={1} xIn={0} opacity={interpolate(frame, [167, 173], [0, 1], clamp)} x={287 - 1.55 * (frame - 190)} sink={-lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
             )}
             {/* plunging bottom codes — mirror the top about y1081 */}
             {PLUNGES.map((P) => {
@@ -401,7 +419,7 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
 };
 
 // settled serif code (baseline on the ruler; calibrated placement)
-const SettledCode: React.FC<{ pack: Pack; i: number; top?: boolean; xIn: number; x: number; sink: number }> = ({ pack, i, top, xIn, x, sink }) => {
+const SettledCode: React.FC<{ pack: Pack; i: number; top?: boolean; xIn: number; x: number; sink: number; opacity?: number }> = ({ pack, i, top, xIn, x, sink, opacity }) => {
   const pair = pack.currencyPairs[i];
   if (!pair) return null;
   const color = top ? pair.topColor : pair.topColor === "red" ? "navy" : "red";
@@ -415,6 +433,7 @@ const SettledCode: React.FC<{ pack: Pack; i: number; top?: boolean; xIn: number;
         fontFamily: pack.serif,
         fontSize: cal.fs,
         lineHeight: 0.93,
+        opacity: opacity ?? 1,
         color: color === "red" ? C.red : C.navyInk,
         transform: `translate(${xIn}px, ${sink}px) scaleX(${top ? cal.sxTop : cal.sxBot})`,
         transformOrigin: "0 50%",

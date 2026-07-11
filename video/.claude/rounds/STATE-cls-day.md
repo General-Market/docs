@@ -81,16 +81,47 @@ from f3496, entering from the wrong side ~10f early.
   mark in from the bottom during the rise; the replica reveals its own white bg.
   3 frames at the S18/S19 cut — a cross-scene seam detail, out of this window's
   core choreography; fold into any future S18/S19 seam touch.
+Third animation eye-passed: the **S2 currency carousel (f100..306)**. Dense
+ref pull + a per-pixel red/navy code tracker adjudicated each phase against a
+fresh replica render (seg 96..308). VERDICT: the PLUNGE/converge core is
+FAITHFUL, not invented — the r5 baseline LUTs reproduce the ref to within ~4px.
+The two clips (above-line / below-line, each `overflow:hidden` at the ruler)
+HIDE the code crossing, so each fast pair's top code appears to descend and be
+swallowed INTO the line while the bottom code rises into it — exactly the ref's
+"funnel into the band" (AUD/CHF f230..240 measured red/navy extents match
+ref±4px; HKD/NZD/KRW/EUR streams + band descent + S3 globe dock f250..306 all
+match). What WAS invented was the **entry/exit of the two SETTLED pairs**:
+- **USD/JPY pan-in was too fast** — the r5 slide ran f119..129 then PARKED the
+  pair for ~25f; the ref keeps it SLIDING in until ~f148 with a long ease-out
+  tail (measured USD left-edge 1672@f122 → 550@f134 → 360@f150). Replaced the
+  `interpolate([119,129],[1500,0])` with a measured `USD_XIN` LUT. Post-fix
+  render matches the ref left-edge within ±2px at every frame f122..150.
+- **DKK/GBP was slid in from the right** (invented) — the ref does NOT pan the
+  2nd pair; it CROSSFADES it in at the settled straddle f167..173 (measured: no
+  off-frame navy at f170, DKK already at x298 by f172, fades in place). Swapped
+  the xIn slide for an opacity fade (added optional `opacity` to `SettledCode`).
+- **USD/JPY sink started ~7f early** — ref HOLDS on the ruler to ~f160 then
+  sinks into the line (top-code cap-top 283→414 over f162..169). Retimed the
+  sink LUT (`USD_SINK`, was f154..168 → now f160..169; post-fix top-edge
+  matches ref±2px). The DKK swallow (f224..231) and all plunge/funnel/descent
+  LUTs (f180+) are byte-unchanged — the fix only touches f119..179.
+- **Filmstrip (eye gate):** `work/cls-day/anim/s2_carousel_filmstrip.png`
+  (ref/replica, 8 cols f124..306 spanning every phase — all match); proof
+  strips `s2_panin_fixed.png` + `s2_handoff_fixed.png`. tsc clean.
+- **Documented residual (NOT fixed):** DKK settled x is ~20px left of ref
+  (268 vs 290) — a pre-existing settled-x-formula calibration, not a motion
+  error; out of this invented-motion round's scope. Fold into any S2 position
+  re-cal.
+
 - **Still needing the same eye-pass (invented/weird motion vs ref clean
-  animation), next priorities:** S2 currency pairs pan/plunge (heavily
-  LUT'd — verify the pan-in + funnel read as the ref's carousel, not
-  invented); S3 globe DOCK-IN + pan-left + padlock slide (f285..352); S4
-  hex spread + badge back-ease + arrow draw + pill (f462..618); S7/S13
-  donut ring sweeps + chip runs. (S1 intro + S18 outro DONE.) Each: extract
-  dense ref frames, identify mechanism (draw/slide/scale), rebuild,
-  filmstrip-gate. NEXT recommended: S2 currency carousel pan-in/funnel
-  (f100..306, heavily LUT'd, most likely to still read invented vs the ref's
-  measured carousel) — verify by the same dense-frame eye method.
+  animation), next priorities:** S3 globe DOCK-IN + pan-left + padlock slide
+  (f285..352); S4 hex spread + badge back-ease + arrow draw + pill
+  (f462..618); S7/S13 donut ring sweeps + chip runs. (S1 intro + S18 outro +
+  S2 carousel DONE.) Each: extract dense ref frames, identify mechanism
+  (draw/slide/scale), rebuild, filmstrip-gate. NEXT recommended: **S3 globe
+  clock dock-in (f283..352)** — the globe docks onto the S2 timeline from the
+  top-right then pans left with a padlock slide; verify the dock trajectory
+  and pan read as the ref's, not invented, by the same dense-frame eye method.
 
 ## Architecture (all in the lane)
 
