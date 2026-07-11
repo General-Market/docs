@@ -566,3 +566,65 @@ RECOMMEND next gen: run the official gen11 verify FIRST (confirm window #3 moved
 then either the converge-clip refinement (cheap) or attack flows-proper #5/#7
 (pill page-flip timing) against EXACT video. ~94.5 asymptote still holds; 96 still
 walls on the city/building line-art re-trace pipeline.
+
+### gen12 HEX-INTERIOR TEXTURE test — 2026-07-11 (sole clsnet agent, r-baseline 93.9) — NO COMMIT, floor confirmed
+
+Mandate: test clsnet's one remaining BROAD lever. The choreography wins (gen10/11)
+were NARROW (trough frames between the verify's 2s keyframe samples) so r11=r12=93.9
+flat. The only SCENE-WIDE deficit left is HEX INTERIOR TEXTURE: settled hexagons
+cap ~0.88 on trace fidelity and hexes span many frames — so re-tracing interiors
+FINER *should* lift every hex frame = broad, IF it works. Instruments in
+`work/clsnet/gen12/` (lock_retrace.py = crop→mask badge+inset-hex→2x-LANCZOS→trace;
+lock_retrace_1x.py = 1x native + trace_t.py POTRACE_T env; ssim.sh/cropssim.sh gate
+vs EXACT video frames vf/v_F.png per the gen10 plate-offset law; insp/ = ref/before/
+after strips). art-store baseline preserved at `art-store.json.bak-gen12`.
+
+**FAMILY PICKED = lockCityA/lockCityB** — the single most-REPEATED hex ART asset:
+reused across MatchingScene (f1462-1662, SmallHex fillHex) + reportsUp phase-1
+(f1662-1770) + LocksScene settled (f1662-1930) ≈ 468 frames. It also caps lowest
+of the settled families on the hex crop (~0.81-0.84 vs network 0.97+, mbadge 0.92+
+after gen9). Broadest possible interior lever.
+
+**Baseline empirics (before, vs EXACT video):** whole-frame f1560 .8795 / f1625
+.8717 / f1750 .8839 / f1825 .9003 / f1862 .9004 / f1900 .9110. Locks-settled hex
+crops (385x349): hexA .837, hexB .813. Matching hex crops (230x208): 0.34-0.40 —
+BUT that low number is a POSITION error (ref matching hex sits ~40px higher, cy~250
+vs my 290), not interior; off this test's mandate. Measured temple bbox at f1900:
+IDENTICAL ref vs mine (496,323,732,471) — hexA building placement already correct;
+only hexB skyline sits ~39px LOW (orange top y325 vs ref y286, an r8-plate artifact).
+
+**Two independent finer re-traces, both from the EXACT settled video frame f1900 at
+the fillHex bbox (fixes hexB placement 1:1), badge+inset-hex masked out:**
+| frame | baseline (r8 -t2) | 2x-LANCZOS upsample | 1x native, -t 0 |
+|---|---|---|---|
+| f1825 whole | .9003 | .8961 (−.0042) | .8944 (−.0059) |
+| f1862 whole | .9004 | .8962 | .8945 |
+| f1900 whole | .9110 | .9070 (−.0040) | .9053 (−.0057) |
+| f1900 hexA crop | .837 | .790 (−.047) | .781 (−.057) |
+| f1900 hexB crop | .815 | .807 | .791 |
+| f1560 matching whole | .8795 | .8796 | .8798 (flat) |
+Path-char detail rose 3-3.4x (lockCityA 7602→25753/20948) — genuinely finer, and it
+LOST. Diagnosis (insp/hexA_ref_before_after.png): 2x-LANCZOS FATTENS strokes (the
+blur halo classifies as ink — lesson 4, bold-in-place loses); 1x -t0 keeps video-
+COMPRESSION-noise specks → cluttered interior. The r8 `-t 2` native trace is already
+at the trace-fidelity OPTIMUM. The ref line-art is ~1.5-2px hairlines the compressed
+1920-wide source can't resolve finer; potrace already captures all real ink. Even
+fixing hexB's real 39px placement in the re-trace did NOT net a win — the fattening/
+noise cost more than the placement gain.
+
+**VERDICT — FLOOR CONFIRMED, clsnet's ~93.9 hex-interior ceiling holds.** Re-tracing
+settled hex interiors finer does NOT move the metric broadly: it REGRESSES every
+settled-locks frame ~0.004-0.006 whole-frame (−0.05 on the hex crop) and is flat at
+matching/reportsUp (hexes small / dominated by the counts panel). This is exactly the
+"dense-near-miss LOSES to current" case the mandate anticipated — a valuable negative.
+NO COMMIT; tree reverted byte-identical to gen11 3c8cc521b (git diff clsnet empty,
+lockCity back to 7602/15003 chars). The hex-texture vein — pronounced exhausted by
+r8/r9/gen9 — is now PROVEN at the floor by direct before→after against the exact video.
+- **The remaining path is NOT finer tracing of the same source.** Two real leads it
+  surfaced, both GEOMETRY (placement), not texture: (a) matching hexes ~40px too low
+  (MATCH.hexA/hexB.cy 290 → ~250, and slightly oversized — crop 0.34, a big window
+  over ~200 matching frames if fixed); (b) locks hexB skyline ~39px low + the locks
+  hexagon OUTLINE ~18px below the ref (Hexagon cy 413 vs ref ~395). These are cheap
+  measured geometry fixes for a future gen — and unlike interior texture they can
+  actually win. (c) True texture gain needs re-DRAWN (not re-traced) vector line-art
+  to the ref's exact hairline geometry — a pipeline project, not a round; still walls 96.
