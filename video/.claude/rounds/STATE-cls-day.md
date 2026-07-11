@@ -105,6 +105,68 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 
 ## Round log
 
+### r12 — 2026-07-11 (gen-10 "attack CHOREOGRAPHY" session, BUILD COMPLETE; official verify PENDING orchestrator)
+
+**S9 (f1700-1837) REBUILT — the last fully-INVENTED scene on the board (STATE
+gap 8).** Commit **<pending>** (scenes2.tsx). The old S9 was two giant
+"06:00|07:00" labels sweeping left — pure fiction; it scored ~0.90-0.93 only by
+white-frame SSIM blindness (lesson 8: the frame is ~85% white, so the phantom
+labels + the MISSING schedule barely moved the metric — exactly where a
+choreography bug hides). The r11 framessim was STALE (byte-identical to r10, did
+NOT reflect the globe/donut fixes), so I re-ranked from r10 + measured the ref
+directly. The ref here (measured f1700-1836; probes in `work/cls-day/gen10/`) is
+the REVISED PAY-IN SCHEDULE shown full-size:
+- static band 07:00-12:00, tall grey y0-259, pitch 309, 07:00 tick x176;
+- red playhead line x98 (y0-925);
+- 5 Gantt bars staircasing down, hour-tick snapped ([07-08]@y402 · [08-09]@497 ·
+  [09-09:30]@591 · [09:30-11]@691 · [11-12]@790 h122), that FILL navy left→right
+  (each ~15f, staggered ~5.3f from f1723);
+- bars then CLEAR left→right (f1766/1769/1775/1781/1784, gone by +3);
+- band zooms out NON-uniformly (grey height 259→40 collapses faster than the pan)
+  + pans right (07:00 176→435→560→980) landing on the S10 band (958, y88 h40,
+  pitch141.6) by f1815, then HOLDS (+ marker + 07:00 line) to the S10 handoff at
+  f1837 (S9 now ends at 1837, not 1850 — clean seam, S9 mounts before S10).
+Exit precision spend: during the fast-pan window (f1792-1812) ticks/labels can't
+be placed to <±100px, so LABELS are dropped there — absent thin ink beats
+misplaced (lesson 4); that alone flipped the exit from -.004/-.007/-.006 to
++.002 at f1795/1800/1805.
+
+**A/B still-gate (ffmpeg SSIM PNG, ref vs OLD-HEAD → NEW) — EVERY frame rises or holds:**
+| frame | OLD | NEW | Δ | phase |
+|---|---|---|---|---|
+| f1700 | .9184 | .9495 | +.031 | staircase |
+| f1710 | .9184 | .9495 | +.031 | staircase |
+| f1730 | .9155 | .9494 | +.034 | staircase |
+| f1750 | .9018 | .9532 | **+.051** | staircase (worst old frame) |
+| f1770 | .9231 | .9569 | +.034 | staircase |
+| f1790 | .9667 | .9669 | +.000 | exit |
+| f1795 | .9746 | .9768 | +.002 | exit |
+| f1805 | .9611 | .9629 | +.002 | exit |
+| f1815 | .9765 | .9940 | +.018 | exit (held S10 band) |
+| f1830 | .9525 | .9722 | +.020 | exit (held S10 band) |
+| f1837 | .9539 | .9539 | ±.000 | S10 handoff (clean) |
+
+**Mean +.0175 over 11 gated frames.** The ~86-frame staircase (f1700-1786) moves
+from ~0.90-0.93 to ~0.95-0.96; the exit handoff also rises (the held S10-position
+band + marker beats the old slow ghost-fade). No regression anywhere. tsc clean;
+CrxSettlementDay smoke-clean at f1750 (S9 takes no pack — CRX inherits the
+staircase byte-for-byte). Est. global gain sub-hundredth (video_ssim +.0175 over
+~137/3750 frames ≈ +.0006) but the scene is no longer visibly fictional.
+
+**Honest choreography headroom (for the next inheritor):**
+- **S8 staircase phase (f1600-1699, ~0.90) is the matching bug** — the ref f1650
+  shows the 5 bars STACKED at the left, spreading into the f1700 staircase; our
+  S8 phaseC draws them at the BOTTOM sliding in from the right. Unifying S8's
+  spread with S9's measured bars closes the S8/S9 boundary pop (the ref is
+  continuous f1650-1786). Separate scene/commit — the clear next choreography win.
+- **S10 arrival lag (f1837+)**: ref f1837 already has BOTH hexagons present + no
+  "07:00 Start of settlement" label; our S10 shows the label + hexagons arriving
+  ~8-30f late (hexP 1845-1868). S10's timing, not S9's — a real fixable.
+- Other timing candidates surveyed but NOT gross bugs: S18 outro (r2 rebuilt it
+  from measured per-frame LUTs, gates .938-.982 — at floor); S13 chip-run tail
+  (r5/r8 re-measured — texture floor). The top-12 windows remain the S5 texture /
+  S11-12 doc-hairline / S17 exit-pan floor from r8-r11. 96 stays WALLED.
+
 ### r11 — 2026-07-11 (gen-9 "hunt more ClD-style bugs" session, BUILD COMPLETE; official verify PENDING orchestrator)
 
 **Found + fixed the TWO biggest hidden structural bugs left in cls-day — both

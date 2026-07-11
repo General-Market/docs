@@ -105,48 +105,91 @@ export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   );
 };
 
-// ─── S9: zoom times 06:00 | 07:00 → settle band (f1700..1837) ───
-export const S9ZoomTimes: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 1700 || frame >= 1850) return null;
-  // giant labels sweep left as the clock runs 06:00→07:00
-  const sweep = interpolate(frame, [1700, 1790], [500, -900], clamp);
-  const zoomOut = interpolate(frame, [1790, 1825], [0, 1], { ...clamp, easing: EASE });
-  const scale = interpolate(zoomOut, [0, 1], [1, 0.22]);
-  const bandInP = interpolate(frame, [1810, 1830], [0, 1], clamp);
-  const labelP = interpolate(frame, [1825, 1840], [0, 1], clamp);
+// ─── S9: revised staircase schedule → zoom-out to S10 (f1700..1837) ───
+// GEN-10 REBUILD. The old scene here was two giant "06:00|07:00" labels sweeping
+// left — pure invention (STATE gap 8) that survived only by white-frame SSIM
+// blindness (lesson 8). The ref (measured f1700-1836; probes in
+// work/cls-day/gen10/probe_s9*/probe_fill*/probe_exit.py) is the REVISED PAY-IN
+// SCHEDULE shown full-size:
+//   • static band 07:00-12:00, tall grey y0..259, pitch 309, 07:00 tick x176;
+//   • red playhead line at x98 (y0..925);
+//   • 5 Gantt bars staircasing down, snapped to hour ticks, that FILL navy
+//     left→right (each over ~15f, staggered ~5.3f starting f1723);
+//   • bars then CLEAR left→right (f1767/1770/1776/1782/1786);
+//   • the band zooms out (NON-uniform: grey height 259→40 shrinks faster than
+//     the horizontal pan) + pans right, landing on the S10 band (07:00 x958,
+//     y88 h40, pitch141.6) by ~f1815 and holding to the S10 handoff at f1837.
+const S9_BARS = [
+  // hStart, hEnd (both hour-tick snapped), outer top/height, fill-start frame
+  { hs: 7, he: 8, top: 402, h: 65, fill: 1723 },
+  { hs: 8, he: 9, top: 497, h: 65, fill: 1728 },
+  { hs: 9, he: 9.5, top: 591, h: 65, fill: 1734 },
+  { hs: 9.5, he: 11, top: 691, h: 65, fill: 1739 },
+  { hs: 11, he: 12, top: 790, h: 122, fill: 1744 },
+] as const;
+const S9_CLEAR = [1766, 1769, 1775, 1781, 1784] as const; // fade-start; gone by +3
+
+export const S9ZoomTimes: React.FC<{ frame: number; pack: Pack }> = ({ frame }) => {
+  if (frame < 1700 || frame >= 1837) return null;
+  // band transform: static through f1780, then measured zoom-out to S10.
+  // exit anchors measured off ref: 07:00 tick pans 176→435→560→980 then eases
+  // to the S10 centre 958; grey strip stays at y0 until ~f1805, then rises to
+  // the S10 band (y88 h40); non-uniform — height collapses faster than the pan.
+  const originX = interpolate(frame, [1780, 1785, 1790, 1795, 1805, 1810, 1815], [176, 218, 435, 560, 840, 980, 958], clamp);
+  const pitch = interpolate(frame, [1780, 1790, 1795, 1805, 1810, 1815], [309, 307, 286, 249, 230, 141.6], clamp);
+  const bandY = interpolate(frame, [1780, 1805, 1810, 1815], [0, 0, 64, 88], clamp);
+  const bandH = interpolate(frame, [1780, 1795, 1800, 1805, 1810, 1815], [259, 248, 192, 137, 64, 40], clamp);
+  const labelSize = interpolate(frame, [1780, 1790, 1800, 1815], [44, 44, 32, 21], clamp);
+  const tickAbove = interpolate(frame, [1780, 1815], [0, 4], clamp);
+  const tickBelow = interpolate(frame, [1780, 1795, 1810, 1815], [198, 80, 20, 20], clamp);
+  const redP = 1 - interpolate(frame, [1783, 1788], [0, 1], clamp);
+  const held = frame >= 1815;
+  const hx = (h: number) => originX + (h - 7) * pitch;
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white }}>
-      {zoomOut < 1 && (
-        <div style={{ position: "absolute", inset: 0, transform: `scale(${scale})`, transformOrigin: "960px 200px", opacity: 1 - zoomOut }}>
-          {[0, 1].map((i) => {
-            const x = 380 + i * 780 + sweep;
-            return (
-              <React.Fragment key={i}>
-                <div style={{ position: "absolute", left: x, top: 130, width: 8, height: 180, background: C.navyInk }} />
-                <div style={{ position: "absolute", left: x + 24, top: 152, fontFamily: pack.sans, fontSize: 96, color: C.navyInk }}>
-                  {i === 0 ? "06:00" : "07:00"}
-                </div>
-              </React.Fragment>
-            );
-          })}
-        </div>
+      {redP > 0 && (
+        <div style={{ position: "absolute", left: 96, top: 0, width: 4, height: 925, background: C.red, opacity: redP }} />
       )}
-      {/* settled band with 07:00 milestone */}
-      <div style={{ opacity: bandInP }}>
-        <TimelineBand originX={960} originHour={7} pxPerHour={141.6} />
-        <MarkerTriangle x={958} y={27} size={60} />
-        <Milestone
-          x={960}
-          lineTop={84}
-          lineBottom={330}
-          time={pack.milestones.m0700.time}
-          label={pack.milestones.m0700.label}
-          textY={170}
-          timeSize={40}
-          labelSize={24}
-          opacity={labelP}
-        />
-      </div>
+      <TimelineBand
+        y={bandY}
+        h={bandH}
+        originX={originX}
+        originHour={7}
+        pxPerHour={pitch}
+        labels={frame < 1792 || frame >= 1812}
+        labelSize={labelSize}
+        tickAbove={tickAbove}
+        tickBelow={tickBelow}
+      />
+      {S9_BARS.map((b, i) => {
+        const clearP = interpolate(frame, [S9_CLEAR[i], S9_CLEAR[i] + 3], [0, 1], clamp);
+        if (clearP >= 1) return null;
+        const fillPx = interpolate(frame, [b.fill, b.fill + 15], [0, 1], clamp) * ((b.he - b.hs) * pitch + 8);
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: hx(b.hs) - 4,
+              top: b.top,
+              width: (b.he - b.hs) * pitch + 8,
+              height: b.h,
+              boxSizing: "border-box",
+              border: `4px solid ${C.navyDeep}`,
+              borderRadius: 15,
+              background: `linear-gradient(90deg, ${C.navyBg} 0 ${fillPx}px, ${C.chipGrey} ${fillPx}px 100%)`,
+              opacity: 1 - clearP,
+            }}
+          />
+        );
+      })}
+      {/* hold: S10 band furniture from f1815 so the f1837 handoff is continuous */}
+      {held && (
+        <>
+          <MarkerTriangle x={958} y={27} size={60} />
+          <Milestone x={958} lineTop={84} lineBottom={148} color={C.marker} />
+        </>
+      )}
     </div>
   );
 };
