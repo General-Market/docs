@@ -147,10 +147,13 @@ const LOGO_FRONT = lutS([[0, 440], [2, 760], [5, 880], [8, 1015], [11, 1075], [1
 // by f48 (measured mark-left-column trims f24..60).
 const RISE = lutS([[0, 180], [31, 180], [32, 171], [34, 160], [36, 137], [38, 70], [40, 30], [44, 7], [48, 1], [50, 0]]);
 // per-pillar icon draw-on fronts (video x across each 180px icon; Settlement
-// leads, Data trails — ref shows all three tracing ~f36..62)
-const ICON_S = lutS([[36, 560], [58, 760]]);
-const ICON_P = lutS([[38, 845], [58, 1045]]);
-const ICON_D = lutS([[40, 1165], [60, 1365]]);
+// leads, Data trails — ref shows all three tracing ~f36..62). Each icon spans
+// left..left+180 (S 572..752, P 857..1037, D 1177..1357); the soft mask clears
+// only where x <= front-46, so the front must reach icon_right+46 or the right
+// edge sits permanently dimmed (was ~27%, the S1 "grey right edge" defect).
+const ICON_S = lutS([[36, 560], [58, 760], [64, 800]]);
+const ICON_P = lutS([[38, 845], [58, 1045], [64, 1086]]);
+const ICON_D = lutS([[40, 1165], [60, 1365], [66, 1406]]);
 
 // ─── S1: intro (f0..123) — draw-on reveal, then rise + icon draw ───
 // Exit f108..122: a white slash splits the card in two; both pieces are
