@@ -34,17 +34,34 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   // handoff (matching hex-cities appear at their exact positions).
   const linesOut = lerp(f, [1290, 1303], [1, 0]);
 
-  // pair carousel: old fades in place, next rises ~90px into the slots
+  // pair carousel: each pair CONVERGES onto its horizon line — the above-line
+  // word DROPS in from the frame top (glyph-tracked y62→316 over in..in+12,
+  // ease-out cubic) while the below-line word RISES from y548→381 (in+2..in+10).
+  // Old pair fades IN PLACE at its settled slot; entrance is motion, not opacity
+  // (ref labels are solid the instant they appear). Prior "rises ~90px" was a
+  // partial mis-measure — it is a ~253px drop / ~165px rise (glyph-tracked
+  // f1098-1112 & the f1135 EUR/RUB handoff; identical for every pair).
   const sched = COPY.pairSchedule;
+  const easeRem = (start: number, dur: number) =>
+    Math.pow(1 - lerp(f, [start, start + dur], [0, 1]), 3); // 1→0 ease-out cubic
   const activePairs = sched
     .map((p) => {
-      const rise = lerp(f, [p.in, p.in + 12], [90, 0]);
-      const op = lerp(f, [p.in, p.in + 7], [0, 1]) * lerp(f, [p.out, p.out + 8], [1, 0]);
-      return { ...p, rise, op };
+      const drop = 253 * easeRem(p.in, 12); // above-line words fall from frame top
+      const rise = 165 * easeRem(p.in + 2, 10); // below-line words rise from below
+      const op = f < p.in ? 0 : lerp(f, [p.out, p.out + 8], [1, 0]);
+      return { ...p, drop, rise, op };
     })
     .filter((p) => p.op > 0);
 
-  const stacksOp = lerp(f, [1085, 1100], [0, 1]);
+  // pill stacks REBUILD with every carousel pair — full through a pair, then
+  // collapse the instant the next pair enters, then re-stack outward from the
+  // line (glyph-tracked: full f1134, near-empty f1136, refilled ~f1148). Tie the
+  // reveal base to the active pair's in-time; the collapse falls out for free
+  // when it switches. First reveal pops fully-opaque ~f1102 (no fade); the last
+  // pair holds until the f1290 line/pill/label exit fade.
+  const activePairIn = sched.reduce((a, p) => (p.in <= f ? p.in : a), -1);
+  const pillBase = activePairIn + 2;
+  const stacksOp = activePairIn >= 0 ? 1 : 0;
 
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
@@ -71,20 +88,21 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
       )}
       <Badge letter="A" cx={badgeA.cx} cy={badgeA.cy} r={badgeA.r} opacity={badgeOp} />
       <Badge letter="B" cx={badgeB.cx} cy={badgeB.cy} r={badgeB.r} opacity={badgeOp} />
-      {/* pair labels hug the lines (fr_1150: cap −64 above, +5 below) */}
+      {/* pair labels converge on the lines (fr_1150: cap −64 above, +5 below);
+          above-line words descend (−drop), below-line words rise (+rise) */}
       {activePairs.map((p, i) => (
         <React.Fragment key={`${p.top}${p.bottom}${i}`}>
-          <SerifLabel text={p.top} x={1648} capTop={line1 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op * linesOut} />
+          <SerifLabel text={p.top} x={1648} capTop={line1 - 64 - p.drop} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op * linesOut} />
           <SerifLabel text={p.bottom} x={1648} capTop={line1 + 5 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op * linesOut} />
-          <SerifLabel text={p.bottom} x={113} capTop={line2 - 64 + p.rise} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op * linesOut} />
+          <SerifLabel text={p.bottom} x={113} capTop={line2 - 64 - p.drop} fs={CITIES.pairFs} color={C.serifNavy} opacity={p.op * linesOut} />
           <SerifLabel text={p.top} x={113} capTop={line2 + 2 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op * linesOut} />
         </React.Fragment>
       ))}
       {/* pill stacks at measured column centers (fr_1150) */}
       {stacksOp > 0 && (
         <>
-          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={1085} opacity={stacksOp * linesOut} />
-          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={1095} opacity={stacksOp * linesOut} />
+          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={pillBase} opacity={stacksOp * linesOut} />
+          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={pillBase} opacity={stacksOp * linesOut} />
         </>
       )}
     </AbsoluteFill>
@@ -141,8 +159,12 @@ const PairStacks: React.FC<{
     {cols.map((col, si) => (
       <React.Fragment key={si}>
         {col.map(([x, y, w, h, color], i) => {
-          if (f < base + si * 5 + i * 4) return null;
-          const above = y + h / 2 < lineY;
+          // build outward from the line: each pill pops when the reveal front,
+          // travelling ~1 row / 1.3f, reaches its distance from the line (ref:
+          // nearest pill f1102, farthest ~1110). Above & below grow in parallel.
+          const cy = y + h / 2;
+          if (f < base + Math.round(Math.abs(cy - lineY) / 20)) return null;
+          const above = cy < lineY;
           return (
             <div
               key={i}
