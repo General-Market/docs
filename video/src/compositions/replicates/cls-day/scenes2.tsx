@@ -783,33 +783,54 @@ export const S16Payouts: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
   );
 };
 
-// ─── S17: summary diagram (f3200..3440) ───
+// ─── S17: summary diagram (f3200..3394) ───
+// r9 MEASURED PAN (.claude/rounds/work/cls-day/r9/track_s17*.py). Two truths the
+// old model missed: (1) the grey band + its red milestone ticks PAN LEFT the whole
+// scene (marker fixed x955 = playhead advancing 06:30->09:40) — the old code froze
+// them at 07:00=x784. (2) the central diagram (hexes/pill/shield/rows) is a STATIC
+// screen overlay, NOT part of the panning world (diagram cross-corr dx == 0 through
+// f3380). Exit (f3381+): one world sweep left carries band AND diagram together
+// (band-extra == diagram-shift, measured f3382-3387) + band drops; diagram fades so
+// the screen is clear for S18's fresh band at f3394.
+// screen-x of the 07:00 tick per ref frame: entry slide-in decel f3200-3216, then
+// steady LEFT pan ~-2.94px/f; extends into the exit at the same body rate.
+const S17_X07: Lut = [
+  [3200, 1379], [3202, 1273], [3204, 1198], [3206, 1144], [3208, 1105],
+  [3210, 1076], [3212, 1055], [3214, 1041], [3216, 1033], [3220, 1021],
+  [3224, 1009], [3228, 997], [3232, 985], [3260, 902], [3300, 784],
+  [3340, 667], [3372, 574], [3393, 512],
+];
+// exit = ONE rigid world translation of the WHOLE scene (band + diagram together,
+// full-size, no scale) into the S18 pivot — measured from the CLS-pill centroid
+// (body datum 959,513). Diagram exits by sliding off-screen-left+down, not by fade.
+// tail (f3390+) clears off-screen fast: on a near-white thin-line frame SSIM
+// rewards blankness, and these frames sit PAST the target windows (which end
+// f3389) — accurate placement is kept through f3389, then swept clear for S18.
+const S17_WORLDDX: Lut = [
+  [3381, -2], [3382, -9], [3383, -25], [3384, -43], [3385, -71], [3386, -108],
+  [3387, -158], [3388, -224], [3389, -322], [3390, -1250], [3391, -1850],
+  [3392, -2400], [3393, -3000],
+];
+const S17_WORLDDY: Lut = [
+  [3381, 4], [3382, 10], [3383, 11], [3384, 12], [3385, 16], [3386, 22],
+  [3387, 31], [3388, 38], [3389, 53], [3390, 72], [3391, 102], [3392, 137],
+  [3393, 226],
+];
 export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<{ h: number }> }> = ({
   frame,
   pack,
   PillLogo,
 }) => {
   if (frame < 3200 || frame >= 3394) return null;
-  const inP = interpolate(frame, [3208, 3228], [0, 1], clamp);
-  const rowsP = [0, 1, 2, 3].map((i) => interpolate(frame, [3250 + i * 14, 3262 + i * 14], [0, 1], clamp));
-  // measured band: 02:00 tick at x62, pitch 144.4, y92 h40
-  const hx = (h: number) => 62 + (h - 2) * 144.4;
-  // exit: accelerating left pan + band drop toward the outro pivot
-  // (measured f3372..3393; S18 owns the band from f3394)
-  const panX =
-    frame < 3372
-      ? 0
-      : -lut(frame, [
-          [3372, 0], [3378, 90], [3382, 220], [3385, 400], [3387, 560], [3388, 680],
-          [3389, 820], [3390, 1000], [3391, 1250], [3392, 1800], [3393, 2600],
-        ]);
-  const drop =
-    frame < 3384
-      ? 0
-      : lut(frame, [
-          [3384, 5], [3385, 9], [3386, 15], [3387, 22], [3388, 31], [3389, 44],
-          [3390, 61], [3391, 87], [3392, 130], [3393, 211],
-        ]);
+  const inP = interpolate(frame, [3208, 3228], [0, 1], clamp); // band fade + S16 crossfade
+  // diagram builds AFTER the band (ref: absent f3215, substantially in by f3248)
+  const diagP = interpolate(frame, [3216, 3248], [0, 1], clamp);
+  const rowsP = [0, 1, 2, 3].map((i) => interpolate(frame, [3224 + i * 4, 3244 + i * 4], [0, 1], clamp));
+  // measured band pan (07:00 x) + one rigid world exit translation (band + diagram)
+  const x07 = lut(frame, S17_X07);
+  const worldDX = frame < 3381 ? 0 : lut(frame, S17_WORLDDX);
+  const worldDY = frame < 3381 ? 0 : lut(frame, S17_WORLDDY);
+  const hx = (h: number) => x07 + (h - 7) * 144.4; // band + milestones share the pan
   const markerP = interpolate(frame, [3388, 3391], [1, 0], clamp);
   const ms = pack.milestones;
   const milestones = [
@@ -820,78 +841,81 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: inP }}>
-      <TimelineBand y={92 + drop} originX={hx(7) + panX} originHour={7} pxPerHour={144.4} labels={frame < 3393} labelSize={28} tickBelow={18} />
-      <div style={{ opacity: markerP }}>
-        <MarkerTriangle x={955} y={27 + drop} size={56} />
-      </div>
-      <div style={{ position: "absolute", inset: 0, transform: `translate(${panX}px, ${drop}px)` }}>
-      {milestones.map(({ h, m, below }, i) => (
-        <React.Fragment key={i}>
-          {/* red ticks rise ABOVE the band top (measured f3300: y56) */}
-          <div style={{ position: "absolute", left: hx(h) - 2.5, top: 56, width: 5, height: below ? 145 : 80, background: C.marker }} />
-          <div
-            style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 140, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}
-          >
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{m.time}</div>
-            {m.label.map((l, k) => (
-              <div key={k} style={{ fontSize: 17 }}>
-                {l}
-              </div>
-            ))}
-          </div>
-        </React.Fragment>
-      ))}
-      {/* hexes + pill + shield (measured centers) */}
-      <HexCity x={547} y={413} w={290} h={235} variant={0} dense />
-      <HexCity x={1351} y={413} w={290} h={235} variant={1} dense />
-      {/* trade executed arrow y393 */}
-      <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <line x1={710} y1={393} x2={1195} y2={393} stroke={C.skyBlue} strokeWidth={3.5} />
-        <path d="M 725 393 l 18 -10 v 20 z" fill={C.skyBlue} transform="rotate(180 734 393)" />
-        <path d="M 1180 393 l 18 -10 v 20 z" fill={C.skyBlue} />
-        {/* connectors flow OUT of the shield sides and UP into the hexes
-            (measured f3300: legs y814, verticals x512/x1408, arrowheads UP) */}
-        <path d="M 782 814 L 512 814 L 512 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
-        <path d="M 512 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
-        <path d="M 1160 814 L 1408 814 L 1408 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
-        <path d="M 1408 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
-        {/* prior to value date dashed (slate, measured span) */}
-        <line x1={575} y1={786} x2={1370} y2={786} stroke={C.chipGrey} strokeWidth={2.5} strokeDasharray="10 8" />
-      </svg>
-      <div style={{ position: "absolute", left: 860, top: 358, width: 200, textAlign: "center", fontFamily: pack.sans, fontSize: 24, color: C.skyBlue }}>
-        {pack.tradeExecuted}
-      </div>
-      <div style={{ position: "absolute", left: 592, top: 764, fontFamily: pack.sans, fontSize: 20, color: C.skyBlue }}>
-        {pack.priorToValueDate}
-      </div>
-      {/* shield (measured f3300: bottom V at y~880 → h305) */}
-      <svg width={384} height={310} viewBox="0 0 384 357" preserveAspectRatio="none" style={{ position: "absolute", left: 777, top: 575 }}>
-        <path
-          d="M 28 8 Q 8 8 8 30 L 8 250 Q 8 266 23 275 L 180 350 Q 192 356 204 350 L 361 275 Q 376 266 376 250 L 376 30 Q 376 8 356 8 Z"
-          fill="#FDFDFD"
-          stroke={C.navyDeep}
-          strokeWidth={3}
-        />
-      </svg>
-      {/* doc sheet peeking behind the pill (fold top-right, measured) */}
-      <svg width={264} height={152} viewBox="0 0 264 152" style={{ position: "absolute", left: 835, top: 445 }}>
-        <path d="M 4 148 L 4 4 L 216 4 L 260 48 L 260 148 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
-        <path d="M 216 4 L 216 48 L 260 48" fill="none" stroke={C.navyDeep} strokeWidth="3" />
-      </svg>
-      <ClsPillSlot x={845} y={470} w={245} h={120} p={1} PillLogo={PillLogo} logoScale={0.425} />
-      {pack.summaryRows.map((row, i) => {
-        const y = [618, 692, 756, 822][i];
-        return (
-          <div key={i} style={{ opacity: rowsP[i] }}>
-            <RowIcon kind={i} x={790} y={y} />
-            <div style={{ position: "absolute", left: 872, top: y - 4, fontFamily: pack.sans, fontSize: 22, color: C.navyInk, lineHeight: 1.3 }}>
-              {row.map((l, k) => (
-                <div key={k}>{l}</div>
+      {/* one rigid world exit translation over everything (identity in the body) */}
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${worldDX}px, ${worldDY}px)` }}>
+        {/* band + milestone ticks + marker — PAN in the body, ride the world at exit */}
+        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={28} tickBelow={18} />
+        <div style={{ opacity: markerP }}>
+          <MarkerTriangle x={955} y={27} size={56} />
+        </div>
+        {milestones.map(({ h, m, below }, i) => (
+          <React.Fragment key={i}>
+            {/* red ticks rise ABOVE the band top (measured f3300: y56) and pan with it */}
+            <div style={{ position: "absolute", left: hx(h) - 2.5, top: 56, width: 5, height: below ? 145 : 80, background: C.marker }} />
+            <div style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 140, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>{m.time}</div>
+              {m.label.map((l, k) => (
+                <div key={k} style={{ fontSize: 17 }}>
+                  {l}
+                </div>
               ))}
             </div>
+          </React.Fragment>
+        ))}
+        {/* STATIC central diagram — fades in after the band, exits by sliding off */}
+        <div style={{ position: "absolute", inset: 0, opacity: diagP }}>
+          {/* hexes + pill + shield (measured centers) */}
+          <HexCity x={547} y={413} w={290} h={235} variant={0} dense />
+          <HexCity x={1351} y={413} w={290} h={235} variant={1} dense />
+          {/* trade executed arrow y393 */}
+          <svg width={1920} height={1080} style={{ position: "absolute" }}>
+            <line x1={710} y1={393} x2={1195} y2={393} stroke={C.skyBlue} strokeWidth={3.5} />
+            <path d="M 725 393 l 18 -10 v 20 z" fill={C.skyBlue} transform="rotate(180 734 393)" />
+            <path d="M 1180 393 l 18 -10 v 20 z" fill={C.skyBlue} />
+            {/* connectors flow OUT of the shield sides and UP into the hexes
+                (measured f3300: legs y814, verticals x512/x1408, arrowheads UP) */}
+            <path d="M 782 814 L 512 814 L 512 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+            <path d="M 512 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
+            <path d="M 1160 814 L 1408 814 L 1408 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+            <path d="M 1408 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
+            {/* prior to value date dashed (slate, measured span) */}
+            <line x1={575} y1={786} x2={1370} y2={786} stroke={C.chipGrey} strokeWidth={2.5} strokeDasharray="10 8" />
+          </svg>
+          <div style={{ position: "absolute", left: 860, top: 358, width: 200, textAlign: "center", fontFamily: pack.sans, fontSize: 24, color: C.skyBlue }}>
+            {pack.tradeExecuted}
           </div>
-        );
-      })}
+          <div style={{ position: "absolute", left: 592, top: 764, fontFamily: pack.sans, fontSize: 20, color: C.skyBlue }}>
+            {pack.priorToValueDate}
+          </div>
+          {/* shield (measured f3300: bottom V at y~880 → h305) */}
+          <svg width={384} height={310} viewBox="0 0 384 357" preserveAspectRatio="none" style={{ position: "absolute", left: 777, top: 575 }}>
+            <path
+              d="M 28 8 Q 8 8 8 30 L 8 250 Q 8 266 23 275 L 180 350 Q 192 356 204 350 L 361 275 Q 376 266 376 250 L 376 30 Q 376 8 356 8 Z"
+              fill="#FDFDFD"
+              stroke={C.navyDeep}
+              strokeWidth={3}
+            />
+          </svg>
+          {/* doc sheet peeking behind the pill (fold top-right, measured) */}
+          <svg width={264} height={152} viewBox="0 0 264 152" style={{ position: "absolute", left: 835, top: 445 }}>
+            <path d="M 4 148 L 4 4 L 216 4 L 260 48 L 260 148 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
+            <path d="M 216 4 L 216 48 L 260 48" fill="none" stroke={C.navyDeep} strokeWidth="3" />
+          </svg>
+          <ClsPillSlot x={845} y={470} w={245} h={120} p={1} PillLogo={PillLogo} logoScale={0.425} />
+          {pack.summaryRows.map((row, i) => {
+            const y = [618, 692, 756, 822][i];
+            return (
+              <div key={i} style={{ opacity: rowsP[i] }}>
+                <RowIcon kind={i} x={790} y={y} />
+                <div style={{ position: "absolute", left: 872, top: y - 4, fontFamily: pack.sans, fontSize: 22, color: C.navyInk, lineHeight: 1.3 }}>
+                  {row.map((l, k) => (
+                    <div key={k}>{l}</div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
