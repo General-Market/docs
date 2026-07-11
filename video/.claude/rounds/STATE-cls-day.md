@@ -24,6 +24,43 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 - Owner directive 2026-07-09: one round per session; land, log, stop;
   inheritor resumes from this file.
 
+## ANIMATION-FIDELITY round — 2026-07-11 (eye-judged, not SSIM)
+
+Owner directive: these are MOTION-DESIGN videos — reproduce the ACTUAL
+animations, judged by side-by-side filmstrips, not SSIM. First animation
+landed: the **S1 intro draw-on reveal** (was invented opacity fades).
+
+- **Ref motion (measured per-pixel f0..62, 25fps):** the intro is a DRAW-ON,
+  not a fade. (1) mark+letters wipe on under ONE soft-edged L-to-R front —
+  mark clears ~f2, C ~f8, L ~f14, S ~f23; (2) tagline fades in at a
+  centered-LOW rest; (3) the whole lockup then RISES ~180px (mark-crescent
+  top y428→248) over f31..48 into the end-card layout; (4) each pillar icon
+  DRAWS ON L-to-R (Settlement leads, red-arm first) f36..62; labels fade
+  f34..44. Ref rise curve measured off mark-left-column trims.
+- **Replaced:** the old S1 did a whole-lockup opacity fade (markP 0.15→1,
+  lettersP/taglineP/iconsP plain opacity) — no L-to-R motion, no rise; the
+  lockup sat statically in end-card position the whole time. Gap item #7 in
+  the r8 board ("mark draw-on is a GUESS") — now measured.
+- **Mechanism:** `LogoCard` reveal props are now optional (logoFront /
+  iconFronts = soft L-to-R `mask-image` linear-gradient fronts; taglineOpacity
+  / labelOpacity; riseY translateY) and DEFAULT to fully-shown, so S19's end
+  card (passes none) stays static — verified at f3600. Exit slash unchanged
+  (operates on the settled card, f107+). LUTs: LOGO_FRONT / RISE / ICON_S/P/D
+  in scenes1.tsx.
+- **Filmstrip (eye gate):** `work/cls-day/anim/s1_intro_filmstrip.png`
+  (ref row / replica row, f2 f5 f8 f14 f23 f38 f48 f60) — motion MATCHES
+  across all four phases; rise offsets align at f38/f48. Regression check
+  `work/cls-day/anim/s1_sanity_settle_exit.png` (f100 settled, f114 exit,
+  f3600 endcard all clean).
+- **Still needing the same eye-pass (invented/weird motion vs ref clean
+  animation), next priorities:** S2 currency pairs pan/plunge (heavily
+  LUT'd — verify the pan-in + funnel read as the ref's carousel, not
+  invented); S3 globe DOCK-IN + pan-left + padlock slide (f285..352); S4
+  hex spread + badge back-ease + arrow draw + pill (f462..618); S7/S13
+  donut ring sweeps + chip runs; S18 outro rotation (r1's worst window,
+  choreography invented). Each: extract dense ref frames, identify
+  mechanism (draw/slide/scale), rebuild, filmstrip-gate.
+
 ## Architecture (all in the lane)
 
 - `data.ts` — palette, fonts, BAND geometry, scene table, all copy, Pack

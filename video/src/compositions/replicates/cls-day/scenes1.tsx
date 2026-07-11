@@ -40,14 +40,33 @@ const lutS =
 // ─── Logo card (intro + end card share this layout) ───
 // End-card geometry: mark x422 y166 size 235; letters x702 y166 h230;
 // tagline x442 y426 (65px light sans); icons y651 h170; labels y866 serif 34.
+//
+// The intro is a DRAW-ON reveal (measured from ref f0..62, 25fps — the ink
+// mechanism, not the old opacity fade): the mark+letters wipe on L-to-R
+// under one soft-edged front (mark done ~f2, C ~f8, L ~f14, S ~f23); the
+// tagline fades in at rest; the whole lockup then RISES ~180px into place
+// (f31..48) while each pillar icon draws on L-to-R (Settlement leads). The
+// reveal props are all optional and default to fully-shown, so S19's end
+// card (which passes none) stays static.
+// L-to-R soft reveal: everything left of `front` is opaque, a ~52px feather
+// straddles it. `undefined` ⇒ no mask (fully shown, for the end card).
+const revealMask = (front?: number): React.CSSProperties =>
+  front === undefined
+    ? {}
+    : {
+        WebkitMaskImage: `linear-gradient(to right, #000 ${front - 46}px, transparent ${front + 6}px)`,
+        maskImage: `linear-gradient(to right, #000 ${front - 46}px, transparent ${front + 6}px)`,
+      };
+
 export const LogoCard: React.FC<{
-  markP?: number;
-  lettersP?: number;
-  taglineP?: number;
-  iconsP?: number;
+  logoFront?: number; // L-to-R reveal front x for mark+letters (undefined = full)
+  taglineOpacity?: number;
+  labelOpacity?: number;
+  iconFronts?: [number, number, number]; // per-pillar reveal front x
+  riseY?: number; // whole-content vertical offset (intro lift-in)
   pack: Pack;
   BrandLogo?: React.FC<{ markP: number; lettersP: number }>;
-}> = ({ markP = 1, lettersP = 1, taglineP = 1, iconsP = 1, pack, BrandLogo }) => {
+}> = ({ logoFront, taglineOpacity = 1, labelOpacity = 1, iconFronts, riseY = 0, pack, BrandLogo }) => {
   const icons = [
     { X: 572, Icon: IconHandshake, label: pack.pillars[0], cx: 672 },
     { X: 857, Icon: IconProcess, label: pack.pillars[1], cx: 950 },
@@ -55,61 +74,85 @@ export const LogoCard: React.FC<{
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.navyBg }}>
-      {BrandLogo ? (
-        <BrandLogo markP={markP} lettersP={lettersP} />
-      ) : (
-        <>
-          <div style={{ position: "absolute", left: 422, top: 166, opacity: markP }}>
-            <ClsMark size={235} />
-          </div>
-          <div style={{ position: "absolute", left: 702, top: 168, opacity: lettersP }}>
-            <ClsLetters height={230} />
-          </div>
-        </>
-      )}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 420,
-          width: 1920,
-          textAlign: "center",
-          fontFamily: pack.sans,
-          fontWeight: 300,
-          fontSize: 66,
-          letterSpacing: 1,
-          color: "#FCFCFC",
-          opacity: taglineP,
-        }}
-      >
-        {pack.tagline}
-      </div>
-      {icons.map(({ X, Icon, label, cx }, i) => (
-        <div key={i} style={{ opacity: iconsP }}>
-          <div style={{ position: "absolute", left: X, top: 651 }}>
-            <Icon size={180} />
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              left: cx - 150,
-              top: 862,
-              width: 300,
-              textAlign: "center",
-              fontFamily: pack.serif,
-              fontSize: 34,
-              color: "#FCFCFC",
-            }}
-          >
-            {label}
-          </div>
+      <div style={{ position: "absolute", inset: 0, transform: riseY ? `translateY(${riseY}px)` : undefined }}>
+        {/* mark + letters, revealed under one L-to-R front */}
+        <div style={{ position: "absolute", inset: 0, ...revealMask(logoFront) }}>
+          {BrandLogo ? (
+            <BrandLogo markP={1} lettersP={1} />
+          ) : (
+            <>
+              <div style={{ position: "absolute", left: 422, top: 166 }}>
+                <ClsMark size={235} />
+              </div>
+              <div style={{ position: "absolute", left: 702, top: 168 }}>
+                <ClsLetters height={230} />
+              </div>
+            </>
+          )}
         </div>
-      ))}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 420,
+            width: 1920,
+            textAlign: "center",
+            fontFamily: pack.sans,
+            fontWeight: 300,
+            fontSize: 66,
+            letterSpacing: 1,
+            color: "#FCFCFC",
+            opacity: taglineOpacity,
+          }}
+        >
+          {pack.tagline}
+        </div>
+        {icons.map(({ X, Icon, label, cx }, i) => (
+          <div key={i}>
+            {/* line-art icon draws on L-to-R */}
+            <div style={{ position: "absolute", inset: 0, ...revealMask(iconFronts?.[i]) }}>
+              <div style={{ position: "absolute", left: X, top: 651 }}>
+                <Icon size={180} />
+              </div>
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: cx - 150,
+                top: 862,
+                width: 300,
+                textAlign: "center",
+                fontFamily: pack.serif,
+                fontSize: 34,
+                color: "#FCFCFC",
+                opacity: labelOpacity,
+              }}
+            >
+              {label}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-// ─── S1: intro (f0..123) — mark draws, letters+tagline+icons reveal ───
+// intro draw-on tables (ref f0..62, 25fps — measured per-pixel):
+// LOGO_FRONT — the mark+letters L-to-R wipe front (video x). Mark 422..657
+// clears f0..2, then letters 702..1514 at ~41px/f (C right 997 done f8, L
+// right 1310 done f14, S right 1514 done f23).
+const LOGO_FRONT = lutS([[0, 440], [2, 760], [5, 880], [8, 1015], [11, 1075], [14, 1320], [17, 1410], [20, 1492], [23, 1550]]);
+// RISE — the lockup lifts from a centered-low rest (mark-crescent top y428)
+// into the end-card layout (y248): translateY +180 held f0..31, eased to 0
+// by f48 (measured mark-left-column trims f24..60).
+const RISE = lutS([[0, 180], [31, 180], [32, 171], [34, 160], [36, 137], [38, 70], [40, 30], [44, 7], [48, 1], [50, 0]]);
+// per-pillar icon draw-on fronts (video x across each 180px icon; Settlement
+// leads, Data trails — ref shows all three tracing ~f36..62)
+const ICON_S = lutS([[36, 560], [58, 760]]);
+const ICON_P = lutS([[38, 845], [58, 1045]]);
+const ICON_D = lutS([[40, 1165], [60, 1365]]);
+
+// ─── S1: intro (f0..123) — draw-on reveal, then rise + icon draw ───
 // Exit f108..122: a white slash splits the card in two; both pieces are
 // STATIC content clipped by the moving slash edges (measured bar extents),
 // while the S2 ruler wipe levels in underneath.
@@ -119,11 +162,22 @@ export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC
   BrandLogo,
 }) => {
   if (frame >= 124) return null;
-  const markP = interpolate(frame, [0, 18], [0.15, 1], { ...clamp, easing: EASE });
-  const lettersP = interpolate(frame, [8, 30], [0, 1], clamp);
-  const taglineP = interpolate(frame, [26, 44], [0, 1], clamp);
-  const iconsP = interpolate(frame, [40, 58], [0, 1], clamp);
-  const card = <LogoCard markP={markP} lettersP={lettersP} taglineP={taglineP} iconsP={iconsP} pack={pack} BrandLogo={BrandLogo} />;
+  const logoFront = LOGO_FRONT(frame);
+  const taglineOpacity = interpolate(frame, [16, 24], [0, 1], clamp);
+  const labelOpacity = interpolate(frame, [34, 44], [0, 1], clamp);
+  const iconFronts: [number, number, number] = [ICON_S(frame), ICON_P(frame), ICON_D(frame)];
+  const riseY = RISE(frame);
+  const card = (
+    <LogoCard
+      pack={pack}
+      BrandLogo={BrandLogo}
+      logoFront={logoFront}
+      taglineOpacity={taglineOpacity}
+      labelOpacity={labelOpacity}
+      iconFronts={iconFronts}
+      riseY={riseY}
+    />
+  );
   if (frame < 107) return card;
   // slash edge tables at y540 (probed white runs f107..117); the slit opens
   // at x~975 and both edges accelerate apart while the ruler plane rises
