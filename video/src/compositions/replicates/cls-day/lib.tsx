@@ -20,9 +20,9 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
 }) => (
   <svg width={size} height={size * 0.69} viewBox="0 0 174 120">
     {/* traced from ref f2550 pill crop (/1.5, origin 863,465) */}
-    {/* red arm along the top-left */}
+    {/* red arm along the top-left: horizontal, then one clean up-step into the
+        clasp junction (ref has no downward hook here — the old Q curl was spurious) */}
     <path d="M 0 30 L 36 30 L 63 5" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M 8 38 Q 8 56 22 63" fill="none" stroke={accent} strokeWidth={S_W} strokeLinecap="round" />
     {/* white right hand (r7 re-trace from the isolated white-ink plate,
         f2550: rounded back, beak palm hook, FOUR hooked finger strokes —
         the old trapezoid-with-fold + bump-chain read wrong at eye level) */}
@@ -30,13 +30,22 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
     <path d="M 72 2 L 124 2 Q 133 2 137 7 L 145 18 Q 148 21 153 21 L 174 21" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
     {/* left palm edge + beak hook curling up-right */}
     <path d="M 72 2 Q 60 12 53 29 Q 49 40 57 44 Q 65 47 71 41 Q 76 36 81 34" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    {/* inner palm line under the hand back */}
-    <path d="M 81 34 Q 96 29 110 29" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
-    {/* four fingers: parallel strokes w/ J-hooks at the lower-left ends */}
-    {([[110, 29, 71, 68], [122, 38, 83, 77], [134, 47, 95, 86], [146, 56, 107, 95]] as const).map(([tx, ty, bx, by], i) => (
+    {/* knuckle ridge: the palm dips from the beak down to the row of knuckles the
+        four fingers hang from (ref f80: the ridge sits at svg_y~64) */}
+    <path d="M 80 44 Q 110 61 149 63" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
+    {/* four fingers wrapping down over the clasp. Ref f80: EVENLY spaced (~15
+        pitch, clear navy gap) and clearly DIAGONAL (~55° down-left, not the steep
+        near-vertical bars) so they read as fingers wrapping over the red hand into
+        the clasp, each ending in a medium up-curling hook. [tx,ty top · bx,by tip] */}
+    {([
+      [103, 65, 76, 110],
+      [119, 67, 92, 112],
+      [134, 67, 108, 110],
+      [148, 63, 124, 104],
+    ] as const).map(([tx, ty, bx, by], i) => (
       <path
         key={i}
-        d={`M ${tx} ${ty} L ${bx} ${by} Q ${bx - 2} ${by + 8} ${bx + 5} ${by + 9} Q ${bx + 12} ${by + 10} ${bx + 13} ${by + 2}`}
+        d={`M ${tx} ${ty} L ${bx} ${by} Q ${bx} ${by + 8} ${bx + 6} ${by + 8} Q ${bx + 12} ${by + 8} ${bx + 12} ${by}`}
         fill="none"
         stroke={ink}
         strokeWidth={S_W}
@@ -44,8 +53,8 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
         strokeLinejoin="round"
       />
     ))}
-    {/* right hand edge from the cuff down to the last finger */}
-    <path d="M 153 21 Q 155 40 146 56" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
+    {/* right hand edge from the cuff down to the knuckle ridge */}
+    <path d="M 153 21 Q 156 44 145 64" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
     {/* bottom-left white cuff dash */}
     <path d="M 0 80 L 28 80" stroke={ink} strokeWidth={S_W} strokeLinecap="round" />
     {/* clasp knuckles (accent, rounded squares descending the diagonal) */}
@@ -78,7 +87,7 @@ export const IconProcess: React.FC<{ size: number; ink?: string; accent?: string
     <path d="M 118 40 l 14 -9 v 18 z" fill={ink} />
     <path d="M 30 70 L 14 70 L 14 150 L 96 150" fill="none" stroke={accent} strokeWidth={S_W} />
     <path d="M 92 141 l 16 9 l -16 9 z" fill={accent} />
-    <path d="M 145 190 L 165 152 L 185 190 Z" fill="none" stroke={ink} strokeWidth={S_W} strokeLinejoin="round" />
+    <path d="M 146 176 L 166 138 L 186 176 Z" fill="none" stroke={ink} strokeWidth={S_W} strokeLinejoin="round" />
   </svg>
 );
 
@@ -98,7 +107,7 @@ export const IconData: React.FC<{ size: number; ink?: string; accent?: string }>
     {[0, 1, 2, 3].map((i) => (
       <rect key={i} x={138 + i * 9} y={146 - 8 - i * 6} width="5" height={8 + i * 6} fill={accent} />
     ))}
-    <path d="M 85 158 L 85 178 M 60 178 L 110 178 M 60 178 a 8 8 0 1 0 -16 0 a 8 8 0 1 0 16 0" fill="none" stroke={ink} strokeWidth={S_W} />
+    <path d="M 85 158 L 85 192 M 58 192 L 112 192 M 60 192 a 8 8 0 1 0 -16 0 a 8 8 0 1 0 16 0" fill="none" stroke={ink} strokeWidth={S_W} />
   </svg>
 );
 

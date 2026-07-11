@@ -67,10 +67,12 @@ export const LogoCard: React.FC<{
   pack: Pack;
   BrandLogo?: React.FC<{ markP: number; lettersP: number }>;
 }> = ({ logoFront, taglineOpacity = 1, labelOpacity = 1, iconFronts, riseY = 0, pack, BrandLogo }) => {
+  // per-icon left/top/size fitted to the ref f80 ink bboxes (measured, not the
+  // label centers): handshake sits right+low of its label, data left of its.
   const icons = [
-    { X: 572, Icon: IconHandshake, label: pack.pillars[0], cx: 672 },
-    { X: 857, Icon: IconProcess, label: pack.pillars[1], cx: 950 },
-    { X: 1177, Icon: IconData, label: pack.pillars[2], cx: 1260 },
+    { X: 600, ty: 666, size: 180, Icon: IconHandshake, label: pack.pillars[0], cx: 672 },
+    { X: 856, ty: 653, size: 180, Icon: IconProcess, label: pack.pillars[1], cx: 950 },
+    { X: 1148, ty: 645, size: 180, Icon: IconData, label: pack.pillars[2], cx: 1260 },
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.navyBg }}>
@@ -107,12 +109,12 @@ export const LogoCard: React.FC<{
         >
           {pack.tagline}
         </div>
-        {icons.map(({ X, Icon, label, cx }, i) => (
+        {icons.map(({ X, ty, size, Icon, label, cx }, i) => (
           <div key={i}>
             {/* line-art icon draws on L-to-R */}
             <div style={{ position: "absolute", inset: 0, ...revealMask(iconFronts?.[i]) }}>
-              <div style={{ position: "absolute", left: X, top: 651 }}>
-                <Icon size={180} />
+              <div style={{ position: "absolute", left: X, top: ty }}>
+                <Icon size={size} />
               </div>
             </div>
             <div
@@ -151,9 +153,9 @@ const RISE = lutS([[0, 180], [31, 180], [32, 171], [34, 160], [36, 137], [38, 70
 // left..left+180 (S 572..752, P 857..1037, D 1177..1357); the soft mask clears
 // only where x <= front-46, so the front must reach icon_right+46 or the right
 // edge sits permanently dimmed (was ~27%, the S1 "grey right edge" defect).
-const ICON_S = lutS([[36, 560], [58, 760], [64, 800]]);
-const ICON_P = lutS([[38, 845], [58, 1045], [64, 1086]]);
-const ICON_D = lutS([[40, 1165], [60, 1365], [66, 1406]]);
+const ICON_S = lutS([[36, 588], [58, 788], [64, 828]]);
+const ICON_P = lutS([[38, 844], [58, 1044], [64, 1085]]);
+const ICON_D = lutS([[40, 1136], [60, 1336], [66, 1377]]);
 
 // ─── S1: intro (f0..123) — draw-on reveal, then rise + icon draw ───
 // Exit f108..122: a white slash splits the card in two; both pieces are
