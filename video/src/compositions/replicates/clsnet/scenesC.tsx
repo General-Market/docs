@@ -627,8 +627,12 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.mapBadges[0] || f >= 3396) return null;
   const mapP = lerp(f, [3104, 3130], [0, 1]);
-  // implode: crisp shrink (no fade) — scale measured off the montage cells
-  const scale = interpolate(f, [3288, 3306, 3312, 3318], [1, 0.55, 0.15, 0], clamp);
+  // implode: crisp shrink (no fade). r9 ground truth (measure_implode.py,
+  // white map-content bbox ratio vs settled 0264): scale 0.804 at f3300,
+  // 0.037 at f3312.5, gone by 3318 — a slow lead-in then a fast collapse.
+  // The old montage-eyeballed curve hit 0.70 at f3300 (shrinking too early),
+  // costing the f3300 keyframe (window #1 worst, idx66 0.802).
+  const scale = interpolate(f, [3288, 3300, 3312.5, 3318], [1, 0.804, 0.037, 0], clamp);
   // light-blue field collapses to a dot (fr_3350: r41 at 960,540), holds,
   // then grows back to the settled circle (fr_3396: r≈458)
   const navyBehind = f >= 3318;
@@ -648,7 +652,7 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
           position: "absolute",
           inset: 0,
           transform: `scale(${scale})`,
-          transformOrigin: "960px 520px",
+          transformOrigin: "960px 537px", // r9 measured implode origin (bbox-center solve)
         }}
       >
         <TracedArt name="worldMap" x={MAP.x} y={MAP.y} opacity={mapP} />
