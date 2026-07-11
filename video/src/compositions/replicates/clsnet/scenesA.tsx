@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate } from "remotion";
-import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG } from "./data";
+import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG, W, H } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { ClsNetBox, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
@@ -284,37 +284,28 @@ export const PrincipleCard: React.FC<{
   );
 };
 
-// Title outro: tilt + white diagonal wipe (f130-150)
+// Title outro: a white diagonal wipe sweeps in from the RIGHT (f139-152) while
+// the title drifts UP, revealing the next scene behind. Measured from the exact
+// ref video (work/clsnet/anim): the wordmark stays HORIZONTAL (no panel
+// rotation — the old −10° tilt + left-wipe were invented) and its centroid
+// rises ~57px by f142; the white/navy boundary is a diagonal whose LEFT edge
+// (navy→white) sweeps top 1920→0 / bottom 1920→0, top leading. Clipping the
+// title away (not painting a white rect) exposes the real RowsBuild/white bg.
 export const TitleOutro: React.FC<{ frame: number; children: React.ReactNode }> = ({
   frame,
   children,
 }) => {
-  const tilt = lerp(frame, [130, 150], [0, -10]);
-  const wipe = lerp(frame, [130, 150], [0, 1]);
+  const dy = interpolate(frame, [136, 142, 150], [0, -50, -150], clamp);
+  const dx = interpolate(frame, [136, 150], [0, 25], clamp);
+  const edgeTop = interpolate(frame, [139, 142, 144, 146, 148, 150, 152], [W, 944, 928, 888, 744, 168, 0], clamp);
+  const edgeBot = interpolate(frame, [139, 142, 144, 146, 148, 150, 152], [W, 840, 752, 568, 0, 0, 0], clamp);
   return (
-    <AbsoluteFill>
-      <AbsoluteFill
-        style={{
-          transform: `rotate(${tilt}deg) translateY(${wipe * -160}px)`,
-          transformOrigin: "30% 40%",
-        }}
-      >
+    <AbsoluteFill
+      style={{ clipPath: `polygon(0 0, ${edgeTop}px 0, ${edgeBot}px ${H}px, 0 ${H}px)` }}
+    >
+      <AbsoluteFill style={{ transform: `translate(${dx}px, ${dy}px)` }}>
         {children}
       </AbsoluteFill>
-      {wipe > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            left: -400 + (1 - wipe) * 2600,
-            top: -200,
-            width: 3200,
-            height: 1600,
-            backgroundColor: C.white,
-            transform: "rotate(-10deg)",
-            transformOrigin: "center",
-          }}
-        />
-      )}
     </AbsoluteFill>
   );
 };
