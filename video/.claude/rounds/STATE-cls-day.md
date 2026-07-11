@@ -105,6 +105,21 @@ only — no baked rasters (brief overrides the anoma raster precedent).
 
 ## Round log
 
+### gen-8 TYPEFACE front — 2026-07-11 (serif screen, COMPLETE — no change)
+
+**The serif is at its floor for cls-day; Hoefler Text stays.** Screened the
+full obtainable field IN-RENDER (11 macOS system + 10 Google display/text
+serifs — Prata/Playfair/DM Serif/Noto Serif Display/Newsreader/Source Serif 4/
+Spectral/PT Serif/Lora/STIX) at true Chromium metrics via a throwaway FontLab
+still harness, then cap-normalized ink-overlap + width/ref. On the dominant S2
+'USD' code (the largest serif ink in the lane): Hoefler **0.092** (w/r 1.01) <
+Times 0.123 < STIX 0.135 < Newsreader 0.151 < Georgia 0.187 < Didot 0.212 <
+Charter 0.227 < Prata 0.252 < Playfair 0.337 < DM Serif 0.433. No obtainable
+face is within 0.03 of Hoefler, and its natural width already matches the ref.
+The proprietary ref face is Klim's FINANCIER (unobtainable). VERDICT: no truer
+obtainable face — Hoefler Text confirmed, NO code change. Full A/B tables +
+harness in `work/cls-shared/fontab/gen8/`; verdict block in cls-shared/fonts.ts.
+
 ### r10 — 2026-07-11 (gen-8 "go further" session, BUILD COMPLETE; official verify PENDING orchestrator)
 
 **Front: THE S5 SKYLINE. Landed the LAST clean structural bug in S5 —

@@ -267,6 +267,42 @@ Mandate: grind ONLY the fixable/measurable windows to the honest ceiling (~94.5-
 - Still-open non-top-12: **globe art re-trace** (r8 lead 4; broken white swoosh in globeA, ~80f at ~0.89) and **title intro R->L reveal timing** (gap 4) and **serif finish** (scenesC:695 report numerals still SERIF not Didot; flows/mosaic capTop not re-measured for Georgia — the -.002/-.004 spend from e63fb9729). These are the remaining fixable leads if r10 grinds past 94.
 - **Verdict:** the three biggest measurable levers are spent. Realistic continued-grind asymptote still ~94.5-95; 96 still walls without the standalone city/building line-art re-trace pipeline (a project, not a round). Recommend: run the official r9 verify, then decide ship vs. one more grind round (globe re-trace + box-entry + serif finish) vs. the trace-pipeline call.
 
+### gen-8 TYPEFACE front — 2026-07-11 (serif screen, COMPLETE — no change; Playfair handoff)
+
+**Georgia stays IN SCOPE; Playfair Display is the eye-truest obtainable face
+and a future OUT-OF-SCOPE lever.** Screened the full field IN-RENDER (11 macOS
+system + 10 Google serifs — Prata/Playfair/DM Serif/Noto Serif Display/
+Newsreader/Source Serif 4/Spectral/PT Serif/Lora/STIX) via a throwaway FontLab
+still harness + real-frame ffmpeg SSIM + eye strips (`work/cls-shared/fontab/
+gen8/`). Unlike cls-day, the clsnet field SPLITS: current Georgia is
+mid/bottom-pack on in-render ink-overlap (CLSNet **0.285**, AED **0.329**),
+beaten by Charter 0.190/0.119 (system, but the EYE rejects it — low-contrast,
+wrong category, the lesson-8 trap), Playfair **0.162**/0.215, Prata 0.190/0.149,
+Noto Serif 0.197/0.220, DM Serif 0.209/0.185. The eye (montage-CLSNet.png)
+confirms the ref is HIGH-CONTRAST and PLAYFAIR DISPLAY is the truest match (N
+thick-diagonal/thin-verticals, elegant S, small e/t); Georgia is a lower-
+contrast / wider compromise.
+- **But the SCORING metric (SSIM) does not reward Playfair IN SCOPE.** Its
+  cap-top factor is +0.190 vs Georgia's +0.135 (measured from the harness), so
+  a fonts.ts-only swap (Georgia's 0.14 capTop is HARDCODED in ui.tsx SerifLabel
+  L187 + scenesA wordmark L76 — off-limits geometry) sits ~12px LOW and LOSES
+  full-frame SSIM: title f125 **.9159->.9093**, endcard f4075 **.8669->.8603**,
+  mosaic f3550 ~flat, flows f425 +.001. Width is fine (Playfair natWidth 665 ≈
+  Georgia 671, so scaleX 0.976 still fits). Every truer face needs its OWN
+  capTop -> NO fonts.ts-only swap beats Georgia. Test swap reverted; NO code
+  change this front.
+- **HANDOFF (needs ui.tsx/scenesA/data.ts — off THIS front's file scope):** a
+  PROPERLY cap-calibrated Playfair (capTop factor 0.14->**0.20**; wordmark
+  scaleX stays ~0.976; mosaic capTop ~+7px at fs138 in the MOS spec) BEATS
+  Georgia on the wordmark crop **+0.0033 at BOTH f125 and f4075** (vertical-
+  swept optimum) and is eye-truest. It is a Google font (network, non-
+  deterministic — r8 left it for that reason) worth ~sub-hundredth globally
+  (lifts the title f99-149 + endcard worst-windows). Adopt only when those
+  geometry files are free and the owner's eye is prioritised over the ~0 score
+  delta. Wiring: `import {loadFont} from "@remotion/google-fonts/
+  PlayfairDisplay"; const {fontFamily}=loadFont("normal",{weights:["400"],
+  subsets:["latin"]}); export const SERIF=fontFamily;` in clsnet/fonts.ts.
+
 ## r5 official verify — logged by orchestrator (2026-07-10 01:22)
 
 - **SCORE 92.7** (video_ssim 0.9131 ·40% / keyframe 0.8964 ·35% / color 0.9896 ·15% / duration 0.9997 ·10%). Trajectory 87.7 → 90.7 → 91.1 → 91.6 → **92.7**. Freshness confirmed vs r4.
