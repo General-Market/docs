@@ -180,6 +180,10 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
   const out = lerp(f, [1462, 1476], [1, 0]);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
+      {/* gen9: fillHex with the native lock city REGRESSED here (f1350 .917->.909,
+          f1420 .868->.861) — during the hexify the ref city is still mid-
+          compression, so the crushed-clip matches better than a filled hex.
+          Kept clip mode; the fill win is steady-state only (MatchingScene). */}
       <HexCity art="cityA" cx={ax} cy={ay} w={hexW} drawP={drawP} artW={1150} />
       <HexCity art="cityB" cx={bx} cy={by} w={hexW} drawP={drawP} artW={1190} />
       <Badge letter="A" cx={ax - hexW * 0.42} cy={ay - hexW * 0.42} r={34} />
@@ -253,8 +257,12 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
     <AbsoluteFill style={{ backgroundColor: C.white }}>
       <EdgeRulers f={f} />
       <div style={{ position: "absolute", inset: 0, opacity: inOp * out }}>
-        <SmallHex art="cityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={1150} letter="A" />
-        <SmallHex art="cityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={1190} letter="B" />
+        {/* gen9: reuse the native-scale lock city traces (r8, 385 bbox) instead
+            of clipping the 1150/1190 full-city traces at 0.184 — the ref hex is
+            FILLED by the building, mine was crushed tiny at the bottom (the
+            r5 downscale-loses-strokes defect, same as the pre-r8 locks hexes). */}
+        <SmallHex art="lockCityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={385} letter="A" fillHex />
+        <SmallHex art="lockCityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={385} letter="B" fillHex />
         {/* elbows + pill columns */}
         <Elbow points={[[MATCH.hexA.cx, 400], [MATCH.hexA.cx, 648], [652, 648]]} arrow="end" opacity={panelOp} />
         <Elbow points={[[MATCH.hexB.cx, 400], [MATCH.hexB.cx, 648], [1298, 648]]} arrow="end" opacity={panelOp} />
