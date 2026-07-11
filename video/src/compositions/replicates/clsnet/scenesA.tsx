@@ -70,8 +70,10 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
       <div
         style={{
           position: "absolute",
-          left: TITLE.wordmark.x,
-          top: TITLE.wordmark.capTop - 0.30 * 200,
+          // -8 = Georgia 'C' left side bearing at fs200 (ink left must land
+          // at the measured x)
+          left: TITLE.wordmark.x - 8,
+          top: TITLE.wordmark.capTop - 0.14 * 200,
           width: TITLE.wordmark.right - TITLE.wordmark.x + 20,
           overflow: "hidden",
         }}
@@ -86,7 +88,9 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
             // ref reveals the trailing letters first (t=0 shows only "t")
             clipPath: `inset(0 0 0 ${(1 - wordP) * 100}%)`,
             whiteSpace: "pre",
-            transform: "scaleX(1.14)",
+            // Georgia natural 669px at fs200 vs ref ink 653 (Playfair
+            // needed 1.14; measured on the rendered still)
+            transform: "scaleX(0.976)",
             transformOrigin: "left top",
           }}
         >
@@ -182,10 +186,12 @@ export const PrincipleCard: React.FC<{
       <div
         style={{
           position: "absolute",
-          left: 28,
-          top: 24,
+          left: 26,
+          top: 19,
           fontFamily: SERIF,
-          fontSize: 44,
+          // ref kicker ink 239x59 (887-1126, 380-439); Georgia fs62 lands it
+          // (the r1 fs44 was ~30% small — Playfair-era, never re-measured)
+          fontSize: 62,
           color: C.cardText,
           lineHeight: 1,
           opacity: parts?.kicker ?? 1,
@@ -196,10 +202,14 @@ export const PrincipleCard: React.FC<{
       <div
         style={{
           position: "absolute",
-          right: 16,
+          right: -5,
           top: stripY - y - 182,
-          fontFamily: SERIF,
-          fontSize: 195,
+          // Didot for the numerals: ref digits are LINING; Georgia's
+          // oldstyle figures lose the digit A/B (0.403 vs Didot 0.317).
+          // fs/right fitted on ink: ref '35' 249x173 ending 3px off the
+          // card edge
+          fontFamily: "Didot, 'Times New Roman', serif",
+          fontSize: 220,
           lineHeight: 1,
           color: "rgba(230,232,240,0.55)",
           opacity: parts?.num ?? 1,

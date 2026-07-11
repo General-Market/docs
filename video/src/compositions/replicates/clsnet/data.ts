@@ -472,13 +472,13 @@ export const MOS = {
     { f: [3480, 3481, 3482, 3483, 3484], x: [0, 372, 764, 1478, 1920] },
     { f: [3483, 3484, 3485, 3486, 3487, 3488], x: [0, 118, 340, 718, 1300, 1920] },
   ],
-  // capTop values are pre-corrected for the Playfair render offset (measured
-  // r5: passing X renders the cap 16px above X at fs138) — they RENDER at the
-  // ref cap tops 94/441/789. Tracking 8px widens Playfair to the ref width.
+  // capTop values are the measured ref cap tops — SerifLabel's Georgia cap
+  // factor (0.14, r8) places them true; the old +16 values were a baked
+  // Playfair correction. Tracking 8 also fits Georgia (AED 283 vs ref 280).
   labelSlots: [
-    { cx: 1482, capTop: 110 },
-    { cx: 1010, capTop: 457 },
-    { cx: 378, capTop: 805 },
+    { cx: 1482, capTop: 94 },
+    { cx: 1010, capTop: 441 },
+    { cx: 378, capTop: 789 },
   ],
   labelFs: 138,
   labelTracking: 8,

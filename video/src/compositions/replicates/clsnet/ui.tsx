@@ -182,7 +182,9 @@ export const SerifLabel: React.FC<{
       style={{
         position: "absolute",
         left: x,
-        top: capTop - 0.3 * fs, // serif cap sits ~0.30em below box top at lh 1
+        // Georgia cap sits 0.14em below CSS top at lh 1 (r8-measured at
+        // fs138 offset 19.4 and fs200 offset 27; Playfair's factor was 0.30)
+        top: capTop - 0.14 * fs,
         width,
         fontFamily: brand.serif,
         fontWeight: 400,
