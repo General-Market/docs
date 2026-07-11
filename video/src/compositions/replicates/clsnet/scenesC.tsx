@@ -30,39 +30,48 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88),
   // then reversed (ref restores the full gantt by 2291)
   const detailP = lerp(f, [2188, 2202], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
-  // shrink-into-doc: full screen → mini panel inside the left doc (quadOut)
-  const st = lerp(f, [2303, 2324], [0, 1]);
-  const sp = 1 - (1 - st) * (1 - st);
+  // shrink-into-doc: full gantt → mini panel inside the left doc. gen10 MEASURED
+  // per-frame from the ref VIDEO (the regular_NNNN plate grid is ~+3f offset and
+  // gave a false ~10f-late read for three rounds). The ref HOLDS the full gantt
+  // to ~f2306 then shrinks FAST 2306-2315 (accelerating). sp maps the measured
+  // navy-panel bbox EXACTLY onto the proportional target REPORT.panel
+  // (340,470,205,120): f2306 (51,72,1660,933)=sp.15 · f2308 (76,108,1531,860)=.225
+  // · f2310 (124,176,1283,722)=.368 · f2312 (216,300,833,471)=.635 · settled 2315.
+  // (was st=lerp[2303,2324] quadOut = the f2306-2318 worst window, panel too
+  // small at f2306 / too late at f2312.)
+  const sp = interpolate(f, [2303, 2306, 2308, 2310, 2312, 2315], [0, 0.15, 0.225, 0.368, 0.635, 1], clamp);
   const R = {
     x: REPORT.panel.x * sp,
     y: REPORT.panel.y * sp + pageY,
     w: 1920 + (REPORT.panel.w - 1920) * sp,
     h: 1080 + (REPORT.panel.h - 1080) * sp,
   };
-  // doc outline keyframed through fr_2306 (offscreen-big) / fr_2312 / fr_2330
+  // doc outline draws around the shrinking panel — completes by 2315 (was 2324)
   const docR = {
-    x: interpolate(f, [2306, 2312, 2324], [-150, 95, REPORT.docL.x], clamp),
-    y: interpolate(f, [2306, 2312, 2324], [-700, -30, REPORT.docL.y], clamp),
-    w: interpolate(f, [2306, 2312, 2324], [2600, 1040, REPORT.docL.w], clamp),
-    h: interpolate(f, [2306, 2312, 2324], [2900, 1070, REPORT.docL.h], clamp),
+    x: interpolate(f, [2306, 2311, 2315], [-150, 95, REPORT.docL.x], clamp),
+    y: interpolate(f, [2306, 2311, 2315], [-700, -30, REPORT.docL.y], clamp),
+    w: interpolate(f, [2306, 2311, 2315], [2600, 1040, REPORT.docL.w], clamp),
+    h: interpolate(f, [2306, 2311, 2315], [2900, 1070, REPORT.docL.h], clamp),
   };
-  const docOp = lerp(f, [2306, 2312], [0, 1]);
-  // r6 measured box entry (navy-blob track 2306-2335): a full-height navy BAR
-  // sweeps left ahead of the box (1834@2306 → 1504@2310, merges into the box
-  // left edge ~2314); the box arrives HUGE and shrinks while sliding —
-  // (cx,size): 1858,836@2315 · 1304,524@2320 · settle 977.5,345@2330 (r1 slid
-  // it in at settled size). Label + logo scale with the box. An orange stub
-  // trails from the box to the right edge, dropping y630→552.
-  const boxW = interpolate(f, [2313, 2315, 2320, 2324], [1000, 836, 524, 420], clamp);
-  const boxCx = interpolate(f, [2313, 2315, 2320, 2324], [2350, 1858, 1304, 1119], clamp);
-  const boxCy = interpolate(f, [2313, 2315, 2320, 2324], [540, 504, 515, 518], clamp);
-  const barX = interpolate(f, [2306, 2310, 2312], [1834, 1504, 1470], clamp);
-  const stubRY = interpolate(f, [2310, 2324], [630, 552], clamp);
-  const stubX0 = f < 2313 ? barX + 56 : boxCx + boxW / 2 + 30;
+  const docOp = lerp(f, [2306, 2311], [0, 1]);
+  // CLSNet box slides in from the RIGHT and SHRINKS as it travels (gen10, box =
+  // square-navy CC in the right region, measured by LEFT-EDGE + side from the ref
+  // video). It arrives BIG and clipped by the screen top/bottom, then converges —
+  // Lx/side: 1589/980@2314 · 1440/836@2315 · 1232/674@2317 · 1157/614@2318 ·
+  // 997/488@2321 → ReportOutScene continues to settle cx959/329@2334. It comes in
+  // WITH the mesh mark + wordmark (ClsNetBox draws both). Nothing shows before
+  // f2314 (left edge at/right-of the screen edge). The r6 "navy bar sweep" was a
+  // mis-read of the shrinking panel's own right edge — removed; the box entry was
+  // ~10f late (entered 2313 at cx2350 offscreen) = the f2306-2318 worst window.
+  const boxLx = interpolate(f, [2313, 2314, 2315, 2317, 2318, 2319, 2321, 2324], [1793, 1589, 1440, 1232, 1157, 1094, 997, 888], clamp);
+  const boxW = interpolate(f, [2313, 2314, 2315, 2317, 2318, 2319, 2321, 2324], [1080, 980, 836, 674, 614, 565, 488, 435], clamp);
+  const boxCy = interpolate(f, [2313, 2315, 2317, 2321, 2325], [528, 515, 509, 516, 519], clamp);
+  const stubRY = interpolate(f, [2314, 2324], [575, 552], clamp);
+  const stubX0 = boxLx + boxW + 20;
   return (
     <AbsoluteFill>
       {/* white ground appears behind the shrinking panel */}
-      {st > 0 && <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />}
+      {sp > 0 && <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />}
       {/* navy page (shrinks to the doc's mini panel) */}
       <div
         style={{
@@ -142,14 +151,11 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           <rect x={177} y={293} width={67} height={22} rx={8} fill={C.orangeDeep} opacity={lerp(f, [2310, 2316], [0, 1])} />
         </svg>
       )}
-      {/* CLSNet box arrives huge from the right and shrinks (r6 measured) */}
-      {f >= 2306 && f < 2314 && (
-        <div style={{ position: "absolute", left: barX, top: 0, width: 46, height: 1080, backgroundColor: C.navy }} />
-      )}
-      {f >= 2308 && stubX0 < 1910 && <Elbow points={[[stubX0, stubRY], [1920, stubRY]]} />}
+      {/* CLSNet box slides in from the right WITH mesh + wordmark (gen10) */}
+      {f >= 2314 && stubX0 < 1910 && <Elbow points={[[stubX0, stubRY], [1920, stubRY]]} />}
       {/* negative A/B (r6): a doc→box left stub at y572 scored −0.002 at
           f2315 — the ref line's exact extent is unmeasured; leave it out */}
-      {f >= 2313 && <ClsNetBox x={boxCx - boxW / 2} y={boxCy - boxW / 2} w={boxW} labelFs={(48 * boxW) / 345} />}
+      {f >= 2314 && <ClsNetBox x={boxLx} y={boxCy - boxW / 2} w={boxW} labelFs={(48 * boxW) / 345} />}
     </AbsoluteFill>
   );
 };
@@ -298,11 +304,12 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
   const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]);
   const meshP = lerp(f, [2342, 2352], [0, 1]);
   const rightOp = lerp(f, [2324, 2330], [0, 1]);
-  // r6: continue the measured box convergence across the 2324 handoff
-  // (GanttScene ends at cx 1119 / w 420) to the settled square by 2330
-  const boxW = interpolate(f, [2324, 2325, 2330], [420, 394, REPORT.box.w], clamp);
-  const boxCx = interpolate(f, [2324, 2325, 2330], [1119, 1073, REPORT.box.x + REPORT.box.w / 2], clamp);
-  const boxCy = interpolate(f, [2324, 2325, 2330], [518, 519, REPORT.box.y + REPORT.box.w / 2], clamp);
+  // gen10: continue the measured box slide across the 2324 handoff (GanttScene
+  // ends cx1105/w418) to the settled square by f2334 — cx989/w347@2329, then
+  // REPORT.box cx959/w329. (was settled by 2330 at cx1073→977.)
+  const boxW = interpolate(f, [2324, 2329, 2334], [418, 347, REPORT.box.w], clamp);
+  const boxCx = interpolate(f, [2324, 2329, 2334], [1105, 989, REPORT.box.x + REPORT.box.w / 2], clamp);
+  const boxCy = interpolate(f, [2324, 2334], [519, REPORT.box.y + REPORT.box.w / 2], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
       <div style={{ position: "absolute", inset: 0, opacity: out }}>

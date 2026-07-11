@@ -379,7 +379,7 @@ export const STRIP2 = {
 export const REPORT = {
   docL: { x: 300, y: 315, w: 270, h: 345 },
   docR: { x: 1390, y: 315, w: 265, h: 345 },
-  box: { x: 805, y: 350, w: 345 },
+  box: { x: 795, y: 357, w: 329 }, // gen10: settled box cx959/cy521/w329 (measured f2334-2340; was 805/350/345 = cx977/w345, ~18px right)
   panel: { x: 340, y: 470, w: 205, h: 120 }, // mini gantt inside docL
   vertLx: 355,
   vertRx: 1528,
