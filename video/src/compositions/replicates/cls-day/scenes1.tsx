@@ -1135,17 +1135,23 @@ const ClB: React.FC = () => (
       <line key={c} x1={249.5 + c * 14.5} y1={114} x2={249.5 + c * 14.5} y2={302} stroke={C.red} strokeWidth="3" />
     ))}
     <path d="M 195 320 L 195 302.5 L 227.5 302.5 L 227.5 320" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* grey slab + right navy building w/ 2x3 square windows */}
-    <rect x={318} y={185} width={20} height={135} fill="#DCDCDC" />
-    <rect x={323.5} y={182.5} width={36.5} height={137.5} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2].map((r) =>
-      [0, 1].map((c) => (
-        <rect key={`${r}${c}`} x={326 + c * 16} y={210 + r * 19} width={11} height={11} fill="none" stroke={NAVY} strokeWidth="3" />
-      )),
-    )}
-    {/* far-right navy L bridge + stepped outline building near 11:00 */}
-    <path d="M 360 257.5 L 430 257.5 L 430 320" fill="none" stroke={NAVY} strokeWidth="3.5" />
-    <path d="M 440 320 L 440 255 L 472 255 L 472 275 L 505 275 L 505 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {/* gen14 ClB RIGHT re-reg (ref f850, probe: fine window/wall scan):
+        (a) the r3 3-row wide navy building was a full white rect that hid
+        the grey slab — ref shows a NARROW window-wall: grey slab (screen
+        675..684) reads THROUGH a 2x2 window box (localY 223..250, right
+        wall localX 355 to band), (b) the far-right L-bridge (localX
+        360..430) + stepped outline building (440..505) do NOT exist — right
+        of the 11:00 tick the ref is empty white but for one small L-notch
+        at localX 403 (screen 749). Removing the phantom stepped tower is
+        the r15 r2c3 win (misplaced ink → white). */}
+    <rect x={328.5} y={216} width={10} height={104} fill="#DCDCDC" />
+    <line x1={355} y1={188} x2={355} y2={320} stroke={NAVY} strokeWidth="3.5" />
+    <rect x={330} y={222} width={25} height={29} fill="none" stroke={NAVY} strokeWidth="3.5" />
+    <line x1={330} y1={236} x2={355} y2={236} stroke={NAVY} strokeWidth="3" />
+    <line x1={342} y1={222} x2={342} y2={251} stroke={NAVY} strokeWidth="3" />
+    {/* small L-notch right of the 11:00 tick */}
+    <path d="M 393 260 L 406 260" fill="none" stroke={NAVY} strokeWidth="3.5" />
+    <line x1={403} y1={260} x2={403} y2={320} stroke={NAVY} strokeWidth="3.5" />
   </svg>
 );
 
