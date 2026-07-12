@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate } from "remotion";
 import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG, W, H } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
-import { ClsNetBox, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
+import { ClsNetBox, Hexagon, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
 import { ClsMark } from "../cls-shared/logo";
 
 // Faithful swirl mark placement (measured from ref f110: white-swirl bbox
@@ -945,6 +945,36 @@ export const NetworkScene: React.FC<{ frame: number }> = ({ frame }) => {
   const wipe = lerp(f, [900, 913], [0, 1]); // hard-ish cut to cities at 913
   return (
     <AbsoluteFill style={{ backgroundColor: C.blue }}>
+      {/* White hex-interior backing. The mHex*L potrace faces are a stack of
+          separate per-colour polygons (white/navy/orange/grey/tan) that do
+          NOT perfectly abut — sub-pixel gaps thread the whole face. Against
+          the blue scene bg those gaps read as ghost blue hairlines beside
+          every stroke ("doubled/rushed" look; probed f890: #4CA0D3 = 76,160,211
+          bleeding through, 8119 interior px). The ref hex interior is solid
+          white. One clean vector hex behind each art fills every gap; sized to
+          land just inside the navy border (ratio 0.887, inset 1.5%) which the
+          art re-draws on top, so nothing spills over the blue. This is the
+          model un-rushing — NOT a re-trace (gen12 proved finer tracing loses). */}
+      {NET_HEXES.map((hx) => {
+        if (f < hx.f0) return null;
+        const p = lerp(f, [hx.f0, hx.f1], [0, 1]);
+        const cx = hx.from[0] + (hx.to[0] - hx.from[0]) * p;
+        const cy = hx.from[1] + (hx.to[1] - hx.from[1]) * p;
+        const w = 215 + (375 - 215) * p;
+        const bw = w * 0.985;
+        return (
+          <Hexagon
+            key={`bg-${hx.art}`}
+            cx={cx}
+            cy={cy}
+            w={bw}
+            h={bw * 0.887}
+            fill={C.white}
+            stroke={C.white}
+            strokeWidth={3}
+          />
+        );
+      })}
       {/* elbow connectors, drawing outward from their origin hexes */}
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
         {NET_ELBOWS.map((e, i) => {

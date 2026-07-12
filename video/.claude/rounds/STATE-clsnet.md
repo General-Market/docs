@@ -898,3 +898,63 @@ by eye (ref-vs-replica crops), NOT SSIM. Three targets — mark / globe / hexes.
 tsc clean (0 errors). Build-only round, no full verify. Commits staged clsnet-
 only paths (scenesA.tsx twice) — lane isolation held vs the parallel cls-day
 builder (its commit `dc654a765` interleaved cleanly).
+
+### HEX-WINDOW FINE-DETAIL round (2026-07-11, sole clsnet agent) — the named "true model floor" — LANDED 1 commit
+Mandate: rebuild the network-hex building-face window detail (mullions) as CLEAN
+VECTOR, not another trace of the compressed source (gen12 proved finer tracing
+LOSES). Frames measured against the EXACT ref video (25fps, ref n = comp n).
+Network settled window f744-912; clearest settled frame f890. Crops/gate art in
+`work/clsnet/models/` (cmp_{heli,bank,bank2,city2}.png ref-over-replica; zc_*.png
+6x window zooms; ab_{heli,temple}_oldfix.png; morph_765_fix.png).
+
+**HONEST DIAGNOSIS — the residual was MIS-NAMED by every prior round.** The
+MODEL-DETAIL round called it "MISSING fine detail lines (window mullions potrace
+dropped)". FALSE. At 6x the mullions/columns/window-squares are ALL PRESENT in
+the replica (same count, same positions). The real defect (pixel-probed f890
+scanline y470): the mHex*L asset is a stack of 5 separate per-colour potrace
+polygons (#FFFFFF/#002753/#D45837/#A8A8A8/#E9C8B0) that do NOT abut — sub-pixel
+GAPS thread the whole face, and the **blue scene bg (#4CA0D3 = 76,160,211) bleeds
+through them** as ghost hairlines beside every stroke. That gap-bleed (probed:
+8119 blue px in the heli interior box) is the "doubled/rushed" look — NOT dropped
+ink. The ref hex interior is solid white. So the honest fix is a clean vector
+BACKING, not a re-trace: neither dilation (over-thickens real strokes) nor finer
+tracing (gen12: fattens/adds noise, −.005) could ever fix a GAP problem.
+
+**PATH CHOSEN: (b)-adjacent — a clean vector primitive, but a WHITE HEX BACKING,
+not a hand-drawn mullion grid.** A per-hex mullion grid was the wrong tool: the 4
+faces are unique buildings, not a uniform grid, and the mullions already render.
+The gap-bleed is killed at the root by one solid white `Hexagon` behind each
+`TracedArt` in `NetworkScene`, sized to land just inside the navy border (measured
+heli outer w372/h330, ratio 0.887; backing w = artW*0.985, h = bw*0.887, white
+fill + 3px white stroke) so it fills every interior gap and the art re-draws the
+navy border on top → zero spill over the blue. Tracks per-frame cx/cy/w so it
+carries through the f756-772 morph. `scenesA.tsx` only (import Hexagon; backing
+group before the elbows so z-order = bg→backings→elbows→docs→arts→wipe).
+
+**A/B GATE (ref vs OLD render vs FIX render; OLD via `git stash push` of my file
+only — lane-safe):**
+- Whole-frame SSIM ref-vs-OLD → ref-vs-FIX: f800 .973217→.973492 · f825 .970628→
+  .970876 · f850 .973758→.973973 · f890 .981005→.981094. **POSITIVE at all 4.**
+- Hex-band crop SSIM (x180-1800,y210-850): f800 .9465→.9481 (+.0016) · f850 .9479
+  →.9493 (+.0014) · f890 .9621→.9632 (+.0011) — the localized win, uniform across
+  the ~168-frame network window.
+- **Rare double win:** unlike gen12's finer-trace (LOST on SSIM), this fix REMOVES
+  blue the ref lacks + adds white the ref has → helps BOTH eye and metric.
+- Eye: ab_heli/ab_temple oldfix strips — the blue ghost lines beside the orange
+  columns/cornice are GONE, interior reads clean white like the ref. Mid-morph
+  f765 clean: interior white, NO white spill past the navy border. CrxNetting
+  shares NetworkScene (brand-neutral geometry) — backing carries, no brand risk.
+
+**Commit `<HEXBG>` (see git log) — scenesA.tsx only. tsc 0 errors.**
+
+**HONEST RESIDUAL (lesson 9 — is the floor lifted?):** The gap-bleed floor is
+LIFTED — the named "rushed" tell is gone and it cost nothing (SSIM up). What
+REMAINS is the true texture floor gen12 proved: the ref's ~1.5-2px hairline stroke
+GEOMETRY inside each pane, which the 1920-wide compressed source cannot resolve
+finer — unreachable without re-DRAWING (not re-tracing) the line-art, a pipeline
+project, not a round. The strokes themselves are also a hair thin/soft vs ref
+(anti-alias), a smaller residual. **Cheap transferable lead:** the SAME gap-bleed
+almost certainly afflicts other blue-bg traced hex faces — the MapScene mHex*
+minis (f620-745) and the mbadge mbHex* (MapBadgesScene) — a white-backing pass
+there is the same trivial win (matching/locks already fill white via SmallHex
+fillHex, so they are exempt). Not done this round (task scoped to network hexes).
