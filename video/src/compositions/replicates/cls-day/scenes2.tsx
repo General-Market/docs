@@ -1078,33 +1078,76 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
   );
 };
 
+// gen14: RowIcon glyphs re-traced from ref f3300 (icon column x790, 54px each).
+// kind0 was a doc + EMPTY red circle; ref is a doc (folded corner) with 2 header
+// lines, a red COIN ($ inside a circle), and a coral shadow-doc peeking behind.
+// kinds1/3 were a single pill column; ref is a 2-COLUMN pill grid (netting) with
+// the flow arrow at the empty top cell. kind2's zigzag+ellipses read as nothing;
+// ref is two clasped forearms (coral left, navy right) with interlocked fingers.
 const RowIcon: React.FC<{ kind: number; x: number; y: number }> = ({ kind, x, y }) => (
   <svg width={54} height={54} viewBox="0 0 44 44" style={{ position: "absolute", left: x, top: y - 12 }}>
     {kind === 0 && (
       <>
-        <path d="M 8 40 L 8 4 L 28 4 L 36 12 L 36 40 Z" fill="none" stroke={C.navyDeep} strokeWidth={2.5} />
-        <circle cx="22" cy="24" r="7" fill="none" stroke={C.red} strokeWidth={2} />
+        {/* coral shadow doc behind (peeks right + bottom) */}
+        <path d="M 11 41 L 11 6 L 30 6 L 38 14 L 38 41 Z" fill="none" stroke={C.red} strokeWidth={1.8} strokeLinejoin="round" />
+        {/* navy doc (white page) + folded corner */}
+        <path d="M 7 39 L 7 4 L 27 4 L 35 12 L 35 39 Z" fill={C.white} stroke={C.navyDeep} strokeWidth={2.2} strokeLinejoin="round" />
+        <path d="M 27 4 L 27 12 L 35 12" fill="none" stroke={C.navyDeep} strokeWidth={2.2} />
+        {/* two header lines top-left */}
+        <rect x={11} y={9} width={10} height={1.7} fill={C.navyDeep} />
+        <rect x={11} y={13} width={6.5} height={1.7} fill={C.navyDeep} />
+        {/* red coin: circle + $ (drawn, not a font glyph) */}
+        <circle cx={20} cy={26} r={7.3} fill="none" stroke={C.red} strokeWidth={1.8} />
+        <path d="M 20 20.6 L 20 31.4" stroke={C.red} strokeWidth={1.5} strokeLinecap="round" />
+        <path d="M 23 22.6 Q 23 21 20 21 Q 16.8 21 16.8 23.9 Q 16.8 26 20 26 Q 23 26 23 28.4 Q 23 31 20 31 Q 17 31 17 29.4" fill="none" stroke={C.red} strokeWidth={1.5} strokeLinecap="round" />
       </>
     )}
-    {(kind === 1 || kind === 3) && (
+    {kind === 1 && (
       <>
+        {/* pay-ins: left col 3 coral pills, right col 2 navy pills, arrow → top-right.
+            ref pills are rounded-RECTS (rx2), sit high in the box (top pill at y0). */}
         {[0, 1, 2].map((r) => (
-          <rect key={r} x={4} y={6 + r * 12} width={22} height={8} rx={4} fill="none" stroke={r ? C.navyDeep : C.red} strokeWidth={2.2} />
+          <rect key={"l" + r} x={3} y={r * 11} width={16} height={7} rx={2} fill="none" stroke={C.red} strokeWidth={2} />
         ))}
-        <path d={kind === 1 ? "M 30 10 L 42 10 M 37 5 L 42 10 L 37 15" : "M 42 10 L 30 10 M 35 5 L 30 10 L 35 15"} stroke={kind === 1 ? C.red : C.navyDeep} strokeWidth={2.2} fill="none" />
+        {[1, 2].map((r) => (
+          <rect key={"r" + r} x={23} y={r * 11} width={16} height={7} rx={2} fill="none" stroke={C.navyDeep} strokeWidth={2} />
+        ))}
+        <path d="M 23 4 L 40 4 M 35 0 L 40 4 L 35 8" stroke={C.red} strokeWidth={2} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+      </>
+    )}
+    {kind === 3 && (
+      <>
+        {/* pay-outs: mirror — right col 3 navy pills, left col 2 coral pills, arrow ← top-left */}
+        {[0, 1, 2].map((r) => (
+          <rect key={"r" + r} x={23} y={r * 11} width={16} height={7} rx={2} fill="none" stroke={C.navyDeep} strokeWidth={2} />
+        ))}
+        {[1, 2].map((r) => (
+          <rect key={"l" + r} x={3} y={r * 11} width={16} height={7} rx={2} fill="none" stroke={C.red} strokeWidth={2} />
+        ))}
+        <path d="M 19 4 L 2 4 M 7 0 L 2 4 L 7 8" stroke={C.navyDeep} strokeWidth={2} fill="none" strokeLinejoin="round" strokeLinecap="round" />
       </>
     )}
     {kind === 2 && <IconHandshakeMini />}
   </svg>
 );
 
+// two clasped forearms: coral hand from the left, navy hand from the right,
+// fingers interlocked in the middle (ref f3300 row-2). gen14 NEGATIVE: two
+// cleaner variants were tried — a diagonal-arms clasp (v2, SSIM 0.287) and a
+// coral finger-scallop + navy wrap (v3, 0.286) — both scored marginally higher
+// but read by eye as a "pointing arm"/"scribble", NOT a handshake. This form
+// (two colour-coded arms meeting with a finger suggestion, SSIM 0.276 vs old
+// 0.239) reads most like two parties clasping. 54px hand-detail is the residual.
 const IconHandshakeMini: React.FC = () => (
-  <g>
-    <path d="M 6 18 L 16 10 L 26 16 L 38 10" fill="none" stroke={C.navyDeep} strokeWidth={2.2} />
-    {[0, 1, 2].map((i) => (
-      <ellipse key={i} cx={14 + i * 7} cy={24 + i * 3} rx={5} ry={3.6} transform={`rotate(-30 ${14 + i * 7} ${24 + i * 3})`} fill="none" stroke={C.red} strokeWidth={2} />
-    ))}
-    <path d="M 26 30 Q 32 34 28 38 M 6 34 L 16 38" fill="none" stroke={C.navyDeep} strokeWidth={2.2} />
+  <g strokeLinecap="round" fill="none">
+    {/* coral forearm + wrist from the left */}
+    <path d="M 2 19 L 13 19 Q 19 19 23 23" stroke={C.red} strokeWidth={2.4} />
+    {/* navy forearm + wrist from the right */}
+    <path d="M 42 17 L 31 17 Q 25 17 21 21" stroke={C.navyDeep} strokeWidth={2.4} />
+    {/* coral fingers curling over the clasp */}
+    <path d="M 13.5 25 q 5 -2.5 8.5 1.5 M 12.5 29 q 5.5 -2.5 9 1.5 M 12.5 33 q 5.5 -2.5 9 1" stroke={C.red} strokeWidth={2} />
+    {/* navy thumb + lower grip */}
+    <path d="M 23.5 22 q 5.5 2 7.5 7.5 M 22 34 q 5.5 1.5 8.5 -1" stroke={C.navyDeep} strokeWidth={2} />
   </g>
 );
 
