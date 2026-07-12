@@ -222,9 +222,17 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* Trade executed arrow */}
       {labelOp > 0 && (
         <>
-          <SansText text={COPY.tradeExecuted} x={800} y={430} fs={34} color={C.serifNavy} opacity={labelOp} width={320} align="center" />
-          <Elbow points={[[470, 505], [1480, 505]]} color={C.orange} opacity={labelOp} arrow="end" />
-          <Elbow points={[[1480, 512], [470, 512]]} color={C.orange} opacity={labelOp} arrow="end" />
+          {/* gen14: "Trade executed" callout measured EXACT video (stable across
+              f1405-1450): label ink y369-408 (cap-h 39 → fs 56, calibrated off
+              the fs34 render's 23px cap) centred x965 (CSS-top y356 w/ the strut
+              offset); double-headed arrow at y425 spanning ONLY the gap between
+              the hex inner edges x716-1221. The old label sat 60px low + half
+              size (fs34 y430), and the arrow ran the FULL width x470-1480 at
+              y505-512 (~85px low) — that pair drove the negative-SSIM r2c3/r2c4
+              cells across the whole window. */}
+          <SansText text={COPY.tradeExecuted} x={755} y={356} fs={56} color={C.serifNavy} opacity={labelOp} width={420} align="center" />
+          <Elbow points={[[716, 425], [1221, 425]]} color={C.orange} opacity={labelOp} arrow="end" />
+          <Elbow points={[[1221, 425], [716, 425]]} color={C.orange} opacity={labelOp} arrow="end" />
         </>
       )}
       {/* CLSNet box + docs flying in */}
