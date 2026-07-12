@@ -275,6 +275,77 @@ LATE across the first half and used a badge OVERSHOOT the ref never has.
 
 ## Round log
 
+### r15 — 2026-07-12 (gen-13 "S5 ClG + docs/pvp/summary sweep", dispatcher-orchestrated 2 file-scoped sub-subagents, BUILD COMPLETE; official verify PENDING orchestrator)
+
+**Method:** orchestrator triaged the worst window (S5 f877-927, mean .863 — worst of
+the video) down to the single persistent building via `ssim-grid --pairs` (grid r2c6/c7
+≈0.31 = the **14:00 ClG capped tower**), then dispatched TWO builders — one per scene
+file so they never collide on a git path — running CONCURRENTLY, sharing the ONE render
+lock (all stills serialized; no double-render OOM). No git stash (races the sibling): each
+builder rendered its OLD baseline BEFORE editing, then NEW, gating ref-vs-OLD→NEW. Build-
+only, no full verify. Tools/stills in `work/cls-day/gen13-s5/` (ref/, att/, probe_clg.py,
+render.sh, ssim.sh, smoke/) + `work/cls-day/gen13-scenes2/`.
+
+**scenes1.tsx — S5Skyline f877-927 · ClG 14:00 capped tower re-registration (commit
+`4df6d1a2b`).** Grid worst cell. Root cause: the red tower's broad-body **right wall was
+hidden** under the navy building's white fill (navy started local x285, body wall x290) →
+att body read w105 + 4900 red-px vs ref w120 + 6300. Fix (lesson-4 order): head shifted
+right + narrowed about centre (226→233.5, ×0.94); body walls 170/290 → **175/294 (right
+wall now visible)**; navy building +15px so wall + grey slab read; dash grid re-pitched
+186→196 to ref columns. Body width converged 105 → **122** (ref 120). A/B ref-vs-OLD→NEW:
+f877 .8489→.8502 (+.0013) · f897 .8542→.8569 (+.0026) · f907 .8435→.8465 (+.0030) · f917
+.8376→.8404 (+.0028) · f927 .8584→.8580 (−.0004, fade-frame noise). Eye gate: body right
+wall + grey slab + navy spacing now match ref; head centred. Final combined-HEAD render
+confirms f897 .8569. **Residual:** facade still ~1000 red-px short (5309 vs 6343) — finer
+window/rail detail, deliberately NOT bolded (dense-near-miss trap, lesson 4); f927 is a
+pre-existing S5 `inkP` fade-timing issue (ref stays solid past f927 while our replica is
+~0.5 faded) — separate fixable, still in scenes1.tsx.
+
+**scenes2.tsx — 4 wins + 1 documented negative (commits below).**
+- **S11 docs f2102-2215 · doc-position re-registration (`0cd2de3d1`).** Measured ref f2150
+  body-left borders: doc6 1765→**1744 (was 20px too far right)**, doc4 1230→1226, row up
+  3px (top 391→388), focus doc to page-1 left 753/top 289. A/B: f2110 +.0019 · f2130/2150/
+  2180/2200 **+.0142 each**.
+- **S11 docs · NEGATIVE A/B documented (`e40d443da`).** Narrowing the doc body svg 232→225
+  (ref border 221 vs replica 228) LOST −.002…−.005 every frame — the 3% squish drags the
+  dense already-registered interior off ref (lesson 4). Reverted, logged in-code so it is
+  not re-attempted. Border width is a dead-end; **FocusDoc height** (ref 490 vs replica 481)
+  is the next scenes2-local lever here, deferred.
+- **S13 PvP→S14 f2687-2737 · exit-slide + band-descent retiming (`62397ab44`).** S13 held
+  full content to f2737 (~18f too late). Ref slides content straight DOWN off-frame FAST
+  (ink below band 175k@f2719 → 30k@f2722 → **0@f2725**); S14 then descends the band y0→221
+  (tops 72@f2728 → 210@f2737) with marker + solid red 09:00 line + fading "09:00". A/B:
+  **f2725 .8401→.9539 (+.114 — round's biggest single win)**; f2687/2700/2712 unchanged;
+  f2737 .9506→.9501 (−.00055, documented spend: OLD scored high only by SSIM white-blindness
+  on the WRONG full-city content, lesson 8; NEW is faithful). **Residual:** descent-phase
+  band pitch ~249 vs ref ~225 (scenes2-local horizontal rescale, left); city interiors =
+  HexCity/PvpCity texture floor (lib.tsx, out of scope).
+- **S17 summary f3340-3390 · panel-row text fs22→16 (`5be8a5836`)** (ref cap ~13.5 vs
+  replica ~19; also fixed panel-width overflow): +.0049/+.0049/+.0049/+.0040. **· milestone
+  label text time22→19 label17→14 (`49f1b67ea`)** (same ~1.2× oversize, all 4 milestones):
+  +.0036/+.0040/+.0014. **Residual:** RowIcon glyphs (doc `$`-mark vs circle) = 44px
+  scenes2-local detail, tiny SSIM, next lever here; hex interiors = lib.tsx; a pack copy
+  diff = data.ts (both out of scope).
+
+**Smoke/regression:** final combined HEAD renders clean at f897 (ClsDay) + f2725 (ClsDay) +
+**f897 CrxSettlementDay** (ClG geometry is shared with the CRX cut — inherits the improved
+skyline, no pack issue, eye-clean). Both scene files committed clean, path-scoped, no
+`git add -A`, commits interleave cleanly with a concurrent clsnet session on the shared
+lock. tsc/compile confirmed by successful renders (Remotion esbuild fails on any type error).
+
+**Next worst per remaining window (for the following round):**
+- **S5 f827-877** — grid worst = the ClB 10:00 / ClC 12:00 boundary (scenes1.tsx). Then
+  **f775-825, f725-775** — other above/below-band clusters incl. ClE/ClF mirror (scenes1.tsx).
+- **S5 `inkP` fade timing f924-940** — ref holds ClG solid past f927; retime the fade LUT
+  (scenes1.tsx).
+- **S4 f663-713 / f603-653** — residual is HexCity/Buildings interior TEXTURE (lib.tsx,
+  shared S4/S10/S17, out of single-file scope; needs a shared-primitive round).
+- **S11 FocusDoc height** + **S13 descent band pitch** + **S17 RowIcon glyphs** — all
+  scenes2-local, all small-yield texture/detail.
+- **Board is at the texture/encoding floor** (r8 wall analysis stands): the banked wins are
+  registration (ClG) + choreography (S13→S14 +.114) + label-size fixes — no gross structural
+  bug remains in the top windows. 96 stays WALLED.
+
 ### r14 — 2026-07-11 (gen-12 "HexCity re-trace + fiction sweep" session, BUILD COMPLETE; official verify PENDING orchestrator)
 
 **Instrument law obeyed:** measured/gated against EXACT REF VIDEO FRAMES only
