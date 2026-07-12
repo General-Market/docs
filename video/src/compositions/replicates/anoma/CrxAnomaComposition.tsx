@@ -62,10 +62,11 @@ const HD_SCALE = 3;
 // 166s master and identical grid, low-end EQ'd out and −7 dB so it reads calm,
 // not epic). Audio enters at 1:28 (audioStartFrom = 2640 = 88.000s·30), so
 // composition frame 0 == audio 88.000s. Beat = 10.976f, snare = 21.953f, phase
-// 7.24. The cut runs 1470 frames (49.0s) — re-paced so the CTA-press climax lands
-// on the f611 music peak and the silent breakdown tail is trimmed (was 1760).
+// 7.24. The cut runs 1600 frames (53.3s) — the CTA-press climax lands on the f611
+// music peak, and the finale + lockup ride the rhythmic OUTRO (mark on the f1402
+// giant, wordmark on f1490) out to the ~f1753 resolve.
 // Full map: docs/crx-anoma-beat-sync.md; grid: audio-analysis/momentum-quake.json.
-const CRX_DURATION = 1470; // 49.0s at 30fps — climax on the f611 peak, tail trimmed
+const CRX_DURATION = 1600; // 53.3s at 30fps — climax on the f611 peak; the outro rides to the f1753 resolve
 
 // ─── Momentum layer (gentle) ───
 // `momentum(rf)` is a 0..1 curve — a slow breath, NOT a build-drop. It rises
@@ -112,9 +113,9 @@ const INK_SHADOW =
 // to 3840×2160, debanded, gently sharpened and re-grained — the
 // grain hides what remains of the source compression without the
 // softness of a blur. It mounts full-bleed outside the coordinate
-// scaler, 1:1 with the 4K raster. The end fade-to-black starts on the
-// f1347 snare and completes on the f1391 swell so the end lockup lands on
-// black, never on bright water.
+// scaler, 1:1 with the 4K raster. The end fade-to-black runs f1360→1404 so
+// the water finishes fading to black exactly as the mark slams in on the
+// f1402 giant hit — the lockup lands on black, never on bright water.
 const WAVE_SECONDS = 18; // source clip length
 
 const WaveBackground: React.FC<{
@@ -128,9 +129,9 @@ const WaveBackground: React.FC<{
   waveSrc = "crx-assets/bridge-wave-4k.mp4",
   loopSeconds = WAVE_SECONDS,
 }) => {
-  // Fade-to-black STARTS on the f1347 snare and completes on the f1391 swell
-  // where the end mark arrives — the lockup lands on solid black.
-  const black = interpolate(frame, [1347, 1391], [0, 1], clamp);
+  // Fade-to-black runs f1360→1404 — the water finishes going black as the end
+  // mark slams in on the f1402 giant hit, so the lockup lands on solid black.
+  const black = interpolate(frame, [1360, 1404], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
@@ -261,19 +262,19 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
 
 // ─── Scene 1: "Managing FX risk just became" — word drop-in, then
 // per-character gaussian blur-out (same physics as the reference).
-// The words walk the quarter-beat (10.976f), first word on the f18 snare and
-// "became" landing on the f62 snare — a measured, unhurried open on the slow
-// pulse. Beat map: docs/crx-anoma-beat-sync.md.
+// The words walk a ~15f cascade so the payoff "became" lands on the f79 melodic
+// hit — the first real note of the tune, not just a grid tick. Beat map:
+// docs/crx-anoma-beat-sync.md.
 const S1_WORDS: WordSpec[] = [
   { t: "Managing", f: 18 },
-  { t: "FX", f: 29 },
-  { t: "risk", f: 40 },
-  { t: "just", f: 51 },
-  { t: "became", f: 62 },
+  { t: "FX", f: 33 },
+  { t: "risk", f: 48 },
+  { t: "just", f: 63 },
+  { t: "became", f: 79 },
 ];
 
 const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame >= 112) return null;
+  if (frame >= 124) return null;
   const text = S1_WORDS.map((w) => w.t).join(" ");
   const natural = measureText({
     text,
@@ -305,9 +306,9 @@ const CrxScene1: React.FC<{ frame: number }> = ({ frame }) => {
         return (
           <span key={wi} style={{ display: "inline-block", whiteSpace: "pre", ...ws }}>
             {chars.map((c, k) => {
-              // Dissolve ONSET on the f95 beat — the line scatters well after
-              // "became" has rested on the f62 snare (f62 → f95 ≈ 1.1s hold).
-              const s = 95 + ((ci * 11 + 5) % 9);
+              // Dissolve ONSET on f107 — the line scatters after "became" has
+              // rested ~28f on the f79 hit, and completes before "Easy" at f128.
+              const s = 107 + ((ci * 11 + 5) % 9);
               ci++;
               const blur = interpolate(frame, [s, s + 6], [0, 10], clamp);
               const op = interpolate(frame, [s, s + 6], [1, 0], clamp);
@@ -427,17 +428,19 @@ const LINES: CrxLineSpec[] = [
   // typing completes (cut on the hedge card's f611 snare climax).
   { words: [{ t: "On", f: 512 }, { t: "your", f: 523 }], x: 77, capTop: 305, out: { cut: 611 } },
   { words: [{ t: "terms", f: 567 }], x: 77, capTop: 375, out: { cut: 611 } },
-  // Scene 6 — centered, rise+fade; "paying" on the f655 snare, "middleman" lands
-  // on the f677 snare (cut f721).
-  { words: [{ t: "Without", f: 644 }, { t: "paying", f: 655 }], capTop: 299, drop: 24, rise: true, out: { cut: 714 } },
-  { words: [{ t: "the", f: 666 }, { t: "middleman", f: 677 }], capTop: 366, drop: 24, rise: true, out: { cut: 714 } },
+  // Scene 6 — centered, rise+fade; "Without" lands on f633, the BIGGEST hit in
+  // the whole track, "paying" f655, "the" f677, "middleman" on f699 — the last
+  // strong punch before the breakdown (cut f721). S5 cut 611 → 22f of empty
+  // water before "Without" enters.
+  { words: [{ t: "Without", f: 633 }, { t: "paying", f: 655 }], capTop: 299, drop: 24, rise: true, out: { cut: 721 } },
+  { words: [{ t: "the", f: 677 }, { t: "middleman", f: 699 }], capTop: 366, drop: 24, rise: true, out: { cut: 721 } },
   // Scene 7 (legacy-banks → modern-infrastructure) is CUT in the re-pace: the
   // silent breakdown ran too long, so S6 (cut f714) hands straight to S8 (f742).
-  // Scene 8 — Onboard (mount snare f742) / in days, "days" on the f764 snare.
-  // The card cadence was tightened ~1 beat (Edit 5, CrxScene8Onboard), so the
-  // Verified resolution lands ~f879; the headline cuts at f896 to match.
-  { words: [{ t: "Onboard", f: 742 }], x: 72, capTop: 305, drop: 50, out: { cut: 896 } },
-  { words: [{ t: "in", f: 753 }, { t: "days", f: 764 }], x: 73, capTop: 375, drop: 50, out: { cut: 896 } },
+  // Scene 8 — Onboard (mount f743) / in days, "days" landing on the sparse f787
+  // breakdown hit. The card ticks its states on the sparse pulse to the f864
+  // success flood; the headline cuts at f896 to match.
+  { words: [{ t: "Onboard", f: 743 }], x: 72, capTop: 305, drop: 50, out: { cut: 896 } },
+  { words: [{ t: "in", f: 765 }, { t: "days", f: 787 }], x: 73, capTop: 375, drop: 50, out: { cut: 896 } },
   // Scene 9 — the RFQ rides the calm resolution; "dealers" (f1006 snare) lands
   // with the third dealer quote. The headline cuts at f1050 as the compliance
   // card crossfades in, so it never overlaps the S10 headline
@@ -452,12 +455,12 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "FX,", f: 1061 }, { t: "On-chain", f: 1072 }], x: 64, capTop: 375, drop: 50, out: { fade: [1181, 1203] } },
   // Scene 11 (cross-border-business-made-simple) is CUT in the re-pace: S10
   // (compliance) hands straight to the S12 brand finale.
-  // Scene 12 — top-center; the finale line settles as the track breathes out:
-  // "Live on Base, Avax," (f1236-1260) over "and Celo testnets" (f1258-1274), the
-  // payoff "testnets" landing ~f1274 near the old f1269 snare (fades f1335-1357).
+  // Scene 12 — top-center; the finale STARTS on the f1220 hit and HOLDS through
+  // the swell: "Live on Base, Avax," (f1220-1244) over "and Celo testnets"
+  // (f1248-1270), then both fade f1400-1424 as the mark punches in on f1402.
   // Two capTops (135/217, ~82px gap) so the lines never collide and clear the top.
-  { words: [{ t: "Live", f: 1236 }, { t: "on", f: 1244 }, { t: "Base,", f: 1252 }, { t: "Avax,", f: 1260 }], capTop: 135, drop: 44, out: { fade: [1335, 1357] } },
-  { words: [{ t: "and", f: 1258 }, { t: "Celo", f: 1266 }, { t: "testnets", f: 1274 }], capTop: 217, drop: 44, out: { fade: [1335, 1357] } },
+  { words: [{ t: "Live", f: 1220 }, { t: "on", f: 1228 }, { t: "Base,", f: 1236 }, { t: "Avax,", f: 1244 }], capTop: 135, drop: 44, out: { fade: [1400, 1424] } },
+  { words: [{ t: "and", f: 1248 }, { t: "Celo", f: 1258 }, { t: "testnets", f: 1270 }], capTop: 217, drop: 44, out: { fade: [1400, 1424] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
@@ -484,12 +487,12 @@ const LOCKUP_TOP = 344.7 - MARK_CY; // mark rides the frame's optical center
 const LEFT_FINAL = CENTER - LOCKUP_W / 2;
 const LEFT_ALONE = CENTER - MARK_CX; // phase 1: mark alone, centered
 
-// The mark arrives on the f1391 late swell — where the water finishes fading to
-// black — and the wordmark reveals on the f1423 bright outro, both landing as the
-// track breathes out. The mark-alone hold is ~f1391→1423 (≈1s); the wordmark
-// settles by ~f1443 and holds on black to the last frame (~f1470).
-const MARK_IN = 1391;
-const REVEAL = 1423;
+// The mark SLAMS in on the f1402 giant hit — where the water finishes fading to
+// black and the finale text fades out — and the wordmark reveals on the f1490
+// outro hit. The mark-alone hold is ~f1402→1490 (≈3s); the wordmark settles by
+// ~f1510 and holds on black through the outro to the last frame (~f1600).
+const MARK_IN = 1402;
+const REVEAL = 1490;
 const REVEAL_DUR = 20;
 
 const EndMark: React.FC<{ size: number }> = ({ size }) => (
@@ -621,10 +624,9 @@ const CrxAnomaStage: React.FC<{
   const leftInset = (width - 1280 * scale) / 2;
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      {/* Volume RECEDES as the finale approaches, not a cliff at the very end:
-          full through the story, then a gentle taper from f1203 (the resolution
-          run-out) down to a low bed by the f1391 mark-in, then to the f1423
-          wordmark reveal and out by the end so the track breathes out under the
+      {/* Music PRESENT through the finale — no early duck. Full from the f12 rise
+          all the way to f1500 (the outro carrying the finale + the mark-in), then
+          a clean fade to 0 by the last frame so the track breathes out under the
           settling wordmark. */}
       <Audio
         src={staticFile(audioSrc)}
@@ -632,8 +634,8 @@ const CrxAnomaStage: React.FC<{
         volume={(f) =>
           interpolate(
             f,
-            [0, 12, 1203, 1391, 1423, CRX_DURATION - 4],
-            [0, 1, 1, 0.4, 0.12, 0],
+            [0, 12, 1203, 1500, CRX_DURATION - 2],
+            [0, 1, 1, 1, 0],
             clamp,
           )
         }
@@ -724,7 +726,7 @@ const WaveHalftoneBackground: React.FC<{
   width: number;
   height: number;
 }> = ({ frame, width, height }) => {
-  const black = interpolate(frame, [1347, 1391], [0, 1], clamp);
+  const black = interpolate(frame, [1360, 1404], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={18 * FPS}>

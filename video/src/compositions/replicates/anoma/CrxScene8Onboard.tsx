@@ -4,18 +4,22 @@ import { DIATYPE } from "./diatype";
 import { clamp } from "./AnomaComposition";
 import { BORDER, BORDER_STRONG, CARD, Card, Check, FOCUS_RING, INK, SEC, SUCCESS, SUCCESS_SOFT, Spinner, TEAL, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
 
-// ─── Scene 8 (f742-939): compliance onboarding under "Onboard in days" ───
-// Cadence tightened ~1 beat (Edit 5): sub-states now step every ~18f
-// (742/760/778/796/814/832) instead of 22f, so the checklist fills a beat
-// quicker; rows whose KEY is new to a face drop in staggered. The success dot
-// pops at f852, floods the card across f874 and resolves to Verified by ~f879
-// (was ~f901). The Verified face holds one beat, then fades f901-940 so it never
-// runs into the S9 cut at f962 — a short breath, not a dead hold.
+// ─── Scene 8 (f743-940): compliance onboarding under "Onboard in days" ───
+// Re-laid on the SPARSE breakdown melody (owner: tick the card ON the tune, not
+// an arbitrary clock). The five faces step on a ~28f pulse — 743/771/799/827/855
+// — landing on the sparse breakdown notes; each visible change ticks with the
+// music. The success dot pops at f857, floods the card on the f864 melodic hit
+// (the big visual pop) and resolves to Verified by ~f872. The Verified face holds,
+// then fades f894-940 so it never runs into the S9 cut at f962.
 type ObRow = { k: string; v: string; state?: "pending" | "done" | "run" };
 
+// Five faces on the ~28f sparse pulse (743/771/799/827/855). The two entity
+// fills (legal entity + LEI) resolve together on the f771 tick so the whole
+// checklist fits the breakdown before the f864 success flood; no content is
+// lost, only the two incremental Entity ticks merge into one.
 const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
   {
-    at: 742,
+    at: 743,
     step: 0,
     rows: [
       { k: "Legal entity", v: "—", state: "pending" },
@@ -24,16 +28,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 760,
-    step: 0,
-    rows: [
-      { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
-      { k: "LEI", v: "—", state: "pending" },
-      { k: "Jurisdiction", v: "—", state: "pending" },
-    ],
-  },
-  {
-    at: 778,
+    at: 771,
     step: 0,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -42,7 +37,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 796,
+    at: 799,
     step: 1,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -51,7 +46,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 814,
+    at: 827,
     step: 1,
     rows: [
       { k: "KYB documents", v: "Received", state: "done" },
@@ -60,7 +55,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 832,
+    at: 855,
     step: 2,
     rows: [
       { k: "KYB documents", v: "Verified", state: "done" },
@@ -292,22 +287,21 @@ const ObFace: React.FC<{
 );
 
 export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 742 || frame >= 940) return null;
-  // Verified resolves ~f879, holds one beat, then fades f901-940 (pulled ~1 beat
-  // earlier with the resolution) so the card is gone by f940 — one beat of wave
-  // before the S9 dealers card cuts in at f962, not a long dead hold.
-  const cardOpacity = interpolate(frame, [901, 940], [1, 0], clamp);
+  if (frame < 743 || frame >= 940) return null;
+  // Verified resolves ~f872, holds, then fades f894-940 so the card is gone by
+  // f940 — a breath of wave before the S9 dealers card cuts in at f962.
+  const cardOpacity = interpolate(frame, [894, 940], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
-  // Success dot: pops on the f852 snare, holds, then floods the card across
-  // the f874 snare; the Verified face resolves out of it by ~f879 (a beat sooner
-  // than the old f901).
+  // Success dot: pops small at f857 over the completed checklist, holds, then
+  // FLOODS the card on the f864 melodic hit (the big visual pop); the Verified
+  // face resolves out of it by ~f872.
   const dotD = interpolate(
     frame,
-    [852, 855, 857, 859, 874, 877],
-    [12, 44, 42, 42, 420, 950],
+    [857, 860, 862, 864, 867, 870],
+    [12, 44, 42, 42, 500, 950],
     clamp,
   );
-  const successOp = interpolate(frame, [874, 879], [0, 1], clamp);
+  const successOp = interpolate(frame, [864, 872], [0, 1], clamp);
   return (
     <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={cardOpacity}>
       {OB_STATES.map(({ at, step, rows }, i) => {
@@ -327,7 +321,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         );
       })}
-      {frame >= 852 && successOp < 1 && (
+      {frame >= 857 && successOp < 1 && (
         <div
           style={{
             position: "absolute",

@@ -4,13 +4,15 @@ import { DIATYPE } from "./diatype";
 import { clamp } from "./AnomaComposition";
 import { BG, BORDER, BarChart, CARD_SHADOW, Card, CrxMark, FlagPair, INK, Money, SEC, SUCCESS, SURFACE2, TEAL, TER, WELL, fadeIn, label, tag, tnum } from "./CrxCardKit";
 
-// ─── Scene 12 (f1225-1356): the app, full width, under "Live on Base, Avax, and Celo testnets" ───
+// ─── Scene 12 (f1225-1404): the app, full width, under "Live on Base, Avax, and Celo testnets" ───
 // Nav + portfolio, AFTER the story's trade: margin locked reflects the
 // $2.5M hedge, and the positions list carries it. The card mounts on the
 // f1225 snare (the strong finale cut). Bars grow from f1247 and are FINISHED
 // on the f1313 snare — a long rest before the fade instead of growth
 // running into the cut. Positions land on the f1269 snare (with "Live") and
-// f1291. The Portfolio pill is chrome — the real nav never
+// f1291. The card HOLDS through the extended finale, fading f1380-1404 under
+// the water's black so the dashboard is present until the mark arrives on
+// f1402. The Portfolio pill is chrome — the real nav never
 // animates it in, so it is present from the scene's first frame.
 // Card stays bottom-anchored (top + h = 720). The amber sandbox banner was
 // removed, so the app shell is 30px shorter: top moves down 30 (291→321) and
@@ -33,10 +35,14 @@ const NAV_INK = "#1a1a1a";
 const NAV_BORDER = "#e7e7e2";
 
 export const CrxScene12App: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 1225 || frame >= 1357) return null;
+  if (frame < 1225 || frame >= 1406) return null;
+  // Card HOLDS under the finale text until the water blacks out: it fades
+  // f1380-1404, matching the WaveBackground black (f1360-1404), so the dashboard
+  // is still under the copy as the mark slams in on f1402 and vanishes cleanly
+  // into the black — no dead card, no card surviving past black.
   const opacity =
     interpolate(frame, [1225, 1247], [0, 1], clamp) *
-    interpolate(frame, [1335, 1357], [1, 0], clamp);
+    interpolate(frame, [1380, 1404], [1, 0], clamp);
   if (opacity <= 0) return null;
   const growth = (fr: number) =>
     // End at 1305 so the staggered hero bar (i*2) finishes on the f1313 snare
