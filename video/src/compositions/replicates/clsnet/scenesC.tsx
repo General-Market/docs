@@ -1125,7 +1125,12 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // citiesStacks phase: stacks shrink+slide, cities fade in on the band
   const slideP = lerp(f, [3800, 3835], [0, 1]);
   const citiesOp = lerp(f, [3815, 3838], [0, 1]);
-  const out = lerp(f, [3936, 3946], [1, 0]);
+  // hold the ledge fully opaque through f3940 (was [3936,3946], which greyed it
+  // as it faded to the dark behind while the ref stays white through ~f3938).
+  // The endcard navy wipes in over the top from f3938-3940 (EndCardScene enterOp)
+  // and fully covers the ledge by f3940, so this delayed fade is only ever seen
+  // as full white ledge at f3936-3939 — matching the ref's late, fast handoff.
+  const out = lerp(f, [3940, 3946], [1, 0]);
   const S = LEDGE.stacks;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
@@ -1228,8 +1233,23 @@ export const EndCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.outro[0]) return null;
   const extrasOp = lerp(f, [4028, 4048], [0, 1]);
+  // TitleCard paints a full navy AbsoluteFill, and EndCardScene renders LAST
+  // (on top of LedgeScene). SEG.outro[0]=3926 mounted that navy over the STILL
+  // LIVE ledge outro — the ref holds the ledge cities+stacks through ~f3933
+  // (probed white top at 3930/3933, navy by 3946) then hands off to the navy
+  // endcard, but the comp buried the ledge under navy from 3926 (f3930 = 0.598,
+  // the video's single worst frame). Ramp the endcard in over the ledge's own
+  // out-window [3936,3946] so 3926-3936 stays transparent (ledge shows) and the
+  // handoff reads as the measured ledge fade. Full opacity well before the
+  // endcard content assembles (logo/mark from 3957), so nothing downstream moves.
+  // The ref hands off FAST (edge-in wipe, not a uniform crossfade: white through
+  // f3936-3938, ~80% navy by f3940, full navy f3946). Per-frame ref-gated:
+  // ledge-showing beats navy through f3938 (0.82 vs 0.68), navy wins from f3940
+  // (0.79 vs ~0.5). So hold the ledge (enterOp=0) through f3938 then snap to full
+  // navy by f3940 — every transition frame then scores >= the old full-navy cover.
+  const enterOp = lerp(f, [3938, 3940], [0, 1]);
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ opacity: enterOp }}>
       <TitleCard frame={f} endcard />
       <SansText
         text={COPY.disclaimer}
