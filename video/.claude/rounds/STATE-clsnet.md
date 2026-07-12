@@ -958,3 +958,101 @@ almost certainly afflicts other blue-bg traced hex faces — the MapScene mHex*
 minis (f620-745) and the mbadge mbHex* (MapBadgesScene) — a white-backing pass
 there is the same trivial win (matching/locks already fill white via SmallHex
 fillHex, so they are exempt). Not done this round (task scoped to network hexes).
+
+### dispatched sweep — 2026-07-12 (r13 baseline 0.8704 worst-window; 3 file-scoped builders in parallel) — landed 8 commits
+
+Mandate: the r13 worst rolling-window was **f100-150 title, mean 0.8704** — the
+SETTLED TitleCard region (f100-138 fully static; f139+ is the gen14 TitleOutro
+wipe, left alone). Orchestrated as THREE parallel builders, one per scene file
+(zero git collision — each stages only its own path), all serialized through the
+single `/tmp/replica-render.lock` (only one `remotion still` at a time; 16GB Mac
+swap-saturated, BUILD-ONLY, no full verify — OOM). Grid-triaged the settled title
+first (`ssim-grid.py`), then each builder swept its remaining worst windows.
+Gate law: EXACT ref VIDEO frames (25fps, ref n = comp n), ffmpeg-ssim, A/B
+ref-vs-OLD-vs-NEW (OLD via `git stash push -- <own file>`), NEW≥OLD at every gated
+frame + eye montage. Instruments in `work/clsnet/{title,disp-A,disp-B,disp-C}/`.
+
+**scenesA — title f100-150 (WORST) + flows f362-462. 3 commits.**
+The settled title's two DOUBLED elements in the diff composite (the CLS logo +
+"CLSNet" wordmark show EDGE-ONLY diff = serif/trace texture floor, NOT chased):
+- **`9d9dc9a10` supporting line ("Supporting adherence to the FX Global Code:",
+  `SansText`).** Ref ink `896×43` top y283; replica @fs38 rendered `773×36` top
+  y290 — ~19% too SMALL + 7px low. Width-matched (lesson 4, left-anchored):
+  fs38→44, y283→275; new bbox `895×42` top y283 left x861 = ref within 1px.
+  Gate whole-frame / supporting-crop: f100 .9159→.9255 / .620→.851 · f110 .9159→
+  .9256 / .620→.851 · f120 .9159→.9255 · f130 .9159→.9256. Eye+metric double-win.
+- **`32a671c64` principle-card strip labels ("Settlement risk" / "Netting &
+  settlement process", `PrincipleCard` SANS).** Ref card1 `310×28` top y642;
+  replica @fs30 `200×23` top y623. fs30→36 + per-card `stripDy` (card1=32 1-line
+  sits low, card2=11 2-line block starts high). NEGATIVE A/B LOGGED in-code: a
+  uniform +32 dropped card2 line1 to y643 → −0.046; the per-card offset fixed it.
+  Whole-frame .9255→.9269 / card1-crop .487→.584 / card2 .486→.496. Residual: label
+  width ~23% short (Helvetica narrower than the ref face; letterSpacing deferred —
+  SSIM-blind, risks the card2 wrap).
+- **`61de6992b` flows currency labels USD/CNH/EUR/CZK (`HexRowFlows`).** Grid
+  ranked the hex line-art edges worst = the documented texture floor (lesson 8
+  masked the real defect); the diff exposed the navy labels ~8% small, 9px low,
+  7px right. fs112→120, capTop −9, x −7 (symmetric to the orange pair). Whole-frame
+  f380/400/430/450 ~.8613→.8628 (+.0015); label-crop .59-.63→.62-.66 (+.03).
+- **Title worst-window net: whole-frame f100-130 0.9159→0.9269 (+0.011).**
+- scenesA NEXT: flows hexes (`HexIcon`) = line-art texture floor (needs re-DRAWN
+  vector, a pipeline not a round); flows pill fields = minor edge/color, small lever.
+
+**scenesB — locks f1735-1785 + hexify f1400-1450. 2 commits.**
+- **`eb92ef761` locks phase-1 hub DROPS out instead of fading in place
+  (`LocksScene`).** Measured EXACT video: the navy CLSNet box descends (top 550→688
+  by f1760, gone ~f1765) and the docs co-descend (~0.73×); docs were also ~99px too
+  far inboard (corrected doc cx→340/1432). The old `boxOut [1756,1772]` fade left a
+  75%-washed slate block at y550 while the ref sat a full-navy box at y688 — the
+  biggest bright miss in the f1760 diff (lesson 4/5). Gate: f1745 .8923→.8960 · f1760
+  .8488→**.8741 (+.0253 trough)** · f1775 .8723 flat · f1785 .9228 flat (hub already
+  gone there). CrxNetting shared the bug — now fixed.
+- **`f557b35d2` hexify "Trade executed" callout geometry (`HexifyScene`).** Label
+  fs34→56 at x755 y356 (ref ink y369-408, cap 39); the two full-width arrows at
+  y505/512 collapsed to ONE double-headed shaft x716-1221 y425 (ref sits in the
+  hex-inner gap only). Old callout was half-size + ~60-85px low (the anti-correlating
+  centre cells). Gate (uniform +.0127): f1410 .9028→.9155 · f1420 .8924→.9051 · f1435
+  .8911→.9038 · f1445 .8964→.9091.
+- scenesB NEXT: locks hex-grow trajectory f1758-1780 — my hexes grow LINEAR
+  [1752,1785]; ref HOLDS small to ~f1757 then fast S-curve to settled ~f1780 (lag
+  peaks f1770: my hexA cx522/w308 vs ref cx594/w368). Replace growP linear with keys
+  [1745,1755,1760,1765,1770,1775,1780]→[0,.01,.12,.60,.91,.98,1]; endpoints match
+  (f1785 =0.923) so zero regression risk. This is the whole f1775 residual (0.872).
+
+**scenesC — 5 windows, 3 fixed. 3 commits.**
+- **`ea222ba7d` outro: stop the endcard navy burying the live ledge — THE big
+  win (`LedgeScene`/`EndCardScene`).** f3930 was the single worst FRAME in the whole
+  video: `EndCardScene` (renders last, `TitleCard` paints a full navy AbsoluteFill)
+  mounted at `SEG.outro[0]=3926` buried the still-live `LedgeScene` (cities+stacks,
+  runs to 3948) under navy → f3930 rendered PURE NAVY while the ref holds the ledge.
+  Fix: ramp the endcard in [3938,3940], hold the ledge opaque through f3940
+  (reproduces the ref's late/fast ledge→navy edge-wipe). Gate: **f3930 .598→.903
+  (+.305)** · f3936 .636→.856 (+.220) · f3938 .677→.820 (+.143) · f3939 .714→.762
+  (+.048); f3900/3915/3940/3946 unchanged. CrxNetting shared the same bug — fixed too.
+- **`91e43afc6` gantt footnote rules (`GanttScene`).** Bottom-left footnote rules
+  were gated by `(1-detailP)` so they REAPPEARED across the detail-card restore
+  2279-2303 (two white lines the ref lacks). Gated to the card grow — fade by ~f2196,
+  never return. f2280 +.0022 · f2300 +.0046 (window worst frame 0.817) · f2312 +.0016;
+  window f2268-2318 mean +.0028.
+- **`e84aab8aa` endcard disclaimer (`EndCardScene`).** Ran smaller/tighter/brighter
+  than ref (probed fs≈43, pitch 60px, glyph (94,115,155)); overrode inline fs43,
+  lineHeight1.4, y864, alpha0.5 → line1 lands y879. f4095/4110/4125 all +.0014.
+- **scenesC LOGGED not fixed (scene-level, regression risk — not surgical):**
+  (a) payment/strip2 f2590-2640 (0.782 @f2630) — ref SCROLLS payment left ~470px
+  then morphs to Strip2; comp holds PaymentScene static till its 2636-2650 fade.
+  f2600/2615 already ~0.89. A per-frame payment-exit scroll, couples to Strip2 entry.
+  (b) reportCard f2923-2973 (0.872 @f2950) — ref netting rows = ~9 butted full-width
+  segs (937px) vs comp 3 narrow pills (545px); ref card 1191×801 vs 840×700. A scene
+  recalibration (segs+merge+collapse f2822-3104), own gated round. **scenesC NEXT =
+  this reportCard rebuild — the largest remaining in-lane fixable defect.**
+
+**Round tally:** 8 commits, 8 elements, 6 windows. All gated NEW≥OLD frame-exact +
+eye + CrxNetting-clean; tsc clean (0 new clsnet errors); all 8 in HEAD, per-file
+latest = this round's, tree clean for the 3 scene files. Biggest levers: the outro
+f3930 +0.305 (worst frame in the video) and the title worst-window +0.011 whole-frame
+(supporting line + card labels lift f100-150 off the #4 worst-window). **Official
+verify PENDING the orchestrator's run** (build-only session — no verify, OOM).
+Freshness note for the verify: the r13 bundle predates all 8; expect the title
+(f100-150) and outro (f3892-3942) windows to move most, gantt/endcard/hexify/locks
+smaller. Texture-floor items unchanged (hex interiors, serif hairlines) — 96 still
+walls on the re-DRAWN line-art pipeline.
