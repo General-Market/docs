@@ -326,6 +326,13 @@ const RefDoc: React.FC<{ x: number; y: number; seal: "lines" | "square" | "circl
 }) => {
   const acc = red ? C.red : C.navyBg;
   const fill = red ? C.chipCream : C.chipGrey;
+  // gen13 NEGATIVE A/B (reverted): the outer border is 228px here vs ref's
+  // measured 221px, but narrowing the svg (width 232->225, +doc1 x comp) LOST
+  // -.002..-.005 at every gated frame f2110-2200. The 3% squish drags the dense
+  // interior (banner/field cells/text lines — already registered to ref) left off
+  // its match; the border-width gain is smaller than the content loss (lesson 4).
+  // Kept at 232: the ref content sits at 228-frame positions despite the tighter
+  // border. Border width is a documented residual, not a lever.
   return (
     <svg width={232} height={289} viewBox="0 0 232 289" style={{ position: "absolute", left: x, top: y }}>
       <path d="M 2 287 L 2 2 L 190 2 L 230 42 L 230 287 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
