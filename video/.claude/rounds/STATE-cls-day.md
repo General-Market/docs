@@ -1451,3 +1451,61 @@ a secondary, small, animated element. `mont/hexA_1950_ab.png`, `hexB_1950_ab.png
 
 Build-only (remotion still, slim path). Not a full verify. Commits:
 dc654a765 (grey-edge), a7c550b78 (icons), 2f44170a1 (globe), 6e7e759ff (audit).
+
+## MODEL-DETAIL round — 2026-07-11 (S16 payout layout + handshake fingers, eye-judged)
+
+Cleared the two residuals the prior MODEL-DETAIL round flagged. Eye-gated
+against exact ref frames (ffmpeg select=eq(n\,F) -> remotion still, 25fps 1:1).
+All measurement + gate artifacts in `work/cls-day/models/` (probes s16_probe.py /
+s16_width.py / s16_colors.py / hs_probe.py; ref frames s16ref/, hsref/; montages
+mont/s16_*, mont/hs_*). Build-only, NOT a full verify.
+
+**TASK 1 — S16 payout chip-stack layout REBUILT (scenes2.tsx, commit 866cae0ef).**
+The stacks read too small/compressed vs ref f3100. Re-measured the SETTLED ref
+(f3090 == f3100, truly static peak; f3050 overshoots, f3130+ the equalizer decays
+some stacks — settled law from f3090/f3100 only, lesson 12):
+- circles were r28 dia56 pitch 123 from x608 -> now **r46 dia92, pitch 154 from
+  x386** (centers 386/544/698/852/1004/1158/1312/1465, cy 834; font 32->50).
+- chips were w80 h36 vpitch46 -> now **w92 h43 vpitch56, bottom-chip top y702**
+  (chip centered on column x, measured 91-92 wide).
+- counts were [2,4,3,2,5,3,2,4] generic (top=colour[i], alt grey/cream) -> now
+  measured per-stack counts **[3,2,1,3,3,1,3,4]** with per-chip colours read
+  per-pixel bottom->top: A[red,red,cream] B[navy,grey] C[red] D[navy,grey,grey]
+  E[red,cream,cream] F[navy] G[red,cream,red] H[navy,grey,grey,navy]. NB the ref
+  navy chip is (0,39,83)=brand navyBg, NOT chipNavy(#0E2C50).
+- the old per-chip fly-RIGHT (dx up to 1400+, from f3110) was INVENTED — ref holds
+  the stacks settled (band panning behind) through ~f3150, then they exit fast by
+  ~f3170 (ref f3180 = bare panned band). Replaced with settle-in (per chip, done
+  ~f3068) -> hold -> fast fade-out (exitP 3150-3170). Circles fade on exitP too.
+- **A/B `mont/s16_settled_gate_ab.png`** (ref/att pairs f3080/3090/3100): at the
+  settled peak f3090 & f3100 size, spacing, columns, counts, colours all MATCH.
+  `mont/s16_new_ab.png` adds f3130. Old defect render preserved implicitly in the
+  prior `mont/payouts_3100_ab.png`.
+- **Documented residual (NOT fixed, out of layout scope):** the ref stacks are a
+  lively equalizer — they overshoot tall ~f3050 then DECAY some columns (E/G/H
+  shrink) toward f3150 before exiting. Mine holds the settled peak counts through
+  f3150. This is per-frame settle ANIMATION, separate from the flagged layout/size
+  defect; my hold is still far closer to the ref than the old fly-out (in-place vs
+  streaming-off, position>>height per lesson 4). A future S16 pass could add the
+  per-column decay LUT. Also f3080 mine is already at peak while ref still settling
+  (entrance-timing nuance).
+
+**TASK 2 — S1/S13 handshake white fingers REBUILT as capsules (lib.tsx
+IconHandshake, commit 32c7dc3b1).** The prior round's clasp was faithful in shape
+but the 4 white fingers read busier than ref f80/f85: each was a thin diagonal
+line + a harsh Q..Q up-curl (U-hook) that dangled below the red fist as scratchy
+bars. A **5x zoom of the ref** (`mont/hs_fingers_zoom_ab.png`) shows each finger is
+a clean CAPSULE OUTLINE — a stadium with navy showing inside, the white twin of the
+red knuckles, near-vertical leaning down-left. Iterated: hooks->clean lines (too
+thin) -> short capsules (stubby, read like knuckles) -> **len 44-50, w14, rot ~110,
+same S_W=5 stroke (NOT bolder)**, hung from the knuckle ridge, contained over the
+fist. `<rect rx>` capsule outlines like the red knuckles.
+- **A/B `mont/hs_v5_ab.png`** (ref-left/new-right, f80+f85) + `mont/hs_fingers_
+  zoom_v5.png`: fingers now read as clean capsules wrapping the fist, matching the
+  ref construction — busy hooks gone. S13 HandshakePill f2550 (shared icon) improved
+  too, no regression (`att/hs_pill_2550.png`).
+- **Residual (NOT fixed):** mine spreads a touch wider than the ref (rightmost
+  finger reaches slightly toward the wrist) and the ref tips curl marginally more
+  toward the fist. Cosmetic; the flagged "busier fingers" is resolved.
+
+tsc clean in-lane for both. NOT full-verified (orchestrator owns verify + eye-gate).
