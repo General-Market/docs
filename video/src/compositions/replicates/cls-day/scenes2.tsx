@@ -993,9 +993,11 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             {/* red ticks rise ABOVE the band top (measured f3300: y56) and pan with it */}
             <div style={{ position: "absolute", left: hx(h) - 2.5, top: 56, width: 5, height: below ? 145 : 80, background: C.marker }} />
             <div style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 140, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>{m.time}</div>
+              {/* gen13: milestone label text ~1.2x oversize vs ref (time h16 vs 19,
+                  label h8.5 vs 10.5) — time 22->19, label 17->14 */}
+              <div style={{ fontSize: 19, fontWeight: 700 }}>{m.time}</div>
               {m.label.map((l, k) => (
-                <div key={k} style={{ fontSize: 17 }}>
+                <div key={k} style={{ fontSize: 14 }}>
                   {l}
                 </div>
               ))}
