@@ -216,6 +216,7 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         opacity={card2Op}
         growP={card2Grow}
         parts={card2Parts}
+        stripDy={11}
       />
       {/* transient loader bars under/next to cards */}
       <div style={{ position: "absolute", left: 875, top: 708, width: 430, height: 22, backgroundColor: "#8286A0", opacity: bar1Op }} />
@@ -240,7 +241,10 @@ export const PrincipleCard: React.FC<{
   // kicker/num/strip fade in separately
   growP?: number;
   parts?: { kicker: number; num: number; strip: number };
-}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts }) => {
+  // per-card strip-label vertical offset below stripY (disp-A): a 1-line label
+  // sits low in the strip (card1 →+32), a 2-line block starts high (card2 →+11).
+  stripDy?: number;
+}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts, stripDy = 32 }) => {
   const { serif: SERIF, sans: SANS } = useBrand();
   if (opacity <= 0) return null;
   // bar rect in card-local coords: y 204-244 (screen 560-600)
@@ -298,9 +302,24 @@ export const PrincipleCard: React.FC<{
         style={{
           position: "absolute",
           left: 24,
-          top: stripY - y + 14,
+          // strip label sized+placed to the ref (disp-A 2026-07-12). Card1
+          // "Settlement risk" ink bbox at f110: ref 310×28 ink-top y642, cur
+          // @fs30 rendered 200×23 ink-top y623 — ~22% short and 19px high (the
+          // settled diff's second doubling; color confirmed matching dark-navy,
+          // so pure size+position). fs36 lands cap 27.6≈28 for BOTH cards.
+          // Vertical offset is PER-CARD (stripDy): the 1-line card1 sits low in
+          // the strip (ink-top ref 642 → stripDy 32), the 2-line card2 block
+          // starts high (line1 ink-top ref 621, 21px above card1 → stripDy 11).
+          // A uniform +32 dropped card2 to 643 (22px low) and REGRESSED its
+          // crop SSIM even though the size was right — the ink-top Y-offset
+          // stayed measurable through the faded-'50'-numeral contamination and
+          // exposed it. Width stays ~23% short of ref (240 vs 310): our
+          // Helvetica is narrower than the ref face; closing it needs
+          // letterSpacing, deferred (SSIM-blind low-contrast; tracking risks
+          // the card2 wrap). left/24 unchanged (ink-left 884≈ref 885).
+          top: stripY - y + stripDy,
           fontFamily: SANS,
-          fontSize: 30,
+          fontSize: 36,
           lineHeight: 1.15,
           color: C.navy,
           whiteSpace: "pre-wrap",
