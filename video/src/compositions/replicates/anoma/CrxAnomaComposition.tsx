@@ -113,7 +113,7 @@ const INK_SHADOW =
 // grain hides what remains of the source compression without the
 // softness of a blur. It mounts full-bleed outside the coordinate
 // scaler, 1:1 with the 4K raster. The end fade-to-black starts on the
-// f1335 snare and completes on the f1379 snare so the end lockup lands on
+// f1347 snare and completes on the f1391 swell so the end lockup lands on
 // black, never on bright water.
 const WAVE_SECONDS = 18; // source clip length
 
@@ -128,9 +128,9 @@ const WaveBackground: React.FC<{
   waveSrc = "crx-assets/bridge-wave-4k.mp4",
   loopSeconds = WAVE_SECONDS,
 }) => {
-  // Fade-to-black STARTS on the f1335 snare and completes on the f1379 snare
+  // Fade-to-black STARTS on the f1347 snare and completes on the f1391 swell
   // where the end mark arrives — the lockup lands on solid black.
-  const black = interpolate(frame, [1335, 1379], [0, 1], clamp);
+  const black = interpolate(frame, [1347, 1391], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={Math.round(loopSeconds * FPS)}>
@@ -445,17 +445,19 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "Access", f: 962 }, { t: "liquidity", f: 973 }], x: 55, capTop: 270, drop: 50, out: { cut: 1050 } },
   { words: [{ t: "from", f: 984 }, { t: "multiple", f: 995 }], x: 55, capTop: 340, drop: 50, out: { cut: 1050 } },
   { words: [{ t: "dealers", f: 1006 }], x: 55, capTop: 410, drop: 50, out: { cut: 1050 } },
-  // Scene 10 — "trading" on the f1072 snare as the first check ticks (fades f1181-1203)
-  { words: [{ t: "Regulated", f: 1050 }, { t: "FX", f: 1061 }], x: 64, capTop: 305, drop: 50, out: { fade: [1181, 1203] } },
-  { words: [{ t: "trading", f: 1072 }], x: 64, capTop: 375, drop: 50, out: { fade: [1181, 1203] } },
+  // Scene 10 — "On-chain" on the f1072 snare as the first check ticks (fades f1181-1203).
+  // Left-anchored at x=64; "Institutional" must END before the app card (x≈504), so
+  // the headline is split "Institutional" / "FX, On-chain" — one word per line clears it.
+  { words: [{ t: "Institutional", f: 1050 }], x: 64, capTop: 305, drop: 50, out: { fade: [1181, 1203] } },
+  { words: [{ t: "FX,", f: 1061 }, { t: "On-chain", f: 1072 }], x: 64, capTop: 375, drop: 50, out: { fade: [1181, 1203] } },
   // Scene 11 (cross-border-business-made-simple) is CUT in the re-pace: S10
   // (compliance) hands straight to the S12 brand finale.
   // Scene 12 — top-center; the finale line settles as the track breathes out:
   // "Live on Base, Avax," (f1236-1260) over "and Celo testnets" (f1258-1274), the
   // payoff "testnets" landing ~f1274 near the old f1269 snare (fades f1335-1357).
-  // Two capTops (129/198) so the lines never collide.
-  { words: [{ t: "Live", f: 1236 }, { t: "on", f: 1244 }, { t: "Base,", f: 1252 }, { t: "Avax,", f: 1260 }], capTop: 129, drop: 44, out: { fade: [1335, 1357] } },
-  { words: [{ t: "and", f: 1258 }, { t: "Celo", f: 1266 }, { t: "testnets", f: 1274 }], capTop: 198, drop: 44, out: { fade: [1335, 1357] } },
+  // Two capTops (135/217, ~82px gap) so the lines never collide and clear the top.
+  { words: [{ t: "Live", f: 1236 }, { t: "on", f: 1244 }, { t: "Base,", f: 1252 }, { t: "Avax,", f: 1260 }], capTop: 135, drop: 44, out: { fade: [1335, 1357] } },
+  { words: [{ t: "and", f: 1258 }, { t: "Celo", f: 1266 }, { t: "testnets", f: 1274 }], capTop: 217, drop: 44, out: { fade: [1335, 1357] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
@@ -482,11 +484,11 @@ const LOCKUP_TOP = 344.7 - MARK_CY; // mark rides the frame's optical center
 const LEFT_FINAL = CENTER - LOCKUP_W / 2;
 const LEFT_ALONE = CENTER - MARK_CX; // phase 1: mark alone, centered
 
-// The mark arrives on the f1379 snare — where the water finishes fading to black
-// — and the wordmark reveals two slow pulses later on the f1423 snare, both
-// landing as the track breathes out. The wordmark settles by ~f1443 and holds on
-// black to the last frame (~f1470).
-const MARK_IN = 1379;
+// The mark arrives on the f1391 late swell — where the water finishes fading to
+// black — and the wordmark reveals on the f1423 bright outro, both landing as the
+// track breathes out. The mark-alone hold is ~f1391→1423 (≈1s); the wordmark
+// settles by ~f1443 and holds on black to the last frame (~f1470).
+const MARK_IN = 1391;
 const REVEAL = 1423;
 const REVEAL_DUR = 20;
 
@@ -621,7 +623,7 @@ const CrxAnomaStage: React.FC<{
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       {/* Volume RECEDES as the finale approaches, not a cliff at the very end:
           full through the story, then a gentle taper from f1203 (the resolution
-          run-out) down to a low bed by the f1379 mark-in, then to the f1423
+          run-out) down to a low bed by the f1391 mark-in, then to the f1423
           wordmark reveal and out by the end so the track breathes out under the
           settling wordmark. */}
       <Audio
@@ -630,7 +632,7 @@ const CrxAnomaStage: React.FC<{
         volume={(f) =>
           interpolate(
             f,
-            [0, 12, 1203, 1379, 1423, CRX_DURATION - 4],
+            [0, 12, 1203, 1391, 1423, CRX_DURATION - 4],
             [0, 1, 1, 0.4, 0.12, 0],
             clamp,
           )
@@ -722,7 +724,7 @@ const WaveHalftoneBackground: React.FC<{
   width: number;
   height: number;
 }> = ({ frame, width, height }) => {
-  const black = interpolate(frame, [1335, 1379], [0, 1], clamp);
+  const black = interpolate(frame, [1347, 1391], [0, 1], clamp);
   return (
     <AbsoluteFill>
       <Loop durationInFrames={18 * FPS}>
