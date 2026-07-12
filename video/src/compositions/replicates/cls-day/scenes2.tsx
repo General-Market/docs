@@ -1047,7 +1047,9 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             return (
               <div key={i} style={{ opacity: rowsP[i] }}>
                 <RowIcon kind={i} x={790} y={y} />
-                <div style={{ position: "absolute", left: 872, top: y - 4, fontFamily: pack.sans, fontSize: 22, color: C.navyInk, lineHeight: 1.3 }}>
+                {/* gen13: row text fs22->16 (measured ref cap-height ~13.5px vs
+                    replica's ~19px; the oversize text also overflowed the panel width) */}
+                <div style={{ position: "absolute", left: 872, top: y - 4, fontFamily: pack.sans, fontSize: 16, color: C.navyInk, lineHeight: 1.3 }}>
                   {row.map((l, k) => (
                     <div key={k}>{l}</div>
                   ))}
