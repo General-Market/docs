@@ -216,7 +216,8 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         opacity={card2Op}
         growP={card2Grow}
         parts={card2Parts}
-        stripDy={11}
+        stripDy={7}
+        stripLh={1.3}
       />
       {/* transient loader bars under/next to cards */}
       <div style={{ position: "absolute", left: 875, top: 708, width: 430, height: 22, backgroundColor: "#8286A0", opacity: bar1Op }} />
@@ -242,9 +243,13 @@ export const PrincipleCard: React.FC<{
   growP?: number;
   parts?: { kicker: number; num: number; strip: number };
   // per-card strip-label vertical offset below stripY (disp-A): a 1-line label
-  // sits low in the strip (card1 →+32), a 2-line block starts high (card2 →+11).
+  // sits low in the strip (card1 →+32), a 2-line block starts high (card2 →+7).
   stripDy?: number;
-}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts, stripDy = 32 }) => {
+  // per-card strip-label line pitch (disp-A r15): the ref's 2-line block opens
+  // its lines WIDER than lineHeight 1.15 puts them — card2 pitch measured 47px
+  // (=fs36·1.3), not 41px. 1-line labels are pitch-agnostic, so card1 keeps 1.15.
+  stripLh?: number;
+}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts, stripDy = 32, stripLh = 1.15 }) => {
   const { serif: SERIF, sans: SANS } = useBrand();
   if (opacity <= 0) return null;
   // bar rect in card-local coords: y 204-244 (screen 560-600)
@@ -313,14 +318,26 @@ export const PrincipleCard: React.FC<{
           // A uniform +32 dropped card2 to 643 (22px low) and REGRESSED its
           // crop SSIM even though the size was right — the ink-top Y-offset
           // stayed measurable through the faded-'50'-numeral contamination and
-          // exposed it. Width stays ~23% short of ref (240 vs 310): our
-          // Helvetica is narrower than the ref face; closing it needs
-          // letterSpacing, deferred (SSIM-blind low-contrast; tracking risks
-          // the card2 wrap). left/24 unchanged (ink-left 884≈ref 885).
+          // exposed it. Width stays ~23% short of ref (line1 191/line2 384 vs
+          // our 147/305): our Helvetica is narrower than the ref face; closing
+          // it needs letterSpacing, deferred (SSIM-blind low-contrast; the ref
+          // is dark-navy on teal, low-ish contrast — the FONT-FACE TEXTURE FLOOR
+          // for card2). left/24 unchanged (ink-left 1358≈ref 1358).
+          //
+          // r15 (per-LINE probe, dark-navy R<45 mask over the label window,
+          // static f110≡f120): the 2-line block's INTER-LINE PITCH was the
+          // residual, not size. Ref line1 cap-top 621 / line2 cap-top 668 →
+          // pitch 47px; ours (lineHeight 1.15 = fs36·1.15 = 41px) sat line2 at
+          // 663, 5px HIGH. lineHeight 1.3 (=47/36) opens the pitch to the ref;
+          // but the extra half-leading also drops line1 ~2.7px, so stripDy 11→7
+          // re-seats line1 at 621. Both lines now land ≤1px of ref. lineHeight
+          // is PER-CARD (stripLh) — card1 is 1-line and pitch-agnostic, keeps
+          // 1.15. The \n is explicit + no width on this div, so opening the
+          // pitch cannot re-wrap the block.
           top: stripY - y + stripDy,
           fontFamily: SANS,
           fontSize: 36,
-          lineHeight: 1.15,
+          lineHeight: stripLh,
           color: C.navy,
           whiteSpace: "pre-wrap",
           opacity: (parts?.strip ?? 1) * (growP >= 1 ? 1 : 0),
