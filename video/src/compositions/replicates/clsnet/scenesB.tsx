@@ -510,7 +510,18 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const hexAx = 413 + (612 - 413) * growP;
   const hexBx = 1512 + (1306 - 1512) * growP;
   const hexY = 283 + (413 - 283) * growP;
-  const boxOut = lerp(f, [1756, 1772], [1, 0]); // box drops away as hexes grow
+  // gen14: the phase-1 hub (CLSNet box + docs + connectors) does NOT fade in
+  // place — it DROPS DOWN and out as the parties take focus (measured EXACT
+  // video, box-top navy blob + doc-outline bbox): box top 550(rest to f1748)→
+  // 559@1752→595@1756→688@1760, gone by ~f1765; docs co-descend but slower
+  // (doc-top 536→637@1760, ~0.73× the box). The old code held them at rest y
+  // and cross-faded (boxOut [1756,1772]) → at f1760 the ref box sits full-navy
+  // at y688 while ours was a 75%-washed slate block still at y550 (the biggest
+  // bright miss in the f1760 diff). Ride each down its measured curve and fade
+  // only at the END (box stays full through the drop, gone by 1766).
+  const boxOut = lerp(f, [1760, 1766], [1, 0]);
+  const boxDy = interpolate(f, [1748, 1752, 1756, 1760, 1764], [0, 9, 45, 138, 235], clamp);
+  const docDy = interpolate(f, [1748, 1752, 1756, 1760, 1764], [0, 7, 33, 101, 172], clamp);
   const docOp = lerp(f, [1800, 1815], [0, 1]);
   // gen13: the A/B badge GROWS with the hex (measured EXACT video: r≈0.14·w —
   // phase1 w215→r29, settled w385→r54; the old fixed r36 was too big at phase1
@@ -527,14 +538,15 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
       {phase1 && (
         <>
           {/* r9 measured (regular_0137-0139): navy box (850,550) side 219=>w224;
-              docs (439/1340,556) 149x198; horizontal doc<->box connectors at
-              y666 (stop at the box edges 850/1069); up-arrow risers on each
-              hex-cx (413/1512) from y636 into the hex bottom (y418). */}
-          <ClsNetBox x={850} y={550} w={224} opacity={lerp(f, [1662, 1672], [0, 1]) * boxOut} />
-          <Doc x={439} y={556} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
-          <Doc x={1340} y={556} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
-          <Elbow points={[[588, 666], [850, 666]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
-          <Elbow points={[[1069, 666], [1340, 666]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
+              up-arrow risers on each hex-cx (413/1512) from y636 into the hex
+              bottom (y418). gen14: docs measured at cx414/1506 (x340/1432, not
+              the old x439/1340 which sat 99px too far inboard); box+docs+
+              connectors ride the measured DROP (boxDy/docDy) as they exit. */}
+          <ClsNetBox x={850} y={550 + boxDy} w={224} opacity={lerp(f, [1662, 1672], [0, 1]) * boxOut} />
+          <Doc x={340} y={556 + docDy} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
+          <Doc x={1432} y={556 + docDy} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
+          <Elbow points={[[489, 666 + docDy], [850, 666 + docDy]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
+          <Elbow points={[[1069, 666 + docDy], [1432, 666 + docDy]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
           <Elbow points={[[413, 636], [413, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
           <Elbow points={[[1512, 636], [1512, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
         </>
