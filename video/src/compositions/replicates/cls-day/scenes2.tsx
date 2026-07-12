@@ -797,56 +797,90 @@ const BracketBar: React.FC<{ x: number; w: number; y: number; h?: number; label:
 };
 
 // ─── S16: pay-outs to members A..H (f3040..3200) ───
+// LAYOUT re-measured from the SETTLED ref f3090/f3100 (probe models/s16_probe.py
+// + s16_width.py + s16_colors.py). The old assembly read too small/compressed:
+// circles r28 dia56 at pitch 123 from x608; ref circles are r46 dia92 at pitch
+// 154 from x386, chips w92 h43 pitch 56 (old w80 h36 pitch 46). Counts + per-chip
+// colours were also generic (top=colors[i], alt grey/cream) — re-read per-pixel.
+//   circle centers x = 386 + i*154 · r 46 · cy 834
+//   chip w 92 · h 43 · vpitch 56 · bottom-chip top y 702
+// The ref HOLDS the settled stacks (band panning behind) through ~f3150, then
+// they exit fast by ~f3170 (ref f3180 = bare band). The old per-chip fly-RIGHT
+// (from f3110) was invented — ref shows the stacks settled at f3130/f3150, never
+// mid-flight. Replaced with settle-in → hold → fast fade-out.
+const S16_COL0 = 386; // member A circle center x
+const S16_PITCH = 154; // column pitch (386..1465 / 7)
+const S16_CIRCLE_R = 46; // circle radius (dia 92; measured 88-95)
+const S16_CIRCLE_CY = 834; // circle center y (measured 787..881)
+const S16_CHIP_W = 92; // chip width (measured 91-92, centered on column)
+const S16_CHIP_H = 43; // chip height (measured 42-44)
+const S16_CHIP_VPITCH = 56; // chip vertical pitch (measured tops 590/646/702)
+const S16_CHIP_BASE = 702; // bottom-chip top y (measured)
+// per-stack chip colours bottom→top, read per-pixel off ref f3100 (s16_colors.py):
+// red (204,68,30)=chipRed · cream (240,200,175)=chipCream · grey (138,157,178)=
+// chipGrey · navy (0,39,83)=navyBg (NOT chipNavy — ref navy chip == brand navy).
+const S16_STACKS: string[][] = [
+  [C.chipRed, C.chipRed, C.chipCream], // A
+  [C.navyBg, C.chipGrey], // B
+  [C.chipRed], // C
+  [C.navyBg, C.chipGrey, C.chipGrey], // D
+  [C.chipRed, C.chipCream, C.chipCream], // E
+  [C.navyBg], // F
+  [C.chipRed, C.chipCream, C.chipRed], // G
+  [C.navyBg, C.chipGrey, C.chipGrey, C.navyBg], // H
+];
 export const S16Payouts: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 3040 || frame >= 3215) return null;
   const inP = interpolate(frame, [3040, 3055], [0, 1], clamp);
   const outP = interpolate(frame, [3200, 3215], [0, 1], clamp);
   // measured fast pan: hourAt(960) 11.2 @f3100 → 12.1 @f3150
   const hourAt = 11.2 + (frame - 3100) * 0.018;
-  const stacks = [2, 4, 3, 2, 5, 3, 2, 4];
-  const colors = [C.chipRed, C.chipNavy, C.chipRed, C.chipGrey, C.chipCream, C.chipNavy, C.chipGrey, C.chipNavy];
+  // settled hold, then fast exit (ref stacks gone by ~f3170)
+  const exitP = interpolate(frame, [3150, 3170], [0, 1], clamp);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: inP * (1 - outP) }}>
       <TimelineBand y={221} h={69} originX={960} originHour={hourAt} pxPerHour={249} tickAbove={4} tickBelow={28} labelSize={34} />
       <MarkerTriangle x={955} y={123} size={90} />
       {pack.members.map((m, i) => {
-        const x = 608 + i * 123;
-        const flyAt = 3110 + i * 9;
-        const fly = interpolate(frame, [flyAt, flyAt + 40], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+        const cx = S16_COL0 + i * S16_PITCH;
+        const cols = S16_STACKS[i] ?? [C.chipNavy];
         return (
           <React.Fragment key={i}>
             <div
               style={{
                 position: "absolute",
-                left: x - 28,
-                top: 828,
-                width: 56,
-                height: 56,
-                borderRadius: 28,
+                left: cx - S16_CIRCLE_R,
+                top: S16_CIRCLE_CY - S16_CIRCLE_R,
+                width: S16_CIRCLE_R * 2,
+                height: S16_CIRCLE_R * 2,
+                borderRadius: S16_CIRCLE_R,
                 background: C.navyBg,
                 color: "#FCFCFC",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: pack.serif,
-                fontSize: 32,
+                fontSize: 50,
+                opacity: 1 - exitP,
               }}
             >
               {m}
             </div>
-            {Array.from({ length: stacks[i] }, (_, k) => {
-              const appear = interpolate(frame, [3050 + i * 6 + k * 4, 3058 + i * 6 + k * 4], [0, 1], clamp);
-              const dx = fly * (1400 + i * 100);
-              const op = appear * (1 - fly);
+            {cols.map((col, k) => {
+              // settle-in: each chip rises + fades in (staggered), settled by ~f3068
+              const t0 = 3050 + i * 2 + k * 3;
+              const appear = interpolate(frame, [t0, t0 + 14], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
+              const op = appear * (1 - exitP);
               if (op <= 0) return null;
+              const rise = (1 - appear) * 18; // small settle drop
               return (
                 <Chip
                   key={k}
-                  x={x - 40 + dx}
-                  y={780 - k * 46}
-                  w={80}
-                  h={36}
-                  color={k === stacks[i] - 1 ? colors[i] : k % 2 ? C.chipGrey : C.chipCream}
+                  x={cx - S16_CHIP_W / 2}
+                  y={S16_CHIP_BASE - k * S16_CHIP_VPITCH + rise}
+                  w={S16_CHIP_W}
+                  h={S16_CHIP_H}
+                  color={col}
                   opacity={op}
                 />
               );
