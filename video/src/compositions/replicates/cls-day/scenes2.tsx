@@ -724,11 +724,20 @@ export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   const bandY = interpolate(frame, [2726, 2728, 2731, 2734, 2737, 2745], [4, 72, 158, 194, 210, 221], clamp);
   const markerP = interpolate(frame, [2730, 2737], [0, 1], clamp);
   // measured: hourAt(960) = 8.15 @f2800 → 8.4 @f2900
-  const hourAt = 8.15 + (frame - 2800) * 0.0025;
-  const x9 = 960 + (9 - hourAt) * 249;
+  // gen14: the ref band ZOOM-OUTS + PANS during the descent, not a static-pitch
+  // slide. Per-pixel ref hour-tick pitch: 330@f2728, 291@f2731, 257@f2737,
+  // 249@f2745 (settled) — the old constant 249 sat ~80px/hr too tight through
+  // the descent. And the origin swings too (hour@x960: 7.41→7.76→7.95→8.00),
+  // a zoom about a left pivot (x~357), NOT the mission's pure-225-pitch model.
+  // Both corrections are per-frame tables that DECAY TO IDENTITY at f2745, so
+  // every settled frame (and the x9/label/S15 handoff) is byte-unchanged.
+  const pitchDescent = interpolate(frame, [2726, 2728, 2731, 2737, 2745], [345, 330, 291, 257, 249], clamp);
+  const hourDelta = interpolate(frame, [2726, 2728, 2731, 2737, 2745], [-0.62, -0.56, -0.2175, -0.0325, 0], clamp);
+  const hourAt = 8.15 + (frame - 2800) * 0.0025 + hourDelta;
+  const x9 = 960 + (9 - hourAt) * pitchDescent;
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      <TimelineBand y={bandY} h={69} originX={960} originHour={hourAt} pxPerHour={249} tickAbove={4} tickBelow={28} labelSize={34} />
+      <TimelineBand y={bandY} h={69} originX={960} originHour={hourAt} pxPerHour={pitchDescent} tickAbove={4} tickBelow={28} labelSize={34} />
       <div style={{ opacity: markerP }}>
         <MarkerTriangle x={955} y={bandY - 98} size={90} />
       </div>
