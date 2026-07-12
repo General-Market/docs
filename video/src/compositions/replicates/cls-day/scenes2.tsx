@@ -487,8 +487,13 @@ export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
 // right-arrow at x1465 y770), chips spawn at the pill arcs and travel
 // OUTWARD at ~7.2px/f (red/cream leftward on top, slate rightward below).
 export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 2362 || frame >= 2750) return null;
-  const outP = interpolate(frame, [2737, 2750], [0, 1], clamp);
+  if (frame < 2362 || frame >= 2726) return null;
+  // gen13: exit RE-TIMED to the ref. The old outP faded the whole scene f2737-2750
+  // (~18f too late) — the ref instead SLIDES the content (cities/rails/pill/chips)
+  // straight DOWN off-frame FAST while the top band stays, blank below the band by
+  // f2725 (measured ink below band: 175k@f2719 -> 30k@f2722 -> 0@f2725). S14 then
+  // takes the band descent + content fade-in from f2726 (see S14Target).
+  const exitDy = interpolate(frame, [2717, 2721, 2725], [0, 350, 1150], { ...clamp, easing: Easing.in(Easing.quad) });
   const cityP = interpolate(frame, [2380, 2405], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [2370, 2390], [0, 1], clamp);
   const pathP = interpolate(frame, [2410, 2440], [0, 1], { ...clamp, easing: EASE });
@@ -508,7 +513,7 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
     { t0: t0 + 19.3, dir: 1 as const, color: C.chipGrey },
   ]);
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
+    <div style={{ position: "absolute", inset: 0, background: C.white }}>
       {/* band touches the top edge (y0 h57), static, no marker. r8: labels
           REMEASURED at f2550 — ref digits cap-height 29 (fs42, not 30),
           cap-top y72, digit x-start 118 (labelDx 15), and the ticks run to
@@ -516,6 +521,8 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
           ticks across the whole S13 window (f2362-2750), so it's a uniform
           band-wide correction. */}
       <TimelineBand y={0} h={57} originX={101} originHour={4} pxPerHour={286} tickAbove={0} tickBelow={45} labelSize={42} labelDx={15} labelDy={4} />
+      {/* content (cities/rails/pill/chips) slides DOWN off-frame at exit; band stays */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${exitDy}px)` }}>
       <div style={{ opacity: cityP }}>
         <PvpLeftCity />
         <PvpRightCity />
@@ -543,6 +550,7 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
         if (right - left < 8) return null;
         return <Chip key={i} x={left} y={743} w={right - left} h={55} color={w.color} />;
       })}
+      </div>
     </div>
   );
 };
@@ -698,18 +706,30 @@ const PvpRightCity: React.FC = () => (
 
 // ─── S14: 09:00 settlement completion target (f2737..2837) ───
 export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 2737 || frame >= 2850) return null;
-  const inP = interpolate(frame, [2745, 2760], [0, 1], clamp);
+  if (frame < 2726 || frame >= 2850) return null;
+  // gen13: entry RE-TIMED. S13 hands off at f2726 (its content already slid off); the
+  // band DESCENDS from the top (S13's y0) to the S14 rest y221 over f2726-2745 while
+  // marker + red line + "09:00" fade in during the descent (measured ref band top:
+  // 72@f2728 -> 158@f2731 -> 210@f2737; red line solid + "09:00" drawing by f2737).
+  // Old scene started at f2737 with inP f2745-2760 — ~10-18f too late for both.
+  // ref: the red 09:00 line is SOLID by f2737 (leads), the "09:00" text only starts
+  // to draw there — so line + text fade on separate ramps.
+  const lineP = interpolate(frame, [2728, 2737], [0, 1], clamp);
+  const inP = interpolate(frame, [2734, 2750], [0, 1], clamp);
   const outP = interpolate(frame, [2837, 2850], [0, 1], clamp);
+  const bandY = interpolate(frame, [2726, 2728, 2731, 2734, 2737, 2745], [4, 72, 158, 194, 210, 221], clamp);
+  const markerP = interpolate(frame, [2730, 2737], [0, 1], clamp);
   // measured: hourAt(960) = 8.15 @f2800 → 8.4 @f2900
   const hourAt = 8.15 + (frame - 2800) * 0.0025;
   const x9 = 960 + (9 - hourAt) * 249;
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      <TimelineBand y={221} h={69} originX={960} originHour={hourAt} pxPerHour={249} tickAbove={4} tickBelow={28} labelSize={34} />
-      <MarkerTriangle x={955} y={123} size={90} />
+      <TimelineBand y={bandY} h={69} originX={960} originHour={hourAt} pxPerHour={249} tickAbove={4} tickBelow={28} labelSize={34} />
+      <div style={{ opacity: markerP }}>
+        <MarkerTriangle x={955} y={bandY - 98} size={90} />
+      </div>
       {/* red line at 09:00 from band bottom down */}
-      <Milestone x={x9} lineTop={290} lineBottom={880} opacity={inP} />
+      <Milestone x={x9} lineTop={bandY + 69} lineBottom={880} opacity={lineP} />
       <div style={{ position: "absolute", right: 1920 - x9 + 36, top: 570, textAlign: "right", fontFamily: pack.sans, color: C.navyInk, opacity: inP }}>
         <div style={{ fontSize: 100, fontWeight: 700, lineHeight: 1 }}>{pack.milestones.m0900.time}</div>
         <div style={{ fontSize: 36, lineHeight: 1.35, marginTop: 10 }}>
