@@ -374,16 +374,20 @@ const RefDoc: React.FC<{ x: number; y: number; seal: "lines" | "square" | "circl
 // invented
 const FocusDoc: React.FC<{ x: number; y: number }> = ({ x, y }) => (
   <svg width={430} height={500} viewBox="0 0 430 500" style={{ position: "absolute", left: x - 5, top: y - 5 }}>
-    {/* page 2 behind (white, own fold) */}
-    <path d="M 30 484 L 30 40 L 355 40 L 422 105 L 422 484 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
+    {/* page 2 behind (white, own fold). gen14: bottom 484->491 — ref back-sheet
+        bottom sits at screen y777 (svg491), old sat at y770 (svg484): the page-1↔
+        page-2 bottom gap was 23px vs ref's 33px, so the BACK sheet was ~8px short.
+        Front sheet (page-1) was already at ref extent — only page-2 extended. */}
+    <path d="M 30 491 L 30 40 L 355 40 L 422 105 L 422 491 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
     <path d="M 355 40 L 355 105 L 422 105" fill="none" stroke={C.navyDeep} strokeWidth="3" />
     {/* grey drop shadow: page-1 silhouette shifted (+20,+16) */}
-    <path d="M 380 478 L 55 478 Q 25 478 25 448 L 25 21 L 310 21 L 380 91 Z" fill="#DFE3E8" />
+    <path d="M 380 475 L 55 475 Q 25 475 25 445 L 25 21 L 310 21 L 380 91 Z" fill="#DFE3E8" />
     {/* page-2 content fragments on the sliver */}
     <rect x={362} y={147} width={33} height={37} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
     <rect x={362} y={214} width={35} height={86} fill={C.white} stroke={C.navyDeep} strokeWidth="3" />
-    {/* page 1 (rounded bottom-left) */}
-    <path d="M 360 462 L 35 462 Q 5 462 5 432 L 5 5 L 290 5 L 360 75 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3.5" strokeLinejoin="round" />
+    {/* page 1 (rounded bottom-left). gen14: bottom 462->459 (screen 748->745;
+        ref front-sheet bottom = y744). Front extent unchanged in substance. */}
+    <path d="M 360 459 L 35 459 Q 5 459 5 429 L 5 5 L 290 5 L 360 75 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3.5" strokeLinejoin="round" />
     <path d="M 290 5 L 290 75 L 360 75" fill="none" stroke={C.navyDeep} strokeWidth="3.5" />
     {/* navy pill seal + heading lines */}
     <rect x={32} y={27} width={93} height={40} rx={12} fill={C.navyBg} />
