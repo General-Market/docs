@@ -33,24 +33,29 @@ export const IconHandshake: React.FC<{ size: number; ink?: string; accent?: stri
     {/* knuckle ridge: the palm dips from the beak down to the row of knuckles the
         four fingers hang from (ref f80: the ridge sits at svg_y~64) */}
     <path d="M 80 44 Q 110 61 149 63" fill="none" stroke={ink} strokeWidth={S_W} strokeLinecap="round" strokeLinejoin="round" />
-    {/* four fingers wrapping down over the clasp. Ref f80: EVENLY spaced (~15
-        pitch, clear navy gap) and clearly DIAGONAL (~55° down-left, not the steep
-        near-vertical bars) so they read as fingers wrapping over the red hand into
-        the clasp, each ending in a medium up-curling hook. [tx,ty top · bx,by tip] */}
+    {/* four fingers wrapping down over the clasp. Ref f80/f85 (5x zoom): each
+        finger is a clean CAPSULE OUTLINE — a stadium with navy showing inside, the
+        white twin of the red knuckles, near-vertical leaning down-left. The old
+        per-finger U-hook (line + Q..Q up-curl) read as thin scratchy bars; a single
+        line reads too thin. One calm capsule per finger matches the ref's actual
+        construction and line-count. [cx,cy center · rot deg] */}
     {([
-      [103, 65, 76, 110],
-      [119, 67, 92, 112],
-      [134, 67, 108, 110],
-      [148, 63, 124, 104],
-    ] as const).map(([tx, ty, bx, by], i) => (
-      <path
+      [90, 85, 50, 113],
+      [105, 87, 49, 111],
+      [120, 87, 47, 110],
+      [133.5, 83.5, 44, 110],
+    ] as const).map(([cx, cy, len, rot], i) => (
+      <rect
         key={i}
-        d={`M ${tx} ${ty} L ${bx} ${by} Q ${bx} ${by + 8} ${bx + 6} ${by + 8} Q ${bx + 12} ${by + 8} ${bx + 12} ${by}`}
+        x={cx - len / 2}
+        y={cy - 7}
+        width={len}
+        height={14}
+        rx={7}
+        transform={`rotate(${rot} ${cx} ${cy})`}
         fill="none"
         stroke={ink}
         strokeWidth={S_W}
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     ))}
     {/* right hand edge from the cuff down to the knuckle ridge */}
