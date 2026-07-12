@@ -3,7 +3,7 @@ import { interpolate } from "remotion";
 import { clamp } from "./AnomaComposition";
 import { BORDER, BORDER_STRONG, CARD, Card, Check, SEC, SUCCESS, SUCCESS_SOFT, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
 
-// ─── Scene 10 (f1050-1202): compliance checklist under "Compliance by design" ───
+// ─── Scene 10 (f1050-1202): compliance checklist under "Regulated FX trading" ───
 // Crossfades over the RFQ card; checks tick in on the slow pulse, one every ~22f
 // (f1072/1094/1116/1137); the All-clear pill is the conclusion — it lands on the
 // f1159 snare and HOLDS ~22 frames before the card fades, instead of arriving

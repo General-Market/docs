@@ -5,9 +5,12 @@ import { clamp } from "./AnomaComposition";
 import { BORDER, BORDER_STRONG, CARD, Card, Check, FOCUS_RING, INK, SEC, SUCCESS, SUCCESS_SOFT, Spinner, TEAL, TER, WELL, fadeIn, settle, tnum } from "./CrxCardKit";
 
 // ─── Scene 8 (f742-939): compliance onboarding under "Onboard in days" ───
-// Sub-states crossfade on the slow-pulse grid (764/786/808/830/852); rows whose
-// KEY is new to a face drop in staggered; the success dot pops on the f874 snare,
-// then floods the card across the f896 snare and resolves to Verified.
+// Cadence tightened ~1 beat (Edit 5): sub-states now step every ~18f
+// (742/760/778/796/814/832) instead of 22f, so the checklist fills a beat
+// quicker; rows whose KEY is new to a face drop in staggered. The success dot
+// pops at f852, floods the card across f874 and resolves to Verified by ~f879
+// (was ~f901). The Verified face holds one beat, then fades f901-940 so it never
+// runs into the S9 cut at f962 — a short breath, not a dead hold.
 type ObRow = { k: string; v: string; state?: "pending" | "done" | "run" };
 
 const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
@@ -21,7 +24,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 764,
+    at: 760,
     step: 0,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -30,7 +33,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 786,
+    at: 778,
     step: 0,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -39,7 +42,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 808,
+    at: 796,
     step: 1,
     rows: [
       { k: "Legal entity", v: "Acme Treasury Ltd", state: "done" },
@@ -48,7 +51,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 830,
+    at: 814,
     step: 1,
     rows: [
       { k: "KYB documents", v: "Received", state: "done" },
@@ -57,7 +60,7 @@ const OB_STATES: { at: number; step: number; rows: ObRow[] }[] = [
     ],
   },
   {
-    at: 852,
+    at: 832,
     step: 2,
     rows: [
       { k: "KYB documents", v: "Verified", state: "done" },
@@ -290,17 +293,21 @@ const ObFace: React.FC<{
 
 export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 742 || frame >= 940) return null;
-  const cardOpacity = interpolate(frame, [918, 940], [1, 0], clamp);
+  // Verified resolves ~f879, holds one beat, then fades f901-940 (pulled ~1 beat
+  // earlier with the resolution) so the card is gone by f940 — one beat of wave
+  // before the S9 dealers card cuts in at f962, not a long dead hold.
+  const cardOpacity = interpolate(frame, [901, 940], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
-  // Success dot: pops on the f874 snare, holds, then floods the card across
-  // the f896 snare; the Verified face resolves out of it.
+  // Success dot: pops on the f852 snare, holds, then floods the card across
+  // the f874 snare; the Verified face resolves out of it by ~f879 (a beat sooner
+  // than the old f901).
   const dotD = interpolate(
     frame,
-    [874, 877, 879, 881, 896, 899],
+    [852, 855, 857, 859, 874, 877],
     [12, 44, 42, 42, 420, 950],
     clamp,
   );
-  const successOp = interpolate(frame, [896, 901], [0, 1], clamp);
+  const successOp = interpolate(frame, [874, 879], [0, 1], clamp);
   return (
     <Card x={CARD.left} y={CARD.top} w={CARD.w} h={CARD.h} opacity={cardOpacity}>
       {OB_STATES.map(({ at, step, rows }, i) => {
@@ -320,7 +327,7 @@ export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         );
       })}
-      {frame >= 874 && successOp < 1 && (
+      {frame >= 852 && successOp < 1 && (
         <div
           style={{
             position: "absolute",

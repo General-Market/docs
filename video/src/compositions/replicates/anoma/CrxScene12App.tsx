@@ -4,7 +4,7 @@ import { DIATYPE } from "./diatype";
 import { clamp } from "./AnomaComposition";
 import { BG, BORDER, BarChart, CARD_SHADOW, Card, CrxMark, FlagPair, INK, Money, SEC, SUCCESS, SURFACE2, TEAL, TER, WELL, fadeIn, label, tag, tnum } from "./CrxCardKit";
 
-// ─── Scene 12 (f1225-1356): the app, full width, under "CRX Sandbox is Live." ───
+// ─── Scene 12 (f1225-1356): the app, full width, under "Live on Base, Avax, and Celo testnets" ───
 // Nav + portfolio, AFTER the story's trade: margin locked reflects the
 // $2.5M hedge, and the positions list carries it. The card mounts on the
 // f1225 snare (the strong finale cut). Bars grow from f1247 and are FINISHED

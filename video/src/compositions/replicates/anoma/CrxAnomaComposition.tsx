@@ -171,6 +171,29 @@ type CrxLineSpec = {
   out?: { cut?: number; fade?: [number, number] };
 };
 
+// CRX-local rise: translateY + fade ONLY. The shared wordStyle's `rise` branch
+// multiplies each word by a settling scale() (1 + 0.06·0.85^dt) — and a scaled
+// transform forces the heavy multi-layer INK_SHADOW to RE-RASTERIZE every frame,
+// which shimmered visibly on the first/largest word ("Without"). A plain
+// translate composites the same cached raster at a new position, so dropping the
+// scale kills the shimmer while the rise (up-and-settle + short fade) still
+// reads. The shared wordStyle is the scoring reference for the Anoma replica and
+// is deliberately left untouched — this local variant only applies to the CRX cut.
+const riseStyle = (
+  frame: number,
+  start: number,
+  drop: number,
+  r: number,
+): React.CSSProperties => {
+  if (frame < start) return { opacity: 0 };
+  const dt = frame - start;
+  const off = drop * Math.pow(r, dt);
+  return {
+    transform: `translateY(${(-off).toFixed(2)}px)`,
+    opacity: Math.min((dt + 1) / 2, 1),
+  };
+};
+
 const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
   words,
   x,
@@ -224,7 +247,9 @@ const CrxLine: React.FC<CrxLineSpec & { frame: number }> = ({
           style={{
             display: "inline-block",
             whiteSpace: "pre",
-            ...wordStyle(frame, w.f, dd, rr, rise),
+            ...(rise
+              ? riseStyle(frame, w.f, dd, rr)
+              : wordStyle(frame, w.f, dd, rr, false)),
           }}
         >
           {w.t + (i < words.length - 1 ? " " : "")}
@@ -391,28 +416,28 @@ const LINES: CrxLineSpec[] = [
   // "CRX" one slow pulse later on the f238 snare (cut on the f326 snare)
   { words: [{ t: "Introducing", f: 216 }], x: 91, capTop: 305, drop: 44, out: { cut: 326 } },
   { words: [{ t: "CRX", f: 238 }], x: 88, capTop: 375, drop: 44, out: { cut: 326 } },
-  // Scene 4 — Access / rate locks; "locks" on the f391 snare as the rate LOCKS
-  // (stanza cut f435). "In Any Corridor" walks the quarter into the f457 snare
-  // as USD/BRL is selected (stanza cut f501).
-  { words: [{ t: "Access", f: 369 }], x: 71, capTop: 305, out: { cut: 435 } },
-  { words: [{ t: "rate", f: 380 }, { t: "locks", f: 391 }], x: 71, capTop: 375, out: { cut: 435 } },
-  { words: [{ t: "In", f: 435 }, { t: "Any", f: 446 }, { t: "Corridor", f: 457 }], x: 55, capTop: 340, out: { cut: 501 } },
-  // Scene 5 — one 6-word cascade down the stanza; "notional" on the f567 snare
-  // as the typing completes (cut on the hedge card's f611 snare).
-  { words: [{ t: "At", f: 512 }, { t: "your", f: 523 }], x: 77, capTop: 235, out: { cut: 611 } },
-  { words: [{ t: "preferred", f: 534 }], x: 77, capTop: 305, out: { cut: 611 } },
-  { words: [{ t: "date", f: 545 }], x: 75, capTop: 375, out: { cut: 611 } },
-  { words: [{ t: "and", f: 556 }, { t: "notional", f: 567 }], x: 75, capTop: 445, out: { cut: 611 } },
+  // Scene 4 — Lock FX / rates; the payoff "rates" holds the f391 snare as the
+  // rate LOCKS (stanza cut f435). "In 20+ / corridors" walks the quarter into the
+  // f457 snare (payoff "corridors") as USD/BRL is selected (stanza cut f501).
+  { words: [{ t: "Lock", f: 369 }, { t: "FX", f: 380 }], x: 71, capTop: 305, out: { cut: 435 } },
+  { words: [{ t: "rates", f: 391 }], x: 71, capTop: 375, out: { cut: 435 } },
+  { words: [{ t: "In", f: 435 }, { t: "20+", f: 446 }], x: 55, capTop: 305, out: { cut: 501 } },
+  { words: [{ t: "corridors", f: 457 }], x: 55, capTop: 375, out: { cut: 501 } },
+  // Scene 5 — "On your / terms"; the payoff "terms" holds the f567 snare as the
+  // typing completes (cut on the hedge card's f611 snare climax).
+  { words: [{ t: "On", f: 512 }, { t: "your", f: 523 }], x: 77, capTop: 305, out: { cut: 611 } },
+  { words: [{ t: "terms", f: 567 }], x: 77, capTop: 375, out: { cut: 611 } },
   // Scene 6 — centered, rise+fade; "paying" on the f655 snare, "middleman" lands
   // on the f677 snare (cut f721).
   { words: [{ t: "Without", f: 644 }, { t: "paying", f: 655 }], capTop: 299, drop: 24, rise: true, out: { cut: 714 } },
   { words: [{ t: "the", f: 666 }, { t: "middleman", f: 677 }], capTop: 366, drop: 24, rise: true, out: { cut: 714 } },
   // Scene 7 (legacy-banks → modern-infrastructure) is CUT in the re-pace: the
   // silent breakdown ran too long, so S6 (cut f714) hands straight to S8 (f742).
-  // Scene 8 — Onboard (mount snare f742) / in days, "days" on the f764 snare
-  // (headline cut f918 as the success screen resolves).
-  { words: [{ t: "Onboard", f: 742 }], x: 72, capTop: 305, drop: 50, out: { cut: 918 } },
-  { words: [{ t: "in", f: 753 }, { t: "days", f: 764 }], x: 73, capTop: 375, drop: 50, out: { cut: 918 } },
+  // Scene 8 — Onboard (mount snare f742) / in days, "days" on the f764 snare.
+  // The card cadence was tightened ~1 beat (Edit 5, CrxScene8Onboard), so the
+  // Verified resolution lands ~f879; the headline cuts at f896 to match.
+  { words: [{ t: "Onboard", f: 742 }], x: 72, capTop: 305, drop: 50, out: { cut: 896 } },
+  { words: [{ t: "in", f: 753 }, { t: "days", f: 764 }], x: 73, capTop: 375, drop: 50, out: { cut: 896 } },
   // Scene 9 — the RFQ rides the calm resolution; "dealers" (f1006 snare) lands
   // with the third dealer quote. The headline cuts at f1050 as the compliance
   // card crossfades in, so it never overlaps the S10 headline
@@ -420,15 +445,17 @@ const LINES: CrxLineSpec[] = [
   { words: [{ t: "Access", f: 962 }, { t: "liquidity", f: 973 }], x: 55, capTop: 270, drop: 50, out: { cut: 1050 } },
   { words: [{ t: "from", f: 984 }, { t: "multiple", f: 995 }], x: 55, capTop: 340, drop: 50, out: { cut: 1050 } },
   { words: [{ t: "dealers", f: 1006 }], x: 55, capTop: 410, drop: 50, out: { cut: 1050 } },
-  // Scene 10 — "design" on the f1072 snare as the first check ticks (fades f1181-1203)
-  { words: [{ t: "Compliance", f: 1050 }, { t: "by", f: 1061 }], x: 64, capTop: 305, drop: 50, out: { fade: [1181, 1203] } },
-  { words: [{ t: "design", f: 1072 }], x: 59, capTop: 375, drop: 50, out: { fade: [1181, 1203] } },
+  // Scene 10 — "trading" on the f1072 snare as the first check ticks (fades f1181-1203)
+  { words: [{ t: "Regulated", f: 1050 }, { t: "FX", f: 1061 }], x: 64, capTop: 305, drop: 50, out: { fade: [1181, 1203] } },
+  { words: [{ t: "trading", f: 1072 }], x: 64, capTop: 375, drop: 50, out: { fade: [1181, 1203] } },
   // Scene 11 (cross-border-business-made-simple) is CUT in the re-pace: S10
   // (compliance) hands straight to the S12 brand finale.
-  // Scene 12 — top-center; the brand line settles as the track breathes out:
-  // "CRX Sandbox" (f1236/1247), "is Live" lands on the f1269 snare (fades f1335-1357)
-  { words: [{ t: "CRX", f: 1236 }, { t: "Sandbox", f: 1247 }], capTop: 129, drop: 44, out: { fade: [1335, 1357] } },
-  { words: [{ t: "is", f: 1258 }, { t: "Live", f: 1269 }], capTop: 198, drop: 44, out: { fade: [1335, 1357] } },
+  // Scene 12 — top-center; the finale line settles as the track breathes out:
+  // "Live on Base, Avax," (f1236-1260) over "and Celo testnets" (f1258-1274), the
+  // payoff "testnets" landing ~f1274 near the old f1269 snare (fades f1335-1357).
+  // Two capTops (129/198) so the lines never collide.
+  { words: [{ t: "Live", f: 1236 }, { t: "on", f: 1244 }, { t: "Base,", f: 1252 }, { t: "Avax,", f: 1260 }], capTop: 129, drop: 44, out: { fade: [1335, 1357] } },
+  { words: [{ t: "and", f: 1258 }, { t: "Celo", f: 1266 }, { t: "testnets", f: 1274 }], capTop: 198, drop: 44, out: { fade: [1335, 1357] } },
 ];
 
 // ─── End card lockup: the institutional reveal ───
