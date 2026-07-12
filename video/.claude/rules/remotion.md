@@ -64,6 +64,7 @@ Go deep — per-element detection, real motion trajectories, typography, SFX. A 
 - **Main text straight and centered.** Don't scatter the small-font copy into the corners. One primary line, horizontal, on the optical center; supporting detail sits directly beneath it, never flung to the margins.
 - **Minimize words per scene.** A scene states one thing. If it needs a second sentence, it's two scenes.
 - **Pace to reading speed.** A scene holds exactly long enough to read its words once, then cuts — long enough to read, fast enough to keep retention. Rule of thumb: ~2.5–3 words/sec plus a ~0.4s settle; never park on a line the eye has already finished.
+- **Syncing to music?** Read `.claude/rules/music-sync-method.md` first — place payoff words on measured melodic ONSETS, not the BPM grid.
 
 ## Capabilities (all installed)
 
@@ -127,6 +128,7 @@ Cutout only the few seconds of the beat — a full-talk matte is ~40GB.
 - **Denoise** `clean_audio.py` (DeepFilterNet) · **Voice fx** `voice_effects.py <preset>` (Pedalboard).
 - **SFX** `fetch_sfx.py "<q>"` (Freesound, `FREESOUND_API_KEY`) / `generate_music.py sfx "<d>" -d <s>` (AudioGen).
 - **Music** `analyze_music.py <mp3>` → JSON (BPM/beats/energy/sync + Essentia mood/key); drive cuts from it. **Stems** `separate_stems.py` (Demucs).
+- **Music→motion sync:** `melody-onsets.py <mp3> --offset <s> --fps <n> --frames <N>` → melodic onsets / drops / lulls / pitch in COMPOSITION frames, so words land on real notes not a BPM grid. Full method: `.claude/rules/music-sync-method.md`. Prefer over the broken `analyze_music.py`.
 - **Mix:** `ffmpeg -i voice.wav -i music.wav -filter_complex "[1:a]volume=0.3[bg];[0:a][bg]amix=inputs=2:duration=first" out.wav`
 
 ## Key rules
