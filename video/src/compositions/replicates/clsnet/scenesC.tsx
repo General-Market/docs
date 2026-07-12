@@ -109,6 +109,14 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
         // detail phase: PO1I row drops to bottom
         const y = i === 2 ? r.y + detailP * (985 - r.y) : r.y;
         const x = i === 2 ? r.x + detailP * (605 - r.x) : r.x;
+        // NOTE (window-1 investigation): the ref gantt bars carry a ~2-3px
+        // white outline the Pill component omits (probed f2300: fill x212-346 /
+        // outline x207-350). Adding it as a CSS outline is EYE-correct but
+        // SSIM-adverse on well-matched frames (2px A/B: f2300 +0.0044 but
+        // f2195/2280 -0.0018/-0.0012 — it merely shifts ~0.001 from window A to
+        // window B, failing NEW≥OLD). Left out; revisit only under the owner's
+        // eye. A constant pill y-shift was also rejected — the ref pill y drifts
+        // non-uniformly (row0 fill-top 184@2210→190@2300, row4 +2@2300, lesson 2).
         return (
           <div key={i} style={{ position: "absolute", left: 0, top: 0, opacity: rowOp }}>
             <Pill x={x} y={y} w={i === 2 && detailP > 0.5 ? 130 : r.w} h={GANTT.pillH} color={PILL_COL[r.color]} />
@@ -116,9 +124,15 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           </div>
         );
       })}
-      {/* footnote rules bottom-left (pre-detail only; fr_2172: y971/1010) */}
-      <div style={{ position: "absolute", left: 193, top: 971, width: 530, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2166, 2172], [0, 1]) }} />
-      <div style={{ position: "absolute", left: 192, top: 1010, width: 395, height: 2, backgroundColor: C.white, opacity: (1 - detailP) * lerp(f, [2170, 2176], [0, 1]) }} />
+      {/* footnote rules bottom-left: PRE-DETAIL ONLY. The ref shows them
+          f2166-2188, the detail card covers them, and they NEVER return — probed
+          navy(absent) at f2280/f2300 (the f2312 white there is the shrinking
+          panel's white ground, not a rule). The old `(1 - detailP)` factor made
+          them REAPPEAR across the 2279-2303 restore (detailP falls back to 0),
+          painting white lines the ref lacks — the dominant f2300 defect (0.817,
+          the window's worst frame). Fade out with the card grow, stay gone. */}
+      <div style={{ position: "absolute", left: 193, top: 971, width: 530, height: 2, backgroundColor: C.white, opacity: lerp(f, [2188, 2196], [1, 0]) * lerp(f, [2166, 2172], [0, 1]) }} />
+      <div style={{ position: "absolute", left: 192, top: 1010, width: 395, height: 2, backgroundColor: C.white, opacity: lerp(f, [2188, 2196], [1, 0]) * lerp(f, [2170, 2176], [0, 1]) }} />
       {/* detail card: ref GROWS it out of the collapsing gantt rows (opaque,
           full by ~f2196), THEN populates the field text (~2200-2208) — was an
           opacity crossfade of a fixed full-size card (ghost rows showed through
