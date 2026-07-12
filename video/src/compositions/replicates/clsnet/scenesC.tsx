@@ -412,9 +412,18 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   // 2556-2580); the orange up-arrows into the cities are gone by ~2610
   const orangeP = lerp(f, [2532, 2546], [0, 1]);
   const upArrowOp = orangeP * lerp(f, [2596, 2612], [1, 0]);
+  // r15: the ref does NOT hold this layout static — it whip-scrolls the whole
+  // payment tableau LEFT and off-screen, then Strip2 grows from the bare line.
+  // Measured rigidly (badge/box/text move as one): 0 until f2615, then an
+  // accelerating exit −11@2620 −104@2625 −468@2630, fully off-frame by ~2635.
+  // The horizon line stays put (it is the shared baseline Strip2's line
+  // continues), so only the tableau rides the offset. Kills the invented static
+  // hold + fade the ref never had (lesson 5).
+  const scrollX = interpolate(f, [2615, 2620, 2625, 2630, 2635], [0, -11, -104, -468, -1730], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
       <div style={{ position: "absolute", left: 0, top: 368, width: 1920, height: 3, backgroundColor: C.navy }} />
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${scrollX}px)` }}>
       <div style={{ position: "absolute", left: 215, top: 368 - 295 * 0.47, opacity: 1 }}>
         <TracedArt name="cityA" scale={0.47} />
       </div>
@@ -462,6 +471,7 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           <path d="M396,366 V205 M396,205 l-9,16 M396,205 l9,16 M1415,366 V205 M1415,205 l-9,16 M1415,205 l9,16" stroke={C.orange} strokeWidth={3.5} fill="none" />
         </svg>
       )}
+      </div>
     </AbsoluteFill>
   );
 };
@@ -536,10 +546,16 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   // segments merge (netting)
   const mergeP = lerp(f, [2925, 2955], [0, 1]);
   const card = { x: 530, y: 190, w: 840, h: 700 };
+  // r15: the ref rows sit at a WIDER pitch than the bunched 90/80 comp had —
+  // measured tops 371/521/667 (pitch ~148), height 44 (vf 2930/2950/2965). The
+  // old bunched rows left row 2 (tan) 107px above the ref's tan band with ZERO
+  // overlap; re-anchoring to the measured pitch is a pure in-card position gain
+  // (lesson 4: misplaced ink loses to correct-but-incomplete ink). Card dims and
+  // the collapse keyframes are untouched — the rows all stay inside 190..890.
   const rows = [
-    { y: 390, color: C.lavender, segs: [90, 55, 120, 80, 60, 95] },
-    { y: 480, color: C.orangeDeep, segs: [130, 70, 60, 100, 90, 70] },
-    { y: 560, color: C.tan, segs: [75, 110, 140, 60, 85, 55] },
+    { y: 371, color: C.lavender, segs: [90, 55, 120, 80, 60, 95] },
+    { y: 521, color: C.orangeDeep, segs: [130, 70, 60, 100, 90, 70] },
+    { y: 667, color: C.tan, segs: [75, 110, 140, 60, 85, 55] },
   ];
   // navy ground edge drops, revealing white above (measured keys)
   const edgeY = interpolate(f, [2997, 3009, 3015], [0, 390, 543], clamp);
@@ -648,7 +664,7 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
                       x={xa}
                       y={r.y}
                       w={wseg}
-                      h={40}
+                      h={44}
                       color={r.color}
                       opacity={rowsP * lerp(f, [2898 + ri * 8 + i * 4, 2906 + ri * 8 + i * 4], [0, 1])}
                     />
