@@ -515,6 +515,19 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.hexRow[0] || f >= 468) return null;
   const inOp = lerp(f, [322, 334], [0, 1]);
+  // Currency-label geometry corrected to the ref (disp-A 2026-07-12). Tight,
+  // de-contaminated ink bbox of the navy labels (high-contrast on the white
+  // flows bg) — USD f400 / EUR f430: ref cap ~117, ink-top y703, ink-left
+  // x1551; the FLOWS values (fs112, capTop712, x1554) rendered cap ~108,
+  // ink-top y712, ink-left x1558 — ~8% small, 9px low, 7px right. That is the
+  // eye-visible label doubling the diff composite shows; the SSIM grid ranked
+  // the hex-edge texture floor worst and masked it (lesson 8). fs120 lands
+  // cap ~116; capTop703 / x1547 land ink-top/left within ~1px. The same deltas
+  // (fs120, capTop −9, x −7) carry to the orange labelBot pair (CNH/CZK,
+  // symmetric — orange is too soft on white to bbox, eyechecked instead).
+  // Inline override; data.ts (FLOWS.label*) untouched.
+  const LT = { x: 1547, capTop: 703, fs: 120 };
+  const LB = { x: 1553, capTop: 847, fs: 120 };
   // box draws with the hexes (ref video: box bar starts ~f324, near-full by
   // f332); the old 330-344 left it a faint grey ghost through the hexify
   const boxOp = lerp(f, [324, 336], [0, 1]);
@@ -609,10 +622,10 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
           );
         })}
         {/* currency pair labels (flip with the pill pages) */}
-        <SerifLabel text="USD" x={FLOWS.labelTop.x} capTop={FLOWS.labelTop.capTop} fs={FLOWS.labelTop.fs} color={C.serifNavy} opacity={pairAOp} />
-        <SerifLabel text="CNH" x={FLOWS.labelBot.x} capTop={FLOWS.labelBot.capTop} fs={FLOWS.labelBot.fs} color={C.orangeDeep} opacity={pairAOp} />
-        <SerifLabel text="EUR" x={FLOWS.labelTop.x} capTop={FLOWS.labelTop.capTop} fs={FLOWS.labelTop.fs} color={C.serifNavy} opacity={pairBOp} />
-        <SerifLabel text="CZK" x={FLOWS.labelBot.x} capTop={FLOWS.labelBot.capTop} fs={FLOWS.labelBot.fs} color={C.orangeDeep} opacity={pairBOp} />
+        <SerifLabel text="USD" x={LT.x} capTop={LT.capTop} fs={LT.fs} color={C.serifNavy} opacity={pairAOp} />
+        <SerifLabel text="CNH" x={LB.x} capTop={LB.capTop} fs={LB.fs} color={C.orangeDeep} opacity={pairAOp} />
+        <SerifLabel text="EUR" x={LT.x} capTop={LT.capTop} fs={LT.fs} color={C.serifNavy} opacity={pairBOp} />
+        <SerifLabel text="CZK" x={LB.x} capTop={LB.capTop} fs={LB.fs} color={C.orangeDeep} opacity={pairBOp} />
       </div>
     </AbsoluteFill>
   );
