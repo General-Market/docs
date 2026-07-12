@@ -123,12 +123,23 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
           {logoText}
         </div>
       )}
-      {/* Supporting line */}
+      {/* Supporting line — inline geometry override (data.ts untouched;
+          disp-A round 2026-07-12). Measured ref-vs-replica ink bbox at f110
+          (static window f100-130): ref 896×43, ink-top y283, ink-left x861;
+          replica @fs38 rendered 773×36, ink-top y290 — ~19% too small and 7px
+          low, the most prominent doubling in the settled-title diff. Helvetica
+          cap/fs 0.947, width/fs 20.34: fs44 lands width 895≈896 (every glyph's
+          left-anchored x aligned — lesson 4, position before density) + cap
+          41.7≈43; fs45.4 would perfect the cap but push width to 923 (rightmost
+          glyph +27px misplaced), so fs44 wins. y275 lands ink-top y283 (fs44
+          strut offset ~8px). x unchanged (ink-left already 861). Same TitleCard
+          renders the endcard, whose ref geometry (ENDCARD.supporting 283/38) is
+          identical, so the fix carries there too. */}
       <SansText
         text={COPY.supporting}
         x={TITLE.supporting.x}
-        y={TITLE.supporting.y}
-        fs={TITLE.supporting.fs}
+        y={275}
+        fs={44}
         color={C.white}
         opacity={supportOp}
       />
