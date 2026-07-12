@@ -508,7 +508,18 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.reportsUp[0] - 10 || f >= SEG.strip[0] + 10) return null;
   const phase1 = f < 1770; // reports beside CLSNet box, arrows up to small hexes
-  const growP = lerp(f, [1752, 1785], [0, 1]);
+  // r15: the ref HOLDS the hexes at phase-1 size to ~f1757, then a fast S-curve
+  // settles them by ~f1780 — NOT the old linear [1752,1785] ramp, which lagged
+  // 73px at f1770 (ours cx522 vs ref cx594). growP keyed per-frame off the ref
+  // navy-hex bbox (meashex.py): cx 414/418/427/436/454/531/581/594/601/608/612
+  // & w 215/219/226/235/249/314/356/367/374/379/383 at the frames below (≤2px
+  // each). Endpoints byte-identical to the old lerp: 0 for f≤1752, 1 by f1780.
+  const growP = interpolate(
+    f,
+    [1752, 1755, 1758, 1760, 1762, 1765, 1768, 1770, 1772, 1775, 1780],
+    [0, 0.025, 0.066, 0.117, 0.203, 0.588, 0.836, 0.902, 0.94, 0.972, 1],
+    clamp,
+  );
   // r9 phase-1 ground truth (regular_0137-0139, f1700-1725; measure_phase1.py):
   // hexes cx413/1512 cy283 w215 — the whole triple GROWS+drops into the r8
   // locks-settled cx612/1306 w385 cy413 (=239 top-anchor + 385*0.453). r8 had
@@ -536,7 +547,9 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   // and 18px too SMALL + 26px too LOW settled). Offset ratio drifts across the
   // grow (badge sits on the top-left vertex of the growing hex): dy -0.335@phase1
   // → -0.382@settled lands the disk on the ref at BOTH ends (cy 211→266).
-  const badge = { dx: -0.31, dy: lerp(f, [1752, 1785], [-0.335, -0.382]), r: hexW * 0.14 };
+  // r15: rides growP (not a time-lerp) so the disk tracks the vertex through the
+  // fast S-curve — byte-identical at growP 0/1, faithful in between.
+  const badge = { dx: -0.31, dy: -0.335 - 0.047 * growP, r: hexW * 0.14 };
   const lockClosedP = f >= 1838 ? 1 : 0;
   // no exit fade: ref keeps the locks layout intact until the strip's band
   // wipe (1909-1930) has fully covered it (measured: content static at f1914)
