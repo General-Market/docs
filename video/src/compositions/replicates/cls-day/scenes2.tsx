@@ -289,13 +289,16 @@ export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2075 || frame >= 2250) return null;
   const inP = interpolate(frame, [2092, 2110], [0, 1], { ...clamp, easing: EASE });
   const outP = interpolate(frame, [2237, 2250], [0, 1], clamp);
+  // gen13: re-registered doc x from ref f2150 body-left borders (probe: leftedges).
+  // doc4 body-left 1226 (was 1230), doc6 body-left 1744 (was 1765 — 20px too far
+  // right). doc2/3/5 already matched. y 390->387 (ref doc top 388, replica sat 391).
   const docs = [
     { x: -62, seal: "lines" as const, red: false },
     { x: 208, seal: "square" as const, red: false },
     { x: 475, seal: "circle" as const, red: false },
-    { x: 1228, seal: "square" as const, red: true },
+    { x: 1224, seal: "square" as const, red: true },
     { x: 1493, seal: "triangle" as const, red: true },
-    { x: 1763, seal: "circle" as const, red: true },
+    { x: 1742, seal: "circle" as const, red: true },
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
@@ -305,9 +308,10 @@ export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
       <MarkerTriangle x={958} y={27} size={60} />
       <div style={{ opacity: inP, transform: `scale(${0.92 + 0.08 * inP})`, transformOrigin: "960px 500px" }}>
         {docs.map((d, i) => (
-          <RefDoc key={i} x={d.x} y={390} seal={d.seal} red={d.red} />
+          <RefDoc key={i} x={d.x} y={387} seal={d.seal} red={d.red} />
         ))}
-        <FocusDoc x={750} y={288} />
+        {/* gen13: focus doc re-reg from ref f2150 (page-1 left border 753, top 289) */}
+        <FocusDoc x={753} y={291} />
       </div>
     </div>
   );
