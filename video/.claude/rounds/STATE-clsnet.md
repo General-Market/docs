@@ -1056,3 +1056,95 @@ Freshness note for the verify: the r13 bundle predates all 8; expect the title
 (f100-150) and outro (f3892-3942) windows to move most, gantt/endcard/hexify/locks
 smaller. Texture-floor items unchanged (hex interiors, serif hairlines) — 96 still
 walls on the re-DRAWN line-art pipeline.
+
+### dispatched sweep r15 — 2026-07-12 (next-worst per-file surgical pass; 3 file-scoped builders in parallel) — landed 3 commits
+Mandate from the r14 handoff: attack the named next-worst surgical item in each
+scene file, subtle/surgical only — skip any window whose only lever is a scene-level
+rewrite or the re-DRAWN line-art texture floor. THREE parallel builders, one per
+scene file (zero git collision, each stages only its own path), all serialized
+through the single `/tmp/replica-render.lock` (BUILD-ONLY, no full verify — OOM).
+Gate law unchanged: EXACT ref VIDEO frames (25fps, ref n == comp n, `r15/vf.sh`),
+ffmpeg-ssim whole-frame + element-crop, A/B ref-vs-OLD-vs-NEW (OLD via `git stash
+push -- <own file>`), NEW≥OLD at every gated frame + eye montage. Infra:
+`work/clsnet/r15/{still,vf,ssim,mont}.sh`. All 3 in HEAD, tree clean, no orphaned
+stash. Commit order: `9c278bf05` (A) → `bbfd2774b` (B) → `1b46933b3` (C).
+
+**scenesB — LocksScene hex-grow S-curve f1758-1780 (THE high-value win). Commit
+`bbfd2774b`.** growP was linear `[1752,1785]→[0,1]`, lagging the ref's fast settle
+by **73px at f1770** (cx522 vs ref cx594). Builder measured the ref navy-hex bbox at
+13 frames and fit a DENSE per-frame S-curve (cx/w within ≤2px everywhere); badge dy
+re-tied to growP so the disk tracks the vertex. NOTE: the r14-prescribed keys
+`[1745,1755,1760,1765,1770,1775,1780]→[0,.01,.12,.60,.91,.98,1]` were REJECTED — too
+sparse in the fast transit (+21px@f1762, −12px@f1768); the denser measured fit
+removes those. Gate whole-frame / hex-crop: f1758 .8671→.8784 / .846→.885 · f1762
+.8514→.8625 · **f1770 .8709→.9015 (+.031) / .727→.834 (+.107)** · **f1775 .8723→.9051
+(+.033) / .712→.826** · **f1780 .8664→.9247 (+.058) / .715→.918 (+.203)**. Endpoints
+f1752/f1785 BYTE-IDENTICAL (md5-proven — growP=0 clamp ≤1752, =1 by 1780). tsc clean;
+eye montage tracks. Residual at f1770/1775 (~0.83 hex-crop) is the hex-interior
+line-art texture floor, NOT position. CrxNetting shares LocksScene — carries.
+**scenesB SURGICAL QUEUE NOW EMPTY** — matching/locks/strip all won or texture-floor;
+no named geometry/timing defect left. Only re-DRAWN-vector floor or scene-rewrite remains.
+
+**scenesC — reportCard row Y-pitch + payment whip-scroll (BOTH surgical). Commit
+`1b46933b3`.**
+- **reportCard netting rows f2923-2973 — Y-pitch re-anchor (the one clean lever).**
+  Measured ref row tops 371/521/667 (pitch ~148, h44); comp had them bunched at
+  390/480/560 (pitch 90/80) — the tan row was **107px above** its ref band, zero
+  overlap (misplaced ink, lesson 4). Re-anchored rows to 371/521/667, h40→44; card
+  dims + collapse keyframes + x-start + widths UNTOUCHED (all rows stay inside
+  190..890). Gate whole / row-crop: f2930 .872→.891 / .570→.675 · **f2950 .872→.896
+  (+.023) / .572→.708 (+.136)** · f2965 .872→.896. **Residual REWRITE-ONLY (confound
+  held exactly as r14 warned):** ref card 1191×801 @x364-1555 vs comp 840×700 @x530-
+  1370; ref rows span x496-1470 (~965px) which OVERFLOWS the comp card both sides —
+  matching row width/extent needs a card resize → ripples into the 2976-3030 collapse
+  pill. The Y-pitch was the only surgical lever; card-size/row-extent/sharp-corner is
+  card-coupled = own-round rewrite.
+- **payment-scroll f2590-2640 — rigid translateX whip (clean per-frame).** Measured
+  ref: static through f2615, then whip-left −11@2620 / −104@2625 / −468@2630 / off by
+  2635 (ref f2635 blank white); centroids move identically = rigid. Added
+  `interpolate(f,[2615,2620,2625,2630,2635],[0,-11,-104,-468,-1730],clamp)` on a
+  wrapper around all payment content EXCEPT the horizon line (kept to hand its
+  baseline to Strip2's line at y368); removed the invented static hold + the fade the
+  ref lacks (lesson 5). Gate whole / tableau-crop: f2600 flat / f2615 flat (correct —
+  ref static too) · **f2630 trough .782→.898 (+.116)** · f2635 .873→.993 (+.120). No
+  Strip2-entry rebuild needed (Strip2 mounts 2640, grows from the bare line). Both
+  fixes propagate to CrxNetting.
+- **scenesC state:** payment essentially solved (0.993 at exit); reportCard at its
+  surgical ceiling (headroom is the card-coupled rewrite). True next-worst outside
+  these two windows needs a verify-safe rolling-window pass to name honestly.
+
+**scenesA — title PrincipleCard card2 two-line pitch (the r14 residual). Commit
+`9c278bf05`.** card2-crop was the lowest settled-title element (0.496 after r14). The
+residual was NOT size (line1 already landed y622≈ref 621) — it was inter-line
+**pitch**: ref opens the two lines 47px apart, `lineHeight 1.15` (=41) seated line2
+5px high. Fix: new per-card `stripLh` prop (default 1.15 — card1 + all default
+callers byte-unchanged), card2 `stripLh=1.3` (=47/36) + `stripDy 11→7` (re-seats
+line1). Both cap-tops now within 1px of ref, pitch 47. The `\n` is explicit + the div
+is width-less → opening the pitch cannot re-wrap (no letterSpacing, no wrap risk).
+Gate: whole-frame .9269→.9274 · **card2-crop .6199→.6496 (+.030)** · tight label crop
+.4341→.4665 (+.032) · card1 crop OLD==NEW byte-identical (1.000). tsc clean; endcard
+grow (f4005) intact, settled f4030 no overflow. Residual: card2 width stays ~23%
+short (Helvetica narrower than ref face) — the **font-face texture floor**, needs a
+face swap or hand-tracking, not a round. CrxNetting card2 (p50 "Atomic on-chain\n
+settlement", Diatype) inherits stripLh=1.3/stripDy=7 (geometrically sound for any
+2-line label) — NOT pixel-verified vs a CRX ref, flagged. **scenesA SURGICAL CEILING
+REACHED** — only texture floor left (flows hexes, globe continents, network hexes =
+re-DRAWN-vector floor; card2 font-face width floor).
+
+**Round tally:** 3 commits, 4 elements, 4 windows. Biggest levers: locks hex-grow
+f1780 +0.058 whole / +0.203 hex-crop, payment f2630 trough +0.116, reportCard f2950
++0.023 / +0.136 row-crop, card2-crop +0.030. All gated NEW≥OLD frame-exact + eye +
+CrxNetting-carry; tsc clean (0 new clsnet errors); all 3 in HEAD, tree clean.
+**Official verify PENDING orchestrator's run** (build-only session — no verify, OOM);
+r13 bundle predates all 3, expect the locks (f1758-1780), payment (f2620-2635) and
+title-card2 windows to move.
+**SURGICAL CEILING — clsnet is at the asymptote.** All three scene files now report
+ONLY texture-floor / rewrite-only work remaining:
+- **scenesA:** texture floor only (flows/globe/network hex line-art; card2 font-face
+  width).
+- **scenesB:** surgical queue EMPTY (hex-interior line-art floor + scene-rewrite only).
+- **scenesC:** payment solved; reportCard headroom is the card+rows+collapse REWRITE
+  (own gated round); true next-worst outside these needs a verify-safe window pass.
+The remaining named lever anywhere in clsnet is the reportCard card-size REWRITE
+(coupled, own round). Everything else is the re-DRAWN line-art pipeline (lesson 9
+texture floor) — not a surgical round. 96 walls here without the pipeline project.
