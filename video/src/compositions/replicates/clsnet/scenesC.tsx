@@ -1251,12 +1251,17 @@ export const EndCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill style={{ opacity: enterOp }}>
       <TitleCard frame={f} endcard />
+      {/* disclaimer: measured against ref_4110 — the ref runs larger, looser and
+          dimmer than the data defaults (fs 34 / lh 1.15 / α0.75). Probed line1
+          cap-top y879, cap-height ~30px (fs≈43), line pitch 60px (lh≈1.4), glyph
+          colour (94,115,155) ≈ α0.5. Override inline (ENDCARD is data.ts). */}
       <SansText
         text={COPY.disclaimer}
         x={ENDCARD.disclaimer.x}
-        y={ENDCARD.disclaimer.y}
-        fs={ENDCARD.disclaimer.fs}
-        color="rgba(200,206,220,0.75)"
+        y={864}
+        fs={43}
+        lineHeight={1.4}
+        color="rgba(200,206,220,0.5)"
         opacity={extrasOp}
       />
       <div
