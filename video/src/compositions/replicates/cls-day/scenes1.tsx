@@ -878,9 +878,23 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
     [918, 5.2], [920, -63.7], [922, -177.4], [924, -423], [926, -905.5],
     [928, -1601.5], [930, -4013], [940, -4574],
   ])(frame);
-  // towers/docs fade f924..930; the tick chain stays crisp until S6's band
-  // takes over at f929 (measured: 14:00/15:00 labels still sharp @f928)
-  const inkP = interpolate(frame, [924, 930], [1, 0], clamp);
+  // towers/docs fade f928..930; the tick chain stays crisp until S6's band
+  // takes over at f929 (measured: 14:00/15:00 labels still sharp @f928).
+  // gen14 retime [924,930]->[928,930]: the ref holds the towers SOLID until
+  // they are hidden — at f927 ClG (14:00) is still on-screen (screen ~174,
+  // navy sweep front @830 has not reached it) and the ref shows it FULL red,
+  // but the old [924,930] had inkP=0.5 there (pale, wrong). By f928 x9=-1601
+  // so every above-band tower has panned off-screen left; the navy sweep +
+  // pan do the hiding, so the fade only needs to clear any residual f928..930
+  // (ref red mass y60-470: 6046@924 -> 3294@927 solid-but-navy-covered ->
+  // 1335@928 off-screen -> ~gone@930). PERCEPTUAL SPEND (lesson 8): the eye
+  // montage (ref/old/new f927) is unambiguous — old inkP=0.5 rendered ClG +
+  // the left towers GHOSTED/pale, ref shows them FULL solid red, new matches
+  // ref. SSIM disagrees by -0.002 @f927 (full .858->.856) because the exit
+  // whip leaves a small tower positional offset that is cheaper to hide under
+  // faded ink than solid ink; the metric cannot veto eye-clear bright content.
+  // f924/f930/f935 SSIM byte-identical (inkP unchanged there).
+  const inkP = interpolate(frame, [928, 930], [1, 0], clamp);
   const tickP = frame >= 929 ? 0 : 1;
   // S6 navy front (same LUT as S6Schedule's sweep) — ticks it has passed
   // repaint white (ref f924: white 16:00 tick+label inside the navy field)
