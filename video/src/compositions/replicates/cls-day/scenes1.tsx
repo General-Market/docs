@@ -1219,45 +1219,56 @@ const ClG: React.FC = () => (
     {[0, 1, 2, 3, 4, 5, 6].map((r) => (
       <rect key={r} x={146} y={201.5 + r * 11} width={14} height={3.5} fill={NAVY} />
     ))}
-    {/* grey slab */}
-    <rect x={296} y={205} width={15} height={125} fill="#DCDCDC" />
+    {/* grey slab (thin, right of the body wall — the ref shows a slim grey
+        sliver between the red body and the navy building; the r7 wide slab
+        sat under both fills and never read) */}
+    <rect x={294} y={205} width={11} height={125} fill="#DCDCDC" />
+    {/* gen13 ClG RE-REGISTRATION (ref f877/897/907, probe_clg2.py):
+        the red tower sat ~7px LEFT and its broad-body RIGHT wall was hidden
+        under the navy building's white fill (navy started local 285, body
+        wall 290) → att body read w105 vs ref w120, npx 4900 vs 6300. Fix:
+        (a) head shifted right + narrowed about its center (att center 226 →
+        ref 233.5, ×0.94), (b) body walls 170/290 → 175/294 (right wall now
+        VISIBLE), (c) navy building moved right (+15) so the body wall + grey
+        slab show, (d) dash grid re-pitched 186→196 to match ref cols. */}
     {/* crown + masts */}
-    <line x1={218} y1={57.5} x2={218} y2={70} stroke={C.red} strokeWidth="3.5" />
-    <line x1={228} y1={57.5} x2={228} y2={70} stroke={C.red} strokeWidth="3.5" />
-    <rect x={180} y={70} width={98} height={22} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    <line x1={185} y1={100} x2={271} y2={100} stroke={C.red} strokeWidth="3.5" />
+    <line x1={226} y1={57.5} x2={226} y2={70} stroke={C.red} strokeWidth="3.5" />
+    <line x1={235.5} y1={57.5} x2={235.5} y2={70} stroke={C.red} strokeWidth="3.5" />
+    <rect x={190} y={70} width={92} height={22} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <line x1={195} y1={100} x2={276} y2={100} stroke={C.red} strokeWidth="3.5" />
     {/* upper shaft + inner panel w/ twin slots (left solid, right pale) */}
-    <rect x={176} y={97.5} width={100} height={107.5} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    <rect x={198.5} y={122.5} width={67.5} height={82.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <rect x={208} y={135} width={18} height={25} fill={C.red} />
-    <rect x={231} y={135} width={17} height={25} fill="#F2C7A9" />
-    <rect x={208} y={160} width={18} height={45} fill="none" stroke={C.red} strokeWidth="3" />
-    <rect x={231} y={160} width={17} height={45} fill="none" stroke={C.red} strokeWidth="3" />
-    {/* broad body w/ dash windows */}
-    <path d="M 170 320 L 170 215 Q 170 205 180 205 L 280 205 Q 290 205 290 215 L 290 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <rect x={186.5} y={97.5} width={94} height={107.5} fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    <rect x={207.5} y={122.5} width={63.5} height={82.5} fill="none" stroke={C.red} strokeWidth="3.5" />
+    <rect x={216.5} y={135} width={17} height={25} fill={C.red} />
+    <rect x={238} y={135} width={16} height={25} fill="#F2C7A9" />
+    <rect x={216.5} y={160} width={17} height={45} fill="none" stroke={C.red} strokeWidth="3" />
+    <rect x={238} y={160} width={16} height={45} fill="none" stroke={C.red} strokeWidth="3" />
+    {/* broad body w/ dash windows — walls 175/294 (ref-registered, right
+        wall visible) */}
+    <path d="M 175 320 L 175 215 Q 175 205 185 205 L 284 205 Q 294 205 294 215 L 294 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
     {[0, 1, 2, 3].map((r) =>
       [0, 1, 2, 3, 4].map((c) => (
-        <rect key={`${r}${c}`} x={186 + c * 21} y={225 + r * 25} width={4} height={11} fill={C.red} />
+        <rect key={`${r}${c}`} x={196 + c * 19.5} y={224 + r * 25} width={4} height={11} fill={C.red} />
       )),
     )}
-    <path d="M 225 330 L 225 307.5 L 257 307.5 L 257 330" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* right navy building (r7 re-trace f860: window section = 4 horizontal
-        rails y214.5/226.5/240/252 x295.5..348.5 with short dividers at
-        321.5/335.5 between rail pairs — NOT the r3 3x2 outline windows
-        which sat 30px low; bridge rails right at y263/y302 to the 15:00
+    <path d="M 218.5 330 L 218.5 307.5 L 250.5 307.5 L 250.5 330" fill="none" stroke={C.red} strokeWidth="3.5" />
+    {/* right navy building (r7 re-trace f860 + gen13 +15px shift so the body
+        right wall/grey slab read: window section = 4 horizontal rails
+        y214.5/226.5/240/252 x310.5..363.5 with short dividers at 336.5/350.5
+        between rail pairs; bridge rails right at y263/y302 to the 15:00
         rounded outline) */}
-    <path d="M 285 320 L 285 195 Q 285 187.5 292.5 187.5 L 340.5 187.5 Q 348.5 187.5 348.5 195 L 348.5 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    <path d="M 300 320 L 300 195 Q 300 187.5 307.5 187.5 L 355.5 187.5 Q 363.5 187.5 363.5 195 L 363.5 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
     {[214.5, 226.5, 240, 252].map((y, i) => (
-      <rect key={i} x={295.5} y={y} width={53} height={i < 2 ? 3.5 : 4} fill={NAVY} />
+      <rect key={i} x={310.5} y={y} width={53} height={i < 2 ? 3.5 : 4} fill={NAVY} />
     ))}
-    {[321.5, 335.5].map((x) => (
+    {[336.5, 350.5].map((x) => (
       <React.Fragment key={x}>
         <rect x={x} y={218} width={3.5} height={8.5} fill={NAVY} />
         <rect x={x} y={244} width={3.5} height={8} fill={NAVY} />
       </React.Fragment>
     ))}
-    <rect x={348.5} y={263} width={39.5} height={3} fill={NAVY} />
-    <rect x={348.5} y={302} width={39.5} height={4.5} fill={NAVY} />
+    <rect x={363.5} y={263} width={24.5} height={3} fill={NAVY} />
+    <rect x={363.5} y={302} width={24.5} height={4.5} fill={NAVY} />
     {/* far-right rounded outline w/ L-marks (toward 15:00) */}
     <path d="M 388 320 L 388 278 Q 388 270 396 270 L 462 270 L 462 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
     <path d="M 408 285 L 408 298 L 420 298" fill="none" stroke={NAVY} strokeWidth="3" />
