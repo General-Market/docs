@@ -69,6 +69,110 @@ const BADGE_GROW_R = [0, 2, 4, 5.8, 8, 11.8, 16.8, 24, 35, 45, 53, 58, 61, 64, 6
 const badgeGrow = (f: number, f0: number) =>
   interpolate(f - f0, BADGE_GROW_D, BADGE_GROW_R, clamp);
 
+// ═══ Road furniture — the traffic on both horizon lines ═══
+// The ref draws pavement ticks and a car out to x≈1860 on BOTH lines; we drew
+// nothing past our city crops (cityA ends x1485, cityBSmall x1610). It is NOT
+// static art that can be traced and pinned: each mark is a rigid object in its
+// CITY's world, moving at a constant WORLD velocity and riding the very same
+// collapse transform as the city. Proven on three independent objects —
+//   tick  u=1692 @f1044, v=+3.20  → predicts screen 1830.9 @f1084 (ref 1833)
+//   car   u0=1489.9,     v=−7.65  → predicts screen 1611.5 @f1084 (ref 1611.5)
+//   ticks travel at HALF the L2 speed on L1, exactly the 0.667 scale ratio
+// so world→screen is x = cityX(f) + s(f)·(u − cropX), with (cityX, s) already
+// solved by the collapse curve above. Speeds: L2 ±3.20/−4.51, L1 +1.50/−2.33.
+//
+// Two disciplines here, both load-bearing:
+//  1. LIFE WINDOWS. The ref's traffic RECYCLES — objects despawn mid-road. Without
+//     a per-object [f0,f1] a track back-projects into frames before it existed and
+//     paints 50 false marks (measured). With them: precision 92-96%.
+//  2. PRECISION OVER RECALL. Only marks the tracker could place to ≤2.5px across
+//     ≥85% of their life are listed; the rest of the ref's traffic stays ABSENT.
+//     A 7px bar 3px off is pure misplaced ink, and misplaced ink loses to absent
+//     ink (lesson 4, 4 confirmations + r16's −0.14). We ship 50%/55% of the marks
+//     and 0 knowingly-wrong ones.
+// Marks are CLIPPED to the open road right of the drawn city trace, so they slide
+// out from behind the last building instead of popping — and can never double-draw
+// over the frozen copies of themselves that the traces baked in (see below).
+const T = { B: "#54A0C8", G: "#919AA6", N: "#0E243E" } as const;
+type Mark = [number, number, number, number, string, number, number]; // u0@f1084, v, w, h, colour, f0, f1
+const TICKS_1: Mark[] = [
+  [1692.2, -2.33, 5.0, 13.0, T.N, 986, 1054],
+  [1569.6, 1.5, 5.0, 12.0, T.N, 1030, 1140],
+  [1437.6, 1.5, 6.0, 12.0, T.B, 1114, 1228],
+  [1421.8, 1.5, 6.0, 12.0, T.N, 1126, 1239],
+  [1894.3, -2.33, 6.0, 12.0, T.N, 1187, 1259],
+  [1910.6, -2.33, 6.0, 12.0, T.G, 1194, 1266],
+];
+const TICKS_2: Mark[] = [
+  [1345.7, -4.51, 7.0, 24.0, T.B, 961, 1024],
+  [2215.7, 3.2, 7.0, 24.0, T.N, 965, 992],
+  [1260.0, -4.51, 7.0, 24.0, T.N, 966, 1006],
+  [1304.8, -4.51, 7.0, 24.0, T.B, 966, 1016],
+  [2014.6, 3.2, 7.0, 24.0, T.N, 966, 1055],
+  [1438.3, -4.51, 7.0, 24.0, T.G, 977, 1046],
+  [1717.2, -4.51, 7.5, 24.0, T.B, 1038, 1133],
+  [1755.0, -4.51, 7.5, 24.0, T.G, 1046, 1142],
+  [1721.0, 3.2, 7.5, 24.0, T.G, 1050, 1150],
+  [1855.8, -4.51, 7.5, 24.0, T.G, 1066, 1164],
+  [2046.1, -4.51, 7.5, 24.0, T.N, 1105, 1205],
+  [2068.3, -4.51, 7.5, 24.0, T.G, 1114, 1131],
+  [2163.0, -4.51, 7.5, 24.0, T.B, 1133, 1148],
+  [2079.8, -4.51, 7.5, 24.0, T.N, 1134, 1151],
+  [2269.7, -4.51, 7.5, 24.0, T.G, 1158, 1171],
+  [2245.9, -4.51, 7.5, 24.0, T.N, 1159, 1251],
+  [2091.7, -4.51, 7.5, 24.0, T.N, 1161, 1176],
+  [2123.6, -4.51, 6.0, 24.0, T.B, 1161, 1178],
+  [2224.0, -4.51, 7.5, 24.0, T.G, 1165, 1239],
+  [2318.2, -4.51, 7.5, 24.0, T.N, 1165, 1240],
+  [2278.9, -4.51, 7.5, 24.0, T.G, 1177, 1190],
+  [2190.6, -4.51, 7.5, 24.0, T.B, 1185, 1200],
+  [2119.6, -4.51, 13.5, 24.0, T.N, 1208, 1222],
+  [2163.9, -4.51, 7.5, 24.0, T.B, 1212, 1226],
+  [2211.3, -4.51, 7.5, 24.0, T.G, 1223, 1239],
+  [2303.5, -4.51, 7.5, 24.0, T.G, 1223, 1237],
+  [2585.0, -4.51, 7.5, 24.0, T.B, 1226, 1239],
+  [2317.3, -4.51, 9.0, 24.0, T.N, 1245, 1266],
+  [2648.2, -4.51, 7.5, 24.0, T.G, 1273, 1287],
+];
+// The cars are the same icon at two sizes — traced once per line (roadCar 51×27
+// from the L2 car at f1036, roadCarA 52×23 from the L1 car at f1044) and mounted
+// as world objects like the ticks. Both are NEW art entries: every pre-existing
+// asset in the store is byte-identical (60 assets, 0 changed, key order preserved).
+type Car = { u0: number; v: number; w: number; h: number; art: string; f0: number; f1: number };
+const CAR_1: Car = { u0: 1883.0, v: 4.83, w: 52, h: 23, art: "roadCarA", f0: 1003, f1: 1063 };
+const CAR_2: Car = { u0: 1489.9, v: -7.65, w: 51, h: 27, art: "roadCar", f0: 1027, f1: 1110 };
+
+const RoadFurniture: React.FC<{
+  f: number; cityX: number; cropX: number; s: number; lineTop: number;
+  right: number; ticks: Mark[]; car: Car; opacity: number;
+}> = ({ f, cityX, cropX, s, lineTop, right, ticks, car, opacity }) => {
+  if (opacity <= 0) return null;
+  const at = (u: number) => cityX + s * (u - cropX);
+  const bottom = lineTop - 2 * s;
+  return (
+    // clipped to the open road: marks emerge from behind the last building rather
+    // than popping in, and never overlap the trace's own (frozen) copies of them
+    <div style={{ position: "absolute", left: right, top: 0, width: Math.max(0, 1920 - right), height: 1080, overflow: "hidden", opacity }}>
+      {ticks.map((t, i) => {
+        const [u0, v, w, h, col, f0, f1] = t;
+        if (f < f0 || f > f1) return null;
+        const x = at(u0 + v * (f - 1084)) - (w * s) / 2 - right;
+        return (
+          <div key={i} style={{ position: "absolute", left: x, top: bottom - h * s, width: w * s, height: h * s, backgroundColor: col }} />
+        );
+      })}
+      {f >= car.f0 && f <= car.f1 && (
+        <TracedArt
+          name={car.art}
+          x={at(car.u0 + car.v * (f - 1084)) - (car.w * s) / 2 - right}
+          y={bottom - car.h * s}
+          scale={s}
+        />
+      )}
+    </div>
+  );
+};
+
 // ═══ Scenes 9-10: two cities + currency pairs (f913-1302) ═══
 export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
@@ -148,6 +252,17 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
           <TracedArt name="cityBSmall" x={760} y={575} />
         </>
       )}
+      {/* traffic on both lines — clipped to the road right of the drawn city trace */}
+      <RoadFurniture
+        f={f} cityX={aX} cropX={CITIES.cityA.x} s={s} lineTop={at(LINE1.top[0], LINE1.top[1])}
+        right={f < 1076 ? aX + CITIES.cityA.w * s : 240 + ART.cityASmall.w}
+        ticks={TICKS_1} car={CAR_1} opacity={aOp * linesOut}
+      />
+      <RoadFurniture
+        f={f} cityX={bX} cropX={CITIES.cityB.x} s={s} lineTop={at(LINE2.top[0], LINE2.top[1])}
+        right={f < 1076 ? bX + CITIES.cityB.w * s : 760 + ART.cityBSmall.w}
+        ticks={TICKS_2} car={CAR_2} opacity={bOp * linesOut}
+      />
       <Badge letter="A" cx={badgeA.cx} cy={badgeA.cy} r={badgeA.r} />
       <Badge letter="B" cx={badgeB.cx} cy={badgeB.cy} r={badgeB.r} />
       {/* pair labels converge on the lines (fr_1150: cap −64 above, +5 below);
