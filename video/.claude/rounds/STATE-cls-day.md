@@ -2968,3 +2968,49 @@ and it is cheap. It is NOT free: the pill's pose is where the chips spawn (x942)
 both rails begin, so moving it moves them, and it wants its own gated commit.
 
 After that, the city interiors — and that one is a trace, not a nudge.
+
+### gen20 — MarkerTriangle strokeWidth 4→2: REFUTED BY ITS OWN GATE (commit b57184c57)
+
+The lead routed this on my S10 read plus the scenes1 builder's S4 corroboration. **The
+stroke number is right and the change still loses.** Both facts matter.
+
+**The stroke IS ~2x too fat.** Measured at the horizontal TOP BAR — integrate rust coverage
+down a column, then take a RATIO against our own render so the instrument's ~20% overshoot
+divides out. (The ink/perimeter estimator is **unusable**: it recovers our own *known* 4.0
+as 4.97 at S10 and 4.81 at S4. An instrument that cannot reproduce a value you already know
+cannot fit one you don't.)
+
+| mount | ref stroke | our stroke | our w / ref w | fitted `strokeWidth` |
+|---|---|---|---|---|
+| S4 f600 | 4.99px @ w62 | 9.95px @ w62 | 62/62 | **2.01 units** |
+| S10 f1900 | 4.42px @ w52 | 9.95px @ w60 | 60/52 | **2.05 units** |
+
+Two independent mounts, **2% apart**. By every rule we have, that is a rig constant.
+
+**And it loses anyway. `strokeLinejoin="miter"` couples the stroke to the extent** — the
+corner spikes scale WITH the stroke, so halving it SHRINKS the outer bbox. **Our fat stroke
+was propping up a path that is too small.**
+
+S4 f600, ref = **885px ink @ 62×54**:
+
+| | ink | bbox | |
+|---|---|---|---|
+| t=4 (kept) | 1256px | 62×51 | extent right, ink **+42%** |
+| t=2 | 653px | **59×48** | ink **−26%** *and the outline collapsed* |
+
+We trade a 42% overshoot for a 26% undershoot **and lose the extent too.**
+
+**Gate — 11 frames across all 14 mounts + CRX: 9 won or held, 2 REGRESSED**
+(f600 −.00007, f2900 −.00009; wins: f3300 +.00027, f1300 +.00015, f1830/f1900/f2000 +.00004).
+`NEW ≥ OLD everywhere` is the rule. **It does not ship.** Reverted; the revert is
+byte-identical to HEAD at f600/f2900/f3300, so the commit carries only the refutation.
+
+**THE REAL TARGET, for whoever co-fits it:** the ref has a **thinner stroke on a LARGER
+path** (ref h/w = **.871** at S4 vs our **.82**). Path geometry and `strokeWidth` must be
+solved **TOGETHER**, per-mount k, or one gives back exactly what the other gains. A stroke-
+only fit is refuted; a path-only fit will be too.
+
+**`size` still must NOT be touched** — ref w62 at S4 (ours 62, *correct*) but w52 at S10
+(ours 60). Size is a property of the CALL; stroke is a property of the RIG.
+
+*A measurement can be right at both mounts and still be the wrong change. The gate is not a formality — it is the only thing that knows what the measurement left out.*
