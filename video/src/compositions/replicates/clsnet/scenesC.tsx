@@ -1629,12 +1629,40 @@ const StackCols: React.FC<{
 // ═══ Scene 28+29: end card assembles in place (f3926-4168) ═══
 // Measured w9 montage + fr_3966/fr_3981/fr_4011: empty navy to ~3957, then the
 // title layout assembles element by element on the SAME navy — no crossfade.
+
+// r19 THE URL PILL. Ref geometry, settled and identical at every frame f4039-4168:
+// the white box is x856-1773 (w 918) × y855-966 (h 112) — we drew (860,864) 910×100,
+// nine pixels low and twelve short — and its navy text spans x878-1751, ink height
+// 85. Ours spanned 586 at fs62: THE URL WAS A THIRD TOO SMALL, ~8,000px of glyph
+// simply not drawn, in a 100-frame static hold. fs 92 puts the advance width on the
+// ref's (measured, not guessed: 62 × 874/586 = 92.5).
+// And it does not fade in. It WIPES OPEN from a fixed left edge at x856 — the text
+// is clipped by the same wipe, frame for frame:
+const EC_PILL_F = [4027, 4028, 4029, 4030, 4031, 4032, 4033, 4034, 4035, 4036, 4037, 4038, 4039];
+const EC_PILL_W = [5, 22, 48, 86, 149, 274, 585, 740, 812, 857, 887, 908, 918];
+const EC_PILL = { x: 856, y: 855, w: 918, h: 112, fs: 92 };
+// r19 THE DISCLAIMER. It SLIDES IN FROM THE RIGHT, decelerating, under a hard clip
+// whose right edge sits at x=679. That clip is not a guess — it is forced by the
+// data: the ref's ink stops dead at x678 in every frame f4043-4048 while its left
+// edge sweeps 617 → 460 → 303 → 197 → 172, and the moment the sliding block's own
+// right edge falls below 679 (f4049) the ink's right edge starts moving too, and
+// tracks the slide exactly (677 · 665 · 657 · 652 · 649). One model, twelve frames,
+// no free parameters. We faded it in over [4028,4048] — fifteen frames of text the
+// ref has not begun to draw.
+const EC_DISC_F = [4043, 4044, 4045, 4046, 4047, 4048, 4049, 4050, 4051, 4052, 4053, 4054];
+const EC_DISC_DX = [490, 333, 176, 109, 70, 45, 28, 16, 8, 3, 1, 0];
+// Its two lines pitch 51px apart (ref bands 879-918 / 930-970; ours were 879-918 /
+// 939-978 — line 1 already exact, so fs 43 is right and only lineHeight was wrong:
+// 51/43 = 1.186, not 1.4). Glyph colour is the ref's own core, (93,109,145).
+const EC_DISC_CLIP = 679;
+
 export const EndCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const { sans: SANS } = useBrand();
   const f = frame;
   if (f < SEG.outro[0]) return null;
-  const extrasOp = lerp(f, [4028, 4048], [0, 1]);
+  const pillW = interpolate(f, EC_PILL_F, EC_PILL_W, clamp);
+  const discDx = interpolate(f, EC_DISC_F, EC_DISC_DX, clamp);
   // TitleCard paints a full navy AbsoluteFill, and EndCardScene renders LAST
   // (on top of LedgeScene). SEG.outro[0]=3926 mounted that navy over the STILL
   // LIVE ledge outro — the ref holds the ledge cities+stacks through ~f3933
@@ -1653,38 +1681,58 @@ export const EndCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill style={{ opacity: enterOp }}>
       <TitleCard frame={f} endcard />
-      {/* disclaimer: measured against ref_4110 — the ref runs larger, looser and
-          dimmer than the data defaults (fs 34 / lh 1.15 / α0.75). Probed line1
-          cap-top y879, cap-height ~30px (fs≈43), line pitch 60px (lh≈1.4), glyph
-          colour (94,115,155) ≈ α0.5. Override inline (ENDCARD is data.ts). */}
-      <SansText
-        text={COPY.disclaimer}
-        x={ENDCARD.disclaimer.x}
-        y={864}
-        fs={43}
-        lineHeight={1.4}
-        color="rgba(200,206,220,0.5)"
-        opacity={extrasOp}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: ENDCARD.urlBox.x,
-          top: ENDCARD.urlBox.y,
-          width: ENDCARD.urlBox.w,
-          height: ENDCARD.urlBox.h,
-          backgroundColor: C.white,
-          opacity: extrasOp,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: SANS,
-          fontSize: ENDCARD.urlFs,
-          color: C.navy,
-        }}
-      >
-        {COPY.url}
-      </div>
+      {/* disclaimer: fs 43 and cap-top y879 were already exact; the pitch and the
+          colour were not, and the whole entry was invented. ENDCARD lives in
+          data.ts (stale — r18 residual 1), so the truth stays local. */}
+      {f >= EC_DISC_F[0] && (
+        <div style={{ position: "absolute", left: 0, top: 0, width: EC_DISC_CLIP, height: 1080, overflow: "hidden" }}>
+          <SansText
+            text={COPY.disclaimer}
+            x={ENDCARD.disclaimer.x + discDx}
+            /* y869, not 864: tightening the line box lifts the first baseline
+               inside it (the strut law), and the block came out 5px high. */
+            y={869}
+            fs={43}
+            lineHeight={1.186}
+            color="rgb(93,109,145)"
+          />
+        </div>
+      )}
+      {f >= EC_PILL_F[0] && (
+        <div
+          style={{
+            position: "absolute",
+            left: EC_PILL.x,
+            top: EC_PILL.y,
+            width: pillW,
+            height: EC_PILL.h,
+            overflow: "hidden",
+            backgroundColor: C.white,
+          }}
+        >
+          {/* the text is centred on the FULL pill and clipped by the wipe with it —
+              it does not slide or re-centre as the box opens */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: EC_PILL.w,
+              height: EC_PILL.h,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: SANS,
+              fontSize: EC_PILL.fs,
+              color: C.navy,
+              // the flex centre sits 3px below the ref's ink centre (y916 vs 918.5)
+              transform: "translateY(-3px)",
+            }}
+          >
+            {COPY.url}
+          </div>
+        </div>
+      )}
     </AbsoluteFill>
   );
 };
