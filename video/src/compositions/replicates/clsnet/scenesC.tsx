@@ -731,6 +731,25 @@ const S2_BAND_BOT = [
   385, 390, 395, 401, 408, 415, 423, 432, 441, 450, 459, 469, 478, 486, 494, 502,
   508, 514, 520, 524, 530, 537, 545, 557, 580, 631, 653, 663, 669, 673, 675, 676,
 ];
+
+// r19 THE SCROLL. Ref-vs-render 2-D shift fits on each cluster at f2700/2713/
+// 2740/2762/2800 (dy = 0 at every one — the y's in data.ts are true). The x
+// residual is not constant: it rises +0.157px per frame in every cluster alike,
+// which is a RATE error, not an origin error. The strip travels 9.92px/f, not
+// 9.76 — over the 160 frames of the scene that is 25px, and at f2700 the centre
+// cluster sat 17px left of the ref. Rate corrected once; each cluster's own
+// origin then falls out of the fit's intercept at the anchor frame. Kept local:
+// data.ts STRIP2 is the stale copy (see r18 residual 1).
+const S2_RATE = 9.92;
+const S2_UPS = [
+  { art: "s2UpBank", sx: -656, y: 215, w: 532 },
+  { art: "s2UpCenter", sx: 696, y: 126, w: 614 },
+  { art: "s2UpSail", sx: 1927, y: 52, w: 489 },
+];
+const S2_DNS = [
+  { art: "s2DnA", sx: -27, y: 678, w: 732 },
+  { art: "s2DnB", sx: 1270, y: 678, w: 616 },
+];
 export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < 2640 || f >= 2833) return null;
@@ -755,18 +774,18 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const bandTop = f < 2672 ? entryTop : grownTop;
   const bandBottom = f < 2672 ? entryBot : grownBot;
   const contentOp = lerp(f, [2660, 2680], [0, 1]);
-  const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * STRIP2.rate;
+  const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * S2_RATE;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
       <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
       {/* recolor: the traces' white fill plane is #FFFFFF but the page is
           #FDFDFD — the plate edge reads as a faint rectangle otherwise */}
-      {STRIP2.ups.map((u, i) => {
+      {S2_UPS.map((u, i) => {
         const x = sx(u.sx);
         if (x + u.w < -50 || x > 1970) return null;
         return <TracedArt key={i} name={u.art} x={x} y={u.y} scale={1} recolor={{ "#FFFFFF": C.white }} />;
       })}
-      {STRIP2.dns.map((d, i) => {
+      {S2_DNS.map((d, i) => {
         const x = sx(d.sx);
         if (x + d.w < -50 || x > 1970) return null;
         return <TracedArt key={i} name={d.art} x={x} y={d.y} scale={1} recolor={{ "#FFFFFF": C.white }} />;
