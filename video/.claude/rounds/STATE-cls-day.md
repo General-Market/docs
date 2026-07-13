@@ -2037,3 +2037,114 @@ S10's connectors END IN CHIPS in the ref, not arrowheads — a peach chip on the
 left edge, a grey one on its right, with thin plain lines running back to the hexes. We
 draw thick lines with solid triangular arrowheads (now harmlessly hidden under the
 enlarged pill). Fold this into the chip-path pass.
+
+## gen19 PILL-RADIUS round — 2026-07-13 (lib.tsx, r17)
+
+Took gen18's residual: `ClsPill`'s uniform `borderRadius: h * 0.28`. Confirmed it,
+measured it myself, shipped it. **Commit 7a2d9e5aa.**
+
+### The corner truth (measured, not inherited)
+
+I did not take gen18's r≈42 on faith. Flood-filled the pill's own navy component
+(seeded above the wordmark, so connectors/hexes/chips cannot contaminate the scan)
+and fitted a circle to each corner arc from the mid-arc rows, where the geometry is
+well-conditioned — the tangent-point estimator is worthless here (a half-pixel of
+antialias moves it by `sqrt(2Rδ)` ≈ 7px).
+
+**Rounded TL + BR. SQUARE TR + BL.** Confirmed at both sizes, every clean frame:
+
+| | h | TL | BR | TR | BL |
+|---|---|---|---|---|---|
+| S10 `433x196 @(742,718)` f1900/f1950 | 196 | r=53.0 (**.270h**) | r=51.1 (**.261h**) | SQUARE | SQUARE |
+| S17 `259x117 @(834,473)` f3240..f3340 | 117 | r=31.7 (**.271h**) | r=30.6 (**.262h**) | SQUARE | SQUARE |
+
+The ratio is identical across a 1.7× size change, so it is **a property of the rig,
+not a per-scene number** — exactly like `logoScale = 0.366`. Shipped as one constant,
+`PILL_R = 0.265` in lib.tsx. S4 hand-shapes its own pill inline and had independently
+landed **52 on h=197 = .264**. Three sizes, three independent measurements, one number.
+The TL/BR spread (.270 vs .261) is inside the antialias noise of the fit; one radius
+reproduces both corners at both sizes to ~1.5px.
+
+The grammar was already in the file — `Chip` carries `h*0.58 0 h*0.58 0` and
+`HandshakePill` carries `h*0.27 8px h*0.27 8px` (measured at ref f2550). `ClsPill` was
+the only navy primitive that had missed it. **Fiction, of the cheapest kind: two corners
+rounded away that the ref fills solid.**
+
+Instrument self-check: the scanner recovers **exactly 55.0 = 196×0.28 on all four
+corners** of the OLD render. It measures true.
+
+### Gate — ref vs OLD vs NEW, every mount, nothing regresses
+
+| mount | frames | Δ SSIM |
+|---|---|---|
+| **S10** | f1900 · f1950 · f2000 · f2040 · f2055 | **+.00124 · +.00124 · +.00122 · +.00121 · +.00120** |
+| **S17** | f3240 · f3260 · f3300 · f3340 · f3370 | **+.00039 · +.00050 · +.00048 · +.00048 · +.00050** |
+| **S4** | f560 · f600 | **0.00000** — S4's inline pill is untouched, no double-apply |
+| **CrxSettlementDay** | f2000 · f3300 | **byte-identical** — see blocker below |
+
+Eye montage (ref | old | new) at `work/cls-day/r17-lib/crops/MONTAGE_CORNERS_S10.png`
+and `_S17.png`: OLD bites a white quarter-round out of the two corners the ref fills
+solid; NEW restores them. The metric barely sees it; the eye cannot miss it.
+
+### BLOCKER for the round lead — the CRX cut does NOT inherit the fix
+
+`ClsPillSlot` (**scenes1.tsx:917**) short-circuits `ClsPill` whenever `PillLogo` is
+supplied, into a **hand-copied div with its own uniform `borderRadius: h * 0.28`**:
+
+```tsx
+export const ClsPillSlot = ({ x, y, w, h, p, PillLogo, logoScale = 0.5 }) =>
+  PillLogo ? (
+    <div style={{ ..., borderRadius: h * 0.28, ... }}>   // ← the duplicate
+      <PillLogo h={h * 0.5} />                            // ← and 0.5, not logoScale
+    </div>
+  ) : (
+    <ClsPill x={x} y={y} w={w} h={h} opacity={p} logoScale={logoScale} />
+  );
+```
+
+`ClsDayReplicate` passes no `PillLogo`, so the CLS track takes the `ClsPill` branch and
+wins. **`CrxSettlementDay` passes one, so it takes the duplicate and is byte-identical
+before and after my commit** — the CRX cut still carries the uniform radius, and its
+pill logo still renders at `h*0.5` where the rig constant is `h*0.366`. I did not touch
+scenes1.tsx (a sibling was live in it). The fix is to delete the branch:
+
+```tsx
+export const ClsPillSlot = ({ x, y, w, h, p, PillLogo, logoScale = 0.366 }) => (
+  <ClsPill x={x} y={y} w={w} h={h} opacity={p} logoScale={logoScale} Logo={PillLogo} />
+);
+```
+which needs one optional `Logo` prop on `ClsPill`. **Two lanes, so it needs the lead.**
+A shared primitive with a hand-copied twin is not shared — it is two primitives that
+happen to agree until one of them is fixed.
+
+### Measured, NOT fixed — S10's connector lane is mis-scheduled (scenes2)
+
+Gridding S10 f1900 (`ssim-grid.py 8x6`), the two worst cells in the whole frame are the
+connector elbows flanking the pill: **r4c2 `240x180+480+720` at .077 and r4c5
+`240x180+1200+720` at .041**, against a frame mean of .762. Cause, measured:
+
+**At f1900 the ref draws ~1000 dark-navy px in each cell and we draw ZERO.** Darkest ref
+px `(10,27,44)`; our connector is a 4px light grey `(170,179,189)` line and nothing else.
+The ref's dark ink clusters into a thin line along the lane (y720..816) plus **two stacked
+chevrons** at the pill-facing end (`x702..719` left, `x1200..1219` right; ~18x19px each,
+split at the line's y≈815) — a double arrowhead pointing into the pill.
+
+But it is not a flat colour error. Dark-px counts across the window:
+
+| frame | ref L | ours L | ref R | ours R |
+|---|---|---|---|---|
+| f1900 | 1012 | **0** | 1034 | **0** |
+| f1950 | 2396 | 1287 | 474 | 1043 |
+| f2000 | 388 | 1287 | 2311 | 1043 |
+| f2040 | 1168 | 1287 | 1480 | 1043 |
+| f2055 | 1116 | 1399 | 4039 | 1131 |
+
+Our dark ink arrives **late** and then sits **static** (1287/1043, barely moving) while the
+ref's swings 388→2396 on the left and 474→4039 on the right. The ref is animating dark
+elements through that lane on a schedule we do not have. This corroborates and sharpens
+gen18's chip note: **the connector+chip lane needs a per-frame SCHEDULE re-measure, not a
+size tweak** — and gen18's "thin plain lines, no arrowheads" reading is wrong at f1900,
+where the ref's arrowheads are plainly there and navy. Belongs to whoever owns S10.
+
+Harness, instrument (`corners.py`), refs, old/new stills and montages:
+`.claude/rounds/work/cls-day/r17-lib/`.
