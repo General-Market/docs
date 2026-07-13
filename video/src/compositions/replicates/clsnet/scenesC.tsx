@@ -4,7 +4,7 @@ import { C, CIRCLE, LEDGE, MAP, MOS, REPORT, SEG, STRIP2, ENDCARD } from "./data
 import { clamp } from "./ui";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
-import { Badge, ClsNetBox, Doc, Elbow, Hexagon, Pill, SansText, SerifLabel, lerp } from "./ui";
+import { Badge, ClsNetBox, Elbow, Hexagon, Pill, SansText, SerifLabel, lerp } from "./ui";
 import { TitleCard } from "./scenesA";
 import { GANTT_PAGE_DY, stripPushY } from "./scenesB";
 
@@ -1019,8 +1019,18 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
               </div>
             </>
           )}
-          <Doc x={565} y={548} w={72} h={90} opacity={docOp} />
-          <Doc x={1292} y={548} w={72} h={90} opacity={docOp} />
+          {/* r23 (law 18). The two settlement documents are not the plain 3-bar Doc —
+              the ref draws a full CONTENT-BOX report on each (folded corner + icon +
+              header rules + a labelled pill + a white outlined content box with a
+              coloured header strip + a footer row). Our plain Doc drew three thick
+              navy/orange bars the ref does not have (misplaced ink, law 17) AND
+              omitted the box/pill/footer (missing ink, law 18) — the dominant static
+              mismatch in the hex band (grid f2600: r3c2 0.187, r3c5 0.119). Traced
+              from ref_2600 at native px (payDocL x563 y545 69x90, payDocR x1291 y551
+              70x91) so the edges sit at the ref's own softness (law 19), not a hand
+              redraw. This was the same fix r22 landed on the HANDSHAKE docs. */}
+          <TracedArt name="payDocL" x={563} y={545} opacity={docOp} />
+          <TracedArt name="payDocR" x={1291} y={551} opacity={docOp} />
           {/* r19. This was the last `labelFs` opt-out, and BOTH of the things that
               justified it were wrong. The seat is a constant — of the box SIDE, not
               of `scale` (ui.tsx r19). And the box was never true: r18's in-code note
@@ -1096,15 +1106,23 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           the whole arrowhead vanish the moment the document parks on them, and why
           a scan of the settled frames alone would have found neither. */}
       {docG > 0 &&
-        PAY_SIDES.map((sd) => {
+        PAY_SIDES.map((sd, i) => {
           const [cx, cy] = payRoutePt(docP * sd.sEnd, sd);
+          // r23 (law 18): the doc that rides the path is a GEODESIC-MESH report, not
+          // the plain 3-bar Doc — folded corner + triangle icon + header rules +
+          // labelled pill + a node mesh + footer, exactly the ReportDoc grammar r22
+          // used on the handshake. Traced from the PARKED ref doc (payPathL x359 y393,
+          // payPathR x1494 y388, both 71x90) and scaled by docG as it grows in, so the
+          // ride and the settled park both carry the true ink. (Gated per-doc: the mesh
+          // is fine navy lines potrace softens to grey — kept only where the crop wins
+          // the plain Doc; see r23 gate note.)
           return (
-            <Doc
+            <TracedArt
               key={`d${sd.x0}`}
+              name={i === 0 ? "payPathL" : "payPathR"}
               x={cx - (PAY_DOC_W * docG) / 2}
               y={cy - (PAY_DOC_H * docG) / 2}
-              w={PAY_DOC_W * docG}
-              h={PAY_DOC_H * docG}
+              scale={docG}
             />
           );
         })}
