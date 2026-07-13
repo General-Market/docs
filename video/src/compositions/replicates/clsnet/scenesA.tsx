@@ -551,6 +551,28 @@ const FLOW_FIELD2: FlowPill[] = [
 // f375; of page 2 starts f423 and settles f428 — exactly where the ref settles.
 const pillDy = (t: number) =>
   interpolate(t, [0, 1, 2, 3, 4, 5], [179, 98, 48, 19, 4, 0], clamp);
+
+// Pill COLLAPSE, page 1 (r18). The page does NOT squash. We scaled it (scaleY
+// 1→0 about the band), which shrinks every pill; the ref keeps pill HEIGHTS
+// exactly — as the ENTRY does — and slides each half RIGIDLY into the band,
+// where the pills vanish underneath it. Solved by cross-correlating each frame's
+// ink profile against the settled (f405) profile, per stack; all four stacks
+// agree (ncc .994-1.000):
+//     f      405  406  407  408  409  410  411    412
+//   above      0    1    6   17   41  128  215*   gone
+//   below      0    1    5   14   34  105  176    gone
+// The halves are NOT symmetric — above travels 1.21× below at every frame.
+// (*by f411 every above pill is past the clip at every stack, so its dy is
+//  unmeasurable; 215 is the 1.21 ratio, and ANY value ≥ 178 renders identically.)
+// The model is self-validating. At f411 it predicts that only stack 1 still shows
+// ink — its lowest pill (settled top 1001) lands at 825-854 and the band eats all
+// but rows 846-854, while every other stack's lowest pill ends above 846. Stack 1
+// is exactly the one the ref still shows there: a 9-row tan sliver at 846-855.
+const collapseAbove = (f: number) =>
+  interpolate(f, [405, 406, 407, 408, 409, 410, 411], [0, 1, 6, 17, 41, 128, 215], clamp);
+const collapseBelow = (f: number) =>
+  interpolate(f, [405, 406, 407, 408, 409, 410, 411], [0, 1, 5, 14, 34, 105, 176], clamp);
+
 const rankField = (field: FlowPill[]): number[] => {
   const groups = new Map<string, FlowPill[]>();
   for (const p of field) {
@@ -712,36 +734,62 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
             its rank outward from the band. Page 2 is the same curve +53f, exactly
             like the labels. Both settle where the ref settles (page1 f375,
             page2 f428) with no fitting.
-            The collapse (page 1, f406-412) is left as the existing scaleY: the
-            ref compresses positions there too and keeps heights, but it is 5
-            frames and the squash already reads right. */}
+            The COLLAPSE is the same grammar, reversed: page 1 slides each half
+            rigidly INTO the band and the band eats it — heights never change
+            there either (tables above). The old scaleY squashed the pills, which
+            the ref never does. Each half is clipped at its own band edge, so a
+            pill that reaches the band disappears instead of emerging out the far
+            side; that clip is a no-op at every other frame (settled above pills
+            end at y800 < 805, below pills start at y846 > 845, and the entry only
+            ever moves them AWAY from the band). */}
         {[FLOW_FIELD1, FLOW_FIELD2].map((field, fi) => {
           const base = fi === 0 ? 366 : 419;
           const ranks = fi === 0 ? RANK1 : RANK2;
-          const sOut = fi === 0 ? 1 - Math.pow(lerp(f, [406, 412], [0, 1]), 2) : 1;
-          if (sOut <= 0 || f < base || (fi === 0 && f >= 413)) return null;
+          if (f < base || (fi === 0 && f >= 412)) return null;
+          const cA = fi === 0 ? collapseAbove(f) : 0;
+          const cB = fi === 0 ? collapseBelow(f) : 0;
           return (
-            <div key={fi} style={{ position: "absolute", inset: 0, transform: `scaleY(${sOut})`, transformOrigin: "960px 830px" }}>
-              {field.map(([x, y, w, h, color], i) => {
-                const t = f - base - ranks[i];
-                if (t < 0) return null;
-                const dy = (y < 819 ? -1 : 1) * pillDy(t);
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      position: "absolute",
-                      left: x,
-                      top: y + dy,
-                      width: w,
-                      height: h,
-                      backgroundColor: color,
-                      borderRadius: y < 819 ? "2px 13px 2px 13px" : "13px 2px 13px 2px",
-                    }}
-                  />
-                );
-              })}
-            </div>
+            <React.Fragment key={fi}>
+              {[true, false].map((above) => (
+                <div
+                  key={String(above)}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    // page 1 only: page 2 never reaches the band, and clipping it
+                    // re-rasterised 6 AA pixels on the pills that sit exactly on
+                    // the y846 line — a regression for nothing
+                    clipPath:
+                      fi === 0
+                        ? above
+                          ? `inset(0 0 ${H - BAND_Y}px 0)`
+                          : `inset(${BAND_Y + BAND_H}px 0 0 0)`
+                        : undefined,
+                  }}
+                >
+                  {field.map(([x, y, w, h, color], i) => {
+                    if (y < 819 !== above) return null;
+                    const t = f - base - ranks[i];
+                    if (t < 0) return null;
+                    const dy = above ? cA - pillDy(t) : pillDy(t) - cB;
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          position: "absolute",
+                          left: x,
+                          top: y + dy,
+                          width: w,
+                          height: h,
+                          backgroundColor: color,
+                          borderRadius: above ? "2px 13px 2px 13px" : "13px 2px 13px 2px",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </React.Fragment>
           );
         })}
         {/* currency pair labels — fly in converging on the band, page 1 collapses
