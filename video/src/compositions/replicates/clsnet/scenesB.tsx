@@ -483,8 +483,14 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
   const ma = Math.round(interpolate(f, fr as unknown as number[], keys.map((k) => k[2]), clamp));
   const checkOp = lerp(f, [1612, 1622], [0, 1]);
   const out = lerp(f, [1648, 1662], [1, 0]);
+  // r19: MatchingScene mounts at f1448 but its content does not start until
+  // f1462 — and its root AbsoluteFill was OPAQUE WHITE, so for 14 frames it
+  // painted over a still-live HexifyScene (the ref is showing the hexes, the
+  // "Trade executed" callout and the box at f1450). The r16 series steps from
+  // .935 to .897 at exactly f1450, the mount. The composition root is already
+  // white; the fill is only needed once Hexify has faded itself out (f1476).
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white }}>
+    <AbsoluteFill style={{ backgroundColor: f < 1476 ? undefined : C.white }}>
       <EdgeRulers f={f} />
       <div style={{ position: "absolute", inset: 0, opacity: inOp * out }}>
         {/* gen9: reuse the native-scale lock city traces (r8, 385 bbox) instead
@@ -617,68 +623,120 @@ export const SmallHex: React.FC<{
   );
 };
 
-// Edge time rulers (grey verticals + hour labels + orange hour lines).
-// r8 ground-truth (orange deadline-line scan regular_0120..0152): the ruler
-// glides UP and DECELERATES to rest by ~f1900 (velocity 4.8->0 px/f), not a
-// constant drift. pitch 113.9px/hour; deadline lines at hours ≡1 mod4 (01,05,
-// 09,13,17,21). y21 = measured screen-y of the 21:00 tick per frame. Labels
-// derive from POSITION and wrap mod 24 — the old code pinned each label to a
-// row index over a 14h (1540px) modulus, so every wrap jumped the sequence 14h
-// (the 14:00->02:00 break, and the shared 21:00 line ~380px off in y).
-const RULER_F = [1462, 1487.5, 1512.5, 1537.5, 1562.5, 1587.5, 1612.5, 1637.5, 1662.5, 1687.5, 1712.5, 1737.5, 1762.5, 1787.5, 1812.5, 1837.5, 1862.5, 1887.5, 1930];
-const RULER_Y21 = [1812, 1754, 1637, 1507, 1387, 1267, 1150, 1035, 925, 821, 722, 630, 546, 471, 407, 358, 323, 308, 305];
-const RULER_PITCH = 113.9;
+// ═══ Edge time rulers — TWO CLOCKS, RUNNING IN OPPOSITE DIRECTIONS ═══════════
+// r19. Every round since r5 has drawn ONE ruler and mirrored it to the other
+// edge. The ref does not do that. It runs two independent clocks that CONVERGE:
+//   left  hour-at-top   12 → 10 → 07 → 04 → 03 → 01 → 23   (glides UP)
+//   right hour-at-top   08 → 11 → 15 → 18 → 20 → 22 → 23   (glides DOWN)
+// at f1490/1550/1625/1700/1735/1800/1900. They meet at f1896 and come to rest
+// together (y21 = 308 on BOTH sides) — the two banks' clocks arriving at the
+// same time is the whole point of the scene, and we were drawing bank A's clock
+// twice. Every tick and every label on the right edge was in the wrong place for
+// all 470 frames of matching + locks.
+//
+// y21 = screen y of the 21:00 tick CENTRE. Solved per frame off the ref's orange
+// deadline lines (hours ≡ 1 mod 4, unambiguous): phase = circular mean of
+// (tick_y mod 4·pitch), unwrapped by continuity from the f1896 rest anchor, and
+// the branch fixed by the ref's own labels (predicting the top label to the hour
+// at every sampled frame). The right ruler's y21 runs NEGATIVE early — it is
+// simply the same lattice, far below.
+//
+// The old LEFT table was also 13-35px HIGH across the whole span (it was fitted
+// from a coarser scan): measured 1766.8 at f1490 vs 1742 drawn, 1123 vs 1092 at
+// f1625, 659 vs 639 at f1735. Re-measured on the same instrument here.
+// Solved per frame by LEAST SQUARES over EVERY detected tick (thin hour bars and
+// thick deadline bars alike), not from the orange lines alone: a 7px-thick bar's
+// coverage centroid is biased against a 2.5px one, and fitting only those gave a
+// pitch of 113.9 and a phase 5px high. All-tick LS returns pitch 113.558 across
+// 54 frame-sides. Hours anchored per frame by the ref's own labels (the model
+// then predicts the top label to the hour at every sampled frame), unwrapped by
+// continuity. The two series rest at 312.5 and 3037.9 — a difference of exactly
+// 24·113.558, i.e. the SAME clock at the SAME phase. The convergence is exact.
+const RULER_F = [1481, 1484, 1491, 1498, 1505, 1512, 1519, 1526, 1533, 1540, 1547, 1554, 1561, 1568, 1575, 1582, 1589, 1596, 1603, 1610, 1617, 1624, 1631, 1638, 1645, 1652, 1659, 1666, 1673, 1680, 1687, 1694, 1701, 1708, 1715, 1722, 1729, 1736, 1743, 1750, 1757, 1764, 1771, 1778, 1785, 1792, 1799, 1806, 1813, 1820, 1827, 1834, 1841, 1848, 1855, 1862, 1869, 1876, 1883, 1890, 1897, 1930];
+const RULER_YL = [1801.0, 1788.1, 1758.1, 1727.1, 1693.3, 1660.3, 1627.1, 1594.1, 1560.7, 1528.2, 1494.2, 1459.8, 1426.3, 1392.9, 1359.8, 1324.7, 1290.2, 1257.2, 1226.0, 1192.4, 1160.3, 1128.3, 1096.3, 1065.4, 1033.4, 1001.5, 970.8, 940.3, 910.3, 878.9, 849.1, 821.0, 792.4, 765.1, 737.6, 710.5, 684.0, 657.9, 632.9, 609.0, 585.5, 561.2, 538.5, 517.2, 496.5, 476.5, 458.1, 441.4, 423.9, 407.4, 392.3, 377.7, 364.8, 353.3, 342.4, 334.1, 326.1, 320.1, 316.1, 313.1, 312.5, 312.5];
+const RULER_YR = [1284.8, 1300.2, 1336.2, 1374.4, 1411.9, 1450.8, 1490.2, 1529.2, 1568.2, 1608.1, 1647.6, 1687.8, 1729.5, 1769.6, 1809.1, 1850.0, 1888.7, 1928.7, 1962.7, 2001.5, 2040.0, 2076.7, 2114.8, 2152.8, 2188.3, 2224.3, 2260.8, 2295.3, 2329.3, 2363.8, 2399.8, 2434.2, 2466.7, 2500.2, 2532.2, 2564.2, 2595.2, 2624.5, 2654.5, 2682.8, 2711.3, 2736.7, 2762.7, 2789.9, 2814.3, 2839.3, 2862.3, 2883.8, 2906.1, 2925.1, 2943.1, 2960.5, 2976.0, 2990.0, 3002.5, 3013.5, 3021.5, 3028.5, 3033.9, 3037.0, 3037.9, 3037.9];
+const RULER_PITCH = 113.558;
+
+// The rulers do NOT exist before f1481 — no band, no tick, no label (probed: the
+// edge columns read pure white 253 at f1478/1479/1480, grey 168 from f1483). We
+// were painting two full-height 36px grey bands + 18 ticks + 18 labels from the
+// MatchingScene mount at f1448: ~78,000px of grey the ref has nowhere, for 33
+// frames. The bands GROW IN from their own frame edge over ~6 frames.
+const RULER_IN = 1481;
+const BAND_F = [1481, 1482, 1483, 1484, 1485, 1486, 1487];
+const BAND_WL = [10, 20, 27, 32, 34, 36, 36];
+const BAND_WR = [6, 16, 23, 27, 30, 31, 32];
+// measured at f1625 (settled): band L x0-35 (w36) · band R x1888-1919 (w32).
+// hour ticks abut the band and run INWARD — L x36-105, R x1823-1887 — they are
+// NOT the 88px bars we drew from x12 (which started INSIDE the band and ended
+// short). The orange deadline lines are more than twice as long and start at the
+// FRAME EDGE, crossing the band: L x0-199, R x1724-1919, 7px thick vs the hour
+// tick's 2.5px. Label ink: x42-99 left, 17px digit height (fs 24, not 22), its
+// top 11px below the tick centre — and clear of the band, not printed over it.
+const BAND_L_W = 36;
+const BAND_R_W = 32;
 
 export const EdgeRulers: React.FC<{ f: number }> = ({ f }) => {
   const { sans: SANS } = useBrand();
-  const y21 = interpolate(f, RULER_F, RULER_Y21, { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const kMin = Math.ceil((y21 - 1130) / RULER_PITCH);
-  const kMax = Math.floor((y21 + 40) / RULER_PITCH);
-  const ks = Array.from({ length: Math.max(0, kMax - kMin + 1) }, (_, i) => kMin + i);
+  if (f < RULER_IN) return null;
+  const bandWL = interpolate(f, BAND_F, BAND_WL, clamp);
+  const bandWR = interpolate(f, BAND_F, BAND_WR, clamp);
+  const y21s = [
+    interpolate(f, RULER_F, RULER_YL, clamp),
+    interpolate(f, RULER_F, RULER_YR, clamp),
+  ];
   return (
     <>
-      {/* r5: both edges carry a 36px #A8A8A8 band through the whole
-          matching/locks phase (probed f1500/1700/1900) */}
-      <div style={{ position: "absolute", left: 0, top: 0, width: 36, height: 1080, backgroundColor: C.grey }} />
-      <div style={{ position: "absolute", left: 1884, top: 0, width: 36, height: 1080, backgroundColor: C.grey }} />
-      {[14, 1906].map((x, side) => (
-        <div key={side} style={{ position: "absolute", left: x - 12, top: 0, width: 24, height: 1080, overflow: "visible" }}>
-          {ks.map((k) => {
-            const y = y21 - k * RULER_PITCH;
-            const hour = (((21 + k) % 24) + 24) % 24;
-            const isOrange = hour % 4 === 1;
-            return (
-              <React.Fragment key={k}>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: side === 0 ? 10 : -66,
-                    top: y,
-                    width: 88,
-                    height: isOrange ? 3 : 1.5,
-                    backgroundColor: isOrange ? C.orangeDeep : C.navy,
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    left: side === 0 ? 14 : -60,
-                    // r8: label sits ~13px BELOW its tick line (ref regular_0146:
-                    // "21:00" text top y424 vs its red line top y405). The old
-                    // y-30 put every label above its line — a ~48px miss.
-                    top: y + 13,
-                    fontFamily: SANS,
-                    fontSize: 22,
-                    color: C.navy,
-                  }}
-                >
-                  {`${String(hour).padStart(2, "0")}:00`}
-                </div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      ))}
+      <div style={{ position: "absolute", left: 0, top: 0, width: bandWL, height: 1080, backgroundColor: C.grey }} />
+      <div style={{ position: "absolute", left: 1920 - bandWR, top: 0, width: bandWR, height: 1080, backgroundColor: C.grey }} />
+      {y21s.map((y21, side) => {
+        const kMin = Math.ceil((y21 - 1130) / RULER_PITCH);
+        const kMax = Math.floor((y21 + 40) / RULER_PITCH);
+        const ks = Array.from({ length: Math.max(0, kMax - kMin + 1) }, (_, i) => kMin + i);
+        return (
+          <React.Fragment key={side}>
+            {ks.map((k) => {
+              const y = y21 - k * RULER_PITCH;
+              const hour = (((21 + k) % 24) + 24) % 24;
+              const isOrange = hour % 4 === 1;
+              const tickW = isOrange ? (side === 0 ? 200 : 196) : side === 0 ? 70 : 65;
+              const tickX = isOrange
+                ? side === 0
+                  ? 0
+                  : 1920 - 196
+                : side === 0
+                  ? BAND_L_W
+                  : 1920 - BAND_R_W - 65;
+              return (
+                <React.Fragment key={k}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: tickX,
+                      top: y - (isOrange ? 3.5 : 1.25),
+                      width: tickW,
+                      height: isOrange ? 7 : 2.5,
+                      backgroundColor: isOrange ? C.orangeDeep : C.navy,
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: side === 0 ? 42 : 1821,
+                      top: y + 11 - 5.5, // ink top = tick centre + 11; strut ≈ 5.5 at fs 24
+                      fontFamily: SANS,
+                      fontSize: 24,
+                      color: C.navy,
+                    }}
+                  >
+                    {`${String(hour).padStart(2, "0")}:00`}
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </React.Fragment>
+        );
+      })}
     </>
   );
 };
