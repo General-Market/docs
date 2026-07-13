@@ -1023,13 +1023,30 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
 // NOT scaled — see the S13 entrance block); the INTERIOR only arrives once the
 // capsule is open, so it carries its own opacity and no transform. At k=1/tx=0/
 // interior=1 both branches below render exactly the pre-gen20 markup.
-// gen20: the LEFT capsule's VERTEX is the twin of the right one gen19 fixed — grid cell
-// r2c2 (240x180+480+360), ranked 2nd across f2380/f2400 and near-flat white, so one
-// misplaced curve owns all of its variance. Ref max-navy-x per row (f2400): y430 490 ·
-// y442 494 · y448..466 495 (a rounded point centred y457) · y478 492 · y496 483. Ours
-// bottomed out at 488 over y448..460 — SEVEN pixels short, and the whole approach
-// diagonal ran 2-4px inside the ref's. Vertex point (479,414)→(507,457)→(479,500).
-const L_CAPSULE = "M -80 222 L 330 222 Q 365 222 385 255 L 479 414 Q 507 457 479 500 L 405 655 Q 385 690 350 690 L -80 690";
+// r18: THE SAME DEFECT AS THE RIGHT CAPSULE, AND THE SAME CAUSE. Re-measured by tracking
+// the navy RUN and taking its MIDPOINT (the chip at y262..317 and the top arrowhead at
+// x393..460 sit ON the upper diagonal and poison any fixed-window scan — track the run
+// nearest the predicted centre and reject any that touches the window edge):
+//
+//                       ref f2600                    ours (old)              error
+//   upper diagonal      xc = +0.5770y + 238.20       +0.5913y + 234.02       slope
+//   lower diagonal      xc = -0.5773y + 766.46       -0.4762y + 716.26       SLOPE, badly
+//   top edge yc         223.0                        221.5
+//   bottom edge yc      692.5  (x40 693, x120 692.5) 690
+//   apex centre x       492.5  (y452..464)           492.5  (y452..460)      already right
+//   stroke              7.7 / 7.8 h-extent  -> 7     4.4 / 3.8               HALF WIDTH
+//   rms of the fits     0.20 / 0.21 px               0.14 / 0.22
+//
+// Our lower diagonal ran at -0.476 against the ref's -0.577 — an 11px error by y600. Both
+// ref capsules are symmetric hexagons with diagonals at exactly +/-tan(30 deg), and this
+// one's axis is y=457.75 ((223+692.5)/2), where the two fitted diagonals cross at 502.32
+// and 502.20 — 0.12px apart. Sharp vertex (502.26, 457.75), blunted by the ref to 492.5
+// (9.76px — the right capsule's is 9.65px, the same pen).
+//
+// The apexes were NEVER the error, on either capsule. Reading a 4px stroke's outer edge
+// against a 7px stroke's is what invented one.
+const L_CAPSULE = "M -80 223 L 331.9 223 Q 366.9 223 384.4 253.3 L 482.8 423.9 Q 502.3 457.75 482.7 491.6 L 384.2 662.2 Q 366.7 692.5 331.7 692.5 L -80 692.5";
+const L_CAP_W = 7;
 const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
   k = 1,
   tx = 0,
@@ -1039,10 +1056,10 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
     {/* capsule frame */}
     {k < 1 ? (
       <g transform={`translate(${tx},0) scale(${k},1)`}>
-        <path d={L_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} vectorEffect="non-scaling-stroke" />
+        <path d={L_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={L_CAP_W} vectorEffect="non-scaling-stroke" />
       </g>
     ) : (
-      <path d={L_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} />
+      <path d={L_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={L_CAP_W} />
     )}
     {interior <= 0 ? null : (
     <g {...(interior < 1 ? { opacity: interior } : {})}>
@@ -1170,7 +1187,13 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
 // sharp intersection, with endpoints solved so t=0.5 lands on the measured apex (1422.0,
 // 628.0): it reproduces the ref's apex centre to <=1px at every probed row (y604 1426.9
 // vs 1426 · y612 1424.1 vs 1424 · y648 1425.2 vs 1425).
-const R_CAPSULE = "M 2000 393 L 1582.7 393 Q 1547.7 393 1530.2 423.3 L 1432.4 592.9 Q 1411.8 628.4 1431.9 662.3 L 1532.7 831.9 Q 1550.6 862 1585.6 862 L 2000 862";
+// r18b: the lower diagonal re-fitted by run-TRACKING over y660..798 (n=70) instead of a
+// fixed x-window: +0.5747, and a slope FORCED to 0.5773 fits it just as well (rms .72 vs
+// .71). BOTH ref capsules run at exactly +/-0.577 = tan(30 deg). With that, the two
+// diagonals meet the symmetry axis y=627.5 ((393+862)/2) at 1412.39 and 1412.32 — they
+// agree to 0.07px, which is the proof the shape is a symmetric hexagon and the fits are
+// right. Sharp vertex (1412.35, 627.5); the ref blunts it to 1422.0, i.e. by 9.65px.
+const R_CAPSULE = "M 2000 393 L 1582.7 393 Q 1547.7 393 1530.2 423.3 L 1431.4 594.6 Q 1412.35 627.5 1431.9 661.4 L 1530.2 831.7 Q 1547.7 862 1582.7 862 L 2000 862";
 // the ref's outline stroke, read directly off its HORIZONTAL edges (a horizontal run's
 // height IS the stroke, with no slope correction to get wrong): top 390..396, bottom
 // 859..865 — SEVEN. The diagonals agree: h-extent 8 at slope 0.577 is 8*cos(30) = 6.9.
