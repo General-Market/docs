@@ -365,6 +365,16 @@ const DetailCard: React.FC<{ f: number }> = ({ f }) => {
 // Measured fr_2330 (settled) / fr_2360 (after +125px drift, mesh icons on docs):
 // left doc + CLSNet box + right doc, orange verticals from the top edge,
 // orange horizontal stubs at y547 between the elements.
+// the mesh's edges, flattened once at module scope so the reveal order is fixed
+const MESH_NODES = [
+  [135, 55], [175, 62], [200, 90], [198, 125], [170, 152], [130, 155], [102, 128], [104, 88], [150, 105],
+] as const;
+const MESH_EDGES: [number, number, number, number][] = MESH_NODES.flatMap(([mx, my], i) =>
+  MESH_NODES.slice(i + 1)
+    .filter(([nx, ny]) => Math.hypot(nx - mx, ny - my) <= 78)
+    .map(([nx, ny]): [number, number, number, number] => [mx, my, nx, ny]),
+);
+
 const ReportDoc: React.FC<{
   x: number;
   y: number;
@@ -373,36 +383,21 @@ const ReportDoc: React.FC<{
   pillColor: string;
   meshP: number;
 }> = ({ x, y, w, h, pillColor, meshP }) => {
-  // deterministic scatter dots (processing) that give way to the mesh icon
-  const dots = [
-    [128, 78], [172, 96], [96, 108], [150, 126], [200, 118], [118, 142], [176, 150], [142, 88],
-  ] as const;
-  const mesh = [
-    [135, 55], [175, 62], [200, 90], [198, 125], [170, 152], [130, 155], [102, 128], [104, 88], [150, 105],
-  ] as const;
   return (
     <svg width={w} height={h} viewBox="0 0 270 345" style={{ position: "absolute", left: x, top: y }}>
       <path d="M4,4 H206 L266,64 V341 H44 Q4,341 4,301 Z" fill={C.white} stroke={C.navy} strokeWidth={4} strokeLinejoin="round" />
       <path d="M206,4 V64 H266" fill="none" stroke={C.navy} strokeWidth={4} />
       <rect x={24} y={22} width={62} height={6} fill={C.navy} />
       <rect x={24} y={36} width={40} height={5} fill={C.navy} />
-      {/* scatter dots → geodesic mesh */}
-      {meshP < 1 && dots.map(([dx, dy], i) => (
-        <circle key={`d${i}`} cx={dx} cy={dy} r={2.5} fill={C.navy} opacity={1 - meshP} />
-      ))}
-      {meshP > 0 && (
-        <g opacity={meshP}>
-          {mesh.map(([mx, my], i) => (
-            <React.Fragment key={`m${i}`}>
-              {mesh.slice(i + 1).map(([nx, ny], j) => {
-                const dist = Math.hypot(nx - mx, ny - my);
-                if (dist > 78) return null;
-                return <line key={j} x1={mx} y1={my} x2={nx} y2={ny} stroke={C.navy} strokeWidth={1.2} />;
-              })}
-            </React.Fragment>
-          ))}
-        </g>
-      )}
+      {/* Geodesic mesh. The ref DRAWS it in — solid edge fragments appearing one by
+          one over f2329-2348 — it does not fade a whole ghost mesh up, and it draws
+          no scatter dots first (probed: the head is bare white at f2328). An opacity
+          ramp put a grey haze over the whole head and lost 0.06 on the crop; solid
+          sparse edges are what the ref actually shows. Reveal by count. */}
+      {meshP > 0 &&
+        MESH_EDGES.slice(0, Math.round(meshP * MESH_EDGES.length)).map(([mx, my, nx, ny], i) => (
+          <line key={`m${i}`} x1={mx} y1={my} x2={nx} y2={ny} stroke={C.navy} strokeWidth={1.2} />
+        ))}
       {/* mini gantt panel */}
       <rect x={40} y={155} width={205} height={120} rx={10} fill={C.navy} />
       <path d={`M58,172 H228 M58,172 V178 M92,172 V178 M126,172 V178 M160,172 V178 M194,172 V178 M228,172 V178`} stroke={C.white} strokeWidth={1.5} fill="none" />
@@ -428,10 +423,30 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
   // gen10: the ref holds the settled report to ~f2360 then EXITS it f2362-2377
   // (docs slide DOWN + out as the handshake hexes rise) — was held to f2396,
   // the r11 worst window #4 f2352-2402 (report layout lingered vs rising hexes).
-  const out = lerp(f, [2363, 2377], [1, 0]);
-  // whole group drifts +125px (fr_2330 → fr_2360), then slides down on exit
-  const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]) + lerp(f, [2362, 2377], [0, 360]);
-  const meshP = lerp(f, [2342, 2352], [0, 1]);
+  // r18 EXIT. The "+125px drift over 2332-2358" is FICTION. The ref FREEZES the
+  // settled report — every navy bbox byte-stable f2334-2348 — and then drops it,
+  // accelerating, straight off the bottom: dy 0@2348 · 12@2352 · 76@2358 · 273@2364
+  // · 579@2367 · off by 2368. We were 38px low at f2340 and 86px low at f2350 (the
+  // whole tableau, the largest ink in the scene) and still only halfway down when
+  // the ref had already gone. Box x stays 795 and doc x stays 307 throughout — the
+  // fall is purely vertical, and there is no fade: the navy is at full mass in the
+  // last frame that shows it. Transcribed per frame from the box's top edge.
+  const dy = interpolate(
+    f,
+    [2348, 2349, 2350, 2351, 2352, 2353, 2354, 2355, 2356, 2357, 2358, 2359, 2360, 2361, 2362, 2363, 2364, 2365, 2366, 2367, 2368],
+    [0, 2, 4, 7, 12, 18, 26, 35, 46, 60, 76, 95, 118, 146, 180, 221, 273, 342, 436, 579, 800],
+    clamp,
+  );
+  // hard cut, not a fade — the docs and the box are off the bottom by f2368 and the
+  // two orange verticals (which stay pinned to the screen top) are gone by f2369.
+  const out = f < 2369 ? 1 : 0;
+  if (!out) return <AbsoluteFill style={{ backgroundColor: C.white }} />;
+  // the mesh draws itself in over f2329-2348 — keyed off the ref's own navy-pixel
+  // count in the doc head (bare at f2328; 38% of final ink at f2334; 75% at f2340;
+  // complete by f2348). It was a 2342-2352 opacity fade, so we showed eight invented
+  // scatter dots for the whole window and then ghosted a mesh up after the ref's
+  // was already finished.
+  const meshP = interpolate(f, [2333, 2334, 2338, 2340, 2344, 2348], [0, 0.38, 0.57, 0.75, 0.87, 1], clamp);
   // The tableau is still CONVERGING across the 2324 scene boundary — the ref does
   // not settle it until f2333 (s: 1.252@2324 → 1.075@2328 → 1.0@2333). Same pivot,
   // same table as GanttScene: the two scenes now hand the SAME object to each
@@ -442,12 +457,15 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
   // The verticals are pinned to the SCREEN top and stretch to the doc's top edge,
   // so they can neither be scaled nor translated as a body — they are drawn in
   // screen space off the same transform.
-  const vLx = T_PIV.x + s * (RT.vertLx - T_PIV.x);
-  const vRx = T_PIV.x + s * (RT.vertRx - T_PIV.x);
+  // and they do not merely stretch as the report falls — they lean INWARD, both
+  // tracked frame by frame at y=3: the left rides +0.20·dy (357→516), the right
+  // −0.18·dy (1548→1404). Two ratios, constant to 10% across the whole fall.
+  const vLx = T_PIV.x + s * (RT.vertLx - T_PIV.x) + 0.2 * dy;
+  const vRx = T_PIV.x + s * (RT.vertRx - T_PIV.x) - 0.18 * dy;
   const vBot = T_PIV.y + s * (RT.docTop - T_PIV.y) + dy;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
-      <div style={{ position: "absolute", inset: 0, opacity: out }}>
+      <div style={{ position: "absolute", inset: 0 }}>
         <Elbow points={[[vLx, 0], [vLx, vBot]]} width={3 * s} />
         <Elbow points={[[vRx, 0], [vRx, vBot]]} width={3 * s} />
         <div style={{ position: "absolute", inset: 0, transform: `translateY(${dy}px) scale(${s})`, transformOrigin: `${T_PIV.x}px ${T_PIV.y}px` }}>
