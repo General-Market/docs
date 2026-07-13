@@ -402,7 +402,12 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
   const badgeR = hexW * 0.13;
   const labelOp = lerp(f, [1380, 1392], [0, 1]);
   const boxOp = lerp(f, [1385, 1398], [0, 1]);
-  const docsP = lerp(f, [1412, 1450], [0, 1]);
+  // r24 [defect 5]: two netted-report pages slide INTO the box, one from each side,
+  // absorbed BEHIND it (measured x-tracks, work/clsnet/r24/refB). docIn fades them in
+  // ~f1426; the box's z-order (drawn after) eats them as they arrive.
+  const docIn = lerp(f, [1423, 1429], [0, 1]);
+  const docLX = interpolate(f, [1426, 1432, 1435, 1438, 1442, 1448], [560, 674, 714, 760, 815, 860], clamp);
+  const docRX = interpolate(f, [1426, 1435, 1440, 1445, 1450, 1455, 1462], [1300, 1218, 1150, 1078, 1010, 940, 842], clamp);
   const out = lerp(f, [1462, 1476], [1, 0]);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
@@ -439,17 +444,28 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
           <Elbow points={[[1221, 425], [716, 425]]} color={C.orange} opacity={labelOp} arrow="end" />
         </>
       )}
-      {/* CLSNet box + docs flying in */}
+      {/* r24 [defect 5]: the ref draws TWO netted-report pages sliding INTO the
+          CLSNet box — one from each side (A left, B right) — absorbed BEHIND the box,
+          NOT two small generic icons parked beside it. Drawn BEFORE the box so the
+          navy square occludes them as they arrive. Measured (work/clsnet/r24/refB):
+          the RIGHT page slides left from x~1300 (f1426) to hug the box's right edge at
+          f1445 (folded corner + bars out), then vanishes behind the box by ~f1456; the
+          LEFT page peeks left of the box f1428-1440 and is eaten first. Both are the
+          detailed folded report (Doc variant="full", w110 h152 — the ref doc measured
+          ~110×154). The old code: two w90 "plain" 3-bar icons ON TOP of the box,
+          entering f1412 and gone at f1450. The "full" variant costs −0.0017 SSIM at
+          f1430 (ui.tsx Doc note) — an accepted EYE-round spend: it is the report the
+          ref actually draws. */}
+      {docIn > 0 && (
+        <>
+          <Doc variant="full" x={docLX} y={738} w={110} h={152} opacity={docIn} />
+          <Doc variant="full" x={docRX} y={738} w={110} h={152} opacity={docIn} />
+        </>
+      )}
       {/* r18: the ref's box here is PIXEL-IDENTICAL across f1400-1450 — x823.5
           y660.5 side 270.8, frame after frame. Transcribed, not fitted. We sat
           14px low and 1px left (the size was already right). */}
       <ClsNetBox x={824} y={661} opacity={boxOp} />
-      {docsP > 0 && docsP < 1 && (
-        <>
-          <Doc x={lerp(docsP, [0, 1], [430, 760])} y={lerp(docsP, [0, 1], [640, 760])} opacity={1} />
-          <Doc x={lerp(docsP, [0, 1], [1500, 1105])} y={lerp(docsP, [0, 1], [640, 760])} opacity={1} />
-        </>
-      )}
     </AbsoluteFill>
   );
 };
@@ -518,7 +534,17 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
   // modelled here — so the card leaves as ABSENT ink, not misplaced ink: holding
   // it at full through the ref's move costs f1654 .904 -> .887 (lesson 4, seventh
   // confirmation). Ramp it from the frame the ref starts moving it.
-  const checkOp = lerp(f, [1612, 1622], [0, 1]);
+  // r24 [defect 4]: the ref's orange check GROWS from a point at f1578-1579 (the
+  // frame the count settles to 0/298) and is full by f1586 — measured. The old
+  // [1612,1622] fired ~33f LATE, only as the ref had already begun collapsing the
+  // card away. It sits inside the cardOut wrapper, so it still leaves with the card.
+  const checkOp = lerp(f, [1579, 1586], [0, 1]);
+  // r24 [defect 4]: on completion the card FLASHES pink, then relaxes back to grey.
+  // Measured g-channel at p{1000,720}: 225(grey) → 180(salmon peak, f1586) → 225 by
+  // f1618. A transient pulse synced to the match completing, NOT a held tint — the
+  // old card stayed flat grey #E1E1E1 through the whole celebration. Peak #E1B4A9.
+  const pinkT = interpolate(f, [1580, 1583, 1586, 1590, 1595, 1600, 1610, 1618], [0, 0.49, 1, 0.96, 0.78, 0.6, 0.13, 0], clamp);
+  const panelColor = pinkT > 0 ? `rgb(225, ${Math.round(225 - 45 * pinkT)}, ${Math.round(225 - 56 * pinkT)})` : MATCH_PANEL;
   // r21: the old [1646,1653] fade left the card at 43% by f1650 — but the ref
   // holds it FULL and settled until ~f1648 (navy logo square top-left tracked at
   // (773,351)@1648, still there at f1652), then COLLAPSES down-right f1650-1664
@@ -564,7 +590,7 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
             top: 419,
             width: 412,
             height: 332,
-            backgroundColor: MATCH_PANEL,
+            backgroundColor: panelColor,
             opacity: panelOp,
           }}
         />

@@ -249,12 +249,22 @@ export const MATCH = {
     { swatch: "orangeDeep", label: "Matched" },
   ],
   counts: {
-    // measured checkpoints: [frame, unmatched, matched]
+    // r24 [defect 4]: measured per frame off the ref (work/clsnet/r24/refB). Unmatched
+    // counts DOWN 269→0, matched UP 28→298 over f1495-1579; total holds 297 until the
+    // last frame (298). The old tail was ~35f LATE — it reached 0/298 only at f1615
+    // where the ref hits it at f1579, so the whole celebration landed late. Every
+    // checkpoint below was read directly from a ref frame. [frame, unmatched, matched]
     keys: [
-      [1495, 187, 110],
-      [1552, 45, 252],
-      [1585, 9, 288],
-      [1615, 0, 298],
+      [1495, 269, 28],
+      [1510, 219, 78],
+      [1525, 157, 140],
+      [1540, 94, 203],
+      [1552, 49, 248],
+      [1560, 26, 271],
+      [1570, 6, 291],
+      [1575, 1, 296],
+      [1578, 0, 297],
+      [1579, 0, 298],
     ],
   },
   check: { cx: 1192, cy: 428, r: 42 },
