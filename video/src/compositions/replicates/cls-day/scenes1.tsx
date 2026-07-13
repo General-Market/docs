@@ -1169,15 +1169,41 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   // EVERY ONE. The exit keys from f918 are untouched.
   // NB this also retires the gen17 "unprojection trap": with sy = 1 in the
   // cruise, screen y IS world y, and 532.5 + (y − 532.5)/sy is the identity.
+  //
+  // ── r18 — THE ENTRY ZOOM IS UNIFORM. THE SEPARATE ENTRY sy WAS FICTION. ──
+  // The entry sy keys were hand-fitted and every one of them was 2-5% LOW, so for
+  // ten frames the incoming world was squashed vertically against a horizontal
+  // scale that gen20 had measured properly. At f675 that is 9.6px of error on the
+  // above-band tick tops AND on the below-band tick feet — the whole world, both
+  // halves, every frame of the entry.
+  // Measured with the ONE thing in the frame no building can hide: the grey band
+  // itself (world 490..575, h=85, spans the full width). Sub-pixel edge crossings
+  // (white→grey at 234, grey→navy at 121) over ~1,400 ink-free columns per frame
+  // (work/…/r18-scenes1/band2.py). The probe recovers h = 86.01 at f684-690, where
+  // sy is KNOWN to be 1.000 — so its bias is +1.01px and sy = (h − 1.01)/85:
+  //   f674 .8509 · f675 .8942 · f676 .9240 · f677 .9469 · f678 .9631 · f679 .9748
+  //   f680 .9852 · f681 .9892 · f682 .9947 · f684 .9982
+  // Set that beside sx (.8475 / .8936 / .9254 / .9473 / .9642 / .9761 / .9847 /
+  // .9911 / .996 / 1) and they are THE SAME NUMBER — max |Δ| 0.0034, RMS 0.0016.
+  // The band is not an anisotropic squash. It is a zoom.
+  // Confirmed independently through the rectifier: rectify a KNOWN cluster out of
+  // an entry frame into slot space and correlate it against its own cruise crop —
+  // with the old sy, ClA@f677 needed a +4px roll (overlap .854) and ClD@f677 a −4px
+  // roll (.812), opposite signs, the signature of a scale error, not an offset.
+  // With sy = sx: ClA .933 / ClD .957 / ClD@f676 .964 / ClD@f679 .979, every dy = 0.
+  // The entry keys therefore ARE the sx keys. The exit keys (f918+) are NOT — there
+  // the band really does compress faster in x than in y — and are left alone.
   const sy = lutS([
-    [674, 0.824], [675, 0.855], [676, 0.88], [677, 0.918], [678, 0.941], [679, 0.953],
-    [680, 0.965], [681, 0.978], [682, 0.988], [683, 0.994], [684, 1],
+    [674, 0.8475], [675, 0.8936], [676, 0.9254], [677, 0.9473], [678, 0.9642], [679, 0.9761],
+    [680, 0.9847], [681, 0.9911], [682, 0.996], [683, 0.994], [684, 1],
     [916, 1], [918, 0.988], [920, 0.976], [922, 0.929], [924, 0.929], [926, 0.835],
     [928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635],
   ])(frame);
-  // band center (rest 532.5): entry descend + exit rise, both measured
+  // band center (rest 532.5): entry descend + exit rise, both measured.
+  // r18: the same band probe reads the entry centres back to within 0.5px of these
+  // keys at every frame but ONE — f676, which sits 1.8px low (472.7, not 474.5).
   const riseC = lutS([
-    [674, 412], [675, 447.5], [676, 474.5], [677, 490], [678, 503], [679, 512.5],
+    [674, 412], [675, 447.5], [676, 472.7], [677, 490], [678, 503], [679, 512.5],
     [680, 520], [681, 525], [682, 529], [683, 530.5], [684, 532.5],
     [918, 532.5], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [928, 327],
     [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179],
