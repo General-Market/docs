@@ -1529,3 +1529,161 @@ f2762, f2930).
 
 **None of the r18 windows appear on this list.** Flows, cities, gantt, payment, the report
 tail and the strip→gantt seam are all off the board. **The ceiling was never the line-art.**
+
+---
+
+## r19 (2026-07-13, round lead + 3 per-file builders) — 17 commits, zero regressions
+
+**Entering at 95.1. Every landing was a deletion of fiction, a resize, or a re-timing.
+Not one was a re-draw.** r18's question — *does the reference do this AT ALL?* — kept paying,
+and this round it reached the SHARED PRIMITIVES, where a single error is wrong at every call
+site simultaneously and therefore never dominates any one window. That is why they survived
+eighteen rounds.
+
+### The headline: the cap-top seat was a constant all along — of the wrong datum
+
+r18 read three seats (payment 296.6·scale, flows 301, locks 302) and concluded *"the seat is
+not the constant it is taken for."* **It is.** The seat scales with the box **SIDE** — the only
+datum the ref's lockup actually has. Divide by side and all ten site reads collapse:
+
+| site | ref side | cap-top below box top | ratio |
+|---|---|---|---|
+| flows | 269 | 300.17 | 1.1159 |
+| tradeDocs | 269 | 300.12 | 1.1157 |
+| match | 156 | 175.01 | 1.1218 |
+| locks | 221 | 246.1 | 1.1136 |
+| **gantt card** | **525** | 586.56 | **1.1173** |
+| **gantt card** | **341** | 381.25 | **1.1180** |
+| report | 331 | 369.2 | 1.1155 |
+| payment | 166 | 184.3 | 1.1100 |
+
+**The gantt detail card proves it for free: the SAME site at TWO sizes returns the same ratio.**
+One uniformly-scaled symbol. No strut, no affine term, no per-site case. LSQ: `seat = 1.1161·side`,
+RMS 0.6px. Shipped `LABEL_SEAT = 1.1202` (in-render NCC calibration; the cap-top estimator carries
+~1px bias across two typefaces). We had been at 1.1240 — **0.8% of the side too low.**
+
+> **NEW LAW: when a constant reads differently at three sites, suspect the DATUM before you
+> abandon the constant.** r18 was one division from the answer and turned back.
+
+### The determinism bug does not exist — REFUTED, not fixed (`0dbc1fb60`)
+`ClsNet-Replicate` loads **no web font at all** (the wordmark is a system Helvetica stack), so
+there was never a race. The bimodal wordmark widths r18 saw are split **by code version, not by
+luck**: narrow = pre-label-law stills, wide = post. **r18 compared stills from two generations of
+its own code and read the difference as nondeterminism.** Proof: 12/12 md5-identical renders of
+f2320, 8/8 at f400. **md5 byte-identity is a valid instrument again** — worth far more than the
+0.0003 the phantom was "costing". Recorded in-code: *do not add delayRender here.*
+
+### Gates — ref vs pre-r19 HEAD vs r19 HEAD, whole frame
+
+| window | frames | OLD → NEW |
+|---|---|---|
+| **strip2** (rank 2; f2680 was the worst frame in the file) | f2663 / f2680 / f2685 / f2700 | **.867→.995** · **.860→.973** · .867→.944 · .907→.975 |
+| **matching** (rank 7) | f1610 / f1625 | **.890→.934** · **.889→.933** |
+| **locks** (rank 6) | f1718 / f1735 / f1740 | **.887→.929** · .892→.929 · .908→.929 |
+| **mapBadges** (rank 8) | f3290 / f3305 | **.819→.954** · **.852→.959** |
+| **endcard** (ranks 4+5, 130f hold) | f4041–4141 | **.880→.906 flat across the whole hold** |
+| **payment** (rank 1) | f2600 | .899→.907; label crop **.840→.976** |
+| matching mount fiction | f1455 | .877→.933 |
+| ClsNetBox seat law | flows/tradeDocs/gantt/report | label crop **+.034 … +.086** |
+
+**Zero regressions at any gated frame, in any lane, all round.** md5-identical outside every
+touched range. `CrxNetting` clean. tsc: 0 clsnet errors.
+
+### The fiction deleted (17 commits)
+- **The edge rulers are TWO clocks running in OPPOSITE directions** (`52fa837b4`). Bank A's runs
+  up, bank B's runs down; they **converge and rest together** — the point of the scene. Since r5
+  we drew bank A twice, for 470 frames. They also **do not exist before f1481**; we painted two
+  grey bands, 18 ticks and 18 labels from f1448 — behind an opaque white AbsoluteFill that
+  overpainted a live scene (the r16 series steps .935→.897 at exactly the mount frame).
+- **The documents SLIDE across a FIXED elbow** (`622fb8d33`). We parked both at their settled spot
+  80 frames early — at f1718 our doc sat **275px** from the ref's. Our connectors rode the doc and
+  drew *after* it, painting an **80px orange bar across each document's face**. The ref has none:
+  its riser stops at the doc's edge because **the doc is simply on top of the line.** Draw the
+  elbow, then the doc.
+- **The strip2 skyline was never a fade** (`4da30e2c0`) — it flies in from the right and
+  decelerates, solid ink from its first pixel. Ref ink above/below the band is **zero** before f2676.
+- **The band opens in 11 frames, not 22** (`7b5def327`) — at f2663 we drew ~200,000px of misplaced
+  full-width navy in a single frame.
+- **The strip travels 9.92px/f, not 9.76** (`2aed84396`) — the x-residual rose +0.157px/f
+  *identically in every cluster*. A shared slope is a RATE error, not an origin error.
+- **The endcard URL is at fs62 where the ref is 92** (`99e5c5c2a`) — a third of the ink not drawn,
+  held for 130 frames. The disclaimer **slides in under a hard clip at x=679** (forced by the data).
+- **The matching columns were seven identical pills** (`2789df3cb`) — the ref has **eight of two
+  heights** left, six right, flown in innermost-first, one spawn per frame.
+- **The map implode ran six frames early** (`a6b801d26`) — at f3305 the ref is at 0.845, we drew 0.497.
+- **The payment box was never true** (`efd8b5b38`) — r18's in-code note *"875/835 is the true seat"*
+  had **enshrined a bad measurement as a law**. The ref is 833.9/166.
+- **The FX Global Code badge is a LEAF, not a square** (`b1f1c1a0c`) — found only by opening a cell
+  that would once have been ranked and ignored.
+- **The `Doc` primitive draws three flat bars; the ref draws a document** (`a602d7273`) — header
+  rule, bordered panel of thin rules, navy bar, orange bar, lower panel with an orange pill, rounded
+  corners. **Four on screen at once.** r18 filed this as "the texture floor" on a negative A/B taken
+  with the wrong seat on a misplaced element. **It was missing ink.**
+- **The hexagon corner radius is real and worth NOTHING** (`696492884`) — the rounded vertices are
+  genuinely in the ref, and fixing them alone changes nothing to four decimals, because **the SHAPE
+  is wrong beneath them.** Law 4, sixth confirmation, arrived at independently.
+
+### Three laws this round paid for
+1. **A positive A/B can be an ARTIFACT OF TWO ERRORS CANCELLING.** The locks box was "exact" only
+   because it was 1px narrow and 1px right in a way that cancelled the seat's 0.8%. Fixing the seat
+   *exposed* it (f1740 −0.0006). Both together: **+0.0015 wf, +0.035 box-crop.** This is r18's
+   "a negative A/B can be an artifact of a misplaced element" running in reverse. **Re-test refuted
+   fixes after you move the thing they sit on — and re-test CONFIRMED ones too.**
+2. **Correct sizing can MAGNIFY a fiction.** `mHexCity2` lands its tower on the ref's to the pixel
+   and still loses 0.017, because the trace contains a navy bucket and grass tufts the ref does not
+   draw. Fix the geometry and the false ink gets bigger. (Needs a re-trace; recorded in-code.)
+3. **DO NOT DIAGNOSE FROM ARTIFACTS. READ WHAT IS RUNNING.** The lead made three instrument errors
+   this round, all the same error: `pgrep -f "remotion still"` **matches its own watchdog shell** and
+   reported a phantom OOM (three builders were throttled on it); a neighbouring lane was convicted of
+   lock-bypassing on the strength of breaker code in **dead round dirs it was not executing** (its
+   live harnesses were correct — the bypass was OURS, direct `npx` calls with no harness in the parent
+   chain); and a LEAK-GUARD patch **severed the `npx` line continuation**, so `--frame` was never passed
+   and **every still came out as FRAME 0** — a navy plate — *while printing success and exiting 0.*
+   **A frame-0 still A/B'd against a frame-0 still is a PERFECT TIE, which reads as "no regression."**
+   The instrument does not fail loudly; **it flatters every change you make.**
+   All 103 r19-U stills were audited for flat plates afterwards: **zero contamination, all gates real.**
+
+### Infra now enforced (harnesses `work/clsnet/r19-{B,C,U}/still.sh`)
+- **NEVER a direct `npx remotion still`.** Every render through the harness; the compliance test is
+  that each live render's PARENT CHAIN contains `still.sh`.
+- **Never `rmdir` a lock you did not create.** Stale recovery only after **60 CONTINUOUS seconds** with
+  no remotion/chrome anywhere AND the lock >25 min old (Remotion has normal browser-restart gaps that
+  look idle for a few seconds — a single-point idle check is what broke it).
+- **LEAK-GUARD:** Remotion `still` sometimes **writes the PNG and then never exits** (browser gone, CPU
+  flat) — the agent hangs on a render that ALREADY SUCCEEDED. 300s watchdog wraps the whole command,
+  never inside it. Target `rm -f`'d first so a stale PNG cannot pose as a fresh render.
+- **"No PNG + exit 0" is not always OOM** — a sibling's syntax error breaks the esbuild bundle for
+  EVERY lane and looks identical.
+
+### Residuals — named, measured, NOT shipped
+1. **`s2UpBank` is missing ~130px of art** — three navy buildings the ref draws left of the strip2
+   bank; not in the trace. Worst cell at f2680 (0.39). Only visible during the fly-in, which is why
+   18 rounds missed it. Needs `art.ts`.
+2. **`mHexCity2` / `mHexHeli` carry a bucket and grass tufts the ref does not draw** (see law 2).
+   `mHexHeli` takes the fix and wins; `mHexCity2` cannot until re-traced. Transform recorded in-code.
+3. **The matching exit card TRANSLATES** (771,399 @f1646 → 820,525 @f1656) and the check disc shrinks
+   away. Not modelled; the card leaves as absent ink. Holding it cost .904→.887 — **lesson 4, seventh
+   confirmation.**
+4. **The locks exit clock runs ~2.5px ahead** of the ref. Pre-existing.
+5. **The locks box entry** (f1658–1670) is a MOTION (y510→y550), not the fade we draw.
+6. `MATCH.hexA/hexB` in `data.ts` read w214; the ref is **217**. `data.ts` GANTT/DETAIL/REPORT still
+   stale — truth lives in scenesC local constants (carried from r18).
+7. **The endcard's principle-card captions are ~22% too small** — they live in `TitleCard` (scenesA),
+   untouched this round.
+8. The serif face still carries ~1.45× the ref's ink mass at matched cap height. `cls-shared/fonts` —
+   a face swap, not a round.
+
+### Next-worst entering r20
+| rank | what | where |
+|---|---|---|
+| 1 | **`s2UpBank` missing art** (worst cell 0.39 @f2680) | `art.ts` re-trace |
+| 2 | **`mHexCity2` false ink** — correct sizing magnifies it | `art.ts` re-trace |
+| 3 | **endcard principle-card captions ~22% small** | `scenesA` / `TitleCard` |
+| 4 | matching exit card translate + check-disc shrink | `scenesB` |
+| 5 | locks box entry motion; locks exit clock 2.5px ahead | `scenesB` |
+
+**The lesson of r19: the fiction was not only in the scenes — it was in the PRIMITIVES, and in the
+INSTRUMENTS.** Two lanes, working different frames independently, ranked `Doc` and `Hexagon` first.
+And the lead's own three errors were all one error: **an inference that was never interrogated.**
+The method file says the judge lies until interrogated. It lies about your neighbours, and it lies
+in the harness you just patched.
