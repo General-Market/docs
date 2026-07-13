@@ -503,6 +503,21 @@ export const RowsBuild: React.FC<{ frame: number }> = ({ frame }) => {
 
 // ═══ Scene 3+4: hex row + CLSNet + flows (f320-462) ═══
 const HEX_ARTS = ["hexBank", "hexOffice", "hexTowers", "hexSail"];
+// r18: the flows hex row was drawn 6% SMALL and ~5px off — a structural error a
+// prior round mis-filed as the "hex line-art texture floor". Measured navy-outline
+// bboxes (ref v_330..v_450 — PIXEL-IDENTICAL at every frame, so one static fit):
+//   ref  h0 x[215,530] y[197,477]   h1 x[610,925] y[202,482]
+//        h2 x[999,1315] y[202,483]  h3 x[1380,1696] y[202,482]   (w 316-317, h 281-282)
+//   ours (HEXROW hexW 320 → HexIcon scale 320/340 = 0.941) rendered w 298, h 264.
+// Back out the trace's native size: 298/0.941 = 316.6, 264/0.941 = 280.5 — i.e. the
+// potrace IS the ref's own art at scale 1.0. So hexW must be 340, not 320. With
+// scale 1.0 the per-art native ink offsets (backed out of the OLD render, per hex)
+// put the ref bboxes at cx 370/760/1150/1540 (pitch 390 held) and cy 334.
+// Re-deriving every rendered edge from these lands within 1px of the ref at all
+// four hexes. NOT a re-draw (lesson: re-drawing traced art LOSES) — the same trace,
+// at its true size and place. data.ts HEXROW is left alone (scenesA is its only
+// consumer; kept as the historical value).
+const HEXFIT = { centers: [370, 760, 1150, 1540], cy: 334, hexW: 340 } as const;
 // r5: flows pill fields CC-scanned (x,y,w,h,color) — field1 at f395, field2 at
 // f430. Colors: steel #8A9DB2 / mid #4B6686 / navy / orange #CC441E accents /
 // tan #F0C8AF. Ruler band center y830 is the collapse origin.
@@ -600,9 +615,9 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
           <HexIcon
             key={a}
             art={a}
-            cx={HEXROW.centers[i]}
-            cy={HEXROW.cy}
-            w={HEXROW.hexW}
+            cx={HEXFIT.centers[i]}
+            cy={HEXFIT.cy}
+            w={HEXFIT.hexW}
             opacity={inOp}
           />
         ))}
