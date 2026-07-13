@@ -540,23 +540,83 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   // strip2's band expansion IS the navy fill (complete 2827); this short
   // navy-over-navy ramp just hands the background off invisibly
   const bgOp = lerp(f, [2825, 2827], [0, 1]);
-  // ref: navy holds empty until the outline draws ~2875-2900 (white-frac scan)
-  const cardP = lerp(f, [2874, 2898], [0, 1]);
-  const rowsP = lerp(f, [2898, 2922], [0, 1]) * lerp(f, [2972, 2982], [1, 0]);
-  // segments merge (netting)
-  const mergeP = lerp(f, [2925, 2955], [0, 1]);
-  const card = { x: 530, y: 190, w: 840, h: 700 };
-  // r15: the ref rows sit at a WIDER pitch than the bunched 90/80 comp had —
-  // measured tops 371/521/667 (pitch ~148), height 44 (vf 2930/2950/2965). The
-  // old bunched rows left row 2 (tan) 107px above the ref's tan band with ZERO
-  // overlap; re-anchoring to the measured pitch is a pure in-card position gain
-  // (lesson 4: misplaced ink loses to correct-but-incomplete ink). Card dims and
-  // the collapse keyframes are untouched — the rows all stay inside 190..890.
-  const rows = [
-    { y: 371, color: C.lavender, segs: [90, 55, 120, 80, 60, 95] },
-    { y: 521, color: C.orangeDeep, segs: [130, 70, 60, 100, 90, 70] },
-    { y: 667, color: C.tan, segs: [75, 110, 140, 60, 85, 55] },
+  // ── r17 STRUCTURAL REWRITE ─────────────────────────────────────────────────
+  // The whole card was re-measured off the ref (pixel scans of vf 2822..2990).
+  // FOUR structural errors, each of which cost more than any re-draw could win:
+  //
+  //  1. CARD EXTENT. Ref outline is x[364,1555] y[139,940] = 1192×802 with a 4px
+  //     stroke and DIAGONAL corners (TL + BR rounded r64; TR + BL square — the
+  //     same leaf motif the pills use). We drew 840×700 at (530,190), 2.5px, four
+  //     40px corners. Everything inside the card inherited the error.
+  //
+  //  2. EIGHT SEGMENTS PER ROW, not six — at 3-4px gaps, not 10 — spanning
+  //     x[496,1475], not the bunched x[600,1175] we drew. Each pill carries a 3px
+  //     WHITE STROKE (the old bare Pill had none), so the outer box insets by 3.
+  //     Exact per-segment (x,w) tables below; they are pixel-identical across every
+  //     settled frame, so they are transcribed, not modelled.
+  //
+  //  3. THE MERGE IS FICTION. The ref rows draw in by f2926 and then hold FROZEN
+  //     TO THE PIXEL through f2978 — the segments never net down into 3 blocks.
+  //     The old mergeP swapped in 3 fat blocks at f2940 and held them to f2976,
+  //     i.e. it corrupted f2940-2976 — precisely the r13 worst window. Deleted.
+  //
+  //  4. THE CLOCK RAN LATE. Measured: outline + rules draw f2856-2874 (we started
+  //     at 2874 and only finished at 2898, so we showed empty navy for 24 frames
+  //     in which the ref already had a complete card); rows draw f2906-2926 (ours
+  //     settled at 2942); rules RETRACT rightward f2970-2983; and the rows HARD-CUT
+  //     — no fade — tan f2979, org f2980, lav f2981 (we cross-faded 2972-2982).
+  //
+  // The collapse is untouched: the f>=2982 pill trajectory is hardcoded and
+  // card-independent, so only the 6-frame f2976-2982 handoff moves, and it moves
+  // the RIGHT way — the ref card compresses vertically IN PLACE (top y139, left
+  // x364), which the new card.{x,w} now feed straight into the wide pill instead
+  // of the old 530→365 sideways jump (lesson 3: express through consistent transforms).
+  const card = { x: 364, y: 139, w: 1192, h: 802 };
+  const R = 64; // diagonal corner radius (TL + BR); TR + BL are square
+  const STROKE = 4;
+  // Outline + rules are drawn by ONE pen, and the per-frame edge scan (2854..2876)
+  // pins both its ROUTE and its speed. Route: counter-clockwise from the bottom-
+  // right — bottom edge, then left, then top, then right (B fills 2856-2863, L
+  // 2863-2864, T 2864-2865, R 2865-2869). Speed: a hard S — 6% at 2860, 18% at
+  // 2862, 66% at 2864, 96% at 2868. A straight lerp put the pen on the TOP edge at
+  // 2860 while the ref was still on the BOTTOM, and that misplaced ink cost more
+  // than drawing nothing (lesson 4) — it was the one frame this round regressed.
+  // The rules ride the same clock (measured 0.666 at 2864 vs the card's 0.663).
+  const cardP = interpolate(
+    f,
+    [2855, 2858, 2860, 2862, 2863, 2864, 2865, 2866, 2867, 2868, 2869, 2872],
+    [0, 0.018, 0.063, 0.18, 0.33, 0.663, 0.813, 0.887, 0.93, 0.958, 0.97, 1],
+    clamp,
+  );
+  // path length: two straight pairs + two quarter arcs — derived, so it cannot drift
+  const dash = 2 * (card.w - R) + 2 * (card.h - R) + Math.PI * R;
+  // segment FILL rects (x,w), transcribed from the settled ref; the 3px white
+  // stroke sits outside them, so the outer box is (x-3, w+6). Fill height 44.
+  const SEG_FILL_H = 44;
+  const SEG_STROKE = 3;
+  const rows: { fy: number; cut: number; color: string; segs: [number, number][] }[] = [
+    {
+      fy: 372,
+      cut: 2981,
+      color: C.lavender,
+      segs: [[496, 168], [667, 83], [753, 83], [839, 182], [1025, 167], [1196, 83], [1282, 83], [1368, 83]],
+    },
+    {
+      fy: 520,
+      cut: 2980,
+      color: C.orangeDeep,
+      segs: [[496, 94], [594, 76], [674, 174], [854, 164], [1032, 82], [1124, 82], [1210, 179], [1394, 82]],
+    },
+    {
+      fy: 667,
+      cut: 2979,
+      color: C.tan,
+      segs: [[496, 168], [667, 83], [754, 82], [840, 180], [1024, 95], [1122, 76], [1202, 175], [1380, 83]],
+    },
   ];
+  // rules ride the card's pen in, hold full, then RETRACT rightward (measured)
+  const ruleTopP = cardP * lerp(f, [2970, 2982], [1, 0]);
+  const ruleBotP = cardP * lerp(f, [2970, 2979], [1, 0]);
   // navy ground edge drops, revealing white above (measured keys)
   const edgeY = interpolate(f, [2997, 3009, 3015], [0, 390, 543], clamp);
   // card outline → wide pill → small pill → slides left (keyframed rects)
@@ -589,12 +649,14 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
       {collapseP <= 0 ? (
         <svg width={1920} height={1080} style={{ position: "absolute" }}>
           <path
-            d={`M${card.x + 40},${card.y} H${card.x + card.w - 40} Q${card.x + card.w},${card.y} ${card.x + card.w},${card.y + 40} V${card.y + card.h - 40} Q${card.x + card.w},${card.y + card.h} ${card.x + card.w - 40},${card.y + card.h} H${card.x + 40} Q${card.x},${card.y + card.h} ${card.x},${card.y + card.h - 40} V${card.y + 40} Q${card.x},${card.y} ${card.x + 40},${card.y}`}
+            /* counter-clockwise from the bottom-right, so the dash reveals the
+               edges in the ref's order: bottom → left → top → right */
+            d={`M${card.x + card.w - R},${card.y + card.h - STROKE / 2} H${card.x + STROKE / 2} V${card.y + R} Q${card.x + STROKE / 2},${card.y + STROKE / 2} ${card.x + R},${card.y + STROKE / 2} H${card.x + card.w - STROKE / 2} V${card.y + card.h - R} Q${card.x + card.w - STROKE / 2},${card.y + card.h - STROKE / 2} ${card.x + card.w - R},${card.y + card.h - STROKE / 2}`}
             fill="none"
             stroke={C.white}
-            strokeWidth={2.5}
-            strokeDasharray={3100}
-            strokeDashoffset={3100 * (1 - cardP)}
+            strokeWidth={STROKE}
+            strokeDasharray={dash}
+            strokeDashoffset={dash * (1 - cardP)}
           />
         </svg>
       ) : (
@@ -645,39 +707,47 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
           }}
         />
       )}
-      {/* card contents (rows + rules), gone by the collapse */}
-      {rowsP > 0 && (
+      {/* rules — measured x/y/w, 6px thick; they draw with the card and retract right */}
+      {ruleTopP > 0 && (
+        <div style={{ position: "absolute", left: 469, top: 214, width: 1037 * ruleTopP, height: 6, backgroundColor: C.white }} />
+      )}
+      {ruleBotP > 0 && (
         <>
-          <div style={{ position: "absolute", left: card.x + 70, top: card.y + 75, width: (card.w - 140) * rowsP, height: 2.5, backgroundColor: C.white, opacity: rowsP }} />
-          {rows.map((r, ri) => {
-            const total = r.segs.reduce((a, b) => a + b, 0) + (r.segs.length - 1) * 10;
-            const merged = [total * 0.45, total * 0.3, total * 0.19];
-            const segs = mergeP < 0.5 ? r.segs : merged;
-            const gap = mergeP < 0.5 ? 10 : 14;
-            let xa = card.x + 70;
-            return (
-              <React.Fragment key={ri}>
-                {segs.map((wseg, i) => {
-                  const el = (
-                    <Pill
-                      key={`${ri}-${i}-${segs.length}`}
-                      x={xa}
-                      y={r.y}
-                      w={wseg}
-                      h={44}
-                      color={r.color}
-                      opacity={rowsP * lerp(f, [2898 + ri * 8 + i * 4, 2906 + ri * 8 + i * 4], [0, 1])}
-                    />
-                  );
-                  xa += wseg + gap;
-                  return el;
-                })}
-              </React.Fragment>
-            );
-          })}
-          <div style={{ position: "absolute", left: card.x + 70, top: card.y + 620, width: 130 * rowsP, height: 2.5, backgroundColor: C.white, opacity: rowsP }} />
-          <div style={{ position: "absolute", left: card.x + 280, top: card.y + 620, width: 60 * rowsP, height: 2.5, backgroundColor: C.white, opacity: rowsP }} />
+          <div style={{ position: "absolute", left: 469, top: 869, width: 311 * ruleBotP, height: 6, backgroundColor: C.white }} />
+          <div style={{ position: "absolute", left: 889, top: 869, width: 89 * ruleBotP, height: 6, backgroundColor: C.white }} />
         </>
+      )}
+      {/* netting rows — 8 stroked pills each, at their transcribed positions. They
+          draw in f2906-2926, hold FROZEN, then hard-cut per row (no fade). */}
+      {rows.map((r, ri) =>
+        f >= r.cut ? null : (
+          <React.Fragment key={ri}>
+            {r.segs.map(([fx, fw], i) => {
+              // scattered-but-settled stagger: every segment is up by f2926, as in the ref
+              const t0 = 2906 + ri * 1.5 + i * 1.4;
+              const op = lerp(f, [t0, t0 + 8], [0, 1]);
+              if (op <= 0) return null;
+              return (
+                <div
+                  key={`${ri}-${i}`}
+                  style={{
+                    position: "absolute",
+                    left: fx - SEG_STROKE,
+                    top: r.fy - SEG_STROKE,
+                    width: fw + SEG_STROKE * 2,
+                    height: SEG_FILL_H + SEG_STROKE * 2,
+                    boxSizing: "border-box",
+                    backgroundColor: r.color,
+                    border: `${SEG_STROKE}px solid ${C.white}`,
+                    // leaf, matching the card: TL + BR rounded, TR + BL square
+                    borderRadius: `${SEG_FILL_H / 2}px 0px ${SEG_FILL_H / 2}px 0px`,
+                    opacity: op,
+                  }}
+                />
+              );
+            })}
+          </React.Fragment>
+        ),
       )}
     </AbsoluteFill>
   );
