@@ -246,8 +246,20 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
   const exitDy = lut(frame, S10_EXIT);
   const hexP = interpolate(frame, [1845, 1868], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [1872, 1890], [0, 1], clamp);
-  const bankP = interpolate(frame, [1900, 1916], [0, 1], clamp);
-  const connP = interpolate(frame, [1890, 1912], [0, 1], clamp);
+  // gen19: the bank hex SNAPS IN at f1951-1957 (ref dark-ink in its box, probed per
+  // frame: f1930 84 · f1950 0 · f1955 2556 · f1958 2857 · steady 2861). We faded it in
+  // over f1900-1916 — fifty frames early, drawing a hex on white the ref leaves blank.
+  const bankP = interpolate(frame, [1951, 1957], [0, 1], clamp);
+  // gen19 — the connector lane was MIS-SCHEDULED and mis-placed, and it owns the two
+  // worst grid cells in S10 (round lead: 240x180+480+720 at .077, +1200+720 at .041).
+  // Ref navy px in the left connector, split by segment (probe f1892..f2040):
+  //   vert 160 / elbow 165 from f1892 — FULL DARK, complete, in two frames.
+  //   lane  3 -> 208 @f1894 -> settled. chevron 240 -> 454 @f1898 -> 860 @f1910.
+  // So the line SNAPS ON dark by f1894 and the chevron arrives after. We ran a 22-frame
+  // OPACITY fade instead: at f1900 our line is 45% grey where the ref's is solid navy —
+  // which is why the lead measured ~1000 ref dark-px against zero of ours.
+  const connP = interpolate(frame, [1890, 1895], [0, 1], clamp);
+  const chevP = interpolate(frame, [1896, 1910], [0, 1], clamp);
   // gen12: hexes re-registered to the exact ref (A cx479 cy451, B cx1434 cy449;
   // outline flat-to-flat 274 → HH282, vertex-to-vertex 362 → HW378). Old geom
   // (571/1438, hy404, 380×390) sat A 92px right, both 47px high, 108px too tall.
@@ -275,14 +287,39 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${exitDy}px)` }}>
         <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" variant={0} opacity={hexP} />
         <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" variant={1} opacity={hexP} />
-        {bankP > 0 && <BankHex x={1370} y={648} size={100} opacity={bankP} />}
+        {/* gen19: the bank hex was 60px left, 38px high and 40% too small. Measured off
+            ref f2040: flat top y624..627 (x1388..1472), flat bottom y744..747, widest at
+            y690 spanning x1348..1512 — so 164 wide x 123 tall, centred (1430, 686). We
+            drew 100x92 at (1370, 648). BankHex renders 0.92*size wide by 0.86*size tall
+            (h/w = 0.935); the ref's hex is FLATTER (h/w = 0.75), so size 178 gives the
+            true 164 width and a scaleY of 0.80 about the centre gives the true height. */}
+        {bankP > 0 && (
+          <div style={{ position: "absolute", inset: 0, transform: "scaleY(0.8)", transformOrigin: "1430px 686px" }}>
+            <BankHex x={1430} y={686} size={178} opacity={bankP} />
+          </div>
+        )}
+        {/* Geometry, all measured off ref f2040 (navy runs, 1px):
+              · lane runs at y815 (x=650 and x=1300 both read 815..816); we had 812.
+              · left leg is at x484 (we had ax+10 = 489), 3px not 3.5.
+              · the elbows are r=55, not 30 — the arc reproduces the ref to 1px at every
+                probed y (y770 x485, y780 x487.5, y790 x491.5, y800 x500, y810 x513).
+              · the right leg drops from the BANK at x1429.5, not 1370.
+              · each lane ENDS IN A BIG SWEPT CHEVRON at the pill's edge, apex on the
+                edge itself (left 743, right 1176), arms 33 out and 24 up/down, stroke 9.
+                Our solid triangles sat at x796 / x1124 — INSIDE the pill (742..1175), so
+                they rendered invisible. Zero ink where the ref draws ~530px, twice.
+              · the hex-B stub runs 592 -> 626 (down to the bank hex top), not 592 -> 598. */}
         {connP > 0 && (
-          <svg width={1920} height={1080} style={{ position: "absolute", opacity: connP }}>
-            <path d={`M ${ax + 10} ${hexBot} L ${ax + 10} 782 Q ${ax + 10} 812 ${ax + 40} 812 L 796 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-            <path d="M 796 812 l -22 -12 v 24 z" fill={C.navyDeep} transform="translate(22 0)" />
-            <path d={`M 1370 698 L 1370 782 Q 1370 812 1340 812 L 1124 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-            <path d={`M 1124 812 l 22 -12 v 24 z`} fill={C.navyDeep} transform="translate(-22 0)" />
-            <path d={`M ${bx - 10} ${hexBot} L ${bx - 10} 598`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+          <svg width={1920} height={1080} style={{ position: "absolute" }}>
+            <g opacity={connP}>
+              <path d="M 484 592 L 484 760 Q 484 815 539 815 L 743 815" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+              <path d="M 1429.5 747 L 1429.5 760 Q 1429.5 815 1374.5 815 L 1176 815" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+              <path d="M 1429.5 592 L 1429.5 626" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+            </g>
+            <g opacity={chevP} fill="none" stroke={C.navyDeep} strokeWidth={9}>
+              <path d="M 709 791 L 743 816 L 709 840" />
+              <path d="M 1208 792 L 1176 816 L 1208 839" />
+            </g>
           </svg>
         )}
         {/* gen18 — the CLS pill was under a THIRD of its true area. Measured off the
@@ -699,6 +736,14 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// NEGATIVE A/B — gen19, do not re-run without doing the registration first.
+// We draw only 62-71% of the ref's ink in these two capsules (measured f2450/2600/2690:
+// ref 34.5k/36.9k px vs ours 22.2k/26.1k). Every line in the ref is 6.5-7px wide; ours are
+// 3-4. Widening ALL city strokes to the measured width lost at all 8 gated frames (-.0031 to
+// -.0035): our line CENTRES sit 1-4px off the ref's (a whole-city translate recovers only
+// 5-15% of the SSD, and the red tower's internal rules disagree in BOTH directions), so a
+// wider stroke just doubles the error band. Misplaced ink loses to absent ink. The ink is
+// there to be collected, but only AFTER each element's centre is re-registered per-edge.
 // left PvP city capsule (traced from ref f2550 crop, absolute coords)
 const PvpLeftCity: React.FC = () => (
   <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute" }}>
