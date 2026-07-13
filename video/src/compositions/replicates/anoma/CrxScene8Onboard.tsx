@@ -144,6 +144,12 @@ const ObFace: React.FC<{
                 ) : (
                   <span
                     style={{
+                      // Optical centering: a numeral carries no descender, so the
+                      // line box's descent space (lineHeight:1) leaves the ink
+                      // sitting ~1px high in the disc. A 1px downward nudge lands
+                      // the glyph dead-center (measured 7px above / 9px below → 8/8).
+                      position: "relative",
+                      top: 1,
                       fontSize: 11.5,
                       fontWeight: 700,
                       lineHeight: 1,
@@ -288,9 +294,10 @@ const ObFace: React.FC<{
 
 export const CrxScene8Onboard: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 743 || frame >= 940) return null;
-  // Verified resolves ~f872, holds, then fades f894-940 so the card is gone by
-  // f940 — a breath of wave before the S9 dealers card cuts in at f962.
-  const cardOpacity = interpolate(frame, [894, 940], [1, 0], clamp);
+  // Verified resolves ~f872 and HOLDS, then fades f920-940 so the card is gone by
+  // f940 — on the SAME window as the S8 headline, so both vanish together, with a
+  // breath of wave before the S9 dealers card cuts in at f962.
+  const cardOpacity = interpolate(frame, [920, 940], [1, 0], clamp);
   if (cardOpacity <= 0) return null;
   // Success dot: pops small at f857 over the completed checklist, holds, then
   // FLOODS the card on the f864 melodic hit (the big visual pop); the Verified
