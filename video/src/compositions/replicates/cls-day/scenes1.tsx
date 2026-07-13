@@ -15,7 +15,6 @@ import {
   Milestone,
   Chip,
   ClsPill,
-  ClsWordmark,
   HexCity,
   Donut,
   Padlock,
@@ -580,55 +579,9 @@ const Continents: React.FC<{ cx: number; cy: number; r: number }> = ({ cx, cy, r
   </g>
 );
 
-// ─── S4: trade executed diagram (f440..674) ───
-//
-// gen18 — the whole diagram re-registered PER FRAME off the ref's two badge
-// discs (work/cls-day/gen18-s1/probe_s4.py). The old model was structurally
-// wrong for 100 frames: it held BOTH hexes on one baseline (y527) and merely
-// spread them in x while scaling each about its own centre. The ref does
-// something else entirely, and it is the largest single error in the video:
-//
-//   f446–480  the hexes sit OVERLAPPED and DIAGONAL at 1.53x — A up-left at
-//             (723, 527), B down-right at (1191, 738). B was drawn 212px TOO
-//             HIGH for the whole draw-in: a 584×431 element (12% of frame)
-//             almost disjoint from its ref.
-//   f482–504  they punch apart AND DOWN to a wide low pose, s 1.53 → 1.25.
-//   f504–536  frozen wide: A(349,569) B(1572,569), s=1.25. The old model had
-//             them already at the settled x and s=1.10 — 120px off in x.
-//   f538–556  they pull back in and UP to the settled registration.
-//   f556+     settled A(471,527) B(1450,527) s=1 — unchanged, byte-identical.
-//
-// hex centre = badge centroid + s·offset; s = badge diameter / 91 (the settled
-// diameter). Every other part of the diagram (arrow, label, connectors) is
-// rigidly attached to those two centres and rides the same s — verified: the
-// arrow tips land at Ax + 186.5·s / Bx − 187·s to ±2px across the window.
-const S4_S = lutS([[446, 1.5275], [480, 1.5275], [482, 1.5165], [484, 1.5165], [486, 1.5055], [488, 1.4945], [490, 1.4725], [491, 1.4505], [492, 1.4176], [493, 1.3681], [494, 1.3297], [495, 1.3077], [496, 1.2912], [497, 1.2802], [498, 1.2747], [500, 1.2637], [502, 1.2637], [504, 1.2527], [538, 1.2527], [540, 1.2418], [542, 1.2418], [544, 1.2198], [546, 1.1868], [548, 1.1099], [550, 1.0549], [552, 1.033], [554, 1.011], [556, 1]]);
-const S4_AX = lutS([[446, 722.8], [480, 722.8], [482, 720.1], [484, 715.1], [486, 704.4], [488, 685.6], [490, 650.2], [491, 618.7], [492, 561.6], [493, 469], [494, 418.8], [495, 395.3], [496, 380.5], [497, 370.7], [498, 364.1], [500, 355.4], [502, 351.4], [504, 348.7], [538, 349.7], [540, 352], [542, 358], [544, 366.5], [546, 384.3], [548, 420.3], [550, 446.6], [552, 459.2], [554, 464.7], [556, 468], [560, 471]]);
-const S4_AY = lutS([[446, 526.5], [480, 526.5], [482, 525.5], [484, 526.5], [486, 527.5], [488, 530], [490, 534.5], [491, 538.5], [492, 545.9], [493, 559.1], [494, 564.3], [495, 566.3], [496, 567.5], [497, 567.5], [498, 568.3], [500, 568.3], [502, 569.8], [504, 568.8], [538, 568.3], [540, 566.7], [542, 566.2], [544, 563.2], [546, 557.2], [548, 545.1], [550, 536.1], [552, 532], [554, 528.5], [556, 527]]);
-const S4_BX = lutS([[446, 1190.7], [480, 1190.7], [482, 1193.4], [484, 1198.4], [486, 1209.1], [488, 1228.9], [490, 1264.3], [491, 1296.8], [492, 1355], [493, 1449.1], [494, 1499.9], [495, 1524.4], [496, 1539.7], [497, 1549.5], [498, 1556.6], [500, 1565.3], [502, 1569.3], [504, 1572.1], [538, 1571.1], [540, 1568.8], [542, 1562.8], [544, 1554.3], [546, 1536.5], [548, 1500.6], [550, 1474.3], [552, 1461.8], [554, 1456.3], [556, 1453], [560, 1450]]);
-const S4_BY = lutS([[446, 738.4], [480, 738.4], [482, 736.5], [484, 735], [486, 729.5], [488, 721], [490, 705.1], [491, 690.6], [492, 667.2], [493, 633], [494, 610.3], [495, 597.4], [496, 588.7], [497, 582.7], [498, 579.5], [500, 573.5], [502, 571.5], [504, 569], [538, 568.5], [540, 567], [542, 566.5], [544, 563.6], [546, 557.6], [548, 544.8], [550, 535.9], [552, 531.9], [554, 529], [556, 527]]);
-
-// Connector draw-on (fraction of the path: 70 down · r52 arc · 214.5 across).
-// The ref DRAWS the line from f538 — the old opacity fade f544-560 was invented.
-const S4_CONN = lutS([[538, 0], [540, 0.02], [542, 0.05], [543, 0.08], [544, 0.123], [545, 0.178], [546, 0.226], [547, 0.32], [548, 0.45], [549, 0.69], [550, 0.78], [552, 0.87], [553, 0.918], [554, 0.949], [556, 0.986], [558, 0.997], [560, 1]]);
-// CLS pill: the ref SCALES it up about (946,835) from f549 to f560 (measured
-// box 239×108 @f550 → 437×197 @f560) — not the L→R box wipe we had. The
-// wordmark still wipes O→C→L→S inside it, to ~f570.
-const S4_PILL = lutS([[549, 0], [550, 0.53], [551, 0.66], [552, 0.76], [553, 0.83], [554, 0.89], [555, 0.925], [556, 0.955], [557, 0.975], [558, 0.99], [560, 1]]);
-const S4_LOGO = lutS([[549, 0], [550, 0.18], [554, 0.4], [558, 0.55], [564, 0.78], [570, 1]]);
-
-// The two settlement docs. There is NO coin: the ref slides a $ doc out from
-// under hex A and a € doc out from under hex B (identical art to S5's
-// SettleDoc, 1.084x), rides each DOWN its connector and ALONG the arm into the
-// CLS pill, where it is occluded — gone by f632. We drew a static red coin
-// under A that faded in at f606 and then NEVER LEFT: fiction that persisted
-// for 56 frames. Tracks are the red ring's centroid, per frame.
-const S4_DOC_SCALE = 1.084;
-const S4_DOCL_X = lutS([[600, 475], [611, 474.5], [612, 478], [613, 492], [614, 516.5], [615, 544], [616, 571], [617, 598], [618, 622], [619, 644], [620, 664], [621, 682], [622, 697], [623, 710.5], [624, 721], [626, 741], [628, 760], [631, 788]]);
-const S4_DOCL_Y = lutS([[600, 625], [601, 630], [602, 637], [603, 644], [604, 652], [605, 662], [606, 672], [607, 684], [608, 699.5], [609, 715], [610, 732.5], [611, 752.5], [612, 774], [613, 792.5], [614, 797.5], [616, 798]]);
-const S4_DOCR_X = lutS([[600, 1443], [611, 1443.5], [612, 1444.5], [613, 1432.5], [614, 1407.5], [615, 1379.5], [616, 1351], [617, 1324.5], [618, 1299], [619, 1276.5], [620, 1256], [621, 1238], [622, 1222], [623, 1208], [624, 1198], [626, 1178], [628, 1159], [631, 1131]]);
-const S4_DOCR_Y = lutS([[600, 617.5], [601, 623], [602, 629], [603, 637], [604, 645], [605, 655], [606, 666], [607, 678], [608, 693.5], [609, 709.5], [610, 727.5], [611, 747.5], [612, 770.5], [613, 791.5], [614, 798.5], [616, 797.5], [618, 796.5]]);
-
+// ─── S4: trade executed diagram (f460..674) ───
+// Band top (standard), marker slides toward 00:00 at center. Hexes A/B
+// y380 centers x480/1408; pill center (968,720) 300×110; blue arrow y372.
 export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<{ h: number }> }> = ({
   frame,
   pack,
@@ -648,32 +601,30 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   // an opacity fade). Coin timing unchanged. See work/cls-day/s4/*_strip.png.
   const hexInB = interpolate(frame, [446, 466], [0, 1], { ...clamp, easing: EASE });
   const hexInA = interpolate(frame, [452, 472], [0, 1], { ...clamp, easing: EASE });
+  const hexSpread = interpolate(frame, [483, 506], [0, 1], clamp); // measured ~linear
   const badgePB = interpolate(frame, [456, 462], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const badgePA = interpolate(frame, [460, 466], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const arrowP = interpolate(frame, [506, 514], [0, 1], { ...clamp, easing: EASE });
-  const pillP = S4_PILL(frame);
-  const logoP = S4_LOGO(frame);
-  const connP = S4_CONN(frame);
-  // gen12: settled hexes registered to ref f640 (A cx471 cy527, B cx1450;
-  // outline flat-to-flat 273 → HH282, vertex 370 → HW382).
+  // pill L→R assembly in two measured rates: box fast (f550-560, ease-out),
+  // logo O→C→L→S slower (f551-572, linear).
+  const pillBoxP = interpolate(frame, [550, 560], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
+  const pillP = interpolate(frame, [551, 572], [0, 1], clamp);
+  const connP = interpolate(frame, [544, 560], [0, 1], { ...clamp, easing: EASE });
+  const coinP = interpolate(frame, [606, 618], [0, 1], clamp);
+  // gen12: settled hexes re-registered to ref f640 (A cx471 cy527, B cx1450;
+  // outline flat-to-flat 273 → HH282, vertex 370 → HW382). Old geom sat the
+  // hexes 52px high and 133px too tall.
+  const ax = interpolate(hexSpread, [0, 1], [720, 471]);
+  const bx = interpolate(hexSpread, [0, 1], [1200, 1450]);
+  const hy = 527;
   const HW = 382;
   const HH = 282;
-  const s = S4_S(frame);
-  const ax = S4_AX(frame);
-  const ay = S4_AY(frame);
-  const bx = S4_BX(frame);
-  const by = S4_BY(frame);
-  // the diagram's rigid furniture, all riding s off the two hex centres
-  const arrowY = (ay + by) / 2;
-  const tipL = ax + 186.5 * s;
-  const tipR = bx - 187 * s;
-  const midX = (ax + bx) / 2;
-  const armY = ay + 263 * s;
-  const armYR = by + 263 * s;
-  const dropL = ax + 3.5 * s;
-  const dropR = bx - 6.5 * s;
-  const rad = 52 * s;
-  const headP = interpolate(connP, [0.95, 1], [0, 1], clamp);
+  // ANIM-FIDELITY: the ref diagram ZOOMS OUT — each hex-group enters ~1.5x and
+  // shrinks to settled 1.0x by ~f560, decelerating (measured A-hex ink width /
+  // settled: f486 1.49 · f520 1.10 · f560 1.00). Scale each group about its own
+  // centre so the spread x-track is preserved; identity (no wrapper) once
+  // settled so f560-674 stay byte-identical to the banked registration.
+  const hexScale = lutS([[446, 1.5], [486, 1.49], [504, 1.29], [520, 1.1], [540, 1.03], [560, 1.0]])(frame);
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       {frame < 656 ? (
@@ -686,89 +637,35 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
       )}
       {/* diagram content dies behind the incoming S5 front (f667..673) */}
       <div style={{ position: "absolute", inset: 0, clipPath: frame >= 666 ? `inset(0 ${Math.max(0, 1920 - lutS(S4X_FRONT)(frame))}px 0 0)` : undefined }}>
-      {/* CONNECTORS — under the hexes (the ref's droppers leave the hex bottom
-          edge), drawn progressively from f538. Measured: 2px ink, corner
-          radius 52 (we had ~27), arm at hexcy+263·s (we had a flat y=812),
-          and an OPEN CHEVRON head at the pill edge (we had a filled triangle). */}
-      {connP > 0 && (
-        <svg width={1920} height={1080} style={{ position: "absolute" }}>
-          <path
-            pathLength={1}
-            strokeDasharray={1}
-            strokeDashoffset={1 - connP}
-            d={`M ${dropL} ${ay + 141 * s} V ${armY - rad} A ${rad} ${rad} 0 0 0 ${dropL + rad} ${armY} H ${ax + 270 * s}`}
-            fill="none"
-            stroke={C.navyDeep}
-            strokeWidth={2.5 * s}
-          />
-          <path
-            pathLength={1}
-            strokeDasharray={1}
-            strokeDashoffset={1 - connP}
-            d={`M ${dropR} ${by + 141 * s} V ${armYR - rad} A ${rad} ${rad} 0 0 1 ${dropR - rad} ${armYR} H ${bx - 273 * s}`}
-            fill="none"
-            stroke={C.navyDeep}
-            strokeWidth={2.5 * s}
-          />
-          {headP > 0 && (
-            <g opacity={headP} fill="none" stroke={C.navyDeep} strokeWidth={8 * s}>
-              <path d={`M ${ax + 270 * s - 26 * s} ${armY - 15 * s} L ${ax + 270 * s} ${armY} L ${ax + 270 * s - 26 * s} ${armY + 15 * s}`} />
-              <path d={`M ${bx - 273 * s + 26 * s} ${armYR - 15 * s} L ${bx - 273 * s} ${armYR} L ${bx - 273 * s + 26 * s} ${armYR + 15 * s}`} />
-            </g>
-          )}
-        </svg>
-      )}
-      {/* the two settlement docs riding the connectors into the pill (f600-631):
-          out from under the hexes (occluded by them), down, along, gone behind
-          the pill. 1.084x SettleDoc — the same art S5 drops from its towers. */}
-      {frame >= 599 && frame < 632 && (
-        <>
-          {(() => {
-            const lx = S4_DOCL_X(frame);
-            const ly = S4_DOCL_Y(frame);
-            const rx = S4_DOCR_X(frame);
-            const ry = S4_DOCR_Y(frame);
-            return (
-              <>
-                <div style={{ position: "absolute", inset: 0, transform: `scale(${S4_DOC_SCALE})`, transformOrigin: `${lx}px ${ly}px` }}>
-                  <SettleDoc cx={lx} cy={ly} glyph="$" />
-                </div>
-                <div style={{ position: "absolute", inset: 0, transform: `scale(${S4_DOC_SCALE})`, transformOrigin: `${rx}px ${ry}px` }}>
-                  <SettleDoc cx={rx} cy={ry} glyph="€" />
-                </div>
-              </>
-            );
-          })()}
-        </>
-      )}
       {(() => {
-        const hexA = <HexCity x={ax} y={ay} w={HW} h={HH} letter="A" badgeP={badgePA} variant={0} opacity={hexInA} />;
-        const hexB = <HexCity x={bx} y={by} w={HW} h={HH} letter="B" badge="tr" badgeP={badgePB} variant={1} opacity={hexInB} />;
-        if (s === 1) return <>{hexA}{hexB}</>;
+        const hexA = <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" badgeP={badgePA} variant={0} opacity={hexInA} />;
+        const hexB = <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" badgeP={badgePB} variant={1} opacity={hexInB} />;
+        if (hexScale === 1) return <>{hexA}{hexB}</>;
         return (
           <>
-            <div style={{ position: "absolute", inset: 0, transform: `scale(${s})`, transformOrigin: `${ax}px ${ay}px` }}>{hexA}</div>
-            <div style={{ position: "absolute", inset: 0, transform: `scale(${s})`, transformOrigin: `${bx}px ${by}px` }}>{hexB}</div>
+            <div style={{ position: "absolute", inset: 0, transform: `scale(${hexScale})`, transformOrigin: `${ax}px ${hy}px` }}>{hexA}</div>
+            <div style={{ position: "absolute", inset: 0, transform: `scale(${hexScale})`, transformOrigin: `${bx}px ${hy}px` }}>{hexB}</div>
           </>
         );
       })()}
-      {/* trade-executed arrow — tips ON the hex vertices (ax+186.5·s / bx−187·s),
-          line at the hex baseline, chevron heads. Still draws centre-outward
-          (f507 centre mark → f513 full); the label rides the same s. */}
+      {/* trade executed arrow y531 */}
       {arrowP > 0 && (
         <>
+          {/* ref draws the arrow CENTRE-OUTWARD: both ends grow from x960 to
+              the hex edges (f507 tiny centre mark → f513 full). Line stays
+              solid (geometry reveals); only the label fades. */}
           <svg width={1920} height={1080} style={{ position: "absolute" }}>
             {(() => {
-              const cx = (tipL + tipR) / 2;
-              const x1 = cx - (cx - tipL) * arrowP;
-              const x2 = cx + (tipR - cx) * arrowP;
+              const L = ax + HW / 2 + 24;
+              const R = bx - HW / 2 - 24;
+              const cx = (L + R) / 2;
+              const x1 = cx - (cx - L) * arrowP;
+              const x2 = cx + (R - cx) * arrowP;
               return (
                 <>
-                  <line x1={x1} y1={arrowY} x2={x2} y2={arrowY} stroke={C.skyBlue} strokeWidth={2.5 * s} />
-                  <g fill="none" stroke={C.skyBlue} strokeWidth={9 * s}>
-                    <path d={`M ${x1 + 25 * s} ${arrowY - 15 * s} L ${x1} ${arrowY} L ${x1 + 25 * s} ${arrowY + 15 * s}`} />
-                    <path d={`M ${x2 - 25 * s} ${arrowY - 15 * s} L ${x2} ${arrowY} L ${x2 - 25 * s} ${arrowY + 15 * s}`} />
-                  </g>
+                  <line x1={x1} y1={531} x2={x2} y2={531} stroke={C.skyBlue} strokeWidth={4} />
+                  <path d={`M ${x1} 531 l 20 -11 v 22 z`} fill={C.skyBlue} />
+                  <path d={`M ${x2} 531 l -20 -11 v 22 z`} fill={C.skyBlue} />
                 </>
               );
             })()}
@@ -776,48 +673,60 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
           <div
             style={{
               position: "absolute",
-              left: midX - 5 - 200,
-              top: arrowY - 18.5 * s - 18.9,
-              width: 400,
+              left: 960 - 150,
+              top: 488,
+              width: 300,
               textAlign: "center",
               fontFamily: pack.sans,
-              fontSize: 32,
+              fontSize: 28,
               color: C.skyBlue,
               opacity: arrowP,
-              transform: `scale(${s})`,
-              transformOrigin: "200px 18.9px",
             }}
           >
             {pack.tradeExecuted}
           </div>
         </>
       )}
-      {/* CLS pill — measured 437×197 at (741,692) with the brand CHIP radius
-          (rounded TL+BR, square TR+BL). We drew a 250×107 all-round pill 67px
-          too low: less than a third of the ref's area. It SCALES up about
-          (946,835) f549-560; the wordmark wipes O→C→L→S inside it to f570. */}
+      {/* connectors into pill */}
+      {connP > 0 && (
+        <svg width={1920} height={1080} style={{ position: "absolute", opacity: connP }}>
+          <path
+            d={`M ${ax + 10} ${hy + HH / 2 - 8} L ${ax + 10} 785 Q ${ax + 10} 812 ${ax + 40} 812 L 796 812`}
+            fill="none"
+            stroke={C.navyDeep}
+            strokeWidth={3.5}
+          />
+          <path d="M 796 812 l -22 -12 v 24 z" fill={C.navyDeep} transform="translate(22 0)" />
+          <path
+            d={`M ${bx - 10} ${hy + HH / 2 - 8} L ${bx - 10} 785 Q ${bx - 10} 812 ${bx - 40} 812 L 1124 812`}
+            fill="none"
+            stroke={C.navyDeep}
+            strokeWidth={3.5}
+          />
+          <path d={`M 1124 812 l 22 -12 v 24 z`} fill={C.navyDeep} transform="translate(-22 0)" />
+        </svg>
+      )}
       {pillP > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            left: 741,
-            top: 692,
-            width: 437,
-            height: 197,
-            background: C.navyBg,
-            borderRadius: "52px 0 52px 0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            transform: `scale(${pillP})`,
-            transformOrigin: "205px 143px",
-          }}
-        >
-          <div style={{ clipPath: `inset(0 ${(1 - logoP) * 100}% 0 0)` }}>
-            {PillLogo ? <PillLogo h={98} /> : <ClsWordmark height={78} />}
+        // ref assembles the pill left→right in TWO rates, not an opacity fade:
+        // the navy BOX wipes on fast (full by ~f560) while the LOGO draws
+        // O→C→L→S slower (to ~f572). A fast-clipped box behind + the
+        // slow-clipped full slot on top (same navy) gives both from one slot.
+        <div style={{ position: "absolute", left: 826, top: 759, width: 250, height: 107 }}>
+          <div style={{ position: "absolute", inset: 0, background: C.navyBg, borderRadius: 107 * 0.28, clipPath: `inset(0 ${(1 - pillBoxP) * 100}% 0 0)` }} />
+          <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${(1 - pillP) * 100}% 0 0)` }}>
+            <ClsPillSlot x={0} y={0} w={250} h={107} p={1} PillLogo={PillLogo} />
           </div>
         </div>
+      )}
+      {/* money icon under A */}
+      {coinP > 0 && (
+        <svg width={64} height={64} viewBox="0 0 60 60" style={{ position: "absolute", left: ax - 90, top: hy + HH / 2 + 20, opacity: coinP }}>
+          <rect x="4" y="10" width="52" height="40" rx="12" fill="none" stroke={C.red} strokeWidth="3" />
+          <circle cx="30" cy="30" r="11" fill="none" stroke={C.red} strokeWidth="2.5" />
+          <text x="30" y="36" textAnchor="middle" fontFamily="Helvetica" fontSize="16" fill={C.red}>
+            $
+          </text>
+        </svg>
       )}
       </div>
     </div>

@@ -588,12 +588,19 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   // box draws with the hexes (ref video: box bar starts ~f324, near-full by
   // f332); the old 330-344 left it a faint grey ghost through the hexify
   const boxOp = lerp(f, [324, 336], [0, 1]);
-  // r6 measured exit (CLSNet-box left edge track): the whole layout slides
-  // LEFT with acceleration, NO fade — content off by f466-467. Band stays.
+  // EXIT — the whole layout slides LEFT with acceleration, NO fade; band stays.
+  // r6 keyed it every other frame; r18 re-tracked it EVERY frame (hex-band navy
+  // left AND right edges move identically, so the slide is rigid — v_448..v_466).
+  // The old table's even frames were right but its interpolated odd frames sat
+  // 3-9px off, and f464/f465 were off by 26/177px. On hex line-art a 3px
+  // misregistration is not small: it took the hex-row crop from .961 to .706 at
+  // f455. Per-frame keys, exactly as measured.
   const shift = interpolate(
     f,
-    [450, 452, 454, 456, 458, 460, 461, 462, 463, 464, 465, 466, 467],
-    [0, -17, -51, -111, -206, -358, -466, -608, -803, -1068, -1418, -1888, -2400],
+    [448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458,
+     459, 460, 461, 462, 463, 464, 465, 466],
+    [0, 0, -1.5, -7.5, -17, -31, -51, -77, -111, -153, -207,
+     -273, -358, -466, -608, -803, -1094, -1595, -2200],
     clamp
   );
 
