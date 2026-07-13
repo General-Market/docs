@@ -3235,3 +3235,145 @@ CrxSettlementDay eyechecked at f672 / f675 / f900 (`mont/crxcheck.png`) — clea
   error.** Ticks, dashes, hatches, tile grids, dot fills — for every one of them there is a
   displacement that is invisible to any tracker of the structure itself. Find the aperiodic
   thing riding on it (here: the hour LABELS) and read *that*.
+
+## gen20 THE PILL — 2026-07-13 (scenes2, third shift, `eb5da0d75`)
+
+One commit. Instruments in `work/cls-day/r17-scenes2c/` (`pill.py`, `still.sh`,
+`stillcrx.sh`, `refs/` `old/` `new/` `mont/`, the two grid dumps). Stills only.
+
+### The measurement — seven settled frames, agreeing to the pixel
+
+The pill is the cleanest signal in S13, and it is **not an isolated navy component**: the
+rails leave its edges, so a flood-fill of the fill colour walks straight out of it and
+returns `x752..1919` at f2400. **Erode by 5 first** — every other navy thing in the frame
+is a stroke ≤8px (rails 5, capsule outlines 4, band ticks 3) and is annihilated — then
+label, keep the largest central component, add the 5 back. The straight edges give the box
+exactly; the handshake icon is a hole inside it.
+
+The instrument recovers **our own known 759/435/380/213 exactly**, which is the only reason
+to trust what it says about the ref:
+
+| | x | y | w | h |
+|---|---|---|---|---|
+| **ref** (f2400/2450/2500/2550/2600/2650/2700 — identical at all seven) | **752..1141** | **426..638** | **390** | **213** |
+| ours | 759..1138 | 435..647 | 380 | 213 |
+
+**7px right, 9px low, 10px narrow.** `h` was already right. A pure translate + widen on a
+60,000-px solid navy block that sits mid-frame for 350 frames.
+
+### Nothing moved with it — and that is the finding
+
+The brief said the chips spawn on the pill, both rails begin on it, and the entrance scale
+is anchored to it, so all four would have to be chased. **They did not.** Every one of them
+was already pinned to the **REF's** pill, because each was fitted against the ref
+independently. The pill was the only thing in the scene that wasn't.
+
+- **The rails.** The stubs start at `(950,425)` and `(950,635)`. The ref's pill top is
+  **426** — the top stub lands exactly ON its edge. Ours ended at y424 above a pill that
+  began at y435: **a ten-row white gap at x950, y425..434, in every settled frame of the
+  scene.** Probed col x950 — ref navy runs `360..425` then `427..`; ours `360..424` then
+  `435..`. *The rail was never detached from the pill. The pill was detached from the rail.*
+  (`mont/junction-2400.png` — the gap, and the join.)
+- **The chips.** Spawn at x942 on the rail lanes (y262/y743), fitted per-frame off the ref
+  in r5. They never enter the pill's box (y426..638) — **they ride the RAILS, not the pill.**
+  Unchanged, and the eye montage confirms they still meet the arrowheads.
+- **The entrance scale.** The origin **(723,219) needed no re-derivation.** It was fitted
+  against the ref's geometry all along. With the corrected settled pose,
+  `ox + (752−ox)·s` predicts the ref's pill box to **≤1.5px at every uniform-scale frame**:
+
+  | f | s | pred x0 / ref | y0 / ref | x1 / ref | y1 / ref |
+  |---|---|---|---|---|---|
+  | 2348 | .639 | 741.5 / **740** | 351.2 / **350** | 989.9 / **989** | 486.5 / **485** |
+  | 2352 | .944 | 750.4 / **751** | 414.4 / **414** | 1117.5 / **1117** | 614.4 / **614** |
+  | 2356 | .991 | 751.7 / **752** | 424.1 / **424** | 1137.1 / **1137** | 634.1 / **634** |
+
+  With the OLD pose the same origin gave x0 758.5 / y0 432.2 at f2356 — **the settled error
+  times s.** The entrance was never mis-scaled. *It was correctly scaling a wrong box.*
+
+**A misplaced object drags nothing with it when everything else was measured honestly.**
+
+### Gate — ref vs OLD vs NEW, 16 frames, ZERO SPENDS
+
+| frame | OLD | NEW | Δ |
+|---|---|---|---|
+| f2347 (entrance) | .967018 | .967868 | +.00085 |
+| f2350 | .974687 | .979652 | **+.00497** |
+| f2353 | .971554 | .976959 | **+.00541** |
+| f2356 | .966918 | .971508 | **+.00459** |
+| f2359 | .933232 | .938881 | **+.00565** |
+| f2362 | .906497 | .912647 | **+.00615** |
+| f2366 | .907355 | .913527 | **+.00617** |
+| f2372 | .890678 | .896846 | **+.00617** |
+| f2380 | .895387 | .901550 | **+.00616** |
+| f2400 (settled) | .895956 | .902124 | **+.00617** |
+| f2450 | .893447 | .899582 | **+.00614** |
+| f2550 | .894059 | .900230 | **+.00617** |
+| f2600 | .891618 | .897787 | **+.00617** |
+| f2700 | .893595 | .899722 | **+.00613** |
+| f2718 (exit fall) | .824517 | .828058 | +.00354 |
+| f2722 (exit) | .908215 | .910170 | +.00196 |
+
+**+.0062 flat across all 350 settled frames.** The exit LUT is untouched and still gains
+(the pill it tracks is now in the right place). `CrxSettlementDay` f2450 inherits: 17,607px
+changed = the pill's edges and its icon, nothing else (`mont/crx-ab.png`).
+
+Pill-owned grid cells: **r3c3 +.111 · r2c3 +.099 · r3c4 +.067 · r2c4 +.063**; cell mean
+.8137 → .8208.
+
+### The one cost, recorded
+
+`HandshakePill` flex-centres its icon and sizes it `w*0.46`, so the icon rides the pill and
+**lib owns both**. Our icon ink-centre sat at (948.5, 531) against the ref's (948.5, 527.5)
+— 3.5px out. **lib's `translateY(-8px)` was quietly propping up the misplaced pill.** Moving
+the pill home moves the icon to ~(946.5, 522): a **2.4px regression on 4,700px of icon ink,
+bought with a 7–9px correction on 60,000px of pill.** The gate says the trade wins at every
+single frame, by 6–13x the noise. **The honest fix is lib's: `translateY` −8 → −2.5, now
+that the pill is home.** (Also lib's, also small: the TR/BL corner radius is 8; the ref's is
+~2 — the ref hits full width 2 rows in, we take 8. ~30px of area.)
+
+### Every ranked grid cell, adjudicated (8x6, f2400/2450/2550/2600/2700)
+
+**All twelve came back byte-unchanged by this commit (Δ = 0.0000).** The pill fix is
+surgically confined — which is itself the proof it moved nothing it shouldn't have.
+
+| rank | cell | what it is | verdict |
+|---|---|---|---|
+| 1,2,3,4,5,9 | r4c7 .163 · r3c6 .341 · r4c6 .345 · r2c7 .383 · r2c6 .394 · r3c7 .531 | RIGHT city interior | **the classified defect.** Ink 0.69x of the ref, centroid **12.2px LEFT / 3.3px low** |
+| 6,7,8,11,12 | r3c0 .424 · r3c1 .452 · r2c0 .526 · r1c0 .632 · r2c1 .638 | LEFT city interior | **the classified defect.** Ink 0.66x, centroid 5.4px left / 4.8px high |
+| 10 | **r3c5 .595** | **the RIGHT capsule's LEFT VERTEX** — a near-flat white cell owned by one curve | **NEW, fixable, opened and measured below** |
+
+The eleven city cells are gen19+gen20's *reference-self-contradiction for our rig*: absent
+content plus a distributed per-edge mis-registration. Widening lost, re-scaling lost, drawing
+it early lost. It is one job — trace the interiors and re-register each edge — and nothing in
+those two capsules will move until it is done. **New datum for whoever takes it: the RIGHT
+city's whole ink mass sits 12.2px LEFT of the ref's, not 4-9px.** That is large enough that a
+whole-city x-translate deserves ONE more gate before the trace is started.
+
+### The next-worst thing — r3c5, the right capsule's left vertex (measured)
+
+The twin of the vertex gen20 fixed on the left capsule, and the same signature: **our lower
+approach diagonal runs 4-5px INSIDE the ref's, and our point is too SHARP.** Ref min-navy-x
+per row at f2600 (x1180..1470):
+
+| y | 616 | 624 | 632 | 640 | 648 | 656 | 664 | 672 | 680 | 688 | 696 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **ref** | **1420** | **1420** | **1420** | **1420** | 1422 | 1426 | 1430 | **1435** | **1440** | **1444** | **1448** |
+| ours | 1421 | 1420 | 1420 | 1421 | 1422 | 1424 | 1427 | 1430 | 1435 | 1439 | 1444 |
+
+The ref's point is **BLUNT** — it holds x1420 across y616..640 (a 24px flat, centred y628).
+Ours holds it only over y624..632 (8px). And below the point our diagonal falls away 4-5px
+too shallow. One curve, one cell, near-flat white around it — exactly the shape of fix that
+paid on the left capsule. **Take it before the city trace: it is a nudge, and the city is a trace.**
+
+### Two things the ref sweep found and this round did NOT spend (both real, both small)
+
+- **The ref's pill is settled at f2359, not f2361** (h=213 at f2359). Our last two S13_S keys
+  are .998/1 — under 0.8px. Retiming them drags the capsule LUTs, which key to 2362.
+- **f2344-2347 is NOT a uniform scale.** The ref's pill is **SQUAT** there (w/h **2.30** vs the
+  settled 1.83; it only reaches the settled aspect at f2348). A single `s` cannot fit it. Ours
+  (0.40/0.47) already sits between the ref's h-scale (.34/.39) and w-scale (.43/.49) — the right
+  compromise for a one-parameter model. The honest fix is a second, independent `sx` LUT for
+  four frames.
+
+*The pill was never the hard part. The hard part was believing that the four things hanging off
+it did not need to move — and only the ref could say so.*
