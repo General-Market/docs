@@ -156,6 +156,23 @@ export const HexIcon: React.FC<{
 // We were seating at 301.8·scale = 1.1240·side — 0.8% of the side too LOW:
 // ~1px at flows, ~2.5px at report, ~4px at the gantt card, ~3px at payment.
 // That 3px is exactly what made payment's label law lose.
+//
+// ─── r19: THE WORDMARK FONT-LOAD RACE DOES NOT EXIST (r18 residual 3, REFUTED) ───
+// r18 logged "the wordmark renders ~20% narrow in roughly one render in five — a
+// font-load race" and called the composition nondeterministic. It is not.
+// `brand.sans` is HELVETICA (`cls-shared/fonts.ts`) — `'Helvetica Neue', Helvetica,
+// Arial, sans-serif`, a SYSTEM stack. ClsNet-Replicate loads NO web font, so there
+// is nothing to race. (`@remotion/fonts` `loadFont` — used only by CrxNetting, for
+// Diatype — already wraps delayRender/continueRender internally; read the dist.)
+// What r18 actually saw: I measured the wordmark's ink width in EVERY r18 still.
+// It is bimodal — f2320 {265, 333} · f2360 {166, 198} · f2560 {94, 106} ·
+// f1600 {80, 99} — and the split is by CODE VERSION, not by luck. The narrow ones
+// are pre-label-law renders (the old hand-fit `labelFs`); the wide ones are post-law.
+// r18 compared stills from two generations of its own code and read the difference
+// as a race; "one in five" is the share of its stills that came from the older code.
+// PROOF: 12 renders of f2320, same code, same frame, one held lock, quiet box —
+// 12/12 md5-IDENTICAL, one wordmark (333px, 11039 ink px). Plus 8/8 at f400.
+// Do NOT add delayRender here. Determinism holds (method lesson 15).
 
 /** Wordmark cap-top below the box top, in units of the box SIDE. LSQ over ten
  *  settled ref reads (1.1161); swept in-render against the ref label crops at
