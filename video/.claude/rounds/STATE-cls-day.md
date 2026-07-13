@@ -1854,3 +1854,129 @@ exit frame against +.008 elsewhere. The ref draws 7 ticks; we drew 5. Recorded.
 - S4 f671-673 hex/pill values are extrapolated past the last badge read — by
   then the S5 front has eaten all but a sliver.
 - P3 (S1/S2 f66-116) not opened.
+
+## gen18 EXIT-FICTION round — 2026-07-13 (scenes2)
+
+Five commits, each gated and landed on its own. Instruments + artifacts in
+`work/cls-day/gen18-s2/` (probe_exit2.py sequential template tracker, probe_cols.py
+border peaks, probe_tail.py ink extents, probe_doc.py per-pixel doc trace,
+probe_s13.py pill tracker, probe_ink.py region masses; ref frames `refall/`,
+attempts `att*/`, HEAD baselines `head*/`, montages `mont/`). Build-only still
+gates + eye montages; NOT a full verify.
+
+### The finding that organised the round
+
+**Three of this file's scenes had no exit — or the wrong one.** The ref ENDS a scene
+by sliding or flying its content off-frame, fast, on a ~1.35–1.65×/frame exponential,
+while the timeline band stays. We were fading, holding, or starting four frames late.
+Every one of them was drawing a large element over white for tens of frames. Law 2
+(deleting fiction wins big) paid three times in one round.
+
+### 1 — S11 docs-row exit (b3c4c385a)
+
+The row sat frozen at its settled pose until a whole-scene fade at f2237-2250. The ref:
+- the SIX side docs fly OUTWARD from f2200, accelerating ~1.4×/frame, staggered from
+  the outside in — all six GONE by f2217. We were drawing 6 × 228×285 docs (**19% of
+  the frame**) on white for 33 frames.
+- the FOCUS doc STAYS and SCALES 1.0 → 1.219 about (1022, 474) over f2205-2228, then
+  holds that pose right through S12 (ref f2230 == f2260 == f2300 to the pixel).
+
+One base exit LUT + a per-doc time shift and gain (d1 sh2 g.94 · d2 sh1 g1.01 ·
+d3 sh0 g1.00 · d4 sh0 g.855 · d5 sh1 g.895 · d6 sh2 g.90).
+
+Gate: f2205 .8466→.8646 · f2210 .8272→.8769 · **f2216 .8501→.9444** ·
+f2225 .8501→.9479 · f2235 .8501→.9455. f2105/2130/2150 unchanged.
+
+### 2 — the instruction doc, re-traced per pixel (9bb1ad0ac)
+
+The settled row scored .8622 and I nearly called it the floor. It was not: the doc
+BODY was an approximation with 20px errors. Traced every feature off ref f2130 and
+cross-checked against doc2/doc3/doc5 — all three agree on every offset from the doc's
+top rule to **0.5px**, so ONE body serves the whole row (the ref just jitters each
+doc's y by ~2px). Doc-local svg y = trace y − 3.5.
+
+All of it POSITION, none of it texture (lesson 4):
+- banner box 62 tall at y105 → **39 at y110**; inner bar 22 → 15
+- field row = two loose cells → **ONE bordered box** (117..208, y69..92), centre
+  divider at x162, fill INSET at 124..157
+- the three body lines sat at y185/195/203 → the ref's are at **y160/167/174**, and
+  the first runs the FULL doc width
+- bottom divider x36 → x18; fill block (150,238) → (141,231)
+- 2 header lines → **THREE**, 5px thick, from x55
+- right border 230 → **223** (the doc is 221 wide)
+- square bottom-left corner → **rounded, r22**; fold x190/d40 → x176/d49
+- **the CIRCLE-seal docs MIRROR their bottom block** — a variant we never had
+
+**gen13's negative A/B is now explained, not contradicted.** It narrowed the whole svg
+(228→225) and lost, because that dragged the interior off its registration. Moving the
+border ALONE, with the interior re-registered to the trace, is a different change and
+it wins. A refuted A/B is refuted for its method, not for its target.
+
+**And the flying docs STRETCH.** Every doc's LEFT border lands exactly on its exit dx
+while the right border runs ahead: 221 wide settled, 226 @f2208, 230 @f2210, 240
+@f2212, 255 @f2214. It scales with speed and anchors on the doc's own left edge
+*regardless of travel direction* — so it is a scaleX in the ref's rig, not a motion
+blur. **NEGATIVE A/B:** a symmetric two-ghost motion blur LOST at every fly-out frame
+(f2210 .8756→.8729, f2212 .8773→.8708). Model: `scaleX = 1 + 0.0011·|v|`, capped 1.16
+(it saturates). The exit LUT tail was refit off those same left borders (f2214 dx
+−448, not −410 — the left border is the one edge the stretch leaves alone, so it reads
+dx directly; use it, not a template match, on a stretching element).
+
+Gate — every frame wins: **settled row .8622 → .8905 (+.0283)** at f2115/2130/2150/
+2170/2195/2202 · f2205 +.0226 · f2208 +.0171 · f2210 +.0094 · f2212 +.0021 ·
+f2214 +.0006 · f2216 +.0023 · f2105 +.0015.
+
+### 3 — S13 exit fall, four frames late and on the wrong curve (ffc859707)
+
+The descent was a quadratic ease from f2717. Tracked the ref pill's top edge: the fall
+**starts at f2713** and is a ~1.65×/frame exponential — 3, 9, 21, 43, 75, 125, 207,
+352, 568. At f2719 the ref is 125px down and we were 88; that frame scored **.787**
+against a .874 steady state.
+
+Gate: f2714 +.0112 · f2716 +.0233 · f2718 +.0373 · f2719 +.0280 · f2721 +.0022 ·
+**f2722 +.0544** · f2724 +.0032.
+
+### 4 — the two invented street vehicles (f644204a1)
+
+Both PvP cities drew a red car/truck at their base. The ref draws **neither**: the
+right city's truck box (1490..1600, 780..830) holds **ZERO red pixels** in ref f2700;
+the left car's box holds only the red building's own bottom wall. Fiction, persisting
+across all of S13 (f2362-2726).
+
+Gate: +.0008 .. +.0016 at every S13 frame. Small — exactly as its area predicts
+(law 3). Fiction is still worth deleting when it is free.
+
+### 5 — S10 had no exit at all (37253cfaf)
+
+S10 held its entire settlement diagram (two hex cities, CLS pill, bank hex, connectors,
+chips) at full opacity until S11's opaque white background *happened* to cover it at
+f2075. The ref slides the diagram straight DOWN and off while the band, marker and
+07:00 milestone stay — fall starts f2049, ~1.35×/frame, blank below the band by f2069.
+**26 frames of a whole scene drawn over white.**
+
+Gate: f2055 +.0165 · f2060 +.0437 · f2064 +.0620 · **f2068 .9141→.9821** ·
+**f2072 .9208→.9889**. f2000/f2045 unchanged.
+
+### Residual (honest, classified)
+
+- **S13 steady state is at .874 and the cause is the CITY MODELS — fixable, not a
+  floor.** `PvpLeftCity` / `PvpRightCity` diverge from the ref in content, not just
+  registration: the ref's navy buildings have OPEN-ended (⊐) windows where ours are
+  closed rounded rects; the building arrangement to the right of each red tower is
+  different; our grey slabs sit where the ref has white; the rail arrowheads are small
+  triangles where the ref draws big swept chevrons. Two whole clusters — this is the
+  biggest single lever left in scenes2 and it is a MODEL-DETAIL job (like the gen12
+  globe / gen13 icons), eye-judged, not an SSIM nudge. **Hit this next.**
+- **S12 is drawing the wrong document.** The ref's S12 is the SAME 2-page focus doc
+  from S11, held at the grown pose (L=694, top=249) with orange checks pinned to it —
+  ref f2230 == f2260 == f2300 to the pixel. We draw a small generic `MiniDoc` at
+  (840,720) 260×330. Out of my ranked windows so left alone, but it is a large-area
+  error and S11 now hands the correct doc straight to it. Cheap to collect.
+- The ref's 07:00 milestone label fades f2074-2085; S11 draws no label, so f2075-2085
+  is missing ~1.7k px of it. 0.09% of the frame — below the area threshold (law 3).
+- The S11 ENTRANCE (f2091-2111) is still a scale+fade in place; the ref streams the
+  docs in from the right as a train. Only 11 frames of the ranked window and the
+  tracker aliases badly on overlapping docs during it (f2105 is .822 vs .890 settled).
+  Worth a pass, but it is a fifth of the settled window's frames.
+- S13's falling content also drifts left ~38px and widens ~6% by f2722 (the same rig
+  scaleX as the docs). Left alone; 9 frames.
