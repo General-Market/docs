@@ -1035,6 +1035,14 @@ const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// gen19: ONE PILL, NOT TWO. This slot used to short-circuit ClsPill whenever a
+// PillLogo was supplied, into a hand-copied div carrying its own uniform
+// borderRadius h*0.28 and a hardcoded logo at h*0.5. So ClsDay-Replicate (no
+// PillLogo) inherited every fix the lib lane landed on ClsPill — the brand chip
+// radius, the measured logoScale — and CrxSettlementDay, the PUBLISHABLE cut,
+// inherited none of them. It was still drawing square corners and a 36%-oversized
+// logo. A shared primitive with a hand-copied twin is not shared: it is two
+// primitives that agree right up until one of them is fixed.
 export const ClsPillSlot: React.FC<{
   x: number;
   y: number;
@@ -1043,28 +1051,9 @@ export const ClsPillSlot: React.FC<{
   p: number;
   PillLogo?: React.FC<{ h: number }>;
   logoScale?: number;
-}> = ({ x, y, w, h, p, PillLogo, logoScale = 0.5 }) =>
-  PillLogo ? (
-    <div
-      style={{
-        position: "absolute",
-        left: x,
-        top: y,
-        width: w,
-        height: h,
-        background: C.navyBg,
-        borderRadius: h * 0.28,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        opacity: p,
-      }}
-    >
-      <PillLogo h={h * 0.5} />
-    </div>
-  ) : (
-    <ClsPill x={x} y={y} w={w} h={h} opacity={p} logoScale={logoScale} />
-  );
+}> = ({ x, y, w, h, p, PillLogo, logoScale = 0.366 }) => (
+  <ClsPill x={x} y={y} w={w} h={h} opacity={p} logoScale={logoScale} Logo={PillLogo} />
+);
 
 // ─── S5: skyline (f674..940) ───
 // Band mid y490 h85; one ornate cluster every ~2h (603px); mirrored navy
