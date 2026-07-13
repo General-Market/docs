@@ -1171,6 +1171,12 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
 // 628.0): it reproduces the ref's apex centre to <=1px at every probed row (y604 1426.9
 // vs 1426 · y612 1424.1 vs 1424 · y648 1425.2 vs 1425).
 const R_CAPSULE = "M 2000 393 L 1582.7 393 Q 1547.7 393 1530.2 423.3 L 1432.4 592.9 Q 1411.8 628.4 1431.9 662.3 L 1532.7 831.9 Q 1550.6 862 1585.6 862 L 2000 862";
+// the ref's outline stroke, read directly off its HORIZONTAL edges (a horizontal run's
+// height IS the stroke, with no slope correction to get wrong): top 390..396, bottom
+// 859..865 — SEVEN. The diagonals agree: h-extent 8 at slope 0.577 is 8*cos(30) = 6.9.
+// Gated on its own, AFTER the centreline re-fit above, precisely because gen19's
+// "widening loses" refutation is scoped to strokes whose centres are off (law 23).
+const R_CAP_W = 7;
 const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
   k = 1,
   tx = 0,
@@ -1180,10 +1186,10 @@ const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = (
     {/* capsule frame (vertex on the left) */}
     {k < 1 ? (
       <g transform={`translate(${tx},0) scale(${k},1)`}>
-        <path d={R_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} vectorEffect="non-scaling-stroke" />
+        <path d={R_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={R_CAP_W} vectorEffect="non-scaling-stroke" />
       </g>
     ) : (
-      <path d={R_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} />
+      <path d={R_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={R_CAP_W} />
     )}
     {interior <= 0 ? null : (
     <g {...(interior < 1 ? { opacity: interior } : {})}>
