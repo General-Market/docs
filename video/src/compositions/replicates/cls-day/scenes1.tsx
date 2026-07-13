@@ -820,7 +820,7 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
       {frame < 656 ? (
         <div style={{ opacity: bandIn }}>
           <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} />
-          <MarkerTriangle x={960} y={27} size={60} />
+          <MarkerTriangle x={960} y={35} size={60} />
         </div>
       ) : (
         <S4ExitBand frame={frame} />
@@ -1083,8 +1083,18 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   // -1097@928, hours pan 10:00→24:00 into S6's 00:00@293) and the shrink
   // is NON-uniform: pitch 301.5→~199 (sx→0.66) vs h 85→54 (sy→0.635).
   const px = 301.5;
+  // gen20 — sx is the ref's TICK PITCH / 301.5, measured off the ticks INSIDE the grey
+  // strip (dark columns spanning the whole band — the one detector no building can
+  // fool), as a full-span mean over 6-7 ticks. ref: 255.58@674 · 269.42@675 · 278.83@676
+  // · 285.60@677 · 290.50@678 · 294.10@679 · 296.83@680 · 298.80@681 · 300.20@682 ·
+  // 301.10@683 · 301.67@684. Nine of the eleven keys were already inside the ±0.001
+  // measurement band and are LEFT ALONE — only f675 (0.885 → 0.8936, a real 1% error on
+  // the frame that scored .766) and f677 (0.945 → 0.9473) moved.
+  // NEGATIVE A/B: nudging f676 to the nominal 0.9237 LOST (.8226 → .8145). At f676 a
+  // 0.0017 scale change is 4px at the left edge, and the old 0.9254 sits inside the
+  // pitch's own error bar. Inside the error bar, do not move a gated key.
   const sx = lutS([
-    [674, 0.8475], [675, 0.885], [676, 0.9254], [677, 0.945], [678, 0.9642], [679, 0.9761],
+    [674, 0.8475], [675, 0.8936], [676, 0.9254], [677, 0.9473], [678, 0.9642], [679, 0.9761],
     [680, 0.9847], [681, 0.9911], [682, 0.996], [684, 1],
     [916, 1], [918, 0.988], [920, 0.988], [922, 0.975], [924, 0.902], [926, 0.81],
     [928, 0.803], [930, 0.73], [932, 0.68], [934, 0.67], [936, 0.663], [940, 0.66],
@@ -1114,8 +1124,24 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   ])(frame);
   // inner x of the 09:00 tick (screen tick positions unprojected through
   // the sx scale about x=960; cruise points are direct measurements)
+  //
+  // gen20 — THE ENTRY WORLD WAS A FULL HOUR OFF AT f674. A tick chain is PERIODIC:
+  // an x9 error of exactly one pitch leaves every tick line landing on the ref's to
+  // half a pixel and every LABEL reading one hour late. That is what f674 was doing
+  // (2184.8 vs 2487.1 = 302.3 = one pitch), and it went unseen for six rounds because
+  // every instrument anyone pointed at it was a tick tracker. The LABELS are the only
+  // thing that can see it — read them.
+  //   Anchor per frame = (hour, screen x of its tick), off the ref's own label glyphs:
+  //   f674 02:00@465 · f675 04:00@421 · f676 06:00@566 · f677 07:00@554 · f678 08:00@622.5
+  //   f679 08:00@456 · f680 09:00@626.5 · f684 09:00@400.5 · f690 09:00@384
+  //   x9 = 960 + (x − 960)/sx − (i − 9)·301.5.
+  // f676/f678/f679/f680 came back EXACT — the old table was right at four of its keys
+  // and wrong at three, which is why the whip looked plausible and scored .77.
+  // The corrected series is also the only one that is smooth: the world's hour at
+  // screen x=0 runs 20.75 → 24.18 → 26.44 → 27.97 → 29.06 → 29.86 (Δ 3.43, 2.26, 1.53,
+  // 1.09, 0.80 — a clean deceleration). The old x9 made it stutter.
   const x9 = lutS([
-    [674, 2184.8], [675, 1751], [676, 1438.7], [677, 1150.5], [678, 911.3], [679, 744.9],
+    [674, 2485.8], [675, 1863.8], [676, 1438.7], [677, 1134.4], [678, 911.3], [679, 744.9],
     [680, 621.3], [681, 530.7], [682, 467], [683, 425.6], [684, 400.5], [685, 391.5],
     [686, 390.5], [688, 387], [690, 384],
     [750, 288.5], [800, 206], [850, 124.5], [896, 55.5], [916, 25.5],
@@ -1246,15 +1272,21 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
             {/* ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there */}
             {/* entry-whip left tiles (hours 2..7, visible only f674..~690):
                 designs cycle on — real per-slot identity unreadable at
-                100..300px/f; position+mass carry the window (lesson 4) */}
+                100..300px/f; position+mass carry the window (lesson 4).
+                gen20: the x9 correction pushes the world 302 units RIGHT at f674, so
+                the visible local range opens to [-2659, -396] and the old leftmost
+                tiles (-2194 above, -2503 below) left ~400px of BARE WHITE down the
+                left edge. One more slot each end fills it. */}
             {frame < 692 && (
               <>
                 <div style={{ position: "absolute", left: -986, top: 170 }}><ClG /></div>
                 <div style={{ position: "absolute", left: -1590, top: 170 }}><ClC /></div>
                 <div style={{ position: "absolute", left: -2194, top: 170 }}><ClB /></div>
+                <div style={{ position: "absolute", left: -2798, top: 170 }}><ClA /></div>
                 <div style={{ position: "absolute", left: -1295, top: bandY + bandH - 5 }}><ClF /></div>
                 <div style={{ position: "absolute", left: -1899, top: bandY + bandH - 5 }}><ClE /></div>
                 <div style={{ position: "absolute", left: -2503, top: bandY + bandH - 5 }}><ClD /></div>
+                <div style={{ position: "absolute", left: -3107, top: bandY + bandH - 5 }}><ClE /></div>
               </>
             )}
           </div>

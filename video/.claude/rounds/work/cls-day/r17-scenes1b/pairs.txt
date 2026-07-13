@@ -1,0 +1,5 @@
+.claude/rounds/work/cls-day/r17-scenes1b/refs/f674.png .claude/rounds/work/cls-day/r17-scenes1b/head/f674.png
+.claude/rounds/work/cls-day/r17-scenes1b/refs/f675.png .claude/rounds/work/cls-day/r17-scenes1b/head/f675.png
+.claude/rounds/work/cls-day/r17-scenes1b/refs/f676.png .claude/rounds/work/cls-day/r17-scenes1b/head/f676.png
+.claude/rounds/work/cls-day/r17-scenes1b/refs/f677.png .claude/rounds/work/cls-day/r17-scenes1b/head/f677.png
+.claude/rounds/work/cls-day/r17-scenes1b/refs/f678.png .claude/rounds/work/cls-day/r17-scenes1b/head/f678.png
