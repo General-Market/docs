@@ -42,6 +42,20 @@ const G_ROWS = [
   { x: 1352, y: 900, w: 123, lx: 1504, ly: 15, color: "orangeDeep" },
 ] as const;
 const G_PILL_H = 51; // measured fills 48-53, mean 50.6
+// ═══ THE ROW ENTRY — one curve, nine starts ═══════════════════════════════════
+// Tracked per frame f2140-2172 (outline-band tops, all nine rows). The settled y's
+// above are confirmed exact to the pixel; the ENTRY was pure fiction. Every row
+// flies up from below on the SAME decelerating curve, and the nine offset columns
+// are the SAME sequence shifted in time — 796·646·379·231·154·105·71·47·30·17·8·3·0,
+// reproducing all nine tracks to ≤2px. Only the spawn frame differs. They do NOT
+// fade: the pill's fill reads (171,179,203) at f2140 and at f2178 — identical. We
+// were fading nine pills up at their settled positions over 5 frames, so at f2145
+// we drew NOTHING while the ref had two rows on screen in mid-flight.
+const ROW_START = [2140, 2142, 2146, 2148, 2149, 2150, 2151, 2152, 2153];
+const ROW_D = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const ROW_DY = [796, 646, 379, 231, 154, 105, 71, 47, 30, 17, 8, 3, 0];
+const rowEntryDy = (f: number, i: number) =>
+  f < ROW_START[i] ? null : interpolate(f - ROW_START[i], ROW_D, ROW_DY, clamp);
 const G_LABEL_FS = 36; // ref cap-height 27 (ours was 21 at fs28)
 // SansText(lineHeight 1.15) puts the cap-top fs*0.179 below its `y`.
 const G_CAP_OFF = G_LABEL_FS * 0.179;
@@ -248,14 +262,17 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
       </svg>
       {/* rows */}
       {G_ROWS.map((r, i) => {
-        const at = 2145 + i * 3.2;
-        const op = lerp(f, [at, at + 5], [0, 1]);
-        if (op <= 0) return null;
+        // THE ROWS SLIDE. They do not fade in at their settled y — each one flies
+        // up from below and DECELERATES into place. We faded nine pills in on the
+        // spot (2145 + i·3.2, 5f ramp) and so drew nothing at all at f2145 while
+        // the ref already had two rows on screen, mid-flight.
+        const dy = rowEntryDy(f, i);
+        if (dy === null) return null; // not spawned yet
         // row 0 is pinned above the card; row 1 blinks; rows 2-8 ride the wedge
         // (row 2 = PO1I ends up under the card at 1005; 3-8 leave the screen).
-        const rowOp = op * (i === 1 ? row1Op : 1);
+        const rowOp = i === 1 ? row1Op : 1;
         if (rowOp <= 0) return null;
-        const y = i === 0 || i === 1 ? r.y : r.y + wedgeDy;
+        const y = (i === 0 || i === 1 ? r.y : r.y + wedgeDy) + dy;
         if (y > 1080) return null;
         return (
           // width:1920 so the absolutely-positioned label has a real containing
