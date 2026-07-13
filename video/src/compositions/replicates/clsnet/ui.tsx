@@ -19,6 +19,34 @@ export const lerp = (
 export const hexPoints = (w: number, h: number) =>
   `${0.25 * w},1.5 ${0.75 * w},1.5 ${w - 1.5},${h / 2} ${0.75 * w},${h - 1.5} ${0.25 * w},${h - 1.5} 1.5,${h / 2}`;
 
+// ─── r19: the hexagon's CORNERS are rounded in the ref — and rounding them is
+//          WORTH NOTHING, because the hexagon's SHAPE is wrong first. ───
+// Measured POSITION-INDEPENDENTLY (fit the flat top edge and the down-right
+// diagonal, intersect them = where a sharp mitre would sit, then ask where the ink
+// actually LEAVES the flat edge and REJOINS the diagonal — a misplaced hex cannot
+// fake this reading):
+//   ref hexCity  f1400 w359 — leaves the flat edge 7.2px BEFORE the mitre
+//   ref smallHex f2560 w240 — leaves 4.0px before, rejoins 4.0px after (symmetric)
+//   ours, both              — −0.4px / −0.7px: the ink is ON the vertex. Sharp.
+// So the ref really does round its hexagon corners (tangent ≈ 0.017–0.020·w) and
+// `strokeLinejoin="round"` — which only rounds by the 3px stroke width — is not a
+// corner radius and never was.
+// NEGATIVE A/B (rounded-poly path, tangent swept 0 / 0.012 / 0.018 / 0.024·w):
+//   f1400 corner crop  .6595 → .6598 → .6614 → .6617   whole-frame +0.0001
+//   f2560 corner crop  .7405 → .7382 → .7374 → .7338   whole-frame −0.00004
+// It LOSES at f2560 and is noise at f1400. Reverted. Do not re-chase it — and note
+// WHY it cannot pay: those corner crops score .66/.74 because the hexagon disagrees
+// with the ref for a much larger reason.
+// THE REAL DEFECT, measured at BOTH sites: the right-diagonal SLOPE.
+//   ref 1.693 (f1400) · 1.731 (f2560)      ours 1.826 · 1.830
+// Our `hexPoints` insets the left/right points at 0.25·w with h = 0.906·w, giving
+// slope (h/2)/(0.25w) = 1.812. The ref's is ~1.71 → its points are inset ≈0.265·w
+// (or its h/w is ≈0.855). A ~6% shape error, at every hexagon, every frame.
+// Fixing it moves the hexagon's own edges AND the city art clipped inside it
+// (scenesB `HexCity` / `SmallHex`), so it is a coupled change, not a one-liner —
+// it needs its own round with the art alignment re-gated. Position and shape first;
+// THEN the corner radius, which is worth ~0.0001 on its own. (Method lesson 4.)
+
 export const Hexagon: React.FC<{
   cx: number;
   cy: number;
@@ -442,6 +470,36 @@ export const Elbow: React.FC<{
 };
 
 // ─── Document icon (paper with folded corner + rule lines) ───
+//
+// ─── r19 FINDING (MEASURED, NOT YET LANDED) — THE BIGGEST MISSING INK IN ui.tsx ───
+// `Doc` draws THREE FLAT BARS. The ref draws a whole document, and at f1740 the two
+// locks Docs are the SIX WORST grid cells in the frame (ssim-grid 8x6: r3c6 .005,
+// r3c5 .024, r4c6 .031, r4c1 .070, r3c2 .090, r3c1 .098). We draw ZERO pixels of
+// most of it. Transcribed from the ref's LEFT locks Doc (f1740, page x354 y552
+// w150 h198); the RIGHT Doc is the SAME document with one colour change, so the
+// structure is the primitive's, not the call site's:
+//   y/h 0.000  page TOP edge; fold notch top-right (ours is far too large)
+//   y/h 0.071 · 0.096 · 0.116   three MICRO-TEXT rules, left-aligned, short
+//   y/h 0.146 → 0.273           OUTLINED BOX #1 (2px navy stroke, hollow)
+//   y/h 0.323 · 0.369           two full-width HAIRLINE rules
+//   y/h 0.439 → 0.485           navy PILL, x/w 0.09→0.68
+//   y/h 0.535 → 0.581           orange PILL, x/w 0.40→0.97   (INDENTED, flush right)
+//   y/h 0.641 → 0.929           OUTLINED BOX #2 (2px navy stroke, hollow)
+//   y/h 0.828 → 0.894             a PILL inside it, right-aligned (x/w 0.60→0.94):
+//                                 ORANGE in the left doc, NAVY in the right doc
+//   y/h 1.000  page BOTTOM edge, and the bottom-LEFT corner is ROUNDED (~0.09·w)
+// So: two hollow boxes, five rules and an inner pill — all absent. And our third
+// navy bar (x/w 0.14, y/h ~0.62) is ink the ref does not have there at all.
+//
+// COUPLED, AND THIS IS WHY IT IS NOT LANDED HERE: the locks Docs are MISPLACED.
+// ref page x354 y552 w150; scenesB:927 draws x340 y556 w149 → **14px LEFT, 4px LOW**
+// (the size is right; only the seat is wrong). Adding fine structure to a document
+// that is 14px off is misplaced ink, and misplaced ink loses to absent ink — six
+// confirmations (method lesson 4). The scenesB seat fix (x 340→354, y 556→552, and
+// the mirrored right Doc) must land WITH the enrichment, gated together.
+// Also note the payment Docs (scenesC:673/674, w72) are a DIFFERENT ref document
+// (orange square badge top-left, a two-cell strip, a peach fill band) — so the
+// enrichment needs a `variant`, not one hard-coded body. Gate all eleven sites.
 export const Doc: React.FC<{
   x: number;
   y: number;
