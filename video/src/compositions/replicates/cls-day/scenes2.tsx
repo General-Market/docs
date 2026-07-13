@@ -46,19 +46,41 @@ const SCHED_BARS = [
 export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 1466 || frame >= 1712) return null;
   const outP = interpolate(frame, [1700, 1712], [0, 1], clamp);
-  // phase A (1466..1535): standard band zooms into the pay-in doc (unchanged).
-  // NOTE (gen21): phase-A geometry is measurably wrong vs the ref (measure_s8.py) —
-  // band pitch is 205 not 141.6, the doc is ~w820 h577 at y330 and should PAN with the
-  // band tied to the 00:00 tick (not sit fixed at x140 y560 w500 h480), and a red 00:00
-  // playhead runs the doc's left edge. Rebuilding those three lifts f1478-1500 by
-  // ~+0.025 each. BUT the f1511-1535 zoom-out transition goes near-BLANK in the ref, and
-  // OLD's small-doc-zoomed-off already matches that blankness (SSIM 0.94-0.99); a
-  // correct, larger doc cannot be evicted as cleanly and REGRESSES those near-white
-  // frames (law 8). A faithful fix must re-measure the ref zoom-CENTRE trajectory to
-  // evict the larger doc by ~f1518 — a dedicated round, not a tail-end swap. Left as-is.
-  const zoom = interpolate(frame, [1500, 1522], [1, 3.58], { ...clamp, easing: EASE });
+  // ── phase A (f1466..1535): the standard band zooms into the revised pay-in doc.
+  // r22 EYE-FIDELITY REBUILD. The old phaseA was measurably wrong (measure_s8): band
+  // pitch 141.6 not 205; the doc a small 500×480 fixed at 140,560 where the ref is
+  // 822×577 with its LEFT edge pinned to the panning 00:00 tick; NO red playhead; and a
+  // scale-3.58 zoom about 340,340 that evicted the too-small doc so cleanly it matched
+  // the ref's near-white tail BY ACCIDENT (law 8 — an undersized wrong doc vanishes into
+  // white; a correct larger one cannot). Rebuilt from exact frames (work/cls-day/
+  // r22-scenes2, measure.py/measure2.py): pitch 205, doc 822×577 tracking the 00:00 tick,
+  // a red 00:00 playhead down the doc's left edge. The band and doc EVICT on SEPARATE
+  // measured motions — one shared scale does NOT fit both: at f1518 the band pitch is
+  // ×1.473 (ticks spread about x≈422) but the doc's own internal span only ×1.085 while
+  // it translates down-left (dx−150 dy+77 → doc-right 826 / top 407 / bottom 1033, all
+  // matching the ref). So the band is a scaled group about (422,171); the doc a
+  // translate-down-left + mild-scale group from its top-left. Content is EXACT f1466-1511;
+  // the doc is fully off-frame (near-white) by ~f1528, like the ref.
   const phaseB = interpolate(frame, [1535, 1550], [0, 1], clamp);
-  const hourAt = interpolate(frame, [1466, 1535], [3.2, 4.4], clamp);
+  // 00:00 tick / doc-left / playhead screen x — the zoom=1 pan (accelerates into the
+  // zoom), frozen at 88 once the zoom takes over at f1515:
+  const tick00 = interpolate(frame, [1466, 1478, 1490, 1500, 1505, 1511, 1515], [240, 224, 208, 180, 158, 122, 88], clamp);
+  // band zoom-spread about (422,171): flat 1.0 through f1515, then flings the band off:
+  const bandZoom = interpolate(frame, [1508, 1515, 1518, 1522, 1528], [1, 1, 1.473, 3.8, 10], { ...clamp, easing: EASE });
+  // doc eviction: translate down-left + mild scale from the doc's own top-left corner:
+  const docDx = interpolate(frame, [1515, 1518, 1522, 1528], [0, -150, -820, -2050], { ...clamp, easing: EASE });
+  const docDy = interpolate(frame, [1515, 1518, 1522, 1528], [0, 77, 430, 1300], { ...clamp, easing: EASE });
+  const docSc = interpolate(frame, [1515, 1518, 1522, 1528], [1, 1.085, 1.7, 3], { ...clamp, easing: EASE });
+  // grey strip: thin during the pan, then GROWS into the tall milestone band (y0..259)
+  // the ref morphs into by f1535 (measured strip y114-171 → y87-172 → y0-176 → y0-224 →
+  // y0-259 — this IS phaseB's band arriving, so the f1535 handoff stays continuous):
+  const stripTop = interpolate(frame, [1515, 1518, 1522], [114, 87, 0], clamp);
+  const stripBottom = interpolate(frame, [1515, 1518, 1522, 1528, 1535], [171, 172, 176, 224, 259], clamp);
+  // ticks/labels fade as they fly off, so no giant label lingers (ref navy→0 by ~f1528):
+  const tickFade = interpolate(frame, [1519, 1527], [1, 0], clamp);
+  // the top-centre marker leaves with the timeline view (ref: gone once the grey band
+  // has grown, ~f1528 — the milestone view carries its own red rule instead):
+  const triFade = interpolate(frame, [1521, 1528], [1, 0], clamp);
 
   // milestone→staircase band + playhead. Measured (probe_s8.py): the 07:00 hour
   // grid, the red playhead and the bar stack are DECOUPLED during the collapse —
@@ -80,18 +102,25 @@ export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {phaseB < 1 && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            transform: `scale(${zoom})`,
-            transformOrigin: "340px 340px",
-            opacity: 1 - phaseB,
-          }}
-        >
-          <TimelineBand originX={960} originHour={hourAt} pxPerHour={141.6} />
-          <MarkerTriangle x={958} y={27} size={60} />
-          <SchedDoc frame={frame} docP={1} axisP={1} bars={[0, 1, 2, 3, 4]} x={140} y={560} w={500} h={480} fillFrom={0} />
+        <div style={{ position: "absolute", inset: 0, opacity: 1 - phaseB }}>
+          {/* grey band strip — thin (y114 h57) during the pan, then GROWS to the tall
+              milestone band (y0 h259) the ref morphs into by f1535, handing to phaseB */}
+          <div style={{ position: "absolute", left: 0, top: stripTop, width: 1920, height: stripBottom - stripTop, background: C.bandGrey }} />
+          {/* hour ticks/labels: pitch 205, pan with the 00:00 tick, zoom-spread about
+              (422,171), then fly off + fade as the band collapses (ref navy→0 by ~f1528) */}
+          <div style={{ position: "absolute", inset: 0, transform: `scale(${bandZoom})`, transformOrigin: "422px 171px", opacity: tickFade }}>
+            <TimelineBand originX={tick00} originHour={0} pxPerHour={205} y={114} h={57} tickAbove={0} tickBelow={32} labelSize={32} labelDy={6} />
+          </div>
+          {/* fixed top-centre marker — does NOT pan or zoom; leaves with the band collapse */}
+          <div style={{ opacity: triFade }}>
+            <MarkerTriangle x={960} y={30} size={60} />
+          </div>
+          {/* doc (822×577, left edge on the 00:00 tick) + red 00:00 playhead; the group
+              translates down-left and mildly scales to evict, from the doc's top-left */}
+          <div style={{ position: "absolute", inset: 0, transform: `translate(${docDx}px, ${docDy}px) scale(${docSc})`, transformOrigin: "84px 330px" }}>
+            <SchedDoc frame={frame} docP={1} axisP={1} bars={[0, 1, 2, 3, 4]} x={tick00 - 4} y={330} w={822} h={577} fillFrom={0} />
+            <div style={{ position: "absolute", left: tick00 - 2, top: 114, width: 5, height: 789, background: C.marker }} />
+          </div>
         </div>
       )}
       {phaseB > 0 && (
