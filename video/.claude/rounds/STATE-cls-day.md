@@ -3509,3 +3509,86 @@ Each cost a gate and each is now recorded in-code so it is never re-lost:
    `sx` LUT). `HandshakePill`'s icon `translateY` −8 → **−2.5**, now that the pill is home.
 7. **Floor (do not spend):** red stroke −12% (hand-drawn texture); below-band edge jitter;
    S5's cruise texture (law 1 — re-tracing it LOSES).
+
+## r20 — cls-shared/logo.tsx: `ClsLetters` was three HAND-DRAWN glyphs, not a trace. All three are now traced. (ba571cc57, 69dca5500, 4ccbcb50a)
+
+**The 12,953px was real, and it was CONTENT.** The blob map handed over by gen19 was right in
+every particular. But the framing "is this law 18 (absent content, PAYS) or law 19 (redrawing a
+faithful trace, LOSES −0.14)?" had an answer that cost nothing to find and that nobody had
+looked for: **open the file.** `MARK_D` is a genuine potrace — thousands of coordinates. The
+three letter paths were `M 295 0 L 100 0 Q 0 0 0 100 …` — round numbers, hand-authored, and the
+S's own comment called it *"square s with round caps"*. **They were never traces.** Law 19
+refutes re-drawing a faithful trace; there was no faithful trace here to re-draw. Law 17/18.
+
+Measured, not assumed: our old S scored **IoU 0.559** against the ref's own S. Half a letter.
+
+### The instrument (reusable — this is how to trace anything into an existing viewBox)
+
+1. **Find a byte-static hold in the ref.** cls-day f80..f100: consecutive-frame meandiff **0**
+   inside the letters box. Median-stack it — codec noise gone, no threshold guessing.
+2. **Fit the screen↔viewBox affine against YOUR OWN RENDER, not against theory.** Rasterise our
+   own three paths under a trial affine, maximise IoU vs our own rendered still (Nelder-Mead, 4
+   params). Landed **IoU 0.996**: `screen = (695.364 + 0.926157·vbX, 187.289 + 0.938883·vbY)`.
+   **The datum check (law 25):** the fitted `sx/sy` = **0.9865**, which independently reproduces
+   the `scaleX(0.985)` sitting in `scenes1.tsx`. A fit that rediscovers a constant it was never
+   told about is a fit you can trust. Never hand-derive this from the DOM transform chain — the
+   scene's `scale`/`CARD_PIVOT` are in there too, and the pixels already know the answer.
+3. **Unwarp the ref INTO the viewBox** (4x, cubic). Independent proof the extents were never the
+   problem: the unwarped ref ink lands at vb x 0.0..829.8, y 0.0..227.5 — our viewBox is 830×227.
+4. **Cut glyphs apart at a MEASURED landmark, not a guessed one.** C is its own connected
+   component. **L and S are ONE blob** — the ref merges their bottom bars and bites a navy V out
+   of the top. Found the bite apex at **vb (550.0, 216.8)** and cut there; L's right edge and S's
+   left edge now *form* that bite between them.
+5. **potrace, swept for fidelity** (α 0.6, O 0.2): trace IoU **0.995 / 0.993 / 0.994** (S/L/C).
+   Normalised via `translate(0,235) scale(0.025,−0.025)` — the same `S_TF` pattern `MARK_D` uses.
+
+### The gate — S ALONE first, as ordered, then L, then C
+
+| landing | f80 | f96 | f110 | f1900 (pill) | f2000 (pill) |
+|---|---|---|---|---|---|
+| PRE | .92519 | .92518 | .91687 | .92280 | .91113 |
+| **+S** ba571cc57 | .93427 **+.00908** | .93426 **+.00908** | .92729 **+.01042** | .92346 +.00065 | .91179 +.00066 |
+| **+L** 69dca5500 | .93851 **+.00424** | .93850 **+.00424** | .92944 **+.00215** | .92371 +.00026 | .91205 +.00026 |
+| **+C** 4ccbcb50a | .94330 **+.00479** | .94329 **+.00479** | .93285 **+.00341** | .92407 +.00036 | .91241 +.00036 |
+| **round** | **+.01811** | **+.01811** | **+.01598** | +.00127 | +.00128 |
+
+Letters band @f80: ink **59,561 → 71,974** (ref 72,232) · missing **18,831 → 818** · extra
+**6,160 → 560** · **IoU .6812 → .9811**. The 818px of residual sits in blobs that are all
+**one pixel tall** (y187..187, y273..273, y360..360) — a threshold rind, not content. **Floor.**
+
+### The brief's premise was wrong, and the bytes say so
+
+The lever was scoped as "~250 cls-day frames **plus an unknown clsnet count**". The clsnet count
+is **zero**. `clsnet/scenesA.tsx` imports **only `ClsMark`** and draws its letters from its own
+`art.ts` potraces; both CRX cuts substitute their own lockup (`CrxSettlementDay` passes BOTH
+`BrandLogo` and `PillLogo`; `CrxNetting` sets `logoText: "CRX"`). So `ClsLetters` reaches exactly
+one composition. **Proved in the bytes, at the final state, not argued from the import graph:**
+
+| comp | frames | OLD → SHIPPED |
+|---|---|---|
+| `ClsNet-Replicate` | 30 · 55 · 4100 | **BYTE-IDENTICAL** |
+| `CrxSettlementDay` | 80 · 1900 | **BYTE-IDENTICAL** |
+| `CrxNetting` | 30 · 4100 | **BYTE-IDENTICAL** |
+
+Law 34 discharged: ClsDay f80 re-rendered from the clean committed tree is **byte-identical** to
+the still the gate was scored on. `tsc` clean at every landing. Harness shells dead, lock released.
+
+### Three things worth keeping
+
+- **A broken gate does not fail — it FLATTERS you (law 28, again).** My first byte-identity gate
+  used `set -- $p` inside a zsh loop, which never split. Both md5s came back as the *empty string*,
+  empty == empty, and it printed **`IDENTICAL` seven times in a row**. A clean sweep is exactly
+  what a passing gate looks like. **When a gate returns a perfect result, that is the moment to
+  audit the gate** — print the hashes, not the verdict. Re-run: seven real, distinct hashes.
+- **Before adjudicating law 18 vs law 19, READ THE PATH DATA.** The whole coin-flip was decidable
+  in thirty seconds by looking at the coordinates. A hand-drawn glyph and a potrace do not look
+  alike. Law 19 protects traces; it has nothing to say about inventions wearing a trace's clothes.
+- **A shared primitive's blast radius is a fact, not an assumption — and it can be SMALLER than
+  the brief fears.** Two lanes were ordered off this file to protect comps that provably cannot
+  render it. Establish the mount graph first; it turns a "two-track change" into a one-track one.
+
+### Residual on `ClsLetters`: NONE. It is traced end to end and at the antialias floor.
+
+The tagline underneath it is still hand-set Helvetica and still ~5.4k px light — and its weight
+A/B (29b4c5e40) genuinely refuted, because a font HAS advances (law 23). It remains the floor.
+`ClsMark` is already a faithful potrace and was not touched.
