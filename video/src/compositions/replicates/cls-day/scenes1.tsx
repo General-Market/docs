@@ -1125,7 +1125,9 @@ const SettleDoc: React.FC<{ cx: number; cy: number; glyph: string; below?: boole
 // The 09:00 doc is the odd one: it rises at 27.7px/f, just as flat. Measured
 // is measured — the ref is hand-animated and owes us no consistency.
 const ABOVE_DOCS: { cx: number; glyph: string; from: number; to: number; cy: (f: number) => number }[] = [
-  { cx: -155.3, glyph: "€", from: 692, to: 706, cy: (f) => 195.6 - 27.7 * (f - 697) },
+  // from f693, not earlier: ClA's shell fill stops at world 369, so a doc
+  // launched sooner pokes out below the tower into the open leg span.
+  { cx: -155.3, glyph: "€", from: 693, to: 706, cy: (f) => 195.6 - 27.7 * (f - 697) },
   { cx: 472.1, glyph: "$", from: 748, to: 758, cy: (f) => 170.0 - 36.4 * (f - 752) },
   { cx: 1076.5, glyph: "€", from: 799, to: 809, cy: (f) => 170.1 - 36.4 * (f - 803) },
   { cx: 1661.6, glyph: "$", from: 851, to: 861, cy: (f) => 172.1 - 36.4 * (f - 855) },
@@ -1174,50 +1176,80 @@ const BELOW_DOCS: { cx: number; glyph: string; from: number; to: number; cy: (f:
 const NAVY = "#0B2341";
 const WHT = "#FDFDFD";
 
-// 08:00 cluster: red tower w/ horizontal-bar panel + dashed wings
+// 09:00 cluster — gen17 FULL RE-REGISTRATION. Every other tower in this
+// skyline had been re-traced against the ref; this one never was, and it
+// showed. Re-read per-pixel off ref f690, where the world is settled and
+// x9 = 384 exactly, so ClA-local = (screen_x - 2, screen_y - 170) — the
+// cleanest frame in the whole cruise for this slot.
+//
+// What the old model got wrong (all four are POSITION errors first — the ink
+// was not misdrawn so much as misplaced, lesson 4):
+//   · the red tower was 105 wide against the ref's 149 (x158..307), and its
+//     crown sat at y42 against y44 with the shell top at y66 against y74 —
+//     so the whole tower read tall and thin. The 8px shell-top error also
+//     mistimed the 09:00 doc's reveal, which rides this white fill.
+//   · the tower's LEGS are separate boxes below a shell that STOPS at y199;
+//     the old model ran one shell to the band with wings bolted on.
+//   · the left bridge is a CURVE into the band (r≈20 at x28.5), not a square
+//     step running off the frame edge at x-60.
+//   · the right side is a dotted building + a two-rail gantry that STOPS at
+//     x435. The old model stepped on toward the 10:00 slot at x519 — ink the
+//     ref does not have.
 const ClA: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* left low bridge into frame edge */}
-    <path d="M -60 320 L -60 240 L 111 240 L 111 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {/* grey slab + right low bridge */}
-    <rect x={310} y={195} width={50} height={125} fill="#DCDCDC" />
-    <path d="M 354 320 L 354 238 L 425 238 L 425 262 L 519 262 L 519 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {/* left navy building + stepped antenna + solid bar windows */}
-    <line x1={146.5} y1={162} x2={146.5} y2={176} stroke={NAVY} strokeWidth="3.5" />
-    <rect x={141.5} y={176} width={11.5} height={10} fill="none" stroke={NAVY} strokeWidth="3.5" />
-    <rect x={111.5} y={186} width={51} height={134} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4, 5, 6, 7].map((r) => (
-      <rect key={r} x={128} y={200 + r * 9} width={18} height={4.5} fill={NAVY} />
+    {/* grey slabs, behind everything (measured #D7D7D7 == the band grey) */}
+    <rect x={308} y={212} width={12} height={108} fill={C.bandGrey} />
+    <rect x={356} y={244} width={11} height={76} fill={C.bandGrey} />
+    {/* left bridge — the ref curves down to the band */}
+    <path d="M 109 242.5 L 48 242.5 Q 28.5 242.5 28.5 262 L 28.5 320" fill="none" stroke={NAVY} strokeWidth="3.5" />
+    {/* navy barred building + roof box + antenna */}
+    <line x1={149.5} y1={163} x2={149.5} y2={177} stroke={NAVY} strokeWidth="3" />
+    <rect x={137.5} y={176.5} width={20.5} height={11} fill={WHT} stroke={NAVY} strokeWidth="3" />
+    <rect x={109.5} y={187.5} width={50} height={132.5} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1, 2, 3, 4, 5, 6].map((r) => (
+      <rect key={r} x={130} y={197 + r * 11} width={15} height={3.5} fill={NAVY} />
     ))}
-    {/* dominant red tower: crown, stripes, bar panel w/ solid band, wings */}
-    <line x1={247} y1={42} x2={247} y2={56.5} stroke={C.red} strokeWidth="3.5" />
-    <rect x={235.5} y={56.5} width={47} height={15} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <path d="M 178 320 L 178 74 Q 178 66 186 66 L 274 66 Q 283 66 283 75 L 283 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4].map((c) => (
-      <line key={c} x1={200 + c * 14} y1={85} x2={200 + c * 14} y2={110} stroke={C.red} strokeWidth="3" />
+    {/* red tower — antenna, crown, shell (square top-left, ROUNDED top-right),
+        5 hanging stripes. The white shell fill is what hides the rising doc. */}
+    <line x1={197} y1={44} x2={197} y2={58} stroke={C.red} strokeWidth="3" />
+    <rect x={189.5} y={59.5} width={42} height={12} fill={WHT} stroke={C.red} strokeWidth="3" />
+    <path d="M 179.5 199 L 179.5 75.5 L 271.5 75.5 Q 281.5 75.5 281.5 85.5 L 281.5 199" fill={WHT} stroke={C.red} strokeWidth="3.5" />
+    {[201, 215.5, 231, 245.5, 259.5].map((x, i) => (
+      <line key={i} x1={x} y1={86} x2={x} y2={117} stroke={C.red} strokeWidth="3" />
     ))}
-    <line x1={200} y1={104} x2={256} y2={104} stroke={C.red} strokeWidth="3" />
-    <rect x={190.5} y={116.5} width={84.5} height={87.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <line x1={190.5} y1={130} x2={275} y2={130} stroke={C.red} strokeWidth="3" />
-    <rect x={195} y={137.5} width={75} height={17.5} fill={C.red} />
-    <rect x={200} y={141} width={9} height={10} fill={WHT} />
-    <rect x={256} y={141} width={9} height={10} fill={WHT} />
-    <line x1={190.5} y1={174} x2={275} y2={174} stroke={C.red} strokeWidth="3" />
-    <line x1={190.5} y1={190} x2={275} y2={190} stroke={C.red} strokeWidth="3" />
-    <rect x={192} y={204} width={79.5} height={18.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <line x1={192} y1={213} x2={271.5} y2={213} stroke={C.red} strokeWidth="3" />
-    {/* wings */}
-    <path d="M 159.5 320 L 159.5 197.5 L 178 197.5" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    <path d="M 283 197.5 L 304 197.5 L 304 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {[168, 192, 269, 293].map((x, i) => (
-      <line key={i} x1={x} y1={228} x2={x} y2={315} stroke={C.red} strokeWidth="3" strokeDasharray="9 8" />
+    {/* bar panel: two columns run all the way to the band; 7 rungs at a 16.3
+        pitch (the first gap is wider — it holds the solid band); short ticks
+        sit in the 4th and 6th gaps */}
+    <line x1={191} y1={115} x2={191} y2={320} stroke={C.red} strokeWidth="3" />
+    <line x1={273} y1={115} x2={273} y2={320} stroke={C.red} strokeWidth="3" />
+    {[116.5, 138.5, 154.5, 171.5, 187.5, 203.5, 219.5].map((y, i) => (
+      <line key={i} x1={190} y1={y} x2={274} y2={y} stroke={C.red} strokeWidth="3.5" />
     ))}
-    <path d="M 217 320 L 217 304 L 247 304 L 247 320" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* right navy building w/ dot windows */}
-    <path d="M 306 320 L 306 215 Q 306 207.5 313.5 207.5 L 346 207.5 Q 354 207.5 354 215 L 354 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2].map((r) =>
-      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={314 + c * 15} y={218 + r * 15} width={5.5} height={7} fill={NAVY} />),
+    <rect x={204} y={141} width={56} height={12} fill={C.red} />
+    {[174, 206].map((y) =>
+      [205, 259].map((x) => <line key={`${x}-${y}`} x1={x} y1={y} x2={x} y2={y + 11} stroke={C.red} strokeWidth="3" />),
     )}
+    {/* legs: top bars, outer walls to the band, one dashed riser each */}
+    <path d="M 158 198.5 L 192 198.5 M 272 198.5 L 306 198.5" fill="none" stroke={C.red} strokeWidth="3.5" />
+    <line x1={159.5} y1={198} x2={159.5} y2={320} stroke={C.red} strokeWidth="3.5" />
+    <line x1={304} y1={198} x2={304} y2={320} stroke={C.red} strokeWidth="3.5" />
+    <line x1={175} y1={206} x2={175} y2={300} stroke={C.red} strokeWidth="3" strokeDasharray="11 15" />
+    <line x1={288.5} y1={206} x2={288.5} y2={300} stroke={C.red} strokeWidth="3" strokeDasharray="11 15" />
+    {/* base box under the open span */}
+    <line x1={218} y1={307} x2={250} y2={307} stroke={C.red} strokeWidth="3" />
+    {[219.5, 233, 248.5].map((x, i) => (
+      <line key={i} x1={x} y1={307} x2={x} y2={320} stroke={C.red} strokeWidth="3" />
+    ))}
+    {/* navy dotted building — OPEN on the left, so the grey slab reads through */}
+    <path d="M 307 208.5 L 342.5 208.5 Q 352.5 208.5 352.5 218.5 L 352.5 320" fill="none" stroke={NAVY} strokeWidth="3.5" />
+    {[0, 1].map((r) =>
+      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={312 + c * 13.5} y={217 + r * 17} width={4} height={7.5} fill={NAVY} />),
+    )}
+    <line x1={307} y1={274.5} x2={358} y2={274.5} stroke={NAVY} strokeWidth="3.5" />
+    {/* right gantry: two rails, one leg to the band — and it STOPS at x434 */}
+    <line x1={352} y1={239} x2={434} y2={239} stroke={NAVY} strokeWidth="3" />
+    <line x1={352} y1={249.5} x2={434} y2={249.5} stroke={NAVY} strokeWidth="3" />
+    <line x1={432.5} y1={239} x2={432.5} y2={320} stroke={NAVY} strokeWidth="3.5" />
   </svg>
 );
 
