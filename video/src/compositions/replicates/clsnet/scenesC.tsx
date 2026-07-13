@@ -683,11 +683,29 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           <ClsNetBox x={875} y={833.8} w={170} side={166} />
         </div>
       )}
-      {/* orange return paths */}
+      {/* orange return paths.
+          r19 — the same three errors r18 found in the settlement plumbing above,
+          in the return plumbing below. Sub-pixel coverage profiles on the ref:
+            • the lines DO NOT TOUCH THE BOX. The left one ends at x823 and the
+              right one begins at x1100 — a deliberate ~52px gap on each side, the
+              same grammar as the 16px gap the settlement drop leaves below the
+              horizon. We ran ours right into the box's edge (x874 / x1045).
+            • the corner is ROUNDED, r≈26 (the vertical stops at y901.6, the
+              horizontal picks up at x421.5). We drew a hard right angle.
+            • the horizontal sits at y927.56, not 930; the stroke is 2.35, not 2.5;
+              the right leg is at x1529.4, not 1527.5; and both legs run up to the
+              doc's own bottom edge, y486, not 490.
+          Symmetric about x962.5 to the tenth of a pixel — the ref's own axis. */}
       {orangeP > 0 && (
         <div style={{ position: "absolute", inset: 0, opacity: orangeP }}>
-          <Elbow points={[[875, 930], [396, 930], [396, 490]]} />
-          <Elbow points={[[1045, 930], [1528, 930], [1528, 490]]} />
+          <svg width={1920} height={1080} style={{ position: "absolute" }}>
+            <path
+              d="M823,927.56 H421.5 Q395.5,927.56 395.5,901.56 V486 M1100,927.56 H1503.4 Q1529.4,927.56 1529.4,901.56 V486"
+              stroke={C.orange}
+              strokeWidth={2.35}
+              fill="none"
+            />
+          </svg>
           <Doc x={360} y={392} w={70} h={95} />
           <Doc x={1495} y={392} w={70} h={95} />
         </div>
