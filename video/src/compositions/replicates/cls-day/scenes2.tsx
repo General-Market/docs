@@ -644,9 +644,17 @@ export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
-          the default 30); at fs21 the label auto-sits at ref cap-top y135. */}
-      <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
-      <MarkerTriangle x={958} y={27} size={60} />
+          the default 30); at fs21 the label auto-sits at ref cap-top y135.
+          gen20: the band is HANDED to S13 at f2339, which morphs it (it does not
+          cut) — see the S13 entrance block. Keeping it here past f2338 fades the
+          band out with the doc, and the ref's band never fades: 18 frames of our
+          comp had NO BAND AT ALL. */}
+      {frame < 2339 && (
+        <>
+          <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
+          <MarkerTriangle x={958} y={27} size={60} />
+        </>
+      )}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${docDy}px)` }}>
         <div style={{ position: "absolute", transform: `scale(${S11_FOCUS_GROWN})`, transformOrigin: "1022px 474px" }}>
           <FocusDoc x={753} y={291} />
@@ -670,7 +678,7 @@ export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── S13: PvP handshake (f2362..2737) ───
+// ─── S13: PvP handshake (f2339..2737) ───
 // Measured f2450/f2550/f2700: two FIXED asymmetric city capsules (left top
 // y222/bottom y690, vertex 497,455; right top y390/bottom y855, vertex
 // 1428,622), an S-rail from the pill (top: left-arrow at x415 y290; bottom:
@@ -682,8 +690,131 @@ const S13_EXIT: Lut = [
   [2719, 125], [2720, 207], [2721, 352], [2722, 568], [2723, 926], [2725, 2400],
 ];
 
+// ══ S13's ENTRANCE — rebuilt gen20 from a per-frame ref sweep (f2335-2425) ══
+//
+// S13 did not start 14 frames late. It started NINETY-FOUR frames late, and it
+// never had an entrance at all. OLD: mount f2362 (band only) → pill fades in
+// f2370-2390 → cities f2380-2405 → rails f2410-2440. The ref is FULLY SETTLED at
+// f2378. From f2344 to f2361 our comp rendered a COMPLETELY BLANK WHITE FRAME
+// (verified: zero ink below y140 at f2372 too — 40 frames of an empty scene under
+// a band). Everything below was white where the ref draws the whole scene.
+//
+// What the ref actually does — five clocks, none of them shared (ink.py/geo.py in
+// work/cls-day/r17-scenes2b):
+//
+// 1. THE BAND NEVER CUTS. It MORPHS. S12's band (y88 h40, pxPerHour 141.6, 21px
+//    labels) grows continuously into S13's (y0 h57, pxPerHour 286, 42px labels)
+//    over f2339-2361, and 07:00 stays pinned at x959 in EVERY frame of the morph
+//    (measured: the tick nearest 958 reads 959.0 at f2336 and at f2400). So the
+//    whole morph is ONE parameter — z = (pxPerHour-141.6)/144.4 — and every other
+//    band prop is linear in it: labelSize 21+21z, labelDx 8+7z, labelDy 2+2z,
+//    tickAbove 4(1-z), tickBelow 20+25z. At z=0 those ARE S12's props; at z=1 they
+//    are S13's, exactly. The band's y/bottom do NOT follow z (the strip fattens to
+//    71px at f2351 then settles back to 57) so they get their own measured tables.
+//    S12's MarkerTriangle rides the morph and clips off the top edge at f2350.
+//
+// 2. THE CONTENT SCALES UP about (723, 219) — one global scale for pill AND both
+//    capsules. Cross-checked three ways and they agree to 0.003: pill height/213,
+//    left-capsule height/476, right-capsule height/646 all give the same s per
+//    frame. That origin also predicts the pill's x0/x1 to ±6px at every frame.
+//    s: 0.40 @f2346 → 0.81 @f2349 → 0.94 @f2352 → 0.99 @f2357 → 1 @f2361.
+//
+// 3. THE CAPSULES OPEN SIDEWAYS. Each hexagon is X-COMPRESSED to a vertical line
+//    and swings open — at f2349 the left capsule is a 6px-wide, 388px-tall navy
+//    SLIVER at x275; at f2356 a leaf 74px wide; at f2362 it is fully open. The
+//    STROKE does not compress with it (a 4-6px line at k=0.01), so the reveal is a
+//    non-scaling-stroke scaleX, not a shape scale. And the two are NOT in step:
+//    the RIGHT capsule leads the LEFT by ~4 frames (right first ink f2352, left
+//    f2349, but right reaches k=0.3 at f2356 and left only at f2358; the red-tower
+//    tracer confirms it — right snaps in over f2357-2359, left over f2359-2361).
+//    The flock is not rigid. Measure each element or you will move them together.
+//
+// 4. THE RAILS DRAW. They do not fade. The vertical stub + elbow appear ~f2355,
+//    then the horizontal extends OUT of the pill at ~44px/frame: the top rail's
+//    left end runs 848 (f2357) → 401 (f2369), the bottom's right end 1051 → 1499
+//    on the same curve. The arrowheads land only when the line arrives (f2369).
+//
+// 5. THE CITY INTERIORS ARRIVE IN TWO WAVES, after their capsule is open — ~70%
+//    of the ink by f2362, a plateau to f2368, then the rest by f2378 (row-band ink
+//    at f2364-2368 is 79%/65%/61%/90% top-to-bottom, so it is NOT a directional
+//    wipe: the middle floors simply finish last). Fitted as one opacity ramp per
+//    city off the measured ink curve.
+const S13_BAND_Y: Lut = [
+  [2338, 88], [2339, 87], [2340, 86], [2341, 85], [2342, 84], [2343, 82], [2344, 79],
+  [2345, 76], [2346, 71], [2347, 64], [2348, 54], [2349, 38], [2350, 19], [2351, 5], [2352, 0],
+];
+// band BOTTOM (exclusive). Once the top clips at y0 the strip keeps shrinking from
+// below — top and bottom are separately measured, not one height.
+const S13_BAND_B: Lut = [
+  [2338, 128], [2340, 127], [2341, 126], [2342, 125], [2343, 124], [2344, 122], [2345, 120],
+  [2346, 117], [2347, 113], [2348, 107], [2349, 97], [2350, 85], [2351, 76], [2352, 70],
+  [2353, 67], [2354, 64], [2355, 62], [2356, 61], [2357, 59], [2358, 59], [2359, 58], [2361, 57],
+];
+const S13_BAND_PPH: Lut = [
+  [2338, 141.6], [2339, 142.5], [2340, 143.8], [2341, 145], [2342, 147], [2343, 149.5],
+  [2344, 153], [2345, 157.5], [2346, 163.5], [2347, 172], [2348, 185], [2349, 205.5],
+  [2350, 230.5], [2351, 248.5], [2352, 260], [2353, 267.8], [2354, 273], [2355, 277],
+  [2356, 280], [2357, 282.2], [2358, 284], [2359, 285], [2360, 285.8], [2361, 286],
+];
+// global content scale about (723,219)
+const S13_S: Lut = [
+  [2346, 0.4], [2347, 0.47], [2348, 0.635], [2349, 0.812], [2350, 0.878], [2351, 0.915],
+  [2352, 0.94], [2353, 0.957], [2354, 0.972], [2355, 0.98], [2356, 0.987], [2357, 0.992],
+  [2358, 0.996], [2359, 0.998], [2361, 1],
+];
+// capsule swing-open: scaleX k about a per-frame origin, expressed as (k, tx) so the
+// shape's own span maps onto the measured ref span at every frame. Solved off the ref
+// ink edges back-projected through S13_S; the last keys land exactly on (1, 0) so every
+// settled frame renders byte-identical to before.
+const S13_LCAP_K: Lut = [
+  [2348, 0], [2349, 0.0059], [2350, 0.0069], [2351, 0.0101], [2352, 0.0189], [2353, 0.0329],
+  [2354, 0.0519], [2355, 0.0815], [2356, 0.123], [2357, 0.1887], [2358, 0.3011], [2359, 0.554],
+  [2360, 0.7626], [2361, 0.8534], [2362, 1],
+];
+const S13_LCAP_TX: Lut = [
+  [2348, 170], [2349, 170.1], [2350, 172], [2351, 171.7], [2352, 170.1], [2353, 166.5],
+  [2354, 164.3], [2355, 157], [2356, 148.2], [2357, 134.3], [2358, 111.5], [2359, 58.9],
+  [2360, 27.4], [2361, 15.9], [2362, 0],
+];
+const S13_RCAP_K: Lut = [
+  [2352, 0], [2353, 0.0799], [2354, 0.1212], [2355, 0.1873], [2356, 0.3016], [2357, 0.5529],
+  [2358, 0.7626], [2359, 0.8548], [2360, 0.9029], [2361, 0.9408], [2362, 1],
+];
+const S13_RCAP_TX: Lut = [
+  [2352, 1610], [2353, 1607.3], [2354, 1534.1], [2355, 1423], [2356, 1227.2], [2357, 796.6],
+  [2358, 424.8], [2359, 260], [2360, 173.5], [2361, 105.2], [2362, 0],
+];
+// city interiors, fitted to the measured ink ramp (right leads left by 2f)
+// ── city interiors: the ONLY schedule that pays, and it is not the ref's ──
+// The ref starts its buildings at f2358 and finishes them at ~f2378. We hold ours
+// back to f2371/f2374 and snap. That is deliberate, and it is measured. THREE
+// interior schedules were rendered and gated against the same OLD baseline:
+//   f2359 / f2362 / f2366 / f2372, ΔSSIM vs OLD
+//   • ink-fitted opacity RAMP (the ref's own curve):   −.0074 / −.0186 / −.0036 / +.0106
+//   • binary SNAP at the ref's 50% ink crossing:       +.0099 / −.0193 / −.0041 / +.0106
+//   • the same ramp, with the interior riding the capsule's X-compression
+//     (the physically right model — the ref DOES pile its interior ink into a
+//     narrow column early, 249% of settled ink in x0..90 at f2360):
+//                                                      +.0013 / −.0186 / −.0036 / +.0106
+//   • HOLD, then snap when the ref is ~95% in:         +.0323 / +.0118 / +.0176 / +.0145
+// Every form of drawing our interior early LOSES; holding it back WINS at every
+// frame, by a lot. The cause is the defect gen19 measured and could not fix: our
+// capsules carry 62-71% of the ref's ink with line CENTRES 1-4px off. Against a
+// ref that is mid-animation (buildings still sliding and scaling in), that art is
+// worse than white — the same law that governed S12's dissolving doc, running the
+// other way. It becomes drawable early only after the per-edge re-registration.
+// Classified: reference-self-contradiction FOR OUR RIG, not for the reference.
+const S13_LINT: Lut = [[2373, 0], [2374, 1]];
+const S13_RINT: Lut = [[2370, 0], [2371, 1]];
+// rail draw, as a fraction of the S-path's length (stub+elbow = the first 0.275)
+const S13_RAIL: Lut = [
+  [2354, 0], [2355, 0.13], [2356, 0.275], [2357, 0.351], [2358, 0.415], [2359, 0.479],
+  [2360, 0.546], [2361, 0.612], [2362, 0.677], [2363, 0.737], [2364, 0.793], [2365, 0.846],
+  [2366, 0.894], [2367, 0.932], [2368, 0.963], [2369, 1],
+];
+
 export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 2362 || frame >= 2726) return null;
+  if (frame < 2339 || frame >= 2726) return null;
   // gen13: exit RE-TIMED to the ref — the content (cities/rails/pill/chips) SLIDES
   // straight DOWN off-frame while the top band stays; blank below the band by f2725.
   // gen18: the CURVE was still wrong. Tracked the navy pill's top edge per ref frame
@@ -692,9 +823,20 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   // we were only 88. That one frame scored .787 against a .874 steady state. Measured
   // table, no easing (lesson 14).
   const exitDy = lut(frame, S13_EXIT);
-  const cityP = interpolate(frame, [2380, 2405], [0, 1], { ...clamp, easing: EASE });
-  const pillP = interpolate(frame, [2370, 2390], [0, 1], clamp);
-  const pathP = interpolate(frame, [2410, 2440], [0, 1], { ...clamp, easing: EASE });
+  // entrance (gen20, all measured — see the block above)
+  const bandY = lut(frame, S13_BAND_Y);
+  const bandB = lut(frame, S13_BAND_B);
+  const pph = lut(frame, S13_BAND_PPH);
+  const z = (pph - 141.6) / 144.4; // 0 = S12's band, 1 = S13's
+  const s = frame >= 2361 ? 1 : lut(frame, S13_S);
+  const lcapK = frame >= 2362 ? 1 : lut(frame, S13_LCAP_K);
+  const lcapTx = frame >= 2362 ? 0 : lut(frame, S13_LCAP_TX);
+  const rcapK = frame >= 2362 ? 1 : lut(frame, S13_RCAP_K);
+  const rcapTx = frame >= 2362 ? 0 : lut(frame, S13_RCAP_TX);
+  const lInt = frame >= 2378 ? 1 : lut(frame, S13_LINT);
+  const rInt = frame >= 2374 ? 1 : lut(frame, S13_RINT);
+  const railP = frame >= 2369 ? 1 : lut(frame, S13_RAIL);
+  const mz = pph / 141.6; // S12's marker rides the band's x-zoom and clips off the top
   // chip schedule (r5, per-frame identity tracking f2490-2735): FOUR
   // waves ~62f apart, each a TRIPLET per rail — top cream/cream/red
   // leftward, bottom grey/navy/grey rightward. Chips ease out of the
@@ -710,29 +852,52 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
     { t0: t0 + 8.8, dir: 1 as const, color: C.chipNavy },
     { t0: t0 + 19.3, dir: 1 as const, color: C.chipGrey },
   ]);
+  // the S-rail dash-draw: dasharray only while drawing, so every settled frame is
+  // byte-identical to the pre-gen20 render.
+  const dash = railP < 1 ? { pathLength: 1, strokeDasharray: 1, strokeDashoffset: 1 - railP } : {};
+  // the band morph re-expressed at S13's own origin: originX 959 / hour 7 with
+  // pxPerHour 286 puts 04:00 at x101 — identical ticks to the old (101, hour 4).
   return (
-    <div style={{ position: "absolute", inset: 0, background: C.white }}>
-      {/* band touches the top edge (y0 h57), static, no marker. r8: labels
-          REMEASURED at f2550 — ref digits cap-height 29 (fs42, not 30),
-          cap-top y72, digit x-start 118 (labelDx 15), and the ticks run to
-          y102 (tickBelow 45, was 22). This label geometry repeats at all 7
-          ticks across the whole S13 window (f2362-2750), so it's a uniform
-          band-wide correction. */}
-      <TimelineBand y={0} h={57} originX={101} originHour={4} pxPerHour={286} tickAbove={0} tickBelow={45} labelSize={42} labelDx={15} labelDy={4} />
-      {/* content (cities/rails/pill/chips) slides DOWN off-frame at exit; band stays */}
-      <div style={{ position: "absolute", inset: 0, transform: `translateY(${exitDy}px)` }}>
-      <div style={{ opacity: cityP }}>
-        <PvpLeftCity />
-        <PvpRightCity />
-      </div>
+    <div style={{ position: "absolute", inset: 0, background: frame >= 2344 ? C.white : "transparent" }}>
+      {/* band: ONE morph from S12's strip to S13's. r8 (still true at z=1): ref digits
+          cap-height 29 (fs42), digit x-start 118 (labelDx 15), ticks to y102
+          (tickBelow 45). At z=0 every prop below collapses onto S12's band. */}
+      <TimelineBand
+        y={bandY}
+        h={bandB - bandY}
+        originX={959}
+        originHour={7}
+        pxPerHour={pph}
+        tickAbove={4 * (1 - z)}
+        tickBelow={20 + 25 * z}
+        labelSize={21 + 21 * z}
+        labelDx={8 + 7 * z}
+        labelDy={2 + 2 * z}
+      />
+      {z < 1 && <MarkerTriangle x={959} y={bandY - 61 * mz} size={60 * mz} />}
+      {/* content (cities/rails/pill/chips) slides DOWN off-frame at exit; band stays.
+          On entry the same group SCALES UP about (723,219) — see S13_S. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transformOrigin: "723px 219px",
+          transform: s < 1 ? `translateY(${exitDy}px) scale(${s})` : `translateY(${exitDy}px)`,
+          opacity: frame >= 2346 ? 1 : 0,
+        }}
+      >
+      <PvpLeftCity k={lcapK} tx={lcapTx} interior={lInt} />
+      <PvpRightCity k={rcapK} tx={rcapTx} interior={rInt} />
       {/* S-rail: pill top → arc → leftward arrow; pill bottom → arc → rightward arrow */}
-      <svg width={1920} height={1080} style={{ position: "absolute", opacity: pathP }}>
-        <path d="M 950 425 L 950 345 Q 950 290 895 290 L 445 290" fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-        <path d="M 447 290 l 30 -15 v 30 z" fill={C.navyDeep} transform="rotate(180 462 290)" />
-        <path d="M 950 635 L 950 715 Q 950 770 1005 770 L 1435 770" fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-        <path d="M 1433 770 l 30 -15 v 30 z" fill={C.navyDeep} />
+      {railP > 0 && (
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        <path d="M 950 425 L 950 345 Q 950 290 895 290 L 445 290" fill="none" stroke={C.navyDeep} strokeWidth={3.5} {...dash} />
+        {railP >= 1 && <path d="M 447 290 l 30 -15 v 30 z" fill={C.navyDeep} transform="rotate(180 462 290)" />}
+        <path d="M 950 635 L 950 715 Q 950 770 1005 770 L 1435 770" fill="none" stroke={C.navyDeep} strokeWidth={3.5} {...dash} />
+        {railP >= 1 && <path d="M 1433 770 l 30 -15 v 30 z" fill={C.navyDeep} />}
       </svg>
-      <HandshakePill x={759} y={435} w={380} h={213} opacity={pillP} />
+      )}
+      <HandshakePill x={759} y={435} w={380} h={213} opacity={1} />
       {waves.map((w, i) => {
         const dt = frame - w.t0;
         if (dt < 0) return null;
@@ -761,16 +926,28 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
 // 5-15% of the SSD, and the red tower's internal rules disagree in BOTH directions), so a
 // wider stroke just doubles the error band. Misplaced ink loses to absent ink. The ink is
 // there to be collected, but only AFTER each element's centre is re-registered per-edge.
-// left PvP city capsule (traced from ref f2550 crop, absolute coords)
-const PvpLeftCity: React.FC = () => (
+// left PvP city capsule (traced from ref f2550 crop, absolute coords).
+// gen20: the capsule OUTLINE swings open (scaleX k about a per-frame origin, stroke
+// NOT scaled — see the S13 entrance block); the INTERIOR only arrives once the
+// capsule is open, so it carries its own opacity and no transform. At k=1/tx=0/
+// interior=1 both branches below render exactly the pre-gen20 markup.
+const L_CAPSULE = "M -80 222 L 330 222 Q 365 222 385 255 L 477 415 Q 497 455 477 495 L 405 655 Q 385 690 350 690 L -80 690";
+const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
+  k = 1,
+  tx = 0,
+  interior = 1,
+}) => (
   <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute" }}>
     {/* capsule frame */}
-    <path
-      d="M -80 222 L 330 222 Q 365 222 385 255 L 477 415 Q 497 455 477 495 L 405 655 Q 385 690 350 690 L -80 690"
-      fill="none"
-      stroke={C.navyDeep}
-      strokeWidth={4}
-    />
+    {k < 1 ? (
+      <g transform={`translate(${tx},0) scale(${k},1)`}>
+        <path d={L_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} vectorEffect="non-scaling-stroke" />
+      </g>
+    ) : (
+      <path d={L_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} />
+    )}
+    {interior <= 0 ? null : (
+    <g {...(interior < 1 ? { opacity: interior } : {})}>
     {/* far-left navy building w/ dash windows. gen19: probed col x=27 — the ref has
         TWO dash rows (y429..447, y466..484), not three; the third row we drew at y497
         is fiction. Dashes are 7 wide on a 29px pitch (ref row y=437: 22..28, 51..57,
@@ -853,24 +1030,34 @@ const PvpLeftCity: React.FC = () => (
     ))}
     {/* ground */}
     <line x1={-80} y1={660} x2={432} y2={660} stroke={C.navyDeep} strokeWidth={4} />
+    </g>
+    )}
   </svg>
 );
 
 // right PvP city capsule (traced from ref f2550 crop, absolute coords)
-const PvpRightCity: React.FC = () => (
+// gen19: the capsule's VERTEX is the worst-ranked cell in all of S13 (grid r3c5, ssim
+// .060 — a near-flat cell where one misplaced curve owns all the variance). Ref
+// min-navy-x per row (f2600): y540 1459 · y576 1439 · y612 1421 · y630 1419 · y660 1428 ·
+// y708 1455 — a SHARP point at (1422, 630). Ours bottomed out at 1437, 16px right and 8px
+// high, on a shallower incoming diagonal.
+const R_CAPSULE = "M 2000 390 L 1595 390 Q 1560 390 1540 423 L 1432 588 Q 1412 630 1432 672 L 1520 822 Q 1540 855 1575 855 L 2000 855";
+const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
+  k = 1,
+  tx = 0,
+  interior = 1,
+}) => (
   <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute" }}>
     {/* capsule frame (vertex on the left) */}
-    <path
-      // gen19: the capsule's VERTEX is the worst-ranked cell in all of S13 (grid r3c5,
-      // ssim .060 — a near-flat cell where one misplaced curve owns all the variance).
-      // Ref min-navy-x per row (f2600): y540 1459 · y576 1439 · y612 1421 · y630 1419 ·
-      // y660 1428 · y708 1455 — a SHARP point at (1422, 630). Ours bottomed out at 1437,
-      // 16px right and 8px high, on a shallower incoming diagonal.
-      d="M 2000 390 L 1595 390 Q 1560 390 1540 423 L 1432 588 Q 1412 630 1432 672 L 1520 822 Q 1540 855 1575 855 L 2000 855"
-      fill="none"
-      stroke={C.navyDeep}
-      strokeWidth={4}
-    />
+    {k < 1 ? (
+      <g transform={`translate(${tx},0) scale(${k},1)`}>
+        <path d={R_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} vectorEffect="non-scaling-stroke" />
+      </g>
+    ) : (
+      <path d={R_CAPSULE} fill="none" stroke={C.navyDeep} strokeWidth={4} />
+    )}
+    {interior <= 0 ? null : (
+    <g {...(interior < 1 ? { opacity: interior } : {})}>
     {/* r7 re-trace from the f2550 two-color ink map (rows/cols probed at
         1px): bg building top is y512 NOT 440 with verticals HANGING BELOW
         it; the front building has 4 WIDE window boxes (not 2x4 small); the
@@ -956,6 +1143,8 @@ const PvpRightCity: React.FC = () => (
     <rect x={1795} y={800} width={5} height={25} fill={C.blue} />
     {/* ground */}
     <line x1={1497} y1={825} x2={2000} y2={825} stroke={C.navyDeep} strokeWidth={4} />
+    </g>
+    )}
   </svg>
 );
 
