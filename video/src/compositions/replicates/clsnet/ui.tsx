@@ -500,6 +500,62 @@ export const Elbow: React.FC<{
 // Also note the payment Docs (scenesC:673/674, w72) are a DIFFERENT ref document
 // (orange square badge top-left, a two-cell strip, a peach fill band) — so the
 // enrichment needs a `variant`, not one hard-coded body. Gate all eleven sites.
+//
+/** The ref's document, transcribed from the LEFT locks Doc (f1740, page x354 y552
+ *  w150 h198). Every y is a fraction of h, every x a fraction of w — the ref draws
+ *  ONE document and scales it, so fractions are the right datum. */
+const DOC = {
+  fold: 0.153, // top edge runs to x/w 0.847; we drew 0.22 — 44% too big
+  blCorner: 0.11, // the bottom-LEFT corner is ROUNDED; ours was square
+  micro: [
+    [0.071, 0.09, 0.30],
+    [0.096, 0.09, 0.37],
+    [0.119, 0.09, 0.24],
+  ] as [number, number, number][],
+  boxX: [0.087, 0.915] as [number, number],
+  box1: [0.146, 0.273] as [number, number], // hollow outlined panel
+  box2: [0.641, 0.929] as [number, number], // hollow outlined panel
+  rules: [0.323, 0.369], // two full-width hairlines between the panels
+  navyPill: [0.439, 0.485, 0.086, 0.640],
+  orangePill: [0.535, 0.581, 0.373, 0.907], // INDENTED and flush right
+  innerPill: [0.828, 0.894, 0.53, 0.86], // sits INSIDE box 2, right-aligned
+};
+
+/** The legacy three-bar body, preserved byte-identically for sites whose ref
+ *  document has not been transcribed yet. Reached only via `variant="plain"`. */
+const DocPlain: React.FC<{
+  x: number; y: number; w: number; h: number; opacity: number;
+  lines?: { color: string; w: number }[]; label?: string; labelColor: string;
+}> = ({ x, y, w, h, opacity, lines, label, labelColor }) => {
+  const brand = useBrand();
+  const fold = w * 0.22;
+  const ls = lines ?? [
+    { color: C.navy, w: 0.55 },
+    { color: C.orangeDeep, w: 0.4 },
+    { color: C.navy, w: 0.5 },
+  ];
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", left: x, top: y, opacity }}>
+      <path
+        d={`M2,2 H${w - fold - 2} L${w - 2},${fold + 2} V${h - 2} H2 Z`}
+        fill={C.white} stroke={C.navy} strokeWidth={2.5} strokeLinejoin="round"
+      />
+      <path d={`M${w - fold - 2},2 V${fold + 2} H${w - 2}`} fill="none" stroke={C.navy} strokeWidth={2.5} />
+      {label ? (
+        <text x={w * 0.14} y={h * 0.45} fontFamily={brand.sans} fontSize={w * 0.19} fill={labelColor}>
+          {label.split("\n").map((s, i) => (
+            <tspan key={i} x={w * 0.14} dy={i === 0 ? 0 : w * 0.2}>{s}</tspan>
+          ))}
+        </text>
+      ) : (
+        ls.map((l, i) => (
+          <rect key={i} x={w * 0.14} y={h * (0.3 + i * 0.16)} width={w * l.w} height={h * 0.06} rx={h * 0.03} fill={l.color} />
+        ))
+      )}
+    </svg>
+  );
+};
+
 export const Doc: React.FC<{
   x: number;
   y: number;
@@ -509,15 +565,36 @@ export const Doc: React.FC<{
   lines?: { color: string; w: number }[];
   label?: string;
   labelColor?: string;
-}> = ({ x, y, w = 90, h = 110, opacity = 1, lines, label, labelColor = C.orangeDeep }) => {
+  innerPill?: string;
+  /** WHICH DOCUMENT this site draws. The ref does not draw one document — it draws
+   *  at least two, and the body is CONTENT, so it belongs to the call site.
+   *    "full"  the document transcribed below (the LOCKS pair, f1740).
+   *    "plain" the legacy three-bar body, byte-identical — the default, meaning
+   *            "this site's ref document has not been transcribed yet".
+   *  Measured, so nobody has to guess:
+   *    locks   scenesB:927/928 (w149) — `variant="full"` is worth, at f1740:
+   *            left doc crop .494→.663 (+0.170) · right .497→.542 · WHOLE-FRAME
+   *            .9288→.9325 (+0.0038); at f1735 whole-frame .9292→.9356 (+0.0064).
+   *            Pass `innerPill={C.pillNavy}` on the RIGHT doc — the ref's inner
+   *            pill is orange in the left document and navy in the right.
+   *    payment scenesC:673/674, 690/691 (w72/w70) — a DIFFERENT document: an orange
+   *            square badge, a two-cell strip, a peach fill band. "full" LOSES here
+   *            (crop .327→.268, whole-frame −0.0010 at f2560). STAY "plain" until it
+   *            is transcribed.
+   *    tradeDocs scenesB:422/423 (w90) — "full" loses −0.0017 at f1430. STAY "plain". */
+  variant?: "full" | "plain";
+}> = ({ x, y, w = 90, h = 110, opacity = 1, lines, label, labelColor = C.orangeDeep, innerPill = C.orangeDeep, variant = "plain" }) => {
   const brand = useBrand();
   if (opacity <= 0) return null;
-  const fold = w * 0.22;
-  const ls = lines ?? [
-    { color: C.navy, w: 0.55 },
-    { color: C.orangeDeep, w: 0.4 },
-    { color: C.navy, w: 0.5 },
-  ];
+  if (variant === "plain") return <DocPlain x={x} y={y} w={w} h={h} opacity={opacity} lines={lines} label={label} labelColor={labelColor} />;
+  // Fold: the ref's top edge runs to x/w 0.847 and the diagonal reaches the right
+  // edge at y = 0.153·w. We drew 0.22·w — 44% too big, at every Doc.
+  const fold = w * DOC.fold;
+  const r = w * DOC.blCorner; // rounded bottom-LEFT corner (the ref has one; we had a square)
+  const S = 2.5;
+  const bx0 = w * DOC.boxX[0];
+  const bx1 = w * DOC.boxX[1];
+  void lines; // legacy prop: no call site passes it; the body is now the ref's own
   return (
     <svg
       width={w}
@@ -526,13 +603,13 @@ export const Doc: React.FC<{
       style={{ position: "absolute", left: x, top: y, opacity }}
     >
       <path
-        d={`M2,2 H${w - fold - 2} L${w - 2},${fold + 2} V${h - 2} H2 Z`}
+        d={`M${S},${S} H${w - fold - S} L${w - S},${fold + S} V${h - S} H${S + r} A${r},${r} 0 0 1 ${S},${h - S - r} Z`}
         fill={C.white}
         stroke={C.navy}
-        strokeWidth={2.5}
+        strokeWidth={S}
         strokeLinejoin="round"
       />
-      <path d={`M${w - fold - 2},2 V${fold + 2} H${w - 2}`} fill="none" stroke={C.navy} strokeWidth={2.5} />
+      <path d={`M${w - fold - S},${S} V${fold + S} H${w - S}`} fill="none" stroke={C.navy} strokeWidth={S} />
       {label ? (
         <text
           x={w * 0.14}
@@ -548,17 +625,35 @@ export const Doc: React.FC<{
           ))}
         </text>
       ) : (
-        ls.map((l, i) => (
-          <rect
-            key={i}
-            x={w * 0.14}
-            y={h * (0.3 + i * 0.16)}
-            width={w * l.w}
-            height={h * 0.06}
-            rx={h * 0.03}
-            fill={l.color}
-          />
-        ))
+        <>
+          {/* header micro-text: three short left rules */}
+          {DOC.micro.map(([fy, fx0, fx1], i) => (
+            <rect key={`m${i}`} x={w * fx0} y={h * fy} width={w * (fx1 - fx0)} height={Math.max(1.4, h * 0.008)} fill={C.navy} />
+          ))}
+          {/* the two hollow BOXES and the two full-width hairlines — all absent before */}
+          <rect x={bx0} y={h * DOC.box1[0]} width={bx1 - bx0} height={h * (DOC.box1[1] - DOC.box1[0])} fill="none" stroke={C.navy} strokeWidth={Math.max(1.4, w * 0.013)} />
+          <rect x={bx0} y={h * DOC.box2[0]} width={bx1 - bx0} height={h * (DOC.box2[1] - DOC.box2[0])} fill="none" stroke={C.navy} strokeWidth={Math.max(1.4, w * 0.013)} />
+          {DOC.rules.map((fy, i) => (
+            <rect key={`r${i}`} x={bx0} y={h * fy} width={bx1 - bx0} height={Math.max(1.2, h * 0.007)} fill={C.navy} />
+          ))}
+          {/* the three pills. The ref's mid pill is INDENTED and flush right; its
+              third is a small pill INSIDE box 2, right-aligned — not a left bar. */}
+          {([
+            [DOC.navyPill, C.navy],
+            [DOC.orangePill, C.orangeDeep],
+            [DOC.innerPill, innerPill],
+          ] as [number[], string][]).map(([p, col], i) => (
+            <rect
+              key={`p${i}`}
+              x={w * p[2]}
+              y={h * p[0]}
+              width={w * (p[3] - p[2])}
+              height={h * (p[1] - p[0])}
+              rx={h * (p[1] - p[0]) / 2}
+              fill={col}
+            />
+          ))}
+        </>
       )}
     </svg>
   );
