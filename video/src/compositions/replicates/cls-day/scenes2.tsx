@@ -294,13 +294,24 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
             logoScale = 71.7/196 = 0.366 (the default 0.5 would render it half again
             too tall). The scenes1 builder found the same undersize in S4 — same pill,
             same rig. */}
-        {pillP > 0 && <ClsPillSlot x={742} y={718} w={433} h={196} p={pillP} PillLogo={PillLogo} logoScale={0.366} />}
+        {/* Chips ride UNDER the pill — the ref lets them slide behind it and the pill
+            occludes them (f2015: a grey chip reads only 39px wide against its true 130,
+            the rest hidden by the pill's right edge). Drawn before the pill, so the
+            occlusion is free — and with the pill now at its true size, chips drawn after
+            it sat ON TOP OF THE WORDMARK.
+            NEGATIVE A/B (reverted): the ref's chips are 127x57, not 86x34 — but resizing
+            them LOST (f1950 −.0011, f2020 −.0014, f2045 −.0013, net negative). Our chip
+            PATHS are still invented: they fly diagonally out of the hex bottoms, where
+            the ref runs them flat along the y≈813 connector lane and parks them at the
+            pill's edges. A bigger chip in the wrong place is more misplaced ink, not less
+            (lesson 4). Re-measure the paths and the schedule FIRST, then the size. */}
         {chips.map((c, i) => {
           if (c.p <= 0 || c.p >= 1) return null;
           const x = c.from[0] + (c.to[0] - c.from[0]) * c.p;
           const y = c.from[1] + (c.to[1] - c.from[1]) * c.p;
           return <Chip key={i} x={x - 43} y={y - 17} w={86} h={34} color={c.color} />;
         })}
+        {pillP > 0 && <ClsPillSlot x={742} y={718} w={433} h={196} p={pillP} PillLogo={PillLogo} logoScale={0.366} />}
       </div>
     </div>
   );
