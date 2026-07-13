@@ -68,6 +68,64 @@ const D_TEXT_DY = -D_FS * 0.2333;
 const D_DRAW = (f: number, at: number) =>
   interpolate(f - at, [0, 2, 4, 6, 8, 10, 12], [0, 0.19, 0.66, 0.89, 0.96, 0.99, 1], clamp);
 
+// ═══ THE REPORT TABLEAU — one rigid object (f2303-2334) ═══════════════════
+// r18 TAIL. The gantt page does not "shrink into a doc while a box slides in
+// from the right". The left document, the mini gantt panel inside it, the right
+// document, the ClsNetBox, the two orange verticals and the two orange stubs are
+// ONE object, arriving as a single uniform SCALE of the settled report about a
+// fixed pivot. Solved by least squares on every navy blob the ref shows across
+// f2312-2334 (docL, docR, box, panel): pivot (374.8, 534.3), RMS 1.24px. It then
+// reproduces, to ≤2px and with no free parameters, things it was never fitted on:
+// the doc's right edge entering at f2304, its left edge at f2311, its top edge
+// crossing y=0 at exactly f2315, the box's first sliver at f2313, docR's left
+// edge at f2321, the left orange vertical appearing at f2316, and the length of
+// every orange stub at every frame. It is the ref's own transform.
+//
+// The old code had four separate invented clocks here — a doc that fades in over
+// 2306-2311 and lands SETTLED by 2315, hand-keyed box slides, an orange stub from
+// the box to the screen edge, and a docR that fades up in place — so from f2315
+// to f2333 we drew a fully-settled report while the ref was still 2.5× oversized
+// and converging. That is the whole f2306-2333 defect (f2313 0.834, f2316 0.842).
+const T_PIV = { x: 374.8, y: 534.3 };
+// s(f): doc-bbox width / 254, transcribed frame by frame (the ref is not eased —
+// it is hand-animated, and only a per-frame table reproduces it).
+const T_SF = [
+  2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315, 2316, 2317, 2318,
+  2319, 2320, 2321, 2322, 2323, 2324, 2325, 2326, 2327, 2328, 2329, 2330, 2331, 2332, 2333,
+];
+const T_SS = [
+  9.2, 8.54, 8.36, 8.14, 7.86, 7.51, 7.02, 6.3, 5.2, 4.1, 3.378, 2.89, 2.535, 2.264, 2.043, 1.862,
+  1.713, 1.59, 1.48, 1.39, 1.315, 1.252, 1.193, 1.146, 1.106, 1.075, 1.051, 1.031, 1.016, 1.008, 1,
+];
+const tScale = (f: number) => interpolate(f, T_SF, T_SS, clamp);
+// SETTLED report, transcribed from the ref's frozen f2334-2348 bboxes. These
+// supersede REPORT.docL/docR/vertLx/vertRx/horizY (measurably wrong: docR sat
+// 34px right of the ref, both docs 12px wide and 6px tall, the stubs 8-27px out).
+// docL/docR are the SVG boxes; the drawn navy outline insets to (307,322,254,335)
+// and (1358,322,254,335) — exactly what the ref shows.
+const RT = {
+  docL: { x: 305, y: 320, w: 258, h: 339 },
+  docR: { x: 1356, y: 320, w: 258, h: 339 },
+  docTop: 322, // navy top edge of both docs = where the orange verticals stop
+  vertLx: 357.5,
+  vertRx: 1548,
+  horizY: 547.5,
+  stubL: [562, 688] as const, // stops 107px short of the box — the ref leaves the gap
+  stubR: [1218, 1358] as const,
+};
+// the doc as the ref draws it during the shrink: outline + fold + two header
+// rules + the orange pill. No mesh, no scatter dots, no fill (the navy page is
+// inside it), and no fade — it arrives by geometry alone.
+const DocOutline: React.FC<{ x: number; y: number; w: number; h: number }> = ({ x, y, w, h }) => (
+  <svg width={w} height={h} viewBox="0 0 270 345" preserveAspectRatio="none" style={{ position: "absolute", left: x, top: y }}>
+    <path d="M4,4 H206 L266,64 V341 H44 Q4,341 4,301 Z" fill="none" stroke={C.navy} strokeWidth={4} strokeLinejoin="round" />
+    <path d="M206,4 V64 H266" fill="none" stroke={C.navy} strokeWidth={4} />
+    <rect x={24} y={22} width={62} height={6} fill={C.navy} />
+    <rect x={24} y={36} width={40} height={5} fill={C.navy} />
+    <rect x={177} y={293} width={67} height={22} rx={8} fill={C.orangeDeep} />
+  </svg>
+);
+
 export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
@@ -93,46 +151,35 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   // row 1 alone does not ride the wedge: it blinks out at f2181 (before the card
   // even starts) and back at f2292, in place.
   const row1Op = Math.min(1, lerp(f, [2179, 2182], [1, 0]) + lerp(f, [2290, 2293], [0, 1]));
-  // shrink-into-doc: full gantt → mini panel inside the left doc. Per-frame
-  // navy-panel left/top edge from the ref VIDEO — sp = xLeft/340 = yTop/470, the
-  // two agree to 3 decimals at every frame, so the proportional model is exact.
-  // The shrink STARTS AT f2289, not f2303: it is already at sp=.048 by f2300
-  // (panel inset 16px/23px, white margin all round) while we still drew a
-  // full-bleed page. Fourteen frames late — the f2289-2303 defect.
+  // shrink-into-doc: the full gantt page becomes the mini panel inside the left
+  // doc. Origin-scale toward the panel's SETTLED rect — and the settled rect is
+  // (337,478,201,112), not data.ts's (340,470,205,120): the ref's frozen f2334-48
+  // frames say so. With the true target, x=337·sp, y=478·sp, w=1920−1719·sp,
+  // h=1080−968·sp reproduces the measured panel bbox to ≤3px at EVERY frame of
+  // the shrink — so sp is transcribed from those bboxes, one key per frame.
+  // The old curve reached sp=1 at f2315; the ref does not get there until f2333.
+  // Eighteen frames of a fully-shrunk page while the ref was still 2.5× oversized.
   const sp = interpolate(
     f,
-    [2289, 2292, 2294, 2296, 2298, 2300, 2302, 2304, 2306, 2308, 2310, 2312, 2315],
-    [0, 0.005, 0.011, 0.018, 0.03, 0.048, 0.071, 0.105, 0.152, 0.227, 0.371, 0.634, 1],
+    [
+      2289, 2290, 2291, 2292, 2293, 2294, 2295, 2296, 2297, 2298, 2299, 2300, 2301, 2302, 2303,
+      2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315, 2316, 2317, 2318,
+      2319, 2320, 2321, 2322, 2323,
+    ],
+    [
+      0, 0.002, 0.0023, 0.0047, 0.0064, 0.0097, 0.0136, 0.0182, 0.0234, 0.0298, 0.0381, 0.0475,
+      0.0576, 0.071, 0.0858, 0.1033, 0.1249, 0.1508, 0.184, 0.2258, 0.2828, 0.3688, 0.5006, 0.6321,
+      0.7179, 0.7765, 0.8186, 0.8499, 0.8766, 0.8978, 0.915, 0.9299, 0.943, 0.954, 0.9627,
+    ],
     clamp,
   );
   const R = {
-    x: REPORT.panel.x * sp,
-    y: REPORT.panel.y * sp + pageY,
-    w: 1920 + (REPORT.panel.w - 1920) * sp,
-    h: 1080 + (REPORT.panel.h - 1080) * sp,
+    x: 337 * sp,
+    y: 478 * sp + pageY,
+    w: 1920 - 1719 * sp,
+    h: 1080 - 968 * sp,
   };
-  // doc outline draws around the shrinking panel — completes by 2315 (was 2324)
-  const docR = {
-    x: interpolate(f, [2306, 2311, 2315], [-150, 95, REPORT.docL.x], clamp),
-    y: interpolate(f, [2306, 2311, 2315], [-700, -30, REPORT.docL.y], clamp),
-    w: interpolate(f, [2306, 2311, 2315], [2600, 1040, REPORT.docL.w], clamp),
-    h: interpolate(f, [2306, 2311, 2315], [2900, 1070, REPORT.docL.h], clamp),
-  };
-  const docOp = lerp(f, [2306, 2311], [0, 1]);
-  // CLSNet box slides in from the RIGHT and SHRINKS as it travels (gen10, box =
-  // square-navy CC in the right region, measured by LEFT-EDGE + side from the ref
-  // video). It arrives BIG and clipped by the screen top/bottom, then converges —
-  // Lx/side: 1589/980@2314 · 1440/836@2315 · 1232/674@2317 · 1157/614@2318 ·
-  // 997/488@2321 → ReportOutScene continues to settle cx959/329@2334. It comes in
-  // WITH the mesh mark + wordmark (ClsNetBox draws both). Nothing shows before
-  // f2314 (left edge at/right-of the screen edge). The r6 "navy bar sweep" was a
-  // mis-read of the shrinking panel's own right edge — removed; the box entry was
-  // ~10f late (entered 2313 at cx2350 offscreen) = the f2306-2318 worst window.
-  const boxLx = interpolate(f, [2313, 2314, 2315, 2317, 2318, 2319, 2321, 2324], [1793, 1589, 1440, 1232, 1157, 1094, 997, 888], clamp);
-  const boxW = interpolate(f, [2313, 2314, 2315, 2317, 2318, 2319, 2321, 2324], [1080, 980, 836, 674, 614, 565, 488, 435], clamp);
-  const boxCy = interpolate(f, [2313, 2315, 2317, 2321, 2325], [528, 515, 509, 516, 519], clamp);
-  const stubRY = interpolate(f, [2314, 2324], [575, 552], clamp);
-  const stubX0 = boxLx + boxW + 20;
+  const s = tScale(f);
   return (
     <AbsoluteFill>
       {/* white ground appears behind the shrinking panel */}
@@ -208,34 +255,23 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
       {f >= 2184 && f < 2290 && <DetailCard f={f} />}
         </div>
       </div>
-      {/* document outline drawing around the shrinking panel */}
-      {docOp > 0 && (
-        <svg
-          width={docR.w}
-          height={docR.h}
-          viewBox="0 0 270 345"
-          preserveAspectRatio="none"
-          style={{ position: "absolute", left: docR.x, top: docR.y, opacity: docOp }}
-        >
-          <path
-            d="M4,4 H206 L266,64 V341 H44 Q4,341 4,301 Z"
-            fill="none"
-            stroke={C.navy}
-            strokeWidth={4}
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path d="M206,4 V64 H266" fill="none" stroke={C.navy} strokeWidth={4} vectorEffect="non-scaling-stroke" />
-          <rect x={24} y={22} width={62} height={6} fill={C.navy} />
-          <rect x={24} y={36} width={40} height={5} fill={C.navy} />
-          <rect x={177} y={293} width={67} height={22} rx={8} fill={C.orangeDeep} opacity={lerp(f, [2310, 2316], [0, 1])} />
-        </svg>
+      {/* The report tableau arrives as ONE scaled group. Everything in here is at
+          its SETTLED position; the wrapper's scale about the pivot is the entire
+          animation — no per-element clocks, no fades. It also scales the strokes,
+          which is what the ref does (its doc outline is ~50px thick at f2306 and
+          5px at rest). Off-screen at f<2304 by geometry: at s=9.2 the doc's right
+          edge sits at x=2088 and the box at x=4241. */}
+      {f >= 2303 && (
+        <div style={{ position: "absolute", inset: 0, transform: `scale(${s})`, transformOrigin: `${T_PIV.x}px ${T_PIV.y}px` }}>
+          <Elbow points={[[RT.vertLx, 0], [RT.vertLx, RT.docTop]]} />
+          <Elbow points={[[RT.vertRx, 0], [RT.vertRx, RT.docTop]]} />
+          <Elbow points={[[RT.stubL[0], RT.horizY], [RT.stubL[1], RT.horizY]]} />
+          <Elbow points={[[RT.stubR[0], RT.horizY], [RT.stubR[1], RT.horizY]]} />
+          <DocOutline {...RT.docL} />
+          <DocOutline {...RT.docR} />
+          <ClsNetBox x={REPORT.box.x} y={REPORT.box.y} w={REPORT.box.w} labelFs={(48 * REPORT.box.w) / 345} />
+        </div>
       )}
-      {/* CLSNet box slides in from the right WITH mesh + wordmark (gen10) */}
-      {f >= 2314 && stubX0 < 1910 && <Elbow points={[[stubX0, stubRY], [1920, stubRY]]} />}
-      {/* negative A/B (r6): a doc→box left stub at y572 scored −0.002 at
-          f2315 — the ref line's exact extent is unmeasured; leave it out */}
-      {f >= 2314 && <ClsNetBox x={boxLx} y={boxCy - boxW / 2} w={boxW} labelFs={(48 * boxW) / 345} />}
     </AbsoluteFill>
   );
 };
@@ -396,27 +432,31 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
   // whole group drifts +125px (fr_2330 → fr_2360), then slides down on exit
   const dy = lerp(f, [2332, 2358], [0, REPORT.driftY]) + lerp(f, [2362, 2377], [0, 360]);
   const meshP = lerp(f, [2342, 2352], [0, 1]);
-  const rightOp = lerp(f, [2324, 2330], [0, 1]);
-  // gen10: continue the measured box slide across the 2324 handoff (GanttScene
-  // ends cx1105/w418) to the settled square by f2334 — cx989/w347@2329, then
-  // REPORT.box cx959/w329. (was settled by 2330 at cx1073→977.)
-  const boxW = interpolate(f, [2324, 2329, 2334], [418, 347, REPORT.box.w], clamp);
-  const boxCx = interpolate(f, [2324, 2329, 2334], [1105, 989, REPORT.box.x + REPORT.box.w / 2], clamp);
-  const boxCy = interpolate(f, [2324, 2334], [519, REPORT.box.y + REPORT.box.w / 2], clamp);
+  // The tableau is still CONVERGING across the 2324 scene boundary — the ref does
+  // not settle it until f2333 (s: 1.252@2324 → 1.075@2328 → 1.0@2333). Same pivot,
+  // same table as GanttScene: the two scenes now hand the SAME object to each
+  // other instead of each running its own clock. The old code snapped everything
+  // to its settled rect at 2324 and faded the right doc up in place — the ref
+  // slides it in from the screen edge at f2321 and shrinks it like everything else.
+  const s = tScale(f);
+  // The verticals are pinned to the SCREEN top and stretch to the doc's top edge,
+  // so they can neither be scaled nor translated as a body — they are drawn in
+  // screen space off the same transform.
+  const vLx = T_PIV.x + s * (RT.vertLx - T_PIV.x);
+  const vRx = T_PIV.x + s * (RT.vertRx - T_PIV.x);
+  const vBot = T_PIV.y + s * (RT.docTop - T_PIV.y) + dy;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
       <div style={{ position: "absolute", inset: 0, opacity: out }}>
-        {/* orange verticals pinned to the top edge */}
-        <Elbow points={[[REPORT.vertLx, 0], [REPORT.vertLx, REPORT.docL.y + dy]]} />
-        <Elbow points={[[REPORT.vertRx, 0], [REPORT.vertRx, REPORT.docR.y + dy]]} opacity={rightOp} />
-        {/* horizontal stubs */}
-        <Elbow points={[[570, REPORT.horizY + dy], [712, REPORT.horizY + dy]]} />
-        <Elbow points={[[1195, REPORT.horizY + dy], [1385, REPORT.horizY + dy]]} opacity={rightOp} />
-        <ReportDoc x={REPORT.docL.x} y={REPORT.docL.y + dy} w={REPORT.docL.w} h={REPORT.docL.h} pillColor={C.orangeDeep} meshP={meshP} />
-        <div style={{ position: "absolute", inset: 0, opacity: rightOp }}>
-          <ReportDoc x={REPORT.docR.x} y={REPORT.docR.y + dy} w={REPORT.docR.w} h={REPORT.docR.h} pillColor={C.pillNavy} meshP={meshP} />
+        <Elbow points={[[vLx, 0], [vLx, vBot]]} width={3 * s} />
+        <Elbow points={[[vRx, 0], [vRx, vBot]]} width={3 * s} />
+        <div style={{ position: "absolute", inset: 0, transform: `translateY(${dy}px) scale(${s})`, transformOrigin: `${T_PIV.x}px ${T_PIV.y}px` }}>
+          <Elbow points={[[RT.stubL[0], RT.horizY], [RT.stubL[1], RT.horizY]]} />
+          <Elbow points={[[RT.stubR[0], RT.horizY], [RT.stubR[1], RT.horizY]]} />
+          <ReportDoc {...RT.docL} pillColor={C.orangeDeep} meshP={meshP} />
+          <ReportDoc {...RT.docR} pillColor={C.pillNavy} meshP={meshP} />
+          <ClsNetBox x={REPORT.box.x} y={REPORT.box.y} w={REPORT.box.w} labelFs={(48 * REPORT.box.w) / 345} />
         </div>
-        <ClsNetBox x={boxCx - boxW / 2} y={boxCy - boxW / 2 + dy} w={boxW} labelFs={(48 * boxW) / 345} />
       </div>
     </AbsoluteFill>
   );
