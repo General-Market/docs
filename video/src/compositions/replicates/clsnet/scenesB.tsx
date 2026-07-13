@@ -24,9 +24,44 @@ const COLLAPSE_P = [0, 0.001, 0.006, 0.009, 0.016, 0.024, 0.035, 0.050, 0.068, 0
 // right + 12px low and cityB ~100px left, then SNAPPED at the swap).
 const CITY_A_END = { x: 138.5, y: 186.7 };
 const CITY_B_END = { x: 897.9, y: 578.0 };
-// horizon lines: ref rows 391-397 (h7) → 378-382 (h5); we drew 3px lines 7px low.
-const LINE1_TOP = [391, 378];
-const LINE2_TOP = [991, 935];
+// horizon lines — SUB-PIXEL top+thickness, coverage-fitted at an empty column
+// (x1750 / x300) on the settled ref: coverage = (253−v)/(253−40) per row.
+//   L1 pre  391(.50) 392-396(1.0) 397(.75)  → top 391.5  h 6.29
+//   L1 post 378-381(1.0) 382(.25)           → top 378.0  h 4.27
+//   L2 pre  991-996(1.0) 997(.51)           → top 991.0  h 6.54
+//   L2 post 935-938(1.0) 939(.23)           → top 935.0  h 4.28
+// r18 drew ONE integer height (7→5) for both lines: at every settled frame that
+// painted row 382 AND row 939 solid navy where the ref has 25% coverage — 3840px
+// of MISPLACED ink per frame, full-width, across the whole f913-1300 region, and
+// the single largest disagreeing-pixel block in the settled frame (18% of it).
+// Each line now carries its own measured pair; the collapse lerp reproduces the
+// ref mid-motion for free (f1064: L1 top 387.18/h 5.64 vs ref 387.26/5.57).
+const LINE1 = { top: [391.5, 378.0], h: [6.29, 4.27] };
+const LINE2 = { top: [991.0, 935.0], h: [6.54, 4.28] };
+
+// Chrome SNAPS a painted box to whole device pixels (probed: top 391.5 / height
+// 6.29 rendered as a solid 392-397 band — no edge antialiasing), so the ref's
+// genuinely-partial edge rows have to be painted as their own 1px divs at the
+// measured coverage. Integer core solid; each boundary row at its own alpha.
+const HLine: React.FC<{ top: number; h: number; opacity: number }> = ({ top, h, opacity }) => {
+  if (opacity <= 0) return null;
+  const bot = top + h;
+  const c0 = Math.ceil(top);
+  const c1 = Math.floor(bot);
+  const edge = (y: number, cov: number) =>
+    cov > 0.004 ? (
+      <div style={{ position: "absolute", left: 0, top: y, width: 1920, height: 1, backgroundColor: C.navy, opacity: cov * opacity }} />
+    ) : null;
+  return (
+    <>
+      {edge(c0 - 1, c0 - top)}
+      {c1 > c0 && (
+        <div style={{ position: "absolute", left: 0, top: c0, width: 1920, height: c1 - c0, backgroundColor: C.navy, opacity }} />
+      )}
+      {edge(c1, bot - c1)}
+    </>
+  );
+};
 // badges do not fade in — they GROW from a point, solid from the first pixel
 // (disc radius probed every frame: A from f1007, B from f1024, same 18f curve).
 const BADGE_GROW_D = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -48,7 +83,6 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   // drawn horizon line has its own measured top/height (they are not the same y).
   const line1 = at(CITIES.line1, 380);
   const line2 = at(CITIES.line2, 938);
-  const lineH = at(7, 5);
   const badgeA = { cx: at(409, 189), cy: at(181.5, 237.5), r: badgeGrow(f, 1007) * at(1, 45.8 / 69.2) };
   const badgeB = { cx: at(1577.5, 1669.5), cy: at(744.5, 770.5), r: badgeGrow(f, 1024) * at(1, 46 / 69.2) };
   const aX = at(CITIES.cityA.x, CITY_A_END.x);
@@ -93,10 +127,9 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
-      {/* horizon lines — measured 7px thick at 391/991, thinning to 5px at
-          378/935 as the scene collapses (we drew 3px lines 7px too low) */}
-      <div style={{ position: "absolute", left: 0, top: at(LINE1_TOP[0], LINE1_TOP[1]), width: 1920, height: lineH, backgroundColor: C.navy, opacity: aOp * linesOut }} />
-      <div style={{ position: "absolute", left: 0, top: at(LINE2_TOP[0], LINE2_TOP[1]), width: 1920, height: lineH, backgroundColor: C.navy, opacity: bOp * linesOut }} />
+      {/* horizon lines — coverage-fitted sub-pixel top/height per line (see LINE1/LINE2) */}
+      <HLine top={at(LINE1.top[0], LINE1.top[1])} h={at(LINE1.h[0], LINE1.h[1])} opacity={aOp * linesOut} />
+      <HLine top={at(LINE2.top[0], LINE2.top[1])} h={at(LINE2.h[0], LINE2.h[1])} opacity={bOp * linesOut} />
       {/* cities ride the collapse curve to the solved settled origins; once there
           the scaled big traces swap to cityASmall/cityBSmall traced AT final scale
           from fr_1150 (downscaling the big traces blurs the ~1.5px strokes) */}
