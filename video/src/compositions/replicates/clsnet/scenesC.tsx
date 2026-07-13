@@ -1711,9 +1711,31 @@ export const CircleScene: React.FC<{ frame: number }> = ({ frame }) => {
               opacity: pillOp,
             }}
           >
-            <div style={{ position: "absolute", left: pill.w / 2 - (490 * 0.55 * (pill.w / 350)) / 2, top: pill.h / 2 - (320 * 0.55 * (pill.w / 350)) / 2 }}>
-              <TracedArt name="handshake" scale={0.55 * (pill.w / 350)} style={{ position: "relative" }} />
-            </div>
+            {(() => {
+              // r24 KILL THE WHITE DEVICE. The "handshake" trace carries its source
+              // logo's WHITE BACKGROUND as the #FFFFFF layer (everything OUTSIDE the
+              // navy card + the card's own bottom) — invisible in HandshakeScene /
+              // PaymentScene, which sit the art on a white ground, but on the blue disc
+              // here that plate reads as a navy-top/white-bottom broken device (the
+              // worst-looking thing in the film; the ref shows a CLEAN navy card
+              // floating on the disc, holding the two-hand logo, with nothing below it).
+              // The plate and the white-hand strokes share one #FFFFFF path, so a recolour
+              // cannot separate them. Instead CLIP the art to the two-hand region and let
+              // the solid navy pill supply the card body. Art bbox measured per layer: the
+              // hand strokes (orange + white) end at art-y142; the plate is the full-width
+              // #FFFFFF fill below y186; between y144-186 the plate fills the card's rounded
+              // bottom-LEFT corner (a white triangle). So clip to x[25,484] y[0,143] — every
+              // stroke of BOTH hands, no plate, no corner. Below the clip the navy pill (same
+              // C.navy, wider than the art card) gives the card its rounded base seamlessly.
+              const s = 0.55 * (pill.w / 350);
+              const artOffLeft = pill.w / 2 - (490 * s) / 2;
+              const artOffTop = pill.h / 2 - (320 * s) / 2;
+              return (
+                <div style={{ position: "absolute", left: artOffLeft + 25 * s, top: artOffTop, width: 459 * s, height: 143 * s, overflow: "hidden" }}>
+                  <TracedArt name="handshake" scale={s} style={{ position: "absolute", left: -25 * s, top: 0 }} />
+                </div>
+              );
+            })()}
           </div>
         )}
         {artOp * dotOp > 0 && (
