@@ -3592,3 +3592,199 @@ the still the gate was scored on. `tsc` clean at every landing. Harness shells d
 The tagline underneath it is still hand-set Helvetica and still ~5.4k px light — and its weight
 A/B (29b4c5e40) genuinely refuted, because a font HAS advances (law 23). It remains the floor.
 `ClsMark` is already a faithful potrace and was not touched.
+
+## r18 / scenes2 — THE PEN WAS HALF-WIDTH, AND EVERY INSTRUMENT THAT READ AN OUTER EDGE LIED ABOUT IT — 2026-07-13
+
+Five commits, each gated and landed on its own: `0b8f9ded5` · `8913b8f23` · `5e33921fc` ·
+`e77ca4e70` · `886c6f637`. All path-scoped to `scenes2.tsx` (verified per commit).
+Instruments + artifacts in `work/cls-day/r18-scenes2/` (`mid.py`/`mid2.py`/`lcap.py` the
+run-midpoint centreline fitters, `city.py` the per-colour ink cross-correlator, `iw.py` the
+stroke-width probe, `edge.py`/`fit.py`/`rlow.py`, `still.sh` + `stillcrx.sh`; refs, `old/`,
+`newA..newG`, `mont/`). Stills only; no full verify.
+
+### THE FINDING: YOU CANNOT READ A STROKE'S POSITION FROM ITS OUTER EDGE
+
+Three rounds chased grid cell **r3c5 (.595)** — the worst single cell on the track — by
+scanning the ref's outer navy edge per row. It produced a confident, quantified, and
+**entirely fictional** defect: *"the ref's point is BLUNT — it holds x1420 across a 24px
+flat; ours holds it over 8px."*
+
+**The outer edge of a 4px stroke hugs its own centreline. An 8px stroke's stands 2px off
+it.** Take the MIDPOINT of the run instead and the two apexes agree to **half a pixel** —
+ref 1422.0, ours 1421.5. **The apex was never wrong.** On either capsule.
+
+The same run, read for its **WIDTH**, is the instrument that finds the truth:
+
+| | ref | ours | |
+|---|---|---|---|
+| capsule outline stroke | **7** (top edge 390..396, bottom 859..865) | 4 | HALF |
+| interior stroke | **6-7** (L top rule 405..411, L ground 657..663, R crown 454..459) | 3-4 | HALF |
+
+**A horizontal run's HEIGHT *is* the stroke** — no slope correction to get wrong. That one
+probe should be standing equipment.
+
+### What the capsules actually were (centreline fits, run-midpoint, rms 0.15-0.21px)
+
+|  | ref | ours | error |
+|---|---|---|---|
+| R top edge / bottom edge | 393.0 / **862.0** | 389.5 / 854.5 | 3.5px / **7.5px HIGH** |
+| R upper / lower diagonal | −0.5770 / **+0.5773** | −0.6524 / +0.5810 | SLOPE |
+| L upper / lower diagonal | +0.5770 / **−0.5773** | +0.5913 / **−0.4762** | **11px off by y600** |
+| L top / bottom edge | 223.0 / 692.5 | 221.5 / 690 | |
+
+**Both capsules are symmetric hexagons whose diagonals sit at exactly ±tan(30°).** The
+proof the fits are right: each capsule's two fitted diagonals cross its own symmetry axis
+(y=627.5 right, y=457.75 left) **0.07px and 0.12px apart**. The ref blunts each sharp
+vertex by the same amount — 9.65px and 9.76px. *One pen, one hand.*
+
+### AND THEN gen19's REFUTATION FELL
+
+> *"Widening ALL city strokes to the measured width LOST at all 8 gated frames (−.0031 to
+> −.0035). Our line CENTRES sit 1-4px off, so a wider stroke doubles the error band."*
+
+That refutation is **the mis-registered capsule outline cancelling a real gain.** gen19
+widened outline and interior *together*, and the outline it widened was 5px high with both
+diagonals at the wrong angle. **Law 24, run backwards: a NEGATIVE A/B can be two effects
+cancelling too.** Re-test refuted fixes when the thing they interacted with has changed.
+
+With the capsule home, the interiors want exactly the pen gen19 measured — and most of our
+element centres are within **0.5-2px**, not the 1-4px gen19 assumed. Widening now WINS at
+every frame. (Tuned: **1.85× beats 2.0×** at all three settled frames.)
+
+### THE OTHER CASUALTY: "the RIGHT city's ink mass sits 12.2px LEFT of the ref's"
+
+**It does not, and it never did.** That number was measured in a window with the
+mis-registered capsule outline inside it. With the capsule fixed, the whole-city ink
+cross-correlation reads **dx = 0..+3, dy = +1..+3**, per colour, both cities. **There is no
+whole-city translate to be had. Do not spend a round looking for one.** What is left in the
+cities is *absent* ink (navy 71/76%, red 68/86% of the ref's) — collectable, not displaced.
+
+### GATE — ref vs OLD vs NEW, 9 frames (S13) + 5 frames (S17)
+
+| frame | OLD | +R capsule | +L capsule | +interior pen | **total** |
+|---|---|---|---|---|---|
+| f2400 | .902124 | .910398 | .915278 | **.919408** | **+.01728** |
+| f2450 | .899582 | .907874 | .912730 | **.916812** | **+.01723** |
+| f2550 | .900230 | .908521 | .913327 | **.917612** | **+.01738** |
+| f2600 | .897787 | .906064 | .910916 | **.915148** | **+.01736** |
+| f2650 | .896118 | .904399 | .909253 | **.913153** | **+.01704** |
+| f2700 | .899722 | .908005 | .912861 | **.916950** | **+.01723** |
+| f2372 | .896846 | .905173 | .910207 | .910315 | +.01347 |
+| f2362 | .912647 | .917192 | .917890 | .917890 | +.00524 |
+| f2356 | .971508 | .972639 | .972510 | .972510 | +.00100 |
+
+**+.0173 flat across all 350 settled frames of S13.** Grid cell mean at f2600 **.8196 →
+.8905**; r3c5 leaves the top twelve. f2356/f2362 are byte-unchanged by the pen commit —
+the interiors are held back until f2371/f2374, so the pen *cannot* reach those frames, and
+it did not. That is the confinement proof.
+
+**S17 (rank 6, f3340-3390) — asked the two questions cold. Seven errors, three of them fiction:**
+
+- **FICTION** the red milestone ticks rose **36px ABOVE the band top**. The ref starts every
+  tick AT the band top (y92) and runs it DOWN to the foot of its own label block (y190 /
+  y207 / y239). We drew 36px that does not exist and stopped 55px short of what does.
+- **FICTION** a 264×152 folded-corner **document sheet behind the CLS pill**. The ref has no
+  sheet there at any frame of f3326-3388. 1,350px of invented navy. Deleted.
+- **GRAMMAR** "Trade executed" is a double-headed arrow pointing **OUTWARD**, drawn as open
+  chevrons. Ours were solid triangles aimed **INWARD** — the left one carried a
+  `rotate(180)` that put its apex to the RIGHT of its own base, so it aimed back at the
+  pill. *The identical defect gen20 found on S13's top rail. It is a rig-wide habit.*
+- **SIZE** hour labels 28 → **23** (ref glyphs ink 61×26; ours 79×31). 14,514px/frame — the
+  largest single error in the window. `labelSize` is a PROP; `TimelineBand`'s default is
+  untouched.
+- **PLACE** the bottom payment lane sat **15px high**, square-cornered, with no chevrons where
+  it enters the shield (lane y829, verticals x515/x1414, leg tops y495, r20).
+- **PLACE** the shield is 13.5px narrow and 15px short (ref walls 773.5/1155, V-tip y894.5).
+- **HUE** "prior to value date" is a **BLUE** dashed line, not grey (ref core rgb(6,117,179)).
+- **PLACE** the panel column sits 16px left, 5px low, its text 4.5% small.
+
+| f3340 | f3350 | f3360 | f3370 | f3380 |
+|---|---|---|---|---|
+| .878140 → **.904969** | .880400 → **.906472** | .882686 → **.909622** | .882250 → **.910710** | .878764 → **.906644** |
+
+**+.027 flat across the window.** Grid cell mean at f3360 **.6541 → .7471**.
+`CrxSettlementDay` eyechecked at f2600 and f3360 — inherits everything, clean
+(`mont/crxcheck.png`).
+
+### THE SPEND, AND THE SCHEDULE ERROR IT EXPOSED — for r19, TOP PRIORITY
+
+**S13's exit regressed: f2718 .828058 → .825198 (−.0029) · f2722 .910170 → .907705 (−.0025).**
+Two frames measured; the exit runs f2713-2725, extent unmeasured. Shipped: −.003 on ~13
+falling frames against **+.0173 on 350 settled ones** — a 200:1 trade.
+
+**But the regression is a FINDING, not a cost.** Law 24 again: *fixing the seat exposed the
+box.* Our thin, mis-registered art was hiding this. At f2718 the cities' ink profiles
+cross-correlate to **dx = −7..−12 (left city) and +10..+11 (right city)** — they move
+**APART**. Solve for a uniform scale about x=960: left `(290−960−10)/(290−960) = 1.015`,
+right `(1592−960+10)/(1592−960) = 1.016`. **They agree.**
+
+> **S13's exit is not a pure `translateY`. The content SPREADS — a ~1.015 uniform scale by
+> f2718 — and our `S13_EXIT` LUT only falls.** The LUT was fitted to the PILL's top edge,
+> which sits at the frame's x-centre, and **a symmetric spread is exactly the thing a
+> centre-line datum cannot see.** The same law as the S5 tick-chain: *when a datum is on
+> the axis of the motion, it is the one instrument that cannot detect it. Find the feature
+> OFF the axis and read that.* Fit `S13_EXIT_S` off the two capsule apexes (x492.5 and
+> x1422 at rest) and re-gate f2713-2725.
+>
+> *Warning: my own apex detector clamped at its search-window edge and returned x=699 for
+> the window bound 300..700 — a lying instrument (law 28). Bound-check it before you trust it.*
+
+### RESIDUAL — ranked, classified
+
+1. **S13's exit spreads and we only fall** (above). ~13 frames, currently scoring .82-.91.
+   The measurement and the hypothesis are done; it needs a LUT and a gate.
+2. **S17's TWO CONVEYORS — the ref's diagram is RUNNING and ours is a still plate.**
+   Fully measured this round and NOT built (they are new animated content, and law 4 says
+   a stand-in is misplaced ink — build them from the LUTs, not from a guess):
+   - **Lane A, payment chips.** 74×32 rounded lozenges down each vertical leg, round the
+     corner, into the shield. **We draw ZERO. 5,066 px/frame mean, 15,368 peak.** Fills:
+     steel rgb(138,157,178) · navy rgb(0,39,83) · peach rgb(240,200,175) · red
+     rgb(204,68,30). Spawns LEFT navy@f3324 / steel@f3330 / steel@f3338; RIGHT peach@f3324
+     / red@f3334 / peach@f3340. Path LUT (t = frame − spawn, bbox top-left), LEFT:
+     `t0 (473,512)h15 · t2 (473,513)h25 · t4 (473,518)full · t6 (473,537) · t8 (474,564) ·
+     t10 (474,601) · t12 (474,655) · t14 (475,736) · t16 (510,804) · t18 (592,805) ·
+     t20 (646,806) · t22 (683,807) · t24 (709,807) · t26 (728,807) · t28 (743,807) ·
+     t30 absorbed behind the shield (left edge x=773)`. RIGHT:
+     `t0 (1376,514) · t4 (1376,518) · t6 (1376,538) · t8 (1377,565) · t10 (1377,602) ·
+     t12 (1378,657) · t14 (1378,740) · t16 (1339,804) · t18 (1256,805) · t20 (1201,806) ·
+     t22 (1164,806) · t24 (1158,807 clipped) · t26 gone`.
+   - **Lane B, the upper payment lane at y536.5** + its two open chevrons (LEFT apex
+     (833,537) arms back to x815; RIGHT apex (1093,537) arms to x1111) + two travelling
+     **$ / €** documents on a **44-frame cycle** (f3326 ≡ f3370). We draw NOTHING at y536.
+     **~8,900 px/frame.** Left doc, t = frame − 3326, coin-circle top-left:
+     `t0 (589,513) emerging · t4 (601,521) full · t6 (647,521) · t8 (723,521) ·
+     t10 (769,522) · t12 (793,522) · t14 (810,523) · t16 (821,525) · t18 gone`; right
+     mirrors `t0 (1297,513) · t4 (1287,522) · t6 (1241,521) · t8 (1165,519) · t10 (1119,518)
+     · t12 (1094,518) · t16 (1093,519) · t18 gone`. Artwork = `RowIcon kind={0}`.
+3. **ESCALATED, NOT MINE — `TimelineBand` DOUBLE-PRINTS its hour label under S17's milestone
+   label** at 07:00 / 09:00 / 12:00: the regular 28px hour label AND the bold milestone
+   time, overlaid into an illegible smear (~10,900px bbox). The band already suppresses the
+   milestone hours' *tick*; **it must also suppress their *label***. This lives in
+   `lib.tsx`, which I do not own. **It is one boolean and it is worth ~10.9k px/frame.**
+   (Also `lib.tsx`, still unspent from r17: `HandshakePill`'s icon `translateY` −8 → **−2.5**
+   now that the pill is home; and `ClsPill`'s TR/BL corner radius 8 → ~2.)
+4. **S13's cities: absent ink, not misplaced.** navy 71%/76%, red 86%/68% of the ref's, with
+   the whole-city registration now at dx 0..+3. Per-element re-registration of the few
+   3-3.5px offenders (L far-left bldg top rule y405 → **408**; R front-bldg top rail y592 →
+   **596.5**; R front-bldg left wall x1469 → **1472**; R red panel rail y550 → **552.5**)
+   then a second pen pass. The right city's grey staircase is the wrong SHAPE (ref 7,080px
+   vs our 5,808, centroid 18px/15px out but xcorr (0,0) — *shape, not place*).
+5. Unspent, measured, small: S13's pill settles at **f2359 not f2361**; **f2344-2347 is not
+   a uniform scale** (ref pill w/h 2.30 vs the settled 1.83 — wants its own 4-frame `sx` LUT).
+6. **Floor:** `HexCity` interiors (35,233 px/frame, the largest diff in S17 — **do not
+   resize the outline**, law 21 and two refuted A/Bs: its interior is hand-invented and the
+   two corrections cancel exactly). Red stroke −12%. Below-band edge jitter.
+
+### THREE LAWS THIS ROUND EARNED
+
+- **A stroke's POSITION cannot be read from its outer edge.** Read the RUN and take its
+  MIDPOINT; read the run's WIDTH for its weight; read a HORIZONTAL run's height for the
+  stroke itself, where no slope correction can be got wrong. Three rounds and the worst
+  cell on the track were spent on a defect that did not exist.
+- **A negative A/B can be two effects cancelling.** Law 24 was written for positives. It
+  runs backwards, and it cost this track a 250-frame lever for two rounds. **Re-test a
+  refutation whenever the thing it interacted with has been fixed.**
+- **A datum on the axis of a motion is the one instrument that cannot detect it.** The pill
+  sits at x-centre; S13's exit spreads symmetrically about x-centre; the pill sees nothing.
+  Twin of the S5 tick-chain (a periodic structure cannot see a period-sized error). **Find
+  the feature OFF the axis and read that.**
