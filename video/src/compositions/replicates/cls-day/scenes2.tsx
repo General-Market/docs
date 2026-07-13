@@ -1437,17 +1437,37 @@ const S15_OUT: Lut = [
 export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 2837 || frame >= 3020) return null;
   const outP = lut(frame, S15_OUT);
-  const hourAt = 8.4;
-  const x7 = 960 + (7 - hourAt) * 248;
-  const x9 = 960 + (9 - hourAt) * 248;
-  const x12 = 960 + (12 - hourAt) * 248;
-  const dropP = interpolate(frame, [2845, 2862], [0, 1], { ...clamp, easing: EASE });
-  const b1P = interpolate(frame, [2858, 2888], [0, 1], { ...clamp, easing: EASE });
-  const b2P = interpolate(frame, [2880, 2915], [0, 1], { ...clamp, easing: EASE });
-  const figP = interpolate(frame, [2930, 2955], [0, 1], clamp);
+  // gen21: the band + brackets PAN LEFT the whole scene — measured off the 07:00/09:00
+  // red drop lines (measure_pan.py): hour@960 = 8.241@f2837 → 8.574@f2980, pitch a
+  // CONSTANT 249 (pure pan, no zoom). The old static hourAt=8.4/pitch248 sat ~38px
+  // LEFT of the ref at entry and ~45px RIGHT by f2980 — a static band CROSSING the ref,
+  // and both ranked windows (f2835-2885, f2930-2980) sit where it is worst. The pan also
+  // makes the f2837 handoff CONTINUOUS with S14 (whose band is at hour 8.2425 there),
+  // killing the ~39px doubled-band ghost that rode the S14→S15 crossfade (f2837-2850).
+  const hourAt = 8.241 + (frame - 2837) * 0.0023287;
+  const PITCH = 249;
+  const x7 = 960 + (7 - hourAt) * PITCH;
+  const x9 = 960 + (9 - hourAt) * PITCH;
+  const x12 = 960 + (12 - hourAt) * PITCH;
+  // gen21: the ref draws the drop lines + both brackets in the PRE-2837 transition
+  // (S14's tail: "09:00" text gone by ~f2810, the 07:00/09:00 drop lines grow DOWN
+  // f2810-2818, then both brackets grow RIGHT f2818-2837). By the S15 mount (f2837)
+  // they are already FULL, and stay full+static (only panning) through the scene. The
+  // old grows (dropP 2845-2862, b1 2858-2888, b2 2880-2915) under-drew both big red
+  // bars all the way through f2843-2915, exactly across the rank-9 window, where the
+  // ref is already complete. Full from mount (tiny settle only to soften the cut).
+  const dropP = interpolate(frame, [2837, 2841], [0, 1], clamp);
+  const b1P = interpolate(frame, [2837, 2842], [0, 1], clamp);
+  const b2P = interpolate(frame, [2838, 2843], [0, 1], clamp);
+  // gen21: the "8.0+ USD trillion" figure DRAWS right→left (measure_fig.py — rule right
+  // end x559@f2908, x446@f2911, x214@f2915, full x150@f2925; glyphs in by ~f2918). The
+  // old figP faded the whole block in over f2930-2955 — 25f LATE: across the ENTIRE
+  // rank-5 window (f2930-2980) the ref figure is fully drawn while we ramped 0→1 from
+  // blank. Now a right→left clip reveal, settled by f2924 (before the window).
+  const figWipe = interpolate(frame, [2906, 2924], [0, 1], clamp);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
-      <TimelineBand y={221} h={69} originX={960} originHour={hourAt} pxPerHour={248} tickAbove={4} tickBelow={28} labelSize={34} />
+      <TimelineBand y={221} h={69} originX={960} originHour={hourAt} pxPerHour={PITCH} tickAbove={4} tickBelow={28} labelSize={34} />
       <MarkerTriangle x={955} y={123} size={90} />
       {/* red drop lines at 07:00 and 09:00 (band bottom → settlement bar top) */}
       <div style={{ position: "absolute", left: x7 - 2.5, top: 290, width: 5, height: (500 - 290) * dropP, background: C.marker }} />
@@ -1458,7 +1478,7 @@ export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pa
           @x120; '8.0' cap y529..698 (cap 170) x124 w305; '+' 58x59
           @(452,547); unit asc→baseline 748..808 x122 w414 (ref underline
           is RED and detached — the old navy borderBottom was wrong). */}
-      <div style={{ position: "absolute", inset: 0, opacity: figP }}>
+      <div style={{ position: "absolute", inset: 0, clipPath: `inset(0px 0px 0px ${552 - figWipe * 446}px)` }}>
         <div style={{ position: "absolute", left: 120, top: 498, width: 418, height: 7, background: C.red }} />
         <div style={{ position: "absolute", left: 106, top: 529 - SERIF_CAL.ct * 239, fontFamily: pack.serif, fontSize: 239, lineHeight: 0.93, color: C.red, fontVariantNumeric: "lining-nums" }}>
           {pack.trillion.figure}
