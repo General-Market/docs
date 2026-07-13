@@ -2148,3 +2148,38 @@ where the ref's arrowheads are plainly there and navy. Belongs to whoever owns S
 
 Harness, instrument (`corners.py`), refs, old/new stills and montages:
 `.claude/rounds/work/cls-day/r17-lib/`.
+
+### gen19 addendum — the `Logo` prop closes the CRX blocker (commit 35a187670)
+
+`ClsPill` now takes `Logo?: React.FC<{ h: number }>`, so `ClsPillSlot` can collapse its
+hand-copied twin onto the real primitive and the CRX cut inherits the chip radius.
+Additive: present => `<Logo h={h * logoScale} />` inside the same overflow-clip behind
+the same chip radius; absent => the wordmark, React tree unchanged.
+
+**The twin's second defect, which the collapse also fixes:** it rendered
+`<PillLogo h={h * 0.5} />` — a HARDCODED 0.5, not `logoScale`. The rig constant is
+0.366, so **the CRX pill's logo is ~36% oversized today.** When scenes1 collapses the
+slot, CrxSettlementDay's logo will SHRINK. That is the fix, not a regression.
+`ClsPill`'s own `logoScale` default stays 0.5 (changing a default is not additive) —
+callers pass 0.366.
+
+**Byte-identity proof (absent `Logo` must change nothing):**
+- **S17 f3300: BYTE-IDENTICAL** to HEAD, full frame, `md5 dcee3a0ae4e1aeffb94474de405d6451`.
+- S10 f2000 differs — **but not by me.** The scenes2 sibling landed `34e89401b` (the
+  connector-lane fix, off my gen19 finding) between my two renders. Attributed per-pixel:
+  **0 differing px INSIDE the pill** (the only region the prop can reach); all 12,078 lie
+  in the connector lane — 3,920 left, 8,157 right. The prop is inert when absent.
+
+### INFRA — the global render lock is BROKEN (for the round lead)
+
+`/tmp/replica-render.lock` is no longer serializing anything. At least one sibling's
+still harness runs `rmdir /tmp/replica-render.lock` **before** rendering — it bypasses the
+lock by design. Three clsnet agents render without it. I counted **8 concurrent
+`remotion still` processes** on a swap-tight box; my render shell was **OOM-killed twice**
+(exit 143/144, no output) while waiting politely in the `mkdir` loop. The only renders I
+landed were single frames squeezed through the swarm one at a time.
+
+Also live: **a HUNG clsnet still, PID 93864, alive 2h24m**, which will never finish — so
+"wait for the renders to drain" is not a viable strategy for anyone. Either every harness
+honours the lock or none can. **An agent that respects a lock everyone else deletes is not
+safe — it is merely slow.**
