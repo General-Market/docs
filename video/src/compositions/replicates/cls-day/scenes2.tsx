@@ -1183,7 +1183,14 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             <path d="M 4 148 L 4 4 L 216 4 L 260 48 L 260 148 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
             <path d="M 216 4 L 216 48 L 260 48" fill="none" stroke={C.navyDeep} strokeWidth="3" />
           </svg>
-          <ClsPillSlot x={845} y={470} w={245} h={120} p={1} PillLogo={PillLogo} logoScale={0.425} />
+          {/* gen18: pill re-measured off the ref's solid-navy fill at f3260/3300/3340/
+              3370 (identical to the pixel) — 259x117 at (834, 473), not 245x120 at
+              (845, 470). The wordmark was the real error: logoScale 0.425 rendered a
+              48px glyph against the ref's 40. The ref's logo-height/pill-height is
+              0.342 in BOTH pills (S10 and S17), and ClsWordmark's glyph is 0.935x its
+              height prop, so logoScale = 0.366 is the law for this rig — not a
+              per-scene number. */}
+          <ClsPillSlot x={834} y={473} w={259} h={117} p={1} PillLogo={PillLogo} logoScale={0.366} />
           {pack.summaryRows.map((row, i) => {
             const y = [618, 692, 756, 822][i];
             return (
