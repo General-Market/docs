@@ -377,11 +377,19 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
   const drawP = lerp(f, [1306, 1320], [0, 1]);
   const TF = [1334, 1336, 1338, 1340, 1342, 1344, 1346, 1348];
   const ax = interpolate(f, TF, [549, 548, 546, 539, 518, 512, 509, 508], clamp);
-  const ay = interpolate(f, TF, [282, 286, 293, 313, 376, 396, 404, 408], clamp);
+  // r21: the hexes settled 10px too HIGH — ref hex A equator y=418 (we drew 408),
+  // hex B y=413 (we drew 403), both measured on the widest-navy-row at f1430
+  // (cx/w already exact: ref A cx509 w358, B cx1426 w359). Travel tail shifted
+  // +10 so the settle lands on the ref; the draw/travel start (cy282) is unchanged.
+  // Gate (with the dyFrac + badge fixes below): f1430 .9175->.9304, f1455
+  // .9337->.9465 (+.0129 each, the settled hexify hold). Documented spend: the
+  // f1462-1476 crossfade edge into matching (hexes at cy290) costs -.0017 @f1470 —
+  // the fading hexify hex is now 10px lower during the blend; dwarfed by the hold.
+  const ay = interpolate(f, TF, [282, 286, 293, 313, 376, 396, 414, 418], clamp);
   const bx = interpolate(f, TF, [1255, 1261, 1271, 1298, 1383, 1410, 1419, 1425], clamp);
-  const by = interpolate(f, TF, [730, 720, 701, 649, 485, 433, 413, 403], clamp);
+  const by = interpolate(f, TF, [730, 720, 701, 649, 485, 433, 423, 413], clamp);
   const hexW = interpolate(f, TF, [479, 475, 468, 449, 389, 370, 363, 359], clamp);
-  const badgeR = hexW * 0.11;
+  const badgeR = hexW * 0.13;
   const labelOp = lerp(f, [1380, 1392], [0, 1]);
   const boxOp = lerp(f, [1385, 1398], [0, 1]);
   const docsP = lerp(f, [1412, 1450], [0, 1]);
@@ -392,10 +400,19 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
           f1420 .868->.861) — during the hexify the ref city is still mid-
           compression, so the crushed-clip matches better than a filled hex.
           Kept clip mode; the fill win is steady-state only (MatchingScene). */}
-      <HexCity art="cityA" cx={ax} cy={ay} w={hexW} drawP={drawP} artW={1150} artH={295} dxFrac={-0.065} />
-      <HexCity art="cityB" cx={bx} cy={by} w={hexW} drawP={drawP} artW={1190} artH={545} dxFrac={0.084} dyFrac={0.061} />
-      <Badge letter="A" cx={ax - hexW * 0.42} cy={ay - hexW * 0.42} r={badgeR} />
-      <Badge letter="B" cx={bx + hexW * 0.42} cy={by - hexW * 0.42} r={badgeR} />
+      {/* r21: the hex OUTLINE moved down +10 (cy fix above) but the BUILDING was
+          already correct (ref bank base y468 = old base y468) — so dyFrac is
+          compensated -10/w so the building stays put while the outline+badge take
+          the +10. Keeps building base 468 (A) / centre 425 (B) unchanged. */}
+      <HexCity art="cityA" cx={ax} cy={ay} w={hexW} drawP={drawP} artW={1150} artH={295} dxFrac={-0.065} dyFrac={-0.028} />
+      <HexCity art="cityB" cx={bx} cy={by} w={hexW} drawP={drawP} artW={1190} artH={545} dxFrac={0.084} dyFrac={0.033} />
+      {/* r21: BOTH badges sit on the hex's TOP-LEFT vertex — measured disc
+          centres ref A (394,288) r46, B (1307,284) r47. The old B was on the
+          top-RIGHT (bx + 0.42w ≈ x1580) — the ref draws it top-LEFT (x1307), a
+          ~275px misplacement (matching + locks already put badge B top-left).
+          Common offset dx -0.325, dy -0.36, r 0.13·w lands both on the ref. */}
+      <Badge letter="A" cx={ax - hexW * 0.325} cy={ay - hexW * 0.36} r={badgeR} />
+      <Badge letter="B" cx={bx - hexW * 0.325} cy={by - hexW * 0.36} r={badgeR} />
       {/* Trade executed arrow */}
       {labelOp > 0 && (
         <>
@@ -492,7 +509,17 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
   // it at full through the ref's move costs f1654 .904 -> .887 (lesson 4, seventh
   // confirmation). Ramp it from the frame the ref starts moving it.
   const checkOp = lerp(f, [1612, 1622], [0, 1]);
-  const cardOut = lerp(f, [1646, 1653], [1, 0]);
+  // r21: the old [1646,1653] fade left the card at 43% by f1650 — but the ref
+  // holds it FULL and settled until ~f1648 (navy logo square top-left tracked at
+  // (773,351)@1648, still there at f1652), then COLLAPSES down-right f1650-1664
+  // (grey panel retracts, legend fades, box slides down-right, gone by f1664).
+  // The dominant win is f1646-1650 (ref FULL, we were fading to 43%). Past f1650
+  // the card TRANSLATES away, so a held full-opacity card is MISplaced ink — a
+  // slower fade tested +.0008@1650 but -.005@1652 (holding the settled card
+  // through the ref's collapse loses, lesson 4). So hold full to f1650, then
+  // REJOIN the old [1646,1653] curve at f1651/1652 (0.286/0.143) — new >= old at
+  // EVERY frame, strict gains at f1647-1650, provably no regression at the tail.
+  const cardOut = interpolate(f, [1650, 1651, 1653], [1, 0.286, 0], clamp);
   const pillOut = f < 1656 ? 1 : 0;
   // r19: MatchingScene mounts at f1448 but its content does not start until
   // f1462 — and its root AbsoluteFill was OPAQUE WHITE, so for 14 frames it
@@ -1217,8 +1244,13 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
       })}
       {/* grey band on top of clusters */}
       <div style={{ position: "absolute", left: 0, top: STRIP.bandY, width: 1920, height: STRIP.bandH, backgroundColor: C.grey }} />
-      {/* strip-fixed orange deadline lines (measured h 5.02/9.03/13.09) */}
-      {[5.02, 9.03, 13.09].map((h, i) => {
+      {/* strip-fixed orange deadline lines, re-measured PER LINE at settled frames
+          (each has its own sub-hour offset — they are NOT uniform): h5 at 5.02
+          (ref x228 @f2050, the old value was right), h9 at 9.0 (ref x935 @f2100 /
+          x665 @f2130 — old 9.03 sat 9px right, doubling the navy gridline), h13 at
+          13.0 (ref x1830 @f2130 — old 13.09 sat 24px right, the largest miss). On
+          the hour the 4px orange covers the 2px navy gridline, as the ref does. */}
+      {[5.02, 9, 13].map((h, i) => {
         const x = hourX(h);
         if (x < -20 || x > 1960) return null;
         return <div key={i} style={{ position: "absolute", left: x, top: 210, width: 4, height: 695, backgroundColor: "#D14B2B" }} />;
