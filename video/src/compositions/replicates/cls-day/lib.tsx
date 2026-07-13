@@ -134,6 +134,10 @@ export type BandProps = {
   labelWeight?: number; // label font weight (default 400)
   hMin?: number; // clamp drawn hours to >= hMin (default: none)
   hMax?: number; // clamp drawn hours to <= hMax (default: none)
+  // Hours the SCENE draws itself as milestones (red rule + bold time + descriptor).
+  // The band prints nothing at all there — no tick, no label. See the note on the
+  // loop below: this is a per-mount fact, never a default.
+  skipHours?: readonly number[];
   ink?: string;
 };
 
@@ -152,6 +156,7 @@ export const TimelineBand: React.FC<BandProps> = ({
   labelWeight = 400,
   hMin,
   hMax,
+  skipHours,
   ink = C.navyDeep,
 }) => {
   const ticks: React.ReactNode[] = [];
@@ -159,6 +164,32 @@ export const TimelineBand: React.FC<BandProps> = ({
   const kMin = Math.max(hMin ?? -Infinity, Math.floor(originHour + (-80 - originX) / pxPerHour));
   const kMax = Math.min(hMax ?? Infinity, Math.ceil(originHour + (2000 - originX) / pxPerHour));
   for (let k = kMin; k <= kMax; k++) {
+    // A MILESTONE HOUR IS NOT AN HOUR THE BAND DRAWS. Where the scene mounts a
+    // milestone (red rule + bold time + descriptor), the ref draws exactly ONE label at
+    // that hour — the bold one — and NO navy tick: probed at S17 f3340, x=667 (07:00),
+    // the column is pure white to y90 and red from y91; the plain hours beside it
+    // (08:00, x=811) carry navy from y92. S17 prints BOTH the band's plain "07:00" and
+    // the milestone's bold "07:00" into one illegible smear at 07:00 / 09:00 / 12:00.
+    //
+    // Never a DEFAULT: the same ref draws plain 07:00 / 09:00 / 12:00 labels in S9's
+    // band (f1815), where no milestone exists — a global skip deletes ink the reference
+    // does draw, and measures it: f1815 .994036 -> .992042. Which hours are milestones
+    // is a property of the CALL, like MarkerTriangle's `size`.
+    //
+    // ⚠ NEGATIVE A/B (r18) — `skipHours={[7,9,12]}` ON S17 ALONE **LOSES**:
+    //     f3340 .904969 -> .904878 · f3360 .909622 -> .909444 · f3380 .906644 -> .906461
+    //   Law 24 backwards. The smear is TWO ERRORS CANCELLING. The ref's bold milestone
+    //   time is the hour label BOLDED — same slot, same size: ref ink y140..157, 18 rows
+    //   at ~34 dark px/row, its top row IDENTICAL to the plain 08:00 label's (y140).
+    //   scenes2 draws it at fontSize 19 from block top 140: ink y145..158, 14 rows at
+    //   ~25 px/row — 25% SMALL and 5px LOW. The band's plain 23px label underneath was
+    //   quietly filling that undersized bold label's slot. Delete the fiction alone and
+    //   you expose the shrunken label; the metric charges you for it.
+    //   THE FIX IS JOINT, and its other half lives in scenes2's S17 milestone block:
+    //     skipHours={[7, 9, 12]} on this band  +  milestone time fontSize 19 -> 23
+    //     (weight 700) with the text block's top 140 -> ~133.5, so its ink lands on
+    //     y140 like the ref's. Ship them together or not at all.
+    if (skipHours?.includes(k)) continue;
     const x = originX + (k - originHour) * pxPerHour;
     const hh = ((k % 24) + 24) % 24;
     ticks.push(
@@ -842,15 +873,23 @@ export const HandshakePill: React.FC<{
       width: w,
       height: h,
       background: C.navyBg,
-      // leaf shape like the chips: TL+BR rounded, TR+BL near-square (ref f2550)
-      borderRadius: `${h * 0.27}px 8px ${h * 0.27}px 8px`,
+      // leaf shape like the chips: TL+BR rounded, TR+BL near-square (ref f2550).
+      // r18: TR/BL were 8. The ref reaches full width 2 rows in, not 8 — the same
+      // fiction PILL_R killed on ClsPill, one order smaller (~30px of navy per pill).
+      borderRadius: `${h * 0.27}px 2px ${h * 0.27}px 2px`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       opacity,
     }}
   >
-    <div style={{ transform: "translateY(-8px)" }}>
+    {/* r18: -8 -> -2.5. This pill flex-centres its icon, so lib owns BOTH — and the
+        -8 was propping up a pill that sat 7-9px off. r17 moved the pill home (the S13
+        capsule/pen round) and the icon came with it, landing its ink-centre at ~(946.5,
+        522) against the ref's (948.5, 527.5). The prop is no longer needed and is now
+        the error: the icon is 5.5px HIGH. A correction that survives the thing it was
+        correcting is a bug wearing the clothes of a fix. */}
+    <div style={{ transform: "translateY(-2.5px)" }}>
       <IconHandshake size={w * 0.46} />
     </div>
   </div>

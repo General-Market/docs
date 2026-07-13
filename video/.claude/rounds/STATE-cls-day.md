@@ -3788,3 +3788,92 @@ right `(1592−960+10)/(1592−960) = 1.016`. **They agree.**
   sits at x-centre; S13's exit spreads symmetrically about x-centre; the pill sees nothing.
   Twin of the S5 tick-chain (a periodic structure cannot see a period-sized error). **Find
   the feature OFF the axis and read that.**
+
+---
+
+## r18 / lib — the smear was two errors cancelling, and the fiction was paying for the shrunken label
+
+**Escalation taken:** *"`TimelineBand` double-prints its hour label under S17's milestone
+label at 07:00 / 09:00 / 12:00 — an illegible smear, ~10,900 px/frame, and it is one
+boolean."*
+
+**Verdict: the DEFECT is real and CONFIRMED. The FIX is refuted.** Deleting it LOSES.
+
+### The fiction is there — the reference draws ONE label
+
+Ref f3340, band crop: plain hour labels at 06:00 / 08:00 / 10:00 / 11:00; at 07:00 / 09:00
+/ 12:00 a **single BOLD time** and no plain twin. We print both, 6px apart, into a smear
+(`ab-band-f3340.png` — top ref, bottom ours; the 09:00 and 12:00 cells are unreadable).
+The tick too: at x=667 (07:00) the ref column is pure white to y90 and red from y91 — **no
+navy tick at all** — while the plain hour beside it (x=811) carries navy from y92.
+
+### And deleting it REGRESSES, at every frame
+
+| | f3340 | f3360 | f3380 |
+|---|---|---|---|
+| OLD | .904969 | .909622 | .906644 |
+| `skipHours={[7,9,12]}` | **.904878** | **.909444** | **.906461** |
+
+**Law 24 backwards, for the second round running.** Row-profile the 09:00 block:
+
+| | ink rows | dark px/row | top row |
+|---|---|---|---|
+| ref bold milestone time | y140..157 (**18**) | **~34** | **y140** |
+| ours (fontSize 19, block top 140) | y145..158 (14) | ~25 | y145 |
+| ref plain hour label (08:00) | y140..154 | ~20 | **y140** |
+
+**The ref's bold milestone time IS the hour label, bolded — same slot, same size, its ink
+top row IDENTICAL to the plain label's.** Ours is **25% small and 5px low**. The band's
+plain 23px label underneath was quietly *filling the slot of the undersized bold one*.
+Delete the fiction alone and you expose the shrunken label, and the metric charges you for
+it. **The fiction was the prop holding up the real defect.**
+
+**THE FIX IS JOINT, and its other half is scenes2's — not mine to write:**
+```
+scenes2 L1631:  <TimelineBand y={92} ... labelSize={23} tickBelow={18} skipHours={[7, 9, 12]} />
+scenes2 L1653:  milestone text block  top: below ? 200 : 140   ->   below ? 200 : 133.5
+scenes2 L1656:  <div style={{ fontSize: 19, fontWeight: 700 }}>  ->  fontSize: 23
+```
+`skipHours` is SHIPPED and inert (default undefined; S9 f1815 and S17 f3340 byte-identical
+to HEAD). **Do not ship it alone — it loses.** Unmeasured until the two land together.
+
+### Why it can never be a default
+
+S9's band (f1815) draws **plain 07:00 / 09:00 / 12:00** — no milestones there. A global
+skip deletes ink the ref does draw: **f1815 .994036 → .992042**. Which hours are milestones
+is a property of the CALL, like `MarkerTriangle`'s `size`. `TimelineBand` has 12 mounts
+across scenes1+scenes2 and **zero in clsnet** (`scenesA` imports only `ClsMark`) — the
+blast radius is this lane alone.
+
+### SHIPPED — `HandshakePill`, r17's unspent debt (lib owns the pill AND its icon)
+
+| | f2400 | f2550 | f2600 |
+|---|---|---|---|
+| OLD | .919408 | .917612 | .915148 |
+| NEW | **.920357** | **.918565** | **.916108** |
+| Δ | **+.00095** | **+.00095** | **+.00096** |
+
+`translateY(-8px)` → **−2.5**, TR/BL radius **8 → 2**. r17 moved the pill home and the −8
+survived the thing it was correcting — *a correction that outlives its error is a bug in
+the clothes of a fix.* Flat +.00095 across S13's 350 settled frames. **Confinement proved
+by BYTES:** f1815 and f3340 md5-identical to HEAD (no HandshakePill in either).
+`CrxSettlementDay` f2550 inherits clean (`crx-pill.png`).
+
+### Instrument note — my own gate lied first (law 35, caught)
+
+The byte-identity check used `set -- $p` in a zsh loop that never splits: both md5s came
+back **empty**, empty == empty, and it printed `IDENTICAL` three times — including for the
+pair that MUST differ. Only the negative control caught it. **Every identity gate carries a
+pair that must FAIL; a gate with no failing control is a gate you have not tested.**
+
+### RESIDUAL for r19 (lib)
+
+1. **The joint S17 milestone fix above.** Needs a scenes2 owner. The band half is in place.
+2. `tickAbove` default is **4**; the ref's is **0** — probed at f3340, plain hour ticks
+   start at the band top (y92), not 4px above it. Ours draws a 3×4px navy stub above every
+   tick the ref leaves white. Small (~150 px/frame at S17) and it touches 6 mounts that
+   take the default — gate it across all of them or leave it.
+3. `IconHandshake` is still a coarse trace (`mont-pill.png`): the ref's hand is finer, its
+   knuckle capsules smaller and tighter. Position is now right, so the next gain there is
+   the trace itself — law 19 says re-drawing a FAITHFUL trace loses, but this one is not
+   faithful yet.
