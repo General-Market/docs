@@ -2424,3 +2424,187 @@ one acquisition, all frames batched. Every number above is from a harness render
 
 **An OOM-killed shell does not kill its render.** Check `pgrep -f <your work dir>` after any
 143/144 — the orphan keeps rendering, and it is yours to reap.
+
+## gen19 S1-ROLL + LOCKUP round — 2026-07-13 (scenes1)
+
+Five commits, each gated and landed on its own. Instruments + artifacts in
+`work/cls-day/r17-scenes1/` (probe_lock2.py lockup ink, probe_exit3.py the red-cluster
+similarity tracker, probe_band2.py the card-space strip unprojection, probe_hex2.py the
+hex-outline tracker, probe_s5.py, still.sh + stillcrx.sh; ref frames `refs/` f0-130 +
+f3600/3700, `refs4/` f432-505, `refs5/` f875-932; baselines `head*/`, attempts `att*/`,
+montages `mont/`). Build-only still gates + eye montages; NOT a full verify.
+
+### 1 — the intro lockup and the end card are ONE POSE under a similarity (1acadf661)
+
+The ref has two lockup poses. Measured ink (ref f80 = intro settled · ref f3700 = end card):
+
+|         | intro            | end card         |
+|---------|------------------|------------------|
+| mark    | x454..666 y187..401 | x422..648 y162..388 |
+| letters | x696..1465 y187..400 | x679..1497 y162..388 |
+| tagline | x472..1449 y434..495 | x442..1479 y424..489 |
+| iconS / iconD | 599..780 / 1165..1319 | 577..768 / 1177..1341 |
+| labS / labD centres | 689.5 / 1226 | 672.5 / 1242 |
+
+Solve `intro = s·(end − P) + P` on the x extremes alone: **s = 0.9405, P = (960, 592)** —
+and every remaining feature falls out to **<=1px**. One pose, one scale, one pivot.
+
+Our LogoCard was a MIXTURE: mark+letters at the end-card pose, icons fitted to the intro,
+and a tagline that was wrong in BOTH — fs66/ls1 gave **674x49 of ink against the ref's
+978x62**. 2.4x too little ink, on ~250 frames of the film, and nobody had opened f66-116.
+
+Rebuilt: the CSS is now the measured END-CARD pose (S19 mounts it bare and gains);
+S1Intro passes `scale={CARD_SCALE}` and gets the intro pose free. Reveal fronts moved
+into card space, each remapped onto its new ink span so every letter and icon still
+clears at the frame the ref clears it. RISE re-confirmed against the ref's mark-ink top
+(368@f10 → 187@f50): that table was already right.
+
+Gate: f10 .9664→.9869 · f20 .9217→.9444 · f40 .9121→.9439 · f50 .8956→.9300 ·
+f66 .8907→**.9250** · f80 .8908→.9252 · f90 .8908→.9252 · f100 .8527→.8870.
+**Flat +.034 across 65 settled frames.**
+SPEND: f107 −.0047 · f108 −.0063 · f110 −.0051 — repaid ~40x by landing 2.
+
+### 2 — the S1 exit is a ROLL (19bfb0e95)
+
+Tracked per frame off the eight red icon clusters, rejecting every cluster the split had
+begun to eat (a half-eaten cluster's centroid slides — that rejection is what took the
+residual from 30-70px to sub-pixel). What comes back is a **SIMILARITY at 0.2-0.6px RMS
+whose fixed point is (960, 540) — the frame centre — at every frame:**
+
+| f | 100 | 102 | 104 | 106 | 108 | 110 | 112 | 113 |
+|---|---|---|---|---|---|---|---|---|
+| s | 1.000 | 1.000 | 1.009 | 1.024 | 1.048 | 1.092 | 1.169 | 1.254 |
+| deg | 0.00 | 0.33 | 1.32 | 3.55 | 7.37 | 14.10 | 24.73 | 38.27 |
+
+Unproject the white split into card space and it is a **VERTICAL band centred on card
+x=959 — dead centre, constant to 0.5px — opening SYMMETRICALLY**, 0 → 530px over
+f102..113. There is no slash geometry to fit at all: the split is ONE card-space clip,
+and the slash's lean IS the card's rotation.
+
+We drew the card DEAD STILL and cut it with an asymmetric video-space slit leaning a
+fixed 14° from f107. By f110 the ref is 14° over and 9% zoomed and **every pixel of card
+ink we drew was in the wrong place.** That frame scored .662.
+
+**And S2 was painting a fiction.** Through f117 the ONLY white in the ref is the strip;
+the "ruler sweeping up from the bottom-right with a white world glued below it" was our
+own invention. It washed the bottom-right white from f96 — **104k white px at f96 against
+the ref's 8.6k.** S2 is now born INSIDE the strip (`s1StripPoly`).
+
+Gate — every frame wins, nothing regresses: f96 .8898→.9252 · f100 .8870→.9224 ·
+f102 .8758→.9178 · f104 .8593→.9174 · f105 .8226→.9195 · f107 .7300→.9194 ·
+f108 .7003→.9180 · **f110 .6617→.9169 (+.255)** · f112 .6587→.8553 · f113 .6894→.8937 ·
+f114 .7597→.9163 · f115 .8385→.9130 · f116 .9057→.9245.
+f118/f120/f125 byte-identical (no seam).
+
+### 3 — NEGATIVE A/B: the tagline's ink deficit is FACE, not weight (29b4c5e40)
+
+Position landed the lockup to 1-3px, but the tagline is still **5.4k px of ink short**
+(9.8k vs 15.2k over the same 978x62 box) — the ref's face carries a fatter stroke for its
+advance. **Weight 400 LOST** (f80 .9252→.9213 · f110 .9169→.9120) and 500 lost more:
+Helvetica Regular's advances are wider than Light's, so the ink spreads to 432..1486
+against the ref's 472..1449 and walks off its registration. More ink in the wrong place.
+Recorded in-code. Do not re-fight this.
+
+### 4 — the S4 hexes do not fade in, they FLY IN and UNFURL (44ad8cac5)
+
+Per-frame outline bboxes off the ref (navy components below the band, read before the
+badges contaminate them):
+
+  hexA  f442 w7  c(1544, 785)  →  f464 w560 c(722, 526)
+  hexB  f443 w14 c(1898, 912)  →  f464 w560 c(1190, 738)
+
+The **WIDTH runs 7 → 560 while the HEIGHT stays 420 to the pixel** — a Y-axis flip, not a
+scale-up — and the ink is **FULL-DARK from the first frame it exists** (mean grey 62 at
+f448, the settled value). There is no fade anywhere in it. We parked both hexes at their
+settled centres, full width, and cross-faded them up: every frame of the entrance was a
+560x420 element (11% of the frame) at the wrong place, width and opacity.
+
+Gate: f445 .9485→.9484 (−.0001, the sliver phase) · f450 .9193→.9209 · f455 .8610→.8645 ·
+f460 .8517→.8635 · f465 .8590→.8605 · f470 .8588→.8600 · f480 byte-identical (no seam).
+Modest — SSIM is weak on sparse line art (lesson 8); the eye montage (`mont/hexAB.png`) is
+the stronger evidence. NEGATIVE-ish A/B: a flat opacity=1 through the sliver phase lost to
+`min(1, kx/0.55)` (f445 .9480 vs .9484, f450 .9197 vs .9209).
+
+### 5 — the ClsPillSlot twin, collapsed (9625bcd57)
+
+ClsPillSlot short-circuited `ClsPill` whenever a `PillLogo` was supplied, into a
+hand-copied div with its own `borderRadius: h*0.28` and a hardcoded `h*0.5` logo. So
+**ClsDay-Replicate inherited every fix the lib lane landed on ClsPill and
+CrxSettlementDay — the cut we publish — inherited none.** Both branches now call ClsPill
+via its additive `Logo` prop; the slot defaults `logoScale` to the rig's 0.366.
+
+Gate: ClsDay-Replicate f1900/f2000/f3300 **byte-identical (md5)** — that identity IS the
+regression proof. CrxSettlementDay f1900/f2000/f3300 changed (4308/4308/1394 px): the
+corners take the chip radius and the logo SHRINKS to 0.366. The shrink is the fix.
+
+## gen19 — S5 f878-928: EVERY RANKED CELL OPENED (honest floor, classified)
+
+The rank-1 window. Law 1 forbids re-tracing the cruise, so the grid is all there is.
+All eight ranked cells opened and adjudicated. `ssim-grid 8x6` over f880/890/900/910/920.
+
+**First, the two things it is NOT:**
+- **Registration is NOT the problem.** Local x-cross-correlation of the ink profile,
+  per cell, per frame: **every cell lands within ±3px** (and the global red/navy
+  correlation is ±2px). The hour ticks match the ref's to 0-2.5px at every frame. gen18's
+  sy=1 pin and tick z-order fix hold.
+- **The below-band world is NOT the problem.** Cells r4c0 / r4c3 / r4c6 carry ~42k ink
+  each and match the ref to <0.6% (−128 / −69 / +245 px). They rank only because SSIM
+  punishes 1-2px edge jitter on dense line art.
+
+**What it IS — the ABOVE-band clusters are ink-DEFICIENT, and it is NAVY:**
+
+| cell | crop | ref ink | our ink | red | navy | grey | verdict |
+|---|---|---|---|---|---|---|---|
+| r2c7 | 240x180+1680+360 | 8246 | 4883 | −112 | **−1684** | −892 | fixable — missing elements |
+| r2c6 | 240x180+1440+360 | 4661 | 3556 | +7 | −133 | +235 | at floor (edge jitter) |
+| r1c7 | 240x180+1680+180 | 6136 | 3769 | −697 | **−1345** | +72 | fixable — missing elements |
+| r2c1 | 240x180+240+360 | 4837 | 3741 | −102 | −118 | +399 | at floor (edge jitter) |
+| r4c6 | 240x180+1440+720 | 42097 | 42342 | — | — | — | at floor (below-band, matched) |
+| r1c4 | 240x180+960+180 | 7171 | 6019 | −415 | −317 | +19 | fixable — thin red + missing navy |
+| r4c3 | 240x180+720+720 | 42731 | 42662 | — | — | — | at floor (below-band, matched) |
+| r4c0 | 240x180+0+720 | 42517 | 42389 | — | — | — | at floor (below-band, matched) |
+
+**The finding: `ClG` (the 14:00 cluster, scenes1.tsx:1612) and `ClC` are MISSING NAVY
+SUB-ELEMENTS.** In r2c7 we draw 2538 navy px against the ref's 4222 — **60% of its navy
+buildings.** Eyeball of the crop (`mont/cells1.png`): the ref packs a grey slab, a
+square-topped barred navy building and an "L L" building where we draw a rounded-top
+barred building and no slab. Same at r1c7. This is **OMISSION, not stroke weight** — an
+element that is absent, not an edge that is soft. It is FIXABLE and it is in scenes1.tsx.
+Estimated area at stake ~6-8k px/frame across the visible clusters → by law 3's own
+calibration (an 8.9k-px doc = +0.002) worth roughly **+.002 per frame**, i.e. a genuine
+but modest lever. **The next scenes1 agent should trace the missing ClG/ClC navy buildings
+off ref f900 and ADD them (do NOT redraw the ones that are there — that is law 1).**
+
+Global ink, f880-920 mean: red ref 51.9k / ours 45.5k (**−12%, stroke weight — floor**);
+navy ref 902k / ours 918k (+2%, the below-band fill); grey ref 165k / ours 167k (+1%).
+The red deficit is uniform and is `HexCity`/building STROKE — hand-drawn-texture class,
+at the floor, do not chase it.
+
+One tiny omission: at f920 the ref draws a **7th hour tick entering at x=1903.5** that we
+do not draw (16px sliver). Below the area threshold.
+
+### Residual (honest, classified)
+
+- **fixable, scenes1.tsx** — ClG/ClC missing navy buildings + grey slabs above the band
+  (~6-8k px/frame). The measurements above are ready to hand.
+- **fixable, lib.tsx** — `ClsLetters`' glyph is **12,953 px of ink thin** at the correct
+  extents (ref 71,270 vs ours 58,317 at ref f80). That is 70% of the whole lockup's 18.1k
+  ink deficit, it is on EVERY frame the lockup shows (~250), and it is the single biggest
+  remaining lever I found in my windows. **Not my file — routing it to the lib lane.**
+- **fixable, lib.tsx** — `HexCity` has ONE `opacity` prop, so the S4 entrance cannot draw
+  a dark hex OUTLINE around an EMPTY interior the way the ref does (its buildings appear
+  as the hex passes ~55% open). A second prop (outline vs contents) would close f442-452.
+- **hand-drawn texture / floor** — the tagline's face (5.4k px, weight A/B refuted), the
+  red building stroke (−12%), the below-band cells' 1-2px edge jitter.
+- **not opened** — S4 f673-723 (rank 3). gen18 rebuilt f665-673; the rest of that window
+  is S5's entry whip, and I spent the budget on the S1 roll instead. It is the next-worst
+  thing I saw and did not fix.
+
+### Two process notes for the next agent
+
+- **Do not put backticks in a `git commit -m "..."` message.** Zsh ran mine as a command
+  substitution and ate a word out of 44ad8cac5's body. Harmless, but amending in a shared
+  live tree is forbidden, so the typo is permanent.
+- `git show HEAD:src/...` fails from `video/` — the repo root is one level up. Use
+  `git show HEAD:./src/...`. The redirect still truncates the file to zero on failure,
+  which will hand you a Minified React error #130 on the next render.
