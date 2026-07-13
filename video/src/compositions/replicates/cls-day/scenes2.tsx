@@ -1047,6 +1047,16 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
 // against a 7px stroke's is what invented one.
 const L_CAPSULE = "M -80 223 L 331.9 223 Q 366.9 223 384.4 253.3 L 482.8 423.9 Q 502.3 457.75 482.7 491.6 L 384.2 662.2 Q 366.7 692.5 331.7 692.5 L -80 692.5";
 const L_CAP_W = 7;
+// r18: THE INTERIOR PEN. gen19 refuted this ("widening ALL city strokes LOSES", -.0031 to
+// -.0035 at 8 frames). THAT REFUTATION WAS THE MIS-REGISTERED CAPSULE OUTLINE CANCELLING A
+// REAL GAIN — law 24 run backwards: a NEGATIVE A/B can be two effects cancelling too. With
+// the capsule home, widening the interiors WINS at every frame: f2400 +.0041 · f2600 +.0042
+// · f2700 +.0041 · f2372 +.0001. Tuned: 1.85 beats 2.0 at all three settled frames
+// (.9194/.9151/.9170 vs .9189/.9146/.9163). Interior pen multiplier. ref interior strokes measured 6-7px
+// (horizontal rules, where a run's height IS the stroke): L top rule 405..411, L floor
+// 553..559, L ground 657..663, R bg-bldg top 510..516, R crown 454..459, R panel rail
+// 550..555. Ours are 3-4. IW=1 is the pre-r18 render, byte-identical.
+const IW = 1.85;
 const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
   k = 1,
   tx = 0,
@@ -1067,8 +1077,8 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
         TWO dash rows (y429..447, y466..484), not three; the third row we drew at y497
         is fiction. Dashes are 7 wide on a 29px pitch (ref row y=437: 22..28, 51..57,
         80..87), not 6 on 26. A horizontal floor rule at y556 that we never drew. */}
-    <rect x={0} y={405} width={95} height={255} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    <line x1={0} y1={556} x2={95} y2={556} stroke={C.navyDeep} strokeWidth={3.5} />
+    <rect x={0} y={405} width={95} height={255} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
+    <line x1={0} y1={556} x2={95} y2={556} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
     {[0, 1].map((r) =>
       [0, 1, 2].map((c) => (
         <rect key={`${r}${c}`} x={22 + c * 29} y={429 + r * 37} width={7} height={19} fill={C.navyDeep} />
@@ -1086,44 +1096,44 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
             at x330..357. Its right wall (x428) is CLIPPED by the capsule at y583.
           · a grey slab x268..290, y497..656 under building A.
         Drawn BEFORE the red tower/dash-block so they occlude it, as the ref does. */}
-    <rect x={246} y={348} width={79} height={312} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    <rect x={246} y={348} width={79} height={312} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
     <rect x={249} y={352} width={21} height={136} fill="#DCDCDC" />
     <rect x={273} y={468} width={16} height={22} fill="#DCDCDC" />
     {[408, 436, 465, 490].map((y) => (
-      <line key={y} x1={246} y1={y} x2={325} y2={y} stroke={C.navyDeep} strokeWidth={3} />
+      <line key={y} x1={246} y1={y} x2={325} y2={y} stroke={C.navyDeep} strokeWidth={3 * IW} />
     ))}
     {[270, 299].map((x) => (
       <React.Fragment key={x}>
-        <line x1={x} y1={408} x2={x} y2={436} stroke={C.navyDeep} strokeWidth={3} />
-        <line x1={x} y1={465} x2={x} y2={490} stroke={C.navyDeep} strokeWidth={3} />
+        <line x1={x} y1={408} x2={x} y2={436} stroke={C.navyDeep} strokeWidth={3 * IW} />
+        <line x1={x} y1={465} x2={x} y2={490} stroke={C.navyDeep} strokeWidth={3 * IW} />
       </React.Fragment>
     ))}
     <rect x={268} y={497} width={22} height={159} fill="#DCDCDC" />
     <rect x={330} y={516} width={27} height={84} fill="#DCDCDC" />
     <rect x={330} y={608} width={27} height={48} fill="#DCDCDC" />
-    <line x1={428} y1={425} x2={428} y2={583} stroke={C.navyDeep} strokeWidth={3.5} />
-    <line x1={325} y1={512} x2={428} y2={512} stroke={C.navyDeep} strokeWidth={3.5} />
-    <line x1={325} y1={603} x2={420} y2={603} stroke={C.navyDeep} strokeWidth={3.5} />
+    <line x1={428} y1={425} x2={428} y2={583} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
+    <line x1={325} y1={512} x2={428} y2={512} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
+    <line x1={325} y1={603} x2={420} y2={603} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
     {/* red temple tower — r8 re-trace from the f2550 silhouette (min/max red
         per row): body is x102-248 (w146, was 124 too narrow), crown box
         x102-250 y282-310, inner frame x124-228 y358. TWO windows: LEFT has a
         white top + RED-SOLID middle + white bottom; RIGHT has a CREAM top +
         white bottom with a low divider (r7 had them swapped/plain). Twin mast. */}
-    <line x1={172} y1={266} x2={172} y2={282} stroke={C.red} strokeWidth={3.5} />
-    <line x1={182} y1={266} x2={182} y2={282} stroke={C.red} strokeWidth={3.5} />
-    <rect x={102} y={282} width={148} height={28} fill={C.white} stroke={C.red} strokeWidth={4} />
-    <line x1={116} y1={318} x2={236} y2={318} stroke={C.red} strokeWidth={3.5} />
-    <rect x={102} y={324} width={146} height={158} fill={C.white} stroke={C.red} strokeWidth={4} />
-    <rect x={124} y={358} width={104} height={124} fill="none" stroke={C.red} strokeWidth={3.5} />
+    <line x1={172} y1={266} x2={172} y2={282} stroke={C.red} strokeWidth={3.5 * IW} />
+    <line x1={182} y1={266} x2={182} y2={282} stroke={C.red} strokeWidth={3.5 * IW} />
+    <rect x={102} y={282} width={148} height={28} fill={C.white} stroke={C.red} strokeWidth={4 * IW} />
+    <line x1={116} y1={318} x2={236} y2={318} stroke={C.red} strokeWidth={3.5 * IW} />
+    <rect x={102} y={324} width={146} height={158} fill={C.white} stroke={C.red} strokeWidth={4 * IW} />
+    <rect x={124} y={358} width={104} height={124} fill="none" stroke={C.red} strokeWidth={3.5 * IW} />
     {/* left window: white / red-solid / white */}
-    <rect x={144} y={378} width={26} height={104} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={144} y={378} width={26} height={104} fill={C.white} stroke={C.red} strokeWidth={3.5 * IW} />
     <rect x={144} y={404} width={26} height={58} fill={C.red} />
     {/* right window: cream top, white below, low divider */}
-    <rect x={181} y={378} width={26} height={104} fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <rect x={181} y={378} width={26} height={104} fill={C.white} stroke={C.red} strokeWidth={3.5 * IW} />
     <rect x={181} y={381} width={26} height={46} fill="#F2C7A9" />
-    <line x1={181} y1={456} x2={207} y2={456} stroke={C.red} strokeWidth={3.5} />
+    <line x1={181} y1={456} x2={207} y2={456} stroke={C.red} strokeWidth={3.5 * IW} />
     {/* red dash-window block below */}
-    <path d="M 85 660 L 85 500 Q 85 485 100 485 L 265 485 L 265 660" fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <path d="M 85 660 L 85 500 Q 85 485 100 485 L 265 485 L 265 660" fill={C.white} stroke={C.red} strokeWidth={3.5 * IW} />
     {[0, 1, 2].map((r) =>
       [0, 1, 2, 3, 4].map((c) => (
         <rect key={`${r}${c}`} x={113 + c * 30} y={512 + r * 45} width={6} height={22} fill={C.red} />
@@ -1134,9 +1144,9 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
         building's own bottom wall (probe: 246 red px, all of it the wall) and the
         blue/navy ticks. Its twin in PvpRightCity was even clearer: ZERO red pixels
         in the ref where we drew a truck. Both deleted (law: kill fiction). */}
-    <rect x={148} y={628} width={52} height={32} fill="none" stroke={C.red} strokeWidth={3.5} />
-    <line x1={165} y1={628} x2={165} y2={660} stroke={C.red} strokeWidth={3} />
-    <line x1={182} y1={628} x2={182} y2={660} stroke={C.red} strokeWidth={3} />
+    <rect x={148} y={628} width={52} height={32} fill="none" stroke={C.red} strokeWidth={3.5 * IW} />
+    <line x1={165} y1={628} x2={165} y2={660} stroke={C.red} strokeWidth={3 * IW} />
+    <line x1={182} y1={628} x2={182} y2={660} stroke={C.red} strokeWidth={3 * IW} />
     <rect x={2} y={632} width={6} height={28} fill={C.blue} />
     <rect x={228} y={632} width={6} height={28} fill={C.blue} />
     <rect x={255} y={638} width={5} height={22} fill={C.chipGrey} />
@@ -1144,7 +1154,7 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
       <rect key={i} x={300 + i * 11} y={640} width={5} height={20} fill={C.navyDeep} />
     ))}
     {/* ground */}
-    <line x1={-80} y1={660} x2={432} y2={660} stroke={C.navyDeep} strokeWidth={4} />
+    <line x1={-80} y1={660} x2={432} y2={660} stroke={C.navyDeep} strokeWidth={4 * IW} />
     </g>
     )}
   </svg>
@@ -1223,9 +1233,9 @@ const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = (
         x1657/x1829, navy-grilled door); right building has ONE dash column
         at the frame edge. */}
     {/* background building: top y512 x1489..1621, 3 verticals hanging to the front building's roof */}
-    <rect x={1489} y={512} width={132} height={313} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    <rect x={1489} y={512} width={132} height={313} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
     {[1509, 1545, 1581].map((x) => (
-      <line key={x} x1={x} y1={516} x2={x} y2={592} stroke={C.navyDeep} strokeWidth={3} />
+      <line key={x} x1={x} y1={516} x2={x} y2={592} stroke={C.navyDeep} strokeWidth={3 * IW} />
     ))}
     {/* front building: top rail y592 runs to the red tower; body x1469..1567.
         gen19: the 4 windows are ⊓ — an OPEN BOTTOM. Probed col x=1520 (mid-window):
@@ -1233,14 +1243,14 @@ const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = (
         (row y=632 reads a solid 1491..1550 in ours against two 7px stubs in the ref).
         ~900px of invented ink across the four. Top bar centred y621, legs to y639. */}
     <rect x={1469} y={592} width={192} height={4} fill={C.navyDeep} />
-    <rect x={1469} y={592} width={98} height={236} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    <rect x={1469} y={592} width={98} height={236} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
     {[621, 656, 691, 726].map((y) => (
       <path
         key={y}
         d={`M 1492 ${y + 18} L 1492 ${y} L 1548 ${y} L 1548 ${y + 18}`}
         fill="none"
         stroke={C.navyDeep}
-        strokeWidth={3.5}
+        strokeWidth={3.5 * IW}
       />
     ))}
     {/* grey slabs. gen19: the slab at x1635 was FICTION — the ref has 105 grey px in
@@ -1250,46 +1260,46 @@ const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = (
     <rect x={1826} y={570} width={22} height={70} fill="#DCDCDC" />
     <rect x={1856} y={621} width={22} height={205} fill="#DCDCDC" />
     {/* central red tower — mast, crown, round-shouldered shaft, 6 ticks */}
-    <line x1={1693} y1={410} x2={1693} y2={428} stroke={C.red} strokeWidth={3.5} />
-    <rect x={1677} y={428} width={70} height={24} fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    <path d="M 1663 640 L 1663 456 L 1799 456 Q 1811 456 1816 466 L 1821 478 L 1821 640" fill={C.white} stroke={C.red} strokeWidth={3.5} />
+    <line x1={1693} y1={410} x2={1693} y2={428} stroke={C.red} strokeWidth={3.5 * IW} />
+    <rect x={1677} y={428} width={70} height={24} fill={C.white} stroke={C.red} strokeWidth={3.5 * IW} />
+    <path d="M 1663 640 L 1663 456 L 1799 456 Q 1811 456 1816 466 L 1821 478 L 1821 640" fill={C.white} stroke={C.red} strokeWidth={3.5 * IW} />
     {/* gen19: the ref draws FIVE ticks, not six (row y=495: 1693/1716/1738/1760/1782).
         The sixth at x1801 was invented. */}
     {[1696, 1719, 1741, 1763, 1785].map((x) => (
-      <line key={x} x1={x} y1={476} x2={x} y2={508} stroke={C.red} strokeWidth={3} />
+      <line key={x} x1={x} y1={476} x2={x} y2={508} stroke={C.red} strokeWidth={3 * IW} />
     ))}
     {/* inner panel: rails, cream band, gate row w/ right solid block */}
-    <rect x={1681} y={516} width={128} height={112} fill="none" stroke={C.red} strokeWidth={3.5} />
-    <line x1={1681} y1={550} x2={1809} y2={550} stroke={C.red} strokeWidth={3} />
+    <rect x={1681} y={516} width={128} height={112} fill="none" stroke={C.red} strokeWidth={3.5 * IW} />
+    <line x1={1681} y1={550} x2={1809} y2={550} stroke={C.red} strokeWidth={3 * IW} />
     <rect x={1705} y={556} width={84} height={14} fill="#F2C7A9" />
-    <line x1={1681} y1={574} x2={1809} y2={574} stroke={C.red} strokeWidth={3} />
-    <line x1={1681} y1={602} x2={1809} y2={602} stroke={C.red} strokeWidth={3} />
+    <line x1={1681} y1={574} x2={1809} y2={574} stroke={C.red} strokeWidth={3 * IW} />
+    <line x1={1681} y1={602} x2={1809} y2={602} stroke={C.red} strokeWidth={3 * IW} />
     <rect x={1781} y={604} width={28} height={20} fill={C.red} />
     <rect x={1687} y={606} width={8} height={14} fill={C.red} />
     <rect x={1701} y={606} width={5} height={14} fill={C.red} />
     {/* legged base: ledges y640, band w/ solid center, legs + dash columns to ground */}
     <rect x={1633} y={640} width={52} height={8} fill={C.red} />
     <rect x={1805} y={640} width={52} height={8} fill={C.red} />
-    <rect x={1661} y={648} width={148} height={28} fill="none" stroke={C.red} strokeWidth={3.5} />
+    <rect x={1661} y={648} width={148} height={28} fill="none" stroke={C.red} strokeWidth={3.5 * IW} />
     <rect x={1705} y={656} width={84} height={12} fill={C.red} />
-    <line x1={1633} y1={648} x2={1633} y2={825} stroke={C.red} strokeWidth={3} />
-    <line x1={1683} y1={676} x2={1683} y2={825} stroke={C.red} strokeWidth={3.5} />
-    <line x1={1807} y1={676} x2={1807} y2={825} stroke={C.red} strokeWidth={3.5} />
-    <line x1={1855} y1={648} x2={1855} y2={825} stroke={C.red} strokeWidth={3} />
-    <line x1={1657} y1={656} x2={1657} y2={810} stroke={C.red} strokeWidth={3} strokeDasharray="11 10" />
-    <line x1={1829} y1={656} x2={1829} y2={810} stroke={C.red} strokeWidth={3} strokeDasharray="11 10" />
+    <line x1={1633} y1={648} x2={1633} y2={825} stroke={C.red} strokeWidth={3 * IW} />
+    <line x1={1683} y1={676} x2={1683} y2={825} stroke={C.red} strokeWidth={3.5 * IW} />
+    <line x1={1807} y1={676} x2={1807} y2={825} stroke={C.red} strokeWidth={3.5 * IW} />
+    <line x1={1855} y1={648} x2={1855} y2={825} stroke={C.red} strokeWidth={3 * IW} />
+    <line x1={1657} y1={656} x2={1657} y2={810} stroke={C.red} strokeWidth={3 * IW} strokeDasharray="11 10" />
+    <line x1={1829} y1={656} x2={1829} y2={810} stroke={C.red} strokeWidth={3 * IW} strokeDasharray="11 10" />
     {/* door: red frame + centre mullion. gen19: the NAVY GRILL BLOCK was fiction —
         probed col x=1760, the ref is blank from y806 to y824 (we filled 28x19 of navy). */}
-    <path d="M 1722 825 L 1722 802 L 1778 802 L 1778 825" fill="none" stroke={C.red} strokeWidth={3.5} />
-    <line x1={1750} y1={805} x2={1750} y2={825} stroke={C.red} strokeWidth={3} />
+    <path d="M 1722 825 L 1722 802 L 1778 802 L 1778 825" fill="none" stroke={C.red} strokeWidth={3.5 * IW} />
+    <line x1={1750} y1={805} x2={1750} y2={825} stroke={C.red} strokeWidth={3 * IW} />
     {/* right white building. gen19, probed by navy y-runs every 8px from x1860:
         the ref has NO LEFT WALL — x1860/1868 read only the y565 rule and the ground.
         Our 259px vertical at x1857 was fiction. What is there: a y565 rule running the
         full 1855..1920, a step up at x1876 to a y541 rule, and SEVEN dash windows that
         only appear at x>=1912 (x1908 reads clean) — we drew NINE starting at 1908. */}
-    <line x1={1855} y1={565} x2={1920} y2={565} stroke={C.navyDeep} strokeWidth={3.5} />
-    <line x1={1876} y1={565} x2={1876} y2={541} stroke={C.navyDeep} strokeWidth={3.5} />
-    <line x1={1876} y1={541} x2={1920} y2={541} stroke={C.navyDeep} strokeWidth={3.5} />
+    <line x1={1855} y1={565} x2={1920} y2={565} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
+    <line x1={1876} y1={565} x2={1876} y2={541} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
+    <line x1={1876} y1={541} x2={1920} y2={541} stroke={C.navyDeep} strokeWidth={3.5 * IW} />
     {[594, 618, 643, 665, 691, 715, 740].map((y) => (
       <rect key={y} x={1912} y={y} width={8} height={6} fill={C.navyDeep} />
     ))}
@@ -1300,7 +1310,7 @@ const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = (
     <rect x={1710} y={800} width={5} height={25} fill={C.blue} />
     <rect x={1795} y={800} width={5} height={25} fill={C.blue} />
     {/* ground */}
-    <line x1={1497} y1={825} x2={2000} y2={825} stroke={C.navyDeep} strokeWidth={4} />
+    <line x1={1497} y1={825} x2={2000} y2={825} stroke={C.navyDeep} strokeWidth={4 * IW} />
     </g>
     )}
   </svg>
