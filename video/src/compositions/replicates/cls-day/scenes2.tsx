@@ -757,6 +757,26 @@ const S13_BAND_PPH: Lut = [
   [2356, 280], [2357, 282.2], [2358, 284], [2359, 285], [2360, 285.8], [2361, 286],
 ];
 // global content scale about (723,219)
+//
+// RE-DERIVED gen20/r17-scenes2c against the CORRECTED settled pill (752,426,390,213), from
+// the ref's own per-frame pill box (pill.py over the dense sweep). The origin needed NO
+// change — it was fitted against the REF all along, and it was our settled pose that was
+// wrong. With the pill home, ox + (752-ox)*s predicts the ref's x0 (and x1/y0/y1) to <=1.5px
+// at EVERY uniform-scale frame:
+//   f2348 s.639: pred x0 741.5 / ref 740 · y0 351.2 / 350 · x1 989.9 / 989 · y1 486.5 / 485
+//   f2352 s.944: pred x0 750.4 / ref 751 · y0 414.4 / 414 · x1 1117.5 / 1117 · y1 614.4 / 614
+//   f2356 s.991: pred x0 751.7 / ref 752 · y0 424.1 / 424 · x1 1137.1 / 1137 · y1 634.1 / 634
+// With the OLD pose the same origin predicted x0 758.5 / y0 432.2 at f2356 — the settled
+// error times s. The entrance was never mis-scaled. It was correctly scaling a wrong box.
+//
+// TWO THINGS THE SWEEP FOUND AND THIS ROUND DID NOT SPEND (both small, both real):
+//  · the ref's pill is SETTLED AT f2359, not f2361 (h=213 at f2359). Our last two keys are
+//    0.998/1 — under 0.8px. Retiming them would drag the capsule LUTs, which key to 2362.
+//  · f2344-2347 is NOT a uniform scale: the ref's pill is SQUAT there (w/h 2.30 vs the
+//    settled 1.83; it only reaches the settled aspect at f2348). A single s cannot fit it.
+//    Our s (0.40/0.47) already sits between the ref's h-scale (.34/.39) and w-scale
+//    (.43/.49) — the right compromise for a one-parameter model. The honest fix is a second
+//    (independent sx) LUT for f2344-2347. Four frames.
 const S13_S: Lut = [
   [2346, 0.4], [2347, 0.47], [2348, 0.635], [2349, 0.812], [2350, 0.878], [2351, 0.915],
   [2352, 0.94], [2353, 0.957], [2354, 0.972], [2355, 0.98], [2356, 0.987], [2357, 0.992],
@@ -929,7 +949,47 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
         )}
       </svg>
       )}
-      <HandshakePill x={759} y={435} w={380} h={213} opacity={1} />
+      {/* THE PILL — measured directly, not back-projected (gen20, r17-scenes2c/pill.py).
+          The pill is the cleanest signal in S13: a solid (0,39,83) fill. But it is NOT an
+          isolated navy component — the rails leave its edges — so a flood-fill walks out of
+          it and returns x752..1919. Erode by 5 first (every other navy thing in the frame is
+          a stroke <= 8px: rails 5, capsule outlines 4, band ticks 3), label, take the largest
+          component in the centre, add the 5 back. The instrument recovers our OWN known
+          759/435/380/213 exactly, and the ref reads the SAME BOX at seven settled frames
+          (f2400/2450/2500/2550/2600/2650/2700, to the pixel):
+
+            ref   x752..1141  y426..638   w390  h213
+            ours  x759..1138  y435..647   w380  h213     -> 7px right, 9px low, 10px narrow
+
+          h was already right. This is a pure translate + widen on a 60,000px navy block that
+          sits mid-frame for 350 frames.
+
+          WHAT MOVED WITH IT: nothing. That is the finding, and it is worth more than the fix.
+          Every element that "hangs off the pill" is already pinned to the REF's pill, not to
+          ours, because each was fitted against the ref independently:
+            · the rail stubs start at (950,425) and (950,635). The ref's pill top is 426 —
+              so the top stub lands exactly ON its edge. OURS started at 435, and the stub
+              ended at 424: a TEN-ROW WHITE GAP at x950, y425..434, in every settled frame.
+              The rail was not detached from the pill; the PILL was detached from the rail.
+              (Probed col x950: ref runs 360..425 then 427..; ours 360..424 then 435...)
+            · the chips spawn at x942 on the rail lanes (y262/y743), fitted per-frame off the
+              ref in r5. They never touch the pill's box (y426..638) — they ride the RAILS.
+            · the entrance scale about (723,219) was fitted against the REF's geometry. With
+              the corrected settled pose it predicts the ref's pill to <=1.5px at every
+              uniform-scale frame of the entrance (f2348-2358) — see the re-derivation above.
+          A misplaced object drags nothing with it when everything else was measured honestly.
+
+          NOT FIXABLE HERE (lib owns them, both sub-pixel-scale):
+            · TR/BL corner radius is 8 in lib; the ref's is ~2 (ref hits full width 2 rows in,
+              we take 8). ~30px of area, on 60,000.
+            · the handshake icon is flex-centred and sized w*0.46, so it rides the pill. Ours
+              sat at ink-centre (948.5,531) against the ref's (948.5,527.5) — 3.5px out, i.e.
+              lib's translateY(-8px) was quietly PROPPING UP the misplaced pill. Moving the
+              pill home moves the icon to ~(946.5,522) — 5.9px out. A 2.4px regression on
+              4,700px of icon ink, bought with a 7-9px correction on 60,000px of pill. The
+              gate confirmed the trade at every frame. The honest fix is lib's: translateY
+              -8 -> -2.5 once the pill is home. */}
+      <HandshakePill x={752} y={426} w={390} h={213} opacity={1} />
       {waves.map((w, i) => {
         const dt = frame - w.t0;
         if (dt < 0) return null;
