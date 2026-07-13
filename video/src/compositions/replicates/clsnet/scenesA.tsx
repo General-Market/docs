@@ -1222,6 +1222,21 @@ const HEX_BG: Record<string, { cx: number; cy: number }> = {
   mHexHeli: { cx: 378, cy: 405 },
   mHexCity2: { cx: 1463, cy: 709 },
 };
+// r23: ALL SEVEN MINI-HEXES SAT 2px LEFT + 2px HIGH OF THE REF — a unanimous SEAT.
+// Honest content-shift SSIM SCAN at f723 (np.roll our crop, maximise crop-SSIM vs
+// ref — the same instrument that peaks at (0,0) on the correctly-placed globe, so a
+// peak away from 0 is a real seat error; method law 8, NOT the ink-overlap which
+// lies on thicker-vs-thinner lines). Every hex peaks at the SAME move (+2,+2):
+//   Office .578->.961 · Bank .696->.954 · Bank2 .606->.944 · Towers2 .594->.938 ·
+//   Sail .535->.946 · Heli .489->.760 · City2 .575->.752  (Heli/City2 carry the
+//   separately-drawn HEX_BG hex, so they gain less but move the same +2,+2).
+// A first cut applied the OPPOSITE sign (-2,-2, from an ink cross-correlation) and
+// the crop gate REFUTED it (law 24: the raw-overlap read had the wrong sign); the
+// render is ground truth. POSITION fix on faithful traces (law 4/20), not a re-draw.
+// Shift the art div AND the two HEX_BG backing hexes by (+2,+2) so border+building
+// move together. Constant screen px (seat is scale-invariant; gated window has s=1).
+const HEX_DX = 2;
+const HEX_DY = 2;
 export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
   // (the label copy is no longer one string — see the label block below)
   const f = frame;
@@ -1315,8 +1330,8 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
             <React.Fragment key={hx.art}>
               {bg && (
                 <Hexagon
-                  cx={bg.cx}
-                  cy={bg.cy}
+                  cx={bg.cx + HEX_DX}
+                  cy={bg.cy + HEX_DY}
                   w={199 * s}
                   h={172 * s}
                   fill={C.white}
@@ -1327,8 +1342,8 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
               <div
                 style={{
                   position: "absolute",
-                  left: hx.cx - (MAP.hexW * s) / 2,
-                  top: hx.cy - (MAP.hexW * 0.906 * s) / 2,
+                  left: hx.cx + HEX_DX - (MAP.hexW * s) / 2,
+                  top: hx.cy + HEX_DY - (MAP.hexW * 0.906 * s) / 2,
                   width: MAP.hexW * s,
                   height: MAP.hexW * 0.906 * s,
                 }}
@@ -1390,6 +1405,17 @@ export const NET_MORPH_START: Record<string, number> = {
 // px sit on genuinely warm orange edges — ref R−B ≈ 76 there, confirmed).
 const GREY_FACE: Record<string, string> = { "#E9C8B0": "#D6D6D6" };
 type NetHex = { art: string; from: [number, number]; to: [number, number]; f0: number; f1: number; recolor?: Record<string, string> };
+// r23 NEGATIVE A/B — the settled network-hex rests are CORRECT; DO NOT reseat them.
+// A content-shift SSIM scan at f773 read moves of (-5,+2)/(-2,0)/(-3,+1) for
+// BankL/Bank2L/City2L and looked like a real seat error. It was a TRANSIENT FIT
+// (method lesson 2 / law 26): at f773 the REF hexes are STILL ARRIVING at their
+// rests — our morph ends f772 but the ref settles ~f780+, so at f773 the ref BankL
+// sits ~5px short of rest. Fitting `to` to that mid-morph frame GAINS f773
+// (0.923->0.951) and DIES at the settled frames: f785 0.980->0.927, f800
+// 0.973->0.921. The scan at the genuinely-settled f785/f800 proves OLD is right:
+// all four hexes @(0,0), SSIM 0.96-0.98, best move (0,0). The residual at f773 is a
+// MORPH-CLOCK difference (our f1 a few frames early), NOT a position error — left a
+// named residual; the settled rests below are the r6 ground truth and are correct.
 const NET_HEXES: NetHex[] = [
   { art: "mHexHeliL", from: [375, 405], to: [393, 409], f0: 758, f1: 770, recolor: GREY_FACE },
   { art: "mHexBankL", from: [555, 765], to: [774, 678], f0: 760, f1: 772 },
