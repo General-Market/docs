@@ -672,14 +672,15 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           <SmallHex art="mHexHeli" cx={1148} cy={592} w={240} artW={215} />
           <Doc x={565} y={548} w={72} h={90} />
           <Doc x={1292} y={548} w={72} h={90} />
-          {/* The box is true (875/835 — moving it to the sub-pixel bbox read 876/832
-              LOSES 0.014 on the crop; that read was biased by the corner radius), so
-              this site takes the ClsNetBox label laws whole. It was the last site
-              still opted out, and it was opted out for a reason that no longer
-              exists: r18 found the correctly-sized label landing 3px low here and
-              blamed the seat for being "not the constant it is taken for". It IS a
-              constant — of the box SIDE, not of `scale` (ui.tsx, r19). */}
-          <ClsNetBox x={875} y={835} w={170} />
+          {/* r19. This was the last `labelFs` opt-out, and BOTH of the things that
+              justified it were wrong. The seat is a constant — of the box SIDE, not
+              of `scale` (ui.tsx r19). And the box was never true: r18's in-code note
+              here claimed "875/835 is the true seat, 876/832 LOSES 0.014", but 832
+              was simply the wrong number. Coverage-integral edges on the ref, with
+              the estimator's bias calibrated against our own render (where the truth
+              is known exactly): top 833.9, side 165-166 — we drew 835 and 166.6.
+              A bad measurement had been enshrined as a law. */}
+          <ClsNetBox x={875} y={833.8} w={170} side={166} />
         </div>
       )}
       {/* orange return paths */}
