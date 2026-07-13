@@ -249,6 +249,14 @@ export const Milestone: React.FC<{
   textY,
   timeSize = 44,
   labelSize = 26,
+  // NEGATIVE A/B (r17) — lineW 5 -> 4 is REFUTED. Do not re-try it.
+  // The ref's rule looks 4px wide when you integrate its width in the LOWER TAIL
+  // (S10 f1900 y160..240 => 3.99px; S6 f960 y300..400 => 3.99px), and that reading
+  // is a trap: WE DO NOT DRAW THE TAIL. In the rows we actually render, the ref is
+  // 5.69px at S6 (y152..207) and 4.46px at S10 (y95..143) — the rule runs under the
+  // band ticks and the marker stem there, and the composite is wider than the rule.
+  // Narrowing to 4 regressed S6 f960 (.910769 -> .910736) for exactly that reason.
+  // Measure the ref where YOUR ink is, not where the ref's ink is prettiest.
   lineW = 5,
   side = "right",
   color = C.marker,
@@ -270,13 +278,21 @@ export const Milestone: React.FC<{
       <div
         style={{
           position: "absolute",
-          left: side === "right" ? x + 14 : undefined,
-          right: side === "left" ? 1920 - x + 14 : undefined,
+          // Ink-measured off the rule's centre, ref f1900: the ref's text starts
+          // 9px right of x958 (ink x967); ours started 15px right (ink x973).
+          // The gap is 8, not 14.
+          left: side === "right" ? x + 8 : undefined,
+          right: side === "left" ? 1920 - x + 8 : undefined,
           top: textY ?? lineTop + 40,
           fontFamily: SANS,
           color: textColor,
           textAlign: side === "right" ? "left" : "right",
-          lineHeight: 1.25,
+          // Ref label lines are pitched 16px apart (tops y216, y232) at a
+          // measured labelSize of 14 => 16/14. We ran 1.25, which at the ref's
+          // own size would pitch 17.5. NOTE: this is fitted at the comp's ONLY
+          // labelled Milestone (S10) — S6/S9/S15 mount the rule with no text, so
+          // there is no second mount to cross-validate against. Provisional.
+          lineHeight: 1.143,
         }}
       >
         <div style={{ fontSize: timeSize, fontWeight: 700 }}>{time}</div>
