@@ -603,7 +603,13 @@ const gpt = (cx: number, cy: number, deg: number, rad: number): [number, number]
 export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 283 || frame >= 470) return null;
   const exitP = interpolate(frame, [424, 440], [0, 1], clamp); // gone by f440 (S4 enters)
-  const scroll = interpolate(frame, [300, 460], [0, -170], clamp); // continent longitude
+  // continent longitude — ref scrolls a MEASURED −3.0px/f (consecutive-frame
+  // x-correlation of the coastline mask, f350..410 all read −30px/10f). The old
+  // −170/160f (−1.06px/f) crept ~2.8x too slow, drifting the map off the ref's
+  // longitude everywhere but f380. Anchored at f380 (the trace-registration frame,
+  // translate 0) so scroll+85 == −3·(f−380); reproduces the ref offsets (f350 +90
+  // vs measured +94; f400 −60 vs −60). |translate| stays < 2r so the 3 tiles cover.
+  const scroll = -85 - 3.0 * (frame - 380);
   const theta = -0.93 * (frame - 330.5); // clock-face rotation (deg)
   const lockClosed = frame >= 400;
   // padlock DRAWS ON in place (measured ref f330..350) — NOT a slide-in.
@@ -673,28 +679,31 @@ export const S3Globe: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// white map outlines — stylized ANGULAR coastlines (flat-design world map),
-// traced from the ref globe f380 in this 470-space: recognizable N.America,
-// S.America (via the isthmus), Africa (west bulge tapering to a south point),
-// Europe, Greenland and an island. The old two blobs read as rushed.
+// white map outlines — re-traced VERTEX-BY-VERTEX off the ref globe f380 disk
+// (work/r22-scenes1/disk_grid.png, zoom→vb = ÷2.723; disk = circle(235,235) r235).
+// The old trace read as blobby: a chunky-arrow N.America, a thin-blade S.America,
+// a rounded-lump Africa — recognisable at neither shape nor proportion. This
+// carries the ref's real coastlines: N.America broad-north tapering to Central
+// America, S.America's east (Brazil) bulge and south point, Africa's west bulge
+// and south taper, a Scandinavian Europe, Greenland, the UK pill. Direct-in-vb
+// (the old inner scale(1.13) enlarge is gone — this trace already fills the disk).
 const Continents: React.FC<{ cx: number; cy: number; r: number }> = ({ cx, cy, r }) => (
-  <g transform={`translate(${cx - r} ${cy - r}) scale(${(r * 2) / 470})`} fill="none" stroke="#FDFDFD" strokeWidth={4.6} strokeLinejoin="round" strokeLinecap="round">
-    {/* enlarged ~13% about the disk centre so the landmasses fill the disk like
-        the ref (the traced shapes alone read a touch small/sparse) */}
-    <g transform="translate(235 235) scale(1.13) translate(-235 -235)">
-      {/* north america */}
-      <path d="M 92 30 L 128 34 L 126 54 L 150 50 L 176 72 L 170 100 L 140 116 L 152 142 L 124 172 L 104 150 L 112 122 L 82 128 L 66 98 L 90 86 L 64 66 L 74 40 Z" />
-      {/* south america — chunky at the north, tapering south (isthmus from central america) */}
-      <path d="M 146 198 L 196 204 L 212 234 L 230 284 L 220 334 L 202 388 L 184 446 L 166 400 L 158 350 L 142 304 L 152 258 L 138 224 Z" />
-      {/* greenland */}
-      <path d="M 246 16 L 288 20 L 282 44 L 252 52 L 238 34 Z" />
-      {/* europe */}
-      <path d="M 352 104 L 402 100 L 424 120 L 402 140 L 372 134 L 356 148 L 340 132 L 352 116 Z" />
-      {/* island (uk/iceland) */}
-      <path d="M 350 130 L 366 128 L 370 150 L 356 160 L 348 146 Z" />
-      {/* africa */}
-      <path d="M 342 162 L 398 156 L 428 184 L 418 224 L 432 258 L 414 302 L 388 352 L 366 408 L 350 452 L 336 406 L 326 350 L 310 302 L 296 252 L 308 206 L 326 178 Z" />
-    </g>
+  <g transform={`translate(${cx - r} ${cy - r}) scale(${(r * 2) / 470})`} fill="none" stroke="#FDFDFD" strokeWidth={5} strokeLinejoin="round" strokeLinecap="round">
+    {/* greenland */}
+    <path d="M 107.2 33.8 L 126.3 36 L 124.9 55.1 L 110.2 55.8 L 110.2 44.1 L 107.2 44.1 Z" />
+    {/* north america — broad north, stepped Atlantic coast, taper to Central America */}
+    <path d="M 87.4 93.6 L 94 63.2 L 110.2 55.1 L 110.2 41.1 L 129.3 41.1 L 129.3 55.8 L 144 55.1 L 172.6 55.1 L 175.5 91.1 L 179.9 107.2 L 166 117.5 L 166 127.1 L 179.9 132.9 L 179.9 157.2 L 166 166 L 157.9 166 L 157.9 180.7 L 129.3 191.7 L 129.3 204.2 L 116 204.2 L 116 214.5 L 105 214.5 L 105 229.9 L 97.7 243.1 L 88.1 224 L 86.7 204.2 L 94.7 191 L 94.7 169.7 L 85.2 169.7 L 85.2 150.6 L 94.7 150.6 L 94.7 124.1 L 85.2 110.2 Z" />
+    {/* south america — north shoulder, Brazil bulge (east), south point, Andes (west) */}
+    <path d="M 110.2 283.5 L 132.2 279.8 L 157.9 288.7 L 179.9 293.8 L 180.7 307.7 L 192.4 320.2 L 204.2 334.2 L 201.2 361.4 L 191 382.7 L 185.8 390.7 L 185.8 408.4 L 172.6 415.7 L 157.9 428.9 L 142.5 440.7 L 129.3 428.9 L 128.5 402.5 L 118.3 393.7 L 118.3 368.7 L 110.2 359.9 L 109.4 330.5 L 105 315.8 L 110.2 298.2 Z" />
+    {/* africa — west bulge, stepped north coast, horn (NE), south point */}
+    <path d="M 290.9 169.7 L 315.8 166 L 348.9 167.5 L 370.9 173.3 L 385.6 183.6 L 404 203.8 L 389.3 220.3 L 370.9 238.7 L 396.6 240.5 L 378.3 262.6 L 368.7 293.8 L 359.9 326.8 L 351.8 358.1 L 345.9 386.3 L 334.9 406.9 L 323.9 422.3 L 312.9 405.4 L 307 376.1 L 299.7 349.6 L 294.5 320.2 L 289.4 290.9 L 285 261.5 L 284.2 232.1 L 285 204.2 L 286.4 185.5 Z" />
+    {/* europe — Scandinavian top-right blob */}
+    <path d="M 310.7 172.6 L 308.5 150.6 L 323.9 132.9 L 323.2 110.2 L 329.4 106.5 L 329.4 80.8 L 330.5 69.8 L 356.2 68.7 L 362.5 63.5 L 368.3 46.6 L 362.5 36.7 L 378.3 55.1 L 389.3 95.5 L 398.5 143.2 L 395.9 168.9 L 374.6 172.6 L 348.9 178.1 L 328.7 177 Z" />
+    {/* uk pill */}
+    <path d="M 289 93.6 L 305.9 96.2 L 304.8 121.9 L 290.9 124.1 Z" />
+    {/* asia — right-edge continuity so the scroll never reveals blank ocean */}
+    <path d="M 422.3 205.7 L 451.7 220.3 L 455.4 257.1 L 429.7 271.8 L 424.2 238.7 Z" />
+    <path d="M 426 341.5 L 453.5 356.2 L 448 389.3 L 427.8 381.9 Z" />
   </g>
 );
 
