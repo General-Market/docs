@@ -134,6 +134,13 @@ export const LogoCard: React.FC<{
               width: 1920,
               textAlign: "center",
               fontFamily: pack.sans,
+              // NEGATIVE A/B (gen19): the tagline's ink is still ~5.4k px short of the
+              // ref's (9.8k vs 15.2k) at the right EXTENTS — the ref's face has a fatter
+              // stroke for its advance. Weight 400 LOST (.9252->.9213 @f80, .9169->.9120
+              // @f110) and 500 lost more (.9205): Helvetica Regular's advances are wider,
+              // so the ink widens to 432..1486 against the ref's 472..1449 and walks off
+              // its registration. Misplaced ink loses to absent ink — do not bold in place.
+              // The remaining deficit is FACE, not weight, and it is at the floor here.
               fontWeight: 300,
               fontSize: 89,
               letterSpacing: 7,
