@@ -44,6 +44,9 @@ export const ClsMark: React.FC<{ size: number; ink?: string; bg?: string }> = ({
 // ─── CLS letterforms ───
 // Traced from end-card column scans (strip x255..1076 → letters viewBox
 // 0 0 830 235; C at 0..300, L at 300..470, S at 540..830 approx).
+const L_D =
+  "M11967 8653 c2 -412 4 -1693 5 -2848 l3 -2100 23 -135 c13 -74 27 -153 33 -175 5 -22 16 -74 24 -115 8 -41 21 -95 29 -119 9 -24 16 -51 16 -60 0 -25 50 -181 71 -223 10 -20 19 -47 19 -60 0 -13 9 -36 20 -53 11 -16 20 -37 20 -45 0 -8 12 -37 25 -65 14 -27 25 -58 25 -67 0 -9 4 -19 9 -23 6 -3 40 -65 76 -138 37 -73 77 -150 90 -172 13 -22 27 -47 31 -55 15 -32 181 -279 245 -365 80 -106 165 -206 269 -315 18 -19 44 -50 59 -69 14 -18 53 -57 88 -85 34 -28 106 -89 160 -136 137 -119 258 -211 374 -285 9 -5 36 -23 60 -40 24 -16 55 -36 69 -43 14 -7 43 -24 65 -37 22 -13 58 -34 80 -46 22 -12 56 -30 75 -40 19 -11 42 -23 50 -29 54 -33 321 -150 343 -150 9 0 18 -4 22 -9 3 -5 22 -15 43 -21 20 -7 60 -20 87 -30 28 -10 84 -28 125 -40 41 -12 97 -29 125 -37 98 -30 341 -77 540 -103 39 -5 161 -14 273 -20 l203 -10 3085 0 3084 0 0 213 0 212 -30 59 c-17 32 -30 66 -30 75 0 9 -9 30 -20 46 -11 17 -20 36 -20 44 0 16 -133 289 -160 331 -9 14 -36 53 -58 88 -23 34 -42 65 -42 67 0 10 -136 174 -194 233 -68 71 -177 162 -246 206 -25 16 -57 37 -72 48 -15 10 -32 18 -38 18 -6 0 -28 9 -48 19 -49 26 -120 49 -212 69 l-75 16 -2580 6 -2580 6 -85 12 c-47 7 -107 19 -135 27 -27 7 -93 26 -145 40 -52 15 -113 36 -136 46 -22 10 -44 19 -48 19 -9 0 -193 90 -231 113 -237 141 -353 234 -555 443 -113 118 -143 155 -222 279 -28 44 -59 92 -69 107 -11 15 -19 32 -19 39 0 6 -9 22 -20 36 -11 14 -20 32 -20 40 0 8 -11 35 -25 61 -14 26 -25 54 -25 62 0 9 -6 24 -14 35 -16 23 -39 102 -66 225 -11 47 -25 101 -32 120 l-13 35 -3 2808 -2 2807 -888 0 -887 0 2 -747z";
+
 // The S's traced outline, in potrace's y-up 10x space; S_TF normalises it
 // into the 0 0 830 235 letters viewBox. See the note at its mount below.
 const S_D =
@@ -76,20 +79,15 @@ export const ClsLetters: React.FC<{ height: number; ink?: string }> = ({
            Q 296 14 295 0 Z"
         fill={ink}
       />
-      {/* L — stem top-left, bar right with beak end */}
-      <path
-        d="M 305 0
-           L 350 0
-           L 350 155
-           Q 350 202 400 202
-           L 570 202
-           Q 600 202 612 190
-           Q 618 214 622 227
-           L 385 227
-           Q 305 227 305 150
-           L 305 0 Z"
-        fill={ink}
-      />
+      {/* L — FAITHFUL TRACE (r20), same instrument as S_D below.
+          The hand-drawn L had a 25-unit foot bar where the ref's is 43 (ref
+          bar top vb y=181.5, ours 202) and it ran right to vb x=622, filling
+          the navy V-notch the ref bites out of the merged L/S bottom bar.
+          Traced to the notch apex (vb 550.0) so L's right edge and S_D's left
+          edge now form that bite between them. Trace IoU 0.993. */}
+      <g transform={S_TF}>
+        <path fillRule="evenodd" d={L_D} fill={ink} />
+      </g>
       {/* S — FAITHFUL TRACE of the reference's own S (r20).
           The previous S was a hand-drawn "square s with round caps": an
           INVENTION, never a trace. It scored IoU 0.559 against the ref's S
