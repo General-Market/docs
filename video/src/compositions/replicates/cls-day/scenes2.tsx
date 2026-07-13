@@ -1628,7 +1628,7 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             (y130) were both already right — only the size was wrong. 14,514px/frame, the
             largest single error in this window. labelSize is a PROP here: TimelineBand is
             shared with four other scenes and its default is NOT touched. */}
-        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} />
+        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} skipHours={[7, 9, 12]} />
         <div style={{ opacity: markerP }}>
           <MarkerTriangle x={955} y={27} size={56} />
         </div>
@@ -1650,10 +1650,17 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
                 background: C.marker,
               }}
             />
-            <div style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 140, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
-              {/* gen13: milestone label text ~1.2x oversize vs ref (time h16 vs 19,
-                  label h8.5 vs 10.5) — time 22->19, label 17->14 */}
-              <div style={{ fontSize: 19, fontWeight: 700 }}>{m.time}</div>
+            <div style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 133.5, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
+              {/* r18 JOINT FIX (with the band's skipHours={[7,9,12]}): the ref's bold
+                  milestone TIME is the hour label BOLDED — same slot, same size. Ref ink
+                  y140..157 (18 rows, ~34 px/row), top row y140 == the plain 08:00 label's
+                  top. gen13 drew it at fontSize 19 from block top 140: ink y145..158, 25%
+                  small and 5px low, and the band's plain 23px label filled the empty slot
+                  underneath — an illegible smear at 07:00/09:00/12:00 (~10,900 px/frame).
+                  Deleting the smear ALONE loses (law 24: two errors cancelling). time
+                  19->23 (weight 700), block top 140->133.5 so ink lands on y140 like ref;
+                  descriptor label stays 14. */}
+              <div style={{ fontSize: 23, fontWeight: 700 }}>{m.time}</div>
               {m.label.map((l, k) => (
                 <div key={k} style={{ fontSize: 14 }}>
                   {l}
