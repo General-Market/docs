@@ -407,57 +407,112 @@ const S11_FOCUS_S: Lut = [
 ];
 // the pose S11 hands to S12 — the ref holds the doc here, unmoving, for the whole scene
 export const S11_FOCUS_GROWN = 1.2203;
-const S11_DOCS = [
-  { x: -62, seal: "lines" as const, red: false, dir: -1, sh: 2, g: 0.94 },
-  { x: 208, seal: "square" as const, red: false, dir: -1, sh: 1, g: 1.01 },
-  { x: 475, seal: "circle" as const, red: false, dir: -1, sh: 0, g: 1.0 },
-  { x: 1224, seal: "square" as const, red: true, dir: 1, sh: 0, g: 0.855 },
-  { x: 1493, seal: "triangle" as const, red: true, dir: 1, sh: 1, g: 0.895 },
-  { x: 1742, seal: "circle" as const, red: true, dir: 1, sh: 2, g: 0.9 },
+
+// gen20/r20 — THE ENTRANCE WAS FICTION (twin of the exit defect). The old scene
+// FADED the seven docs in over f2092-2110 (an inP opacity ramp + a 0.92->1 scale
+// about (960,500)). The ref never fades them: it SLIDES ALL SEVEN IN FROM THE
+// RIGHT, staggered, each easing to its slot (law 26 — the replica was on the wrong
+// clock, and drawing a fade the ref never draws, law 17). Measured off ref seal
+// tracks (work r20 seals.py/solidseal.py, per-frame f2092-2115):
+//   • the three RED docs (3,4,5) stream in from the right and ease down to their
+//     slots WITHOUT overshoot — one shared decay curve, staggered 1 frame each
+//     (doc3 seal 1916@f2096 -> 1258@f2111; doc4 1899@f2101 -> 1527@f2112; doc5
+//     1885@f2105 -> 1776@f2113). dx-from-settle at τ=-6 is +49 for all three.
+//   • doc1/doc2 (navy) WHIP past their slots off the left edge and SPRING BACK from
+//     the left (doc2 seal 312@f2102 -> 507@f2111; doc1 46@f2103 -> 242@f2112);
+//     amplitude at τ=-6 is -56, larger than the red docs and negative (from −x).
+//   • the FOCUS doc is the hero: it sweeps in from the right (pill 1854@f2093),
+//     overshoots so its left edge hits the far-left (pill 62@f2100), then eases
+//     right to home (pill 828@f2112) — a full sweep-through, its own LUT below.
+// All 7 share ONE ease-out decay D(τ) (τ = frame − settle), scaled by a signed
+// per-doc amplitude (ea) and a per-doc settle frame (es). Normalised off the red
+// docs; reproduces every measured seal to <=12px (D(-11)*49=372 vs doc3 +371;
+// D(-6)*-75=-75 vs focus; D(-9)*-56=-186 vs doc2 -195). Right docs (ea>0) are
+// visible the whole sweep; left docs (ea<0) sit off-screen-left until they spring
+// back at τ=-9. Stretch (scaleX) rides the entrance velocity, same rig as the exit.
+const S11_DECAY: Lut = [
+  [-18, 40], [-16, 20], [-15, 13.43], [-14, 12.92], [-13, 11.84], [-12, 10.16],
+  [-11, 7.57], [-10, 5.02], [-9, 3.33], [-8, 2.24], [-7, 1.53], [-6, 1.0],
+  [-5, 0.633], [-4, 0.388], [-3, 0.204], [-2, 0.082], [-1, 0.041], [0, 0],
 ];
+// focus doc entrance — direct measured pill-centre dx (settled pill x828). It is the
+// only doc that crosses its own target (sweeps right->left past home, then eases
+// back), so it gets a table, not the one-sided decay.
+const S11_FOCUS_ENTER: Lut = [
+  [2091, 2400], [2092, 1150], [2093, 1026], [2094, 998], [2095, 930], [2096, 731],
+  [2097, 535], [2098, 397], [2099, -185], [2100, -766], [2101, -572], [2102, -377],
+  [2103, -250], [2104, -169], [2105, -114], [2106, -75], [2107, -48], [2108, -28],
+  [2109, -15], [2110, -6], [2111, -1], [2112, 0],
+];
+const S11_DOCS = [
+  { x: -62, seal: "lines" as const, red: false, dir: -1, sh: 2, g: 0.94, ea: -56, es: 2112 },
+  { x: 208, seal: "square" as const, red: false, dir: -1, sh: 1, g: 1.01, ea: -56, es: 2112 },
+  { x: 475, seal: "circle" as const, red: false, dir: -1, sh: 0, g: 1.0, ea: -56, es: 2111 },
+  { x: 1224, seal: "square" as const, red: true, dir: 1, sh: 0, g: 0.855, ea: 49, es: 2111 },
+  { x: 1493, seal: "triangle" as const, red: true, dir: 1, sh: 1, g: 0.895, ea: 49, es: 2112 },
+  { x: 1742, seal: "circle" as const, red: true, dir: 1, sh: 2, g: 0.9, ea: 49, es: 2113 },
+];
+// per-doc entrance offset: shared decay scaled by ea, off-screen-left before the
+// spring for the left (ea<0) docs.
+const s11EnterDx = (d: { ea: number; es: number }, f: number): number => {
+  const tau = f - d.es;
+  if (tau >= 0) return 0;
+  if (d.ea < 0 && tau < -9) return -1600;
+  return d.ea * lut(tau, S11_DECAY);
+};
 
 export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2075 || frame >= 2250) return null;
-  const inP = interpolate(frame, [2092, 2110], [0, 1], { ...clamp, easing: EASE });
   const outP = interpolate(frame, [2237, 2250], [0, 1], clamp);
   const fs = lut(frame, S11_FOCUS_S);
+  // focus doc slides in from the right and eases back to home (translateX), stretching
+  // with its own velocity — same left-edge-anchored scaleX rig as the side docs.
+  const fDx = lut(frame, S11_FOCUS_ENTER);
+  const fSx = Math.min(1 + 0.0011 * Math.abs(lut(frame + 0.5, S11_FOCUS_ENTER) - lut(frame - 0.5, S11_FOCUS_ENTER)), 1.16);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
           the default 30); at fs21 the label auto-sits at ref cap-top y135. */}
       <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
-      <div style={{ opacity: inP, transform: `scale(${0.92 + 0.08 * inP})`, transformOrigin: "960px 500px" }}>
-        {S11_DOCS.map((d, i) => {
-          // gen13: doc x re-registered from ref f2150 body-left borders.
-          const at = (f: number) => d.dir * lut(f + d.sh, S11_EXIT) * d.g;
-          const dx = at(frame);
-          if (d.x + 232 + dx < -40 || d.x + dx > 1960) return null;
-          // The flying docs STRETCH. Measured: every doc's LEFT border lands exactly
-          // on dx, while its RIGHT border runs ahead — width 221 settled, 226 @f2208,
-          // 230 @f2210, 240 @f2212. It scales with speed and anchors on the doc's own
-          // left edge regardless of travel direction (so it is a scaleX in the ref's
-          // rig, not a motion blur — a symmetric two-ghost smear was tried and LOST at
-          // every fly-out frame: f2210 .8756->.8729, f2212 .8773->.8708).
-          const sx = Math.min(1 + 0.0011 * Math.abs(at(frame + 0.5) - at(frame - 0.5)), 1.16);
-          return (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                transform: `translateX(${dx}px) scaleX(${sx})`,
-                transformOrigin: `${d.x + 2}px 500px`,
-              }}
-            >
-              <RefDoc x={d.x} y={387} seal={d.seal} red={d.red} />
+      {/* docs stream in from the right (f2091+) — no group fade, no group scale; the
+          white below-band ground is empty until the first doc arrives, as in the ref. */}
+      {frame >= 2091 && (
+        <>
+          {S11_DOCS.map((d, i) => {
+            // total horizontal offset = entrance slide (in) + exit fly-out (out); the two
+            // windows never overlap, so one drives velocity for the shared stretch rig.
+            const at = (f: number) => s11EnterDx(d, f) + d.dir * lut(f + d.sh, S11_EXIT) * d.g;
+            const dx = at(frame);
+            if (d.x + 232 + dx < -40 || d.x + dx > 1960) return null;
+            // The flying docs STRETCH. Measured: every doc's LEFT border lands exactly
+            // on dx, while its RIGHT border runs ahead — width 221 settled, 226 @f2208,
+            // 230 @f2210, 240 @f2212. It scales with speed and anchors on the doc's own
+            // left edge regardless of travel direction (so it is a scaleX in the ref's
+            // rig, not a motion blur — a symmetric two-ghost smear was tried and LOST at
+            // every fly-out frame: f2210 .8756->.8729, f2212 .8773->.8708).
+            const sx = Math.min(1 + 0.0011 * Math.abs(at(frame + 0.5) - at(frame - 0.5)), 1.16);
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  transform: `translateX(${dx}px) scaleX(${sx})`,
+                  transformOrigin: `${d.x + 2}px 500px`,
+                }}
+              >
+                <RefDoc x={d.x} y={387} seal={d.seal} red={d.red} />
+              </div>
+            );
+          })}
+          {/* gen13: focus doc re-reg from ref f2150 (page-1 left border 753, top 289) */}
+          <div style={{ position: "absolute", transform: `translateX(${fDx}px) scaleX(${fSx})`, transformOrigin: "748px 500px" }}>
+            <div style={{ position: "absolute", transform: `scale(${fs})`, transformOrigin: "1022px 474px" }}>
+              <FocusDoc x={753} y={291} />
             </div>
-          );
-        })}
-        {/* gen13: focus doc re-reg from ref f2150 (page-1 left border 753, top 289) */}
-        <div style={{ position: "absolute", transform: `scale(${fs})`, transformOrigin: "1022px 474px" }}>
-          <FocusDoc x={753} y={291} />
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
