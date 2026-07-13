@@ -941,44 +941,44 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
     [1750, 1250, 802, 465, 272, 152, 76, 33, 6, 0],
     clamp
   );
-  // GLOBE ROTATION — real longitude scroll (anim round, eye-measured).
-  // The ref globe is a disc-clipped WINDOW onto the SAME worldMap the scene
-  // zooms into at f566+ (proven: the f562-566 disc continents == the f582 full
-  // map). Its continents scroll RIGHTWARD, decelerating from ~5.5px/f at f486
-  // to rest by ~f550 (2D phase-corr of the white-line masks: dy=0, ~206px
-  // total; work/clsnet/anim/measure2d.py). The prior build CROSSFADED two disc
-  // snapshots sliding LEFTWARD — invented motion AND the wrong direction.
-  // Now: worldMap scaled 0.76 (grid-fit vs the f582 full map, score .88),
-  // vertically centred (oy 174), x-origin scrolled per the measured ox table.
+  // GLOBE ROTATION — real longitude scroll. The ref globe is a disc-clipped WINDOW
+  // onto the SAME worldMap the scene zooms into at f566+ (proven: the f582 full-map
+  // ref/replica overlay is all-yellow). worldMap scaled 0.76, vertically centred, the
+  // x-origin scrolled per the measured table. The prior build CROSSFADED two disc
+  // snapshots — invented motion, replaced by the real scroll. The r24 block below is
+  // the current measured truth (direction, magnitude, and the fixed-scale fit); its
+  // findings SUPERSEDE the anim-round "scroll RIGHTWARD ~206px, rest by f550" note.
   const MAP_SCALE = 0.76;
-  // r22 (globe lane): the continents were displaced on BOTH axes — over-scrolled
-  // right AND ~20px too high. The two fixes below are SYNERGISTIC: with thin white
-  // lines on blue (method law 8), fixing one axis while the other is 20px off leaves
-  // the lines non-overlapping, so SSIM stays flat/negative; only the FULL pose
-  // correction crosses into line-overlap and lifts the metric. Measured by continent
-  // centroid + line-overlap count + disc-crop SSIM at f523/540/550/557 (r22 A/B).
-  //
-  // X: ref centroid cx settles ~948 by f500 and holds FLAT through f557; ours matched
-  // at f523 then ramped +45px of map-origin (~+14px visible) to f558. Fix: hold mapOx
-  // at its f523 value (~478) from f526 on (tail keys 526..558 flat at 478). Kills the
-  // over-scroll: centroid dx -13..-17px → -1..-3px at f540/f550.
+  // r24 (globe lane, EYE-judge round): the continents were misregistered on BOTH axes.
+  // The r22/r23 partial fixes had the SCROLL flipped and the vertical pushed the wrong
+  // way — their clipped-set/overlap instruments could not see it, because a wrong scroll
+  // reveals DIFFERENT coastlines at the disc edge (no translation of the clipped set can
+  // recover a longitude error). Re-measured by SYNTHESIS: the disc is a scale-0.76 window
+  // onto the SAME worldMap the MapScene renders full-bleed at f582 (proven — a ref/replica
+  // white-line overlay at f582 is all-yellow, sub-pixel). Forward-mapping that faithful
+  // map's line pixels into a candidate window (X = mox + s·ax, Y = moy + s·ay), clipping to
+  // the disc, and minimising symmetric coastline distance to the ref globe's own lines,
+  // registers to ~0.3px across f484-556 (work/clsnet/r24/synth_search.py). Findings:
+  //   · SCALE 0.76 confirmed every frame (seam-safe, unchanged).
+  //   · X (scroll): mox DECELERATES 565→345 (~220px, decel to rest ~f556). r22 ramped
+  //     mapOx THE OTHER WAY (319→478) — flipped sign AND range, showing a wrong longitude.
+  //   · Y: moy is FLAT 175 the whole window. r22 ramped it DOWN to 248, seating the
+  //     continents up to ~73px too LOW (the open-ocean gap at the top of every replica
+  //     disc in the trajectory montage, work/clsnet/r24/globe/scrolltraj.png).
+  // The (s,mox,moy) tables are fit at the RENDERER's fixed s=0.76 (a floating-scale fit
+  // trades scale against translation and lies about moy — it invented a +10 tail drift
+  // that vanishes at fixed 0.76). All frames register to ~0.3px. Law-8 SSIM-muted:
+  // composite stays flat/dips slightly; the eye montage is the judge and is visibly
+  // cleaner. Overrides the r22/r21 mapOx/mapOy notes (overlap-count found a false optimum
+  // at 248). The f556+ zoom ramp reads mapOx/mapOy, so the handoff into the full map stays
+  // continuous (mox 345→150, moy 175→60, s 0.76→1.0).
   const mapOx = interpolate(
     f,
-    [478, 486, 494, 502, 510, 518, 526, 534, 542, 550, 558],
-    [300, 319, 362, 401, 435, 464, 478, 478, 478, 478, 478],
+    [484, 494, 502, 510, 518, 523, 528, 534, 540, 546, 550, 556],
+    [565, 509, 470, 435, 407, 391, 378, 366, 356, 349, 346, 345],
     clamp
   );
-  // Y: ref continents drift DOWN through the window; a fixed oy=174 held ours ~20px
-  // too high. The disc CLIPS which continents are visible, so aggregate-ink-centroid
-  // is a poor proxy (non-monotonic under translation) — line-OVERLAP against the ref
-  // is the honest instrument. A mapOy scan (174/190/238/275/290) found a real
-  // registration peak near ~240-250: overlap at f550 rises 655→854 then falls to 635
-  // at 290, and disc-SSIM turns over the same way. Below sits on that plateau and
-  // gains at all four gate frames (disc +0.005..+0.008, whole +0.001, NO regression).
-  // The zoom ramp `moy` reads this, so the f556+ handoff stays continuous. Overrides
-  // both the r21 "dy=0" note and the inherited oy=174 (that was fit to the f582 full
-  // map, never to the disc window) — direct per-frame overlap wins (method laws 2, 8).
-  const mapOy = interpolate(f, [510, 523, 540, 550], [174, 203, 238, 248], clamp);
+  const mapOy = 175;
   const ringSpin = lerp(f, [478, 566], [0, -38]);
   // r21: the padlock CLOSES at f522, not f528. Shackle crops f515/517/519/521/523
   // show it open (hook leaning right) through f521 and fully closed (symmetric
@@ -1007,7 +1007,7 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
     clamp
   );
   const mapScale = interpolate(f, [556, 568], [MAP_SCALE, 1], clamp);
-  const mox = f < 556 ? mapOx : interpolate(f, [556, 568], [478, MAP.x], clamp);
+  const mox = f < 556 ? mapOx : interpolate(f, [556, 568], [345, MAP.x], clamp);
   const moy = interpolate(f, [556, 568], [mapOy, MAP.y], clamp);
   const discLeft = G_CX - dr;
   const discTop = G_CY - dr;
