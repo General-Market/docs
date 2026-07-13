@@ -1252,6 +1252,14 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
                 width: 104,
                 height: 102,
                 backgroundColor: fifty ? "#006F88" : "#5A7593",
+                // r19: the badge is a LEAF, not a square. Its rect was already exact
+                // (ours x1441-1544 y801-902, ref x1442-1545 y801-903) and its corners
+                // were never looked at. Ref edge-inset per row from the top-left —
+                // 18 15 13 11 9 8 7 6 5 4 4 3 2 2 2 1 1 1 0 — is a quarter circle of
+                // r~21, and the bottom-right mirrors it exactly while TR and BL stay
+                // square. The same TL+BR leaf the report card and its pills already
+                // use (r17). Seven badges, ~200 frames.
+                borderRadius: "21px 0px 21px 0px",
                 opacity: op,
                 padding: "9px 9px",
               }}
