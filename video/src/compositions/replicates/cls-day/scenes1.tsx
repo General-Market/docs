@@ -781,8 +781,13 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   const bandIn = interpolate(frame, [443, 446], [0, 1], clamp);
   const bandDx = frame < 656 ? S4_BAND_DX(frame) : 0;
   const bandDy = frame < 656 ? S4_BAND_DY(frame) : 0;
-  // measured: marker fixed at 960; 23:00 under it at f550; pan -1.3px/f
-  const hourAt = 23 + (frame - 550) * 0.00917;
+  // r19: the S4 clock ran EXACTLY 1 HOUR BEHIND the ref. Zoomed the label sitting on
+  // the fixed x=960 marker (work/cls-day/r19-scenes1/zoom_cmp_550.png): ref reads
+  // 00:00 at f550 where we drew 23:00, and 23:14/23:30/00:35 at f470/503/620 vs our
+  // (old) 22:16/22:34/23:38 — a constant +1h, pan rate 0.00917 already correct. The
+  // fractional hour is unchanged, so the tick GRID is byte-identical; only the printed
+  // digits move onto the ref's. marker fixed at 960; 00:00 under it at f550.
+  const hourAt = 24 + (frame - 550) * 0.00917;
   // ANIM-FIDELITY (ref f440-618, dense-frame traced): the hexes draw in place
   // at overlap positions (right/B leads ~f446, left/A ~f452), badges snap on
   // full-size and STAGGERED (B~f458, A~f461, NO overshoot — the old back(1.6)
@@ -835,7 +840,7 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       {frame < 656 ? (
         <div style={{ opacity: bandIn, transform: `translate(${bandDx}px, ${bandDy}px)` }}>
-          <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} />
+          <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} labelSize={18} />
           {/* gen19: measured at THIS mount off ref f600 (rust-masked). y was 8px HIGH
               (our ink top 27, the ref's 35) and the ref's triangle is 62 wide, not 60.
               The lib lane's S10 fit said 50 wide — it does NOT transfer, and that is what
