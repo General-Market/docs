@@ -3014,3 +3014,52 @@ only fit is refuted; a path-only fit will be too.
 (ours 60). Size is a property of the CALL; stroke is a property of the RIG.
 
 *A measurement can be right at both mounts and still be the wrong change. The gate is not a formality — it is the only thing that knows what the measurement left out.*
+
+## gen19 addendum 3 — CORRECTION to addendum 2: the marker stroke is REFUTED, not pending
+
+**Addendum 2 above says the strokeWidth term "is lib's to land, on all 14 mounts + CRX."
+That sentence is now WRONG and must not be acted on.** The lib lane took it, gated it, and
+it LOST (`b57184c57` — refuted in-code; `eec6426ff` — STATE). `strokeWidth="4"` stands.
+
+**The number was right. The change still lost.** Both are true, and the reason is the thing
+neither of our measurements could see:
+
+- The stroke measurement HELD at two mounts — re-measured at the triangle's horizontal TOP
+  BAR (integrate rust coverage down a column, then RATIO against our own render so the
+  instrument's overshoot divides out): S4 f600 → 2.01 viewBox units · S10 f1900 → 2.05.
+  Two independent mounts, 2% apart. By every rule we have, a rig constant.
+- **But `strokeLinejoin="miter"` COUPLES the stroke to the extent.** The corner spikes
+  scale WITH the stroke, so halving it SHRINKS the outer bbox. **Our fat stroke was
+  PROPPING UP a path that is too small.** At S4 f600 (ref 885px @ 62x54): t=4 gives
+  1256px @ 62x51 (extent right, ink +42%); t=2 gives 653px @ 59x48 — a 26% UNDERSHOOT
+  *and* the outline collapses. We would trade an overshoot for an undershoot and lose the
+  extent with it.
+- Gate: 11 frames across all 14 mounts + CRX — 9 won or held, **2 regressed**. NEW >= OLD
+  everywhere is the rule. It does not ship.
+
+**Also corrects my own framing.** I told the lib lane this was excess ink and therefore
+fiction-deletion, so law 1 did not bar it. That was right about the category and wrong
+about the mechanism: **in this primitive the ink and the extent are not independent.**
+There is no clean deletion available.
+
+**THE REAL TARGET — hand this on, and do NOT hand on "just thin the stroke":** the ref has
+a **THINNER STROKE ON A LARGER PATH** (ref h/w = 0.871 at S4; our viewBox is 30 x 24.6 =
+0.82). Path geometry and strokeWidth must be **co-fitted, together, with a per-mount k** —
+or one gives back exactly what the other gains. A stroke-only fit is refuted. A path-only
+fit will be too.
+
+**My S4 mount stands and is confirmed by their second read:** ref w62 at S4 (we now draw
+62 — correct), but w52 at S10 (they draw 60). The sizes are genuinely per-mount, which is
+the whole point of the prop. My other three mounts (scenes1:656 size62, :1043 size60,
+:2126 size40) remain unmeasured and untouched.
+
+### The lesson this round kept teaching, in three refutations
+
+`lineW 5→4` was fitted in the ref's TAIL, which we do not draw. The Milestone rule was
+"missing" in a window chosen before anyone knew what was in it. The marker's stroke was
+fitted as if it were independent of the extent it holds up. And on my side, the tagline's
+weight refutation did not transfer to `ClsLetters`, because fonts have advances and traced
+paths do not.
+
+**A measurement can be right at every mount and still be the wrong change. The gate is not
+a formality — it is the only thing that knows what the measurement left out.**
