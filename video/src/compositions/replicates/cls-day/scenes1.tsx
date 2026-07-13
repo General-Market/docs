@@ -778,6 +778,17 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   // the ink is full-dark from the first frame the hex exists (measured): no fade.
   const kA = frame < 442 ? 0 : S4_KA(frame);
   const kB = frame < 443 ? 0 : S4_KB(frame);
+  // The interior is keyed to the UNFURL, not to the clock. The red ink lives only
+  // inside a hex — never in its outline — so it reads the contents cleanly, and it is
+  // EXACTLY ZERO until the hex passes kx ~ 0.51, then full within two frames:
+  //   hexA  kx .511 -> 0.000 | .738 -> 0.854 | .839 -> 1.000
+  //   hexB  kx .511 -> 0.016 | .739 -> 0.749 | .841 -> 0.977
+  // One law, both hexes, off by ~0.1 at worst. The ref draws the OUTLINE around an
+  // EMPTY hex for ten frames and only then fills the skyline in — which is why our old
+  // single-opacity ramp had to compromise (it faded the outline too). `contentsP`
+  // (lib b6ff6853a) separates them, so the outline can be full-dark from f442 where it
+  // belongs.
+  const contentsOf = (k: number) => interpolate(k, [0.51, 0.81], [0, 1], clamp);
   const badgePB = interpolate(frame, [456, 462], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const badgePA = interpolate(frame, [460, 466], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const arrowP = interpolate(frame, [506, 514], [0, 1], { ...clamp, easing: EASE });
@@ -872,8 +883,8 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
         </>
       )}
       {(() => {
-        const hexA = <HexCity x={ax} y={ay} w={HW} h={HH} letter="A" badgeP={badgePA} variant={0} opacity={Math.min(1, kA / 0.55)} />;
-        const hexB = <HexCity x={bx} y={by} w={HW} h={HH} letter="B" badge="tr" badgeP={badgePB} variant={1} opacity={Math.min(1, kB / 0.55)} />;
+        const hexA = <HexCity x={ax} y={ay} w={HW} h={HH} letter="A" badgeP={badgePA} variant={0} contentsP={contentsOf(kA)} />;
+        const hexB = <HexCity x={bx} y={by} w={HW} h={HH} letter="B" badge="tr" badgeP={badgePB} variant={1} contentsP={contentsOf(kB)} />;
         if (s === 1 && kA === 1 && kB === 1) return <>{hexA}{hexB}</>;
         // one wrapper per hex: the settled scale s, then the entrance unfurl kx —
         // both about the hex's OWN centre, so scaleX squeezes it in place.
