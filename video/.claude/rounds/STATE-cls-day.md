@@ -4077,3 +4077,83 @@ Cell mean **.8473**. **The city no longer ranks anywhere.** Every one of the top
   clean it; do not commit with `git add` until they do.**
 - Law-34 proof done: the three gate frames re-rendered from the committed tree are
   **byte-identical** to the stills the gate ran on. What was measured is what shipped.
+
+---
+
+## r18 / s17-joint — the smear was two errors cancelling, and the fix landed as one change — 2026-07-13
+
+Owner of `scenes2.tsx` + `lib.tsx`. Two commits, both path-scoped to `scenes2.tsx`
+(`lib.tsx` needed no change — its `skipHours` half shipped inert with the lib builder).
+Instruments in `work/cls-day/r18-s17/` (`prof.py` row-profiler, `ticks.py` tick-column
+finder, `tickabove.py` above-band stub probe, `ssim.sh`, `still.sh`/`stillcrx.sh`,
+`old/ new/ new2/ headproof/ crx/ refs/`). Every render through the locking harness; no
+orphan shells at exit; lock free at close.
+
+### THE JOINT FIX — `0a666a84b`
+
+Re-derived the three numbers from the ref myself (not on trust). Ref f3340, 09:00 block:
+bold milestone **TIME** ink y140..157 (18 rows, ~34 px/row), width 68, left x965 (tick+8);
+plain 08:00 label ink y140..154 (15 rows, ~22.6 px/row), width 52 — **same top row y140,
+same slot**. The bold milestone time is the hour label BOLDED. Ours drew it at fontSize 19
+from block top 140 → ink y145 (5px low, 25% small), and the band's plain 23px label filled
+the empty slot beneath it → an illegible smear at 07:00/09:00/12:00.
+
+Change: band `skipHours={[7, 9, 12]}` (per-mount, `labelSize={23}`/`tickBelow={18}`
+already in place from earlier r18) + milestone time `fontSize 19 → 23` + block
+`top 140 → 133.5`. After: ours ink top **y140**, width 67 (ref 68), left x964 (ref 965) —
+lands on the ref.
+
+| frame | OLD (HEAD) | JOINT | Δ |
+|---|---|---|---|
+| f3340 | .904969 | **.905993** | +.00102 |
+| f3360 | .909622 | **.910895** | +.00127 |
+| f3380 | .906644 | **.907852** | +.00121 |
+
+NEW ≥ OLD everywhere. This WINS where the smear-delete-alone LOST (.904878) — law 24
+confirmed: two errors cancelling. OLD SSIM reproduced the lib builder's baseline to the 6th
+decimal (instrument honest). Eye montage `montage-band-f3340.png`: ref/old/new stacked —
+OLD shows the doubled smear at 09:00/12:00, NEW is single clean bold, matches ref.
+
+**Confinement proved by BYTES:** f1815 (S9's plain band, draws 07/09/12) md5-identical to
+HEAD across joint + tickAbove. Negative control (OLD f3340 vs NEW f3340) DIFFERED every
+time — the gate is live, not flattering (law 35). CrxSettlementDay f3340 eyecheck: real
+content (mean 0.958), inherits the fix clean (it mounts `ClsDayScenes` with `CRX_PACK`).
+
+### SECONDARY — tickAbove LANDED, but LOCAL not global — `174a0fbca`
+
+Probed ref f3340 at the 08:00 plain tick: navy starts AT band top (y92), **zero above**;
+our band (default `tickAbove=4`) drew a stub y88..91 the ref lacks. Set `tickAbove={0}` on
+the **S17 mount only**, NOT the shared default:
+- Three mounts pin `tickAbove={4}` explicitly (L1348/1395/1512, the descent scenes) — **the
+  ref is non-uniform**, so a global 0 is wrong somewhere.
+- Two default-taking bands live in **scenes1** (L822, L1880), a sibling's actively-changing
+  file staged mid-work in the index — I cannot edit it and cannot gate a moving target. A
+  global default flip on S17's evidence alone is unjustified; captured the proven S17 win
+  locally instead.
+
+| frame | JOINT | +tickAbove=0 |
+|---|---|---|
+| f3340 | .905993 | **.906063** |
+| f3360 | .910895 | **.910989** |
+| f3380 | .907852 | **.907923** |
+
+Stub gone (navy now starts at y92, matches ref). f1815 byte-identical, negative control OK.
+
+### Full chain: **f3340 .904969 → .906063 · f3360 .909622 → .910989 · f3380 .906644 → .907923**
+
+Law-34 ship proof: f3340 + f1815 re-rendered from committed HEAD are **byte-identical** to
+the gated stills — measured == shipped. tsc green for cls-day/cls-shared (the 12 reds are
+all `yc-pitch/YCPitchComposition.tsx`, the foreign half-merge, not mine). Commits verified
+`git show --stat` to hold ONLY `scenes2.tsx`; the stale conflicted index (`.gitignore`,
+`data-node/`, `frontend/`, `yc-pitch/`) was excluded by `git commit --only -- <path>`.
+
+### RESIDUAL for r19
+
+1. **The global `tickAbove` default flip (4 → 0) is still open** — left un-flipped, not
+   refuted. To land it: probe the ref at each of the 6 default-taking scenes (scenes2 L83
+   f1466-1712, L294 f1837-2090, L428 f2075-2250, L654 f2237-2375; scenes1 L822 f<656,
+   L1880 f930-1002), confirm each starts ticks at band top, then flip the default and add
+   explicit `tickAbove={4}` wherever the ref wants the stub. Blocked today only because two
+   scenes are the sibling's live file.
+2. `IconHandshake` trace still coarse (lib residual #3, unchanged) — position right, the
+   trace itself is the next gain.
