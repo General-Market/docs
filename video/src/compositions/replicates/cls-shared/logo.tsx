@@ -44,6 +44,12 @@ export const ClsMark: React.FC<{ size: number; ink?: string; bg?: string }> = ({
 // ─── CLS letterforms ───
 // Traced from end-card column scans (strip x255..1076 → letters viewBox
 // 0 0 830 235; C at 0..300, L at 300..470, S at 540..830 approx).
+// The S's traced outline, in potrace's y-up 10x space; S_TF normalises it
+// into the 0 0 830 235 letters viewBox. See the note at its mount below.
+const S_D =
+  "M23895 9390 c-102 -14 -351 -79 -423 -111 -23 -10 -48 -19 -55 -19 -6 0 -34 -11 -62 -25 -27 -13 -57 -25 -66 -25 -9 0 -22 -7 -29 -15 -7 -8 -17 -15 -23 -15 -16 0 -216 -100 -223 -111 -3 -5 -20 -16 -37 -25 -137 -66 -361 -235 -552 -416 -115 -109 -307 -345 -380 -467 -5 -9 -29 -46 -52 -82 -24 -36 -43 -73 -43 -82 0 -9 -5 -19 -10 -22 -12 -8 -120 -228 -120 -245 0 -7 -7 -24 -15 -38 -28 -49 -103 -289 -117 -372 -5 -30 -15 -75 -22 -100 -8 -25 -19 -112 -25 -195 -7 -82 -17 -183 -23 -222 -6 -44 -8 -98 -3 -135 4 -35 9 -92 11 -128 5 -102 33 -316 49 -378 8 -31 15 -64 15 -74 0 -33 96 -334 115 -361 8 -12 15 -27 15 -35 0 -13 42 -112 60 -142 6 -8 28 -51 50 -95 23 -44 54 -100 70 -125 16 -25 34 -54 40 -65 58 -116 333 -435 505 -586 85 -75 372 -279 392 -279 6 0 15 -6 21 -13 6 -7 44 -30 84 -51 40 -21 84 -43 98 -51 23 -12 52 -25 163 -74 23 -10 69 -29 102 -41 33 -11 83 -30 110 -40 28 -11 73 -24 100 -29 28 -6 70 -17 94 -25 24 -9 56 -16 71 -16 15 0 46 -6 68 -14 23 -8 126 -22 229 -31 l188 -15 3185 -4 3185 -3 65 -10 c102 -16 218 -58 355 -130 40 -21 116 -85 187 -156 53 -53 168 -213 168 -233 0 -5 7 -22 15 -38 28 -53 68 -180 78 -246 21 -144 7 -382 -28 -450 -7 -14 -16 -41 -20 -60 -4 -19 -16 -46 -26 -59 -11 -13 -19 -30 -19 -37 0 -36 -136 -210 -222 -285 -35 -30 -88 -71 -118 -91 -60 -39 -180 -98 -199 -98 -7 0 -26 -7 -44 -17 -18 -9 -77 -22 -132 -29 l-100 -14 -3635 0 -3635 0 -110 -19 c-110 -19 -174 -37 -250 -72 -22 -10 -47 -20 -55 -23 -17 -6 -60 -33 -156 -97 -77 -51 -240 -203 -294 -274 -19 -25 -53 -69 -75 -98 -72 -93 -116 -164 -175 -282 -11 -22 -24 -47 -30 -55 -18 -28 -100 -210 -100 -223 0 -7 -7 -22 -15 -34 -8 -12 -20 -46 -25 -75 -6 -29 -15 -55 -20 -56 l-10 -4 0 -219 0 -219 4273 3 4272 4 207 11 c121 6 216 15 229 23 12 6 58 16 102 20 72 9 256 57 361 95 22 8 65 24 95 34 30 11 59 24 65 29 6 5 25 12 43 15 17 4 37 14 44 22 6 8 17 14 23 14 6 0 40 16 76 35 36 19 76 40 90 47 23 11 98 58 205 127 89 57 286 222 389 325 142 143 396 464 396 501 0 5 6 16 14 24 14 17 88 147 107 191 6 14 15 32 20 40 5 8 14 26 20 40 6 14 19 43 30 65 10 22 19 44 19 49 0 5 8 28 19 50 25 55 48 126 71 216 l19 75 1 677 0 678 -12 47 c-15 65 -62 209 -83 258 -10 22 -23 54 -30 70 -14 33 -118 243 -143 290 -29 53 -145 228 -187 282 -22 28 -55 72 -73 97 -72 97 -322 333 -479 452 -57 43 -191 132 -254 168 -35 20 -71 41 -79 46 -8 6 -26 14 -40 20 -14 5 -32 14 -40 19 -14 9 -65 32 -175 81 -137 61 -411 143 -515 155 -30 3 -75 12 -100 20 -25 7 -130 18 -235 24 l-190 10 -3137 0 -3136 1 -99 16 c-54 9 -115 25 -135 35 -21 11 -46 19 -56 19 -11 0 -31 9 -45 20 -14 11 -28 20 -31 20 -11 0 -140 92 -175 124 -71 66 -205 245 -237 316 -3 8 -15 33 -25 55 -51 113 -105 342 -101 432 1 28 9 70 17 93 8 24 15 56 15 72 0 16 8 45 19 66 10 20 21 53 25 73 4 21 13 42 20 48 8 7 17 23 20 36 4 14 20 44 36 67 17 24 38 54 47 68 47 72 152 158 328 268 53 33 158 74 270 105 l40 11 3700 6 3700 6 90 18 c50 9 99 23 110 30 11 8 36 17 54 21 86 19 308 163 409 267 31 31 156 189 165 208 4 8 21 35 37 60 16 25 34 56 40 70 5 14 14 32 19 40 22 34 71 140 71 152 0 7 9 27 20 43 11 17 20 39 20 50 0 11 7 34 16 50 16 30 45 127 65 215 6 25 16 68 24 95 8 28 21 102 29 165 21 154 24 171 32 198 l6 22 -4438 -1 c-2442 -1 -4466 -5 -4499 -9z";
+const S_TF = "translate(0,235) scale(0.025,-0.025)";
+
 export const ClsLetters: React.FC<{ height: number; ink?: string }> = ({
   height,
   ink = "#FCFCFC",
@@ -84,29 +90,30 @@ export const ClsLetters: React.FC<{ height: number; ink?: string }> = ({
            L 305 0 Z"
         fill={ink}
       />
-      {/* S — square s with round caps */}
-      <path
-        d="M 680 0
-           L 790 0
-           Q 796 20 800 44
-           L 690 44
-           Q 655 44 655 70
-           Q 655 95 690 95
-           L 755 95
-           Q 830 95 830 155
-           Q 830 227 745 227
-           L 640 227
-           Q 626 227 618 213
-           Q 610 196 612 190
-           Q 622 202 645 202
-           L 740 202
-           Q 785 202 785 160
-           Q 785 137 745 137
-           L 680 137
-           Q 610 137 610 70
-           Q 610 0 680 0 Z"
-        fill={ink}
-      />
+      {/* S — FAITHFUL TRACE of the reference's own S (r20).
+          The previous S was a hand-drawn "square s with round caps": an
+          INVENTION, never a trace. It scored IoU 0.559 against the ref's S
+          and was 11,703 viewBox-px light — the ref's S sweeps a long upper
+          arm from vb x~540 (ours started at 610) and carries a full-width
+          lower bar. That one glyph held ~80% of the whole lockup's 12,671px
+          ink deficit, on every frame the lockup shows.
+          Method (the same one that produced MARK_D): median-stack the ref's
+          byte-static hold (cls-day f80..f100, consecutive meandiff 0) → fit
+          the screen<->viewBox affine by IoU against our OWN render (IoU
+          0.996; the fitted sx/sy = 0.9865 independently reproduces scenes1's
+          scaleX(0.985), so the datum checks out) → unwarp the ref into this
+          viewBox at 4x → cut the S off the merged L+S bottom bar at the
+          V-notch apex (vb 550.0, 216.8) → potrace → normalise potrace's
+          y-up 10x output via translate(0,235) scale(+-0.025).
+          Trace fidelity: IoU 0.995 against the ref's S mask.
+          NOT a law-19 redraw: law 19 refutes re-drawing a FAITHFUL trace (a
+          potrace of the ref already sits AT the SSIM ceiling). Our old S was
+          no trace at all, so there was absent content to win back — law 17/18.
+          Below the notch apex the mask's left edge is a synthetic vertical at
+          vb 550; it sits UNDER the L's foot bar, so the union is seamless. */}
+      <g transform={S_TF}>
+        <path fillRule="evenodd" d={S_D} fill={ink} />
+      </g>
     </svg>
   );
 };
