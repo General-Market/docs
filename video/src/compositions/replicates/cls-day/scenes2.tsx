@@ -1554,6 +1554,27 @@ export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pa
   );
 };
 
+// r22 EYE-FIX: the ref draws each bracket bar as a FULL-WIDTH double-arrow — a chevron
+// at each END of the bar with a line running in to the centred text ("◄——— Settlement
+// ———►"). The old bar drew two SHORT unicode arrows hugging the centred text, and had
+// borderRadius 24 where the ref's corners are SQUARE (measured f2900 BAR1: corner inset 0;
+// white ink spans x616..1108 inside a 612..1115 bar — 4px off each end; the line is 4px
+// thick at the bar's vertical centre; each chevron is ~18px long, ~40px tall). Rebuilt as
+// a flex row whose two lines flex-grow to push the chevrons to the ends and keep the label
+// centred — it adapts to any bar width (Settlement 504px, Funding 1246px) and any label.
+const BracketChevron: React.FC<{ dir: "l" | "r" }> = ({ dir }) => (
+  <svg width={20} height={44} viewBox="0 0 20 44" style={{ flexShrink: 0 }}>
+    <path
+      d={dir === "l" ? "M 18 2 L 1 22 L 18 42" : "M 2 2 L 19 22 L 2 42"}
+      fill="none"
+      stroke="#FCFCFC"
+      strokeWidth={4.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const BracketBar: React.FC<{ x: number; w: number; y: number; h?: number; label: string; p: number; pack: Pack }> = ({
   x,
   w,
@@ -1573,10 +1594,11 @@ const BracketBar: React.FC<{ x: number; w: number; y: number; h?: number; label:
         width: Math.max(w, 10),
         height: h,
         background: C.marker,
-        borderRadius: 24,
+        borderRadius: 2,
+        boxSizing: "border-box",
+        padding: "0 3px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
         color: "#FCFCFC",
         fontFamily: pack.sans,
         fontSize: 44,
@@ -1584,9 +1606,11 @@ const BracketBar: React.FC<{ x: number; w: number; y: number; h?: number; label:
         overflow: "hidden",
       }}
     >
-      <span style={{ marginRight: 24, fontSize: 50 }}>⟵</span>
-      {label}
-      <span style={{ marginLeft: 24, fontSize: 50 }}>⟶</span>
+      <BracketChevron dir="l" />
+      <div style={{ flex: 1, height: 4, background: "#FCFCFC", marginLeft: 6, marginRight: 16 }} />
+      <span>{label}</span>
+      <div style={{ flex: 1, height: 4, background: "#FCFCFC", marginLeft: 16, marginRight: 6 }} />
+      <BracketChevron dir="r" />
     </div>
   );
 };
