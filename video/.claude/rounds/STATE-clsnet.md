@@ -1305,3 +1305,158 @@ pill instead of the old 530→365 sideways jump.
    self-contained next round.
 3. Rule retract is fitted linear [2970,2982] / [2970,2979]; the ref's is slightly eased.
    ~6px-tall bars — below the noise floor, not worth a round.
+
+---
+
+## r18 — THE FICTION ROUND (2026-07-12/13) — **20 commits, every gate green**
+
+The r15/r16 verdict said clsnet was at its surgical ceiling and the rest was
+texture floor. **That verdict was wrong in every window it named.** Seven builders,
+one per file, hunted only two things — content the ref does not have, and large
+elements at the wrong size or place. They found nineteen structural errors. Not one
+of them was texture; not one needed a re-draw.
+
+### The three laws, entering the round (all measured, all held)
+1. **Re-drawing faithful traced line-art LOSES** (r16: −0.14 on a hand-redraw; gen12:
+   −0.005 on a finer re-trace). The potrace IS the ref's own vector art. Edge POSITION
+   is the only thing that matters. `art.ts` was touched exactly once this round — to
+   ADD absent ink, never to redraw present ink.
+2. **Deleting FICTION wins big.** Every largest gain below is a deletion.
+3. **Gain is proportional to AREA.**
+4. (Corollary, now with SIX confirmations) **Misplaced ink loses to absent ink** — and
+   r18 extended it twice: it holds against *correctly-timed* ink (an empty doc head beat
+   a mesh drawn at the wrong nodes, 0.774 vs 0.715), and it holds for the draw-in ROUTE,
+   not just the endpoint.
+
+### The fiction we were drawing (each deleted, each gated)
+| where | the fiction | the ref |
+|---|---|---|
+| flows | pill field **squashed inward** (scaleY 0.15→1) | each pill **flies in**, one landing per frame, innermost first; **heights never change** — it was never a scale |
+| flows | currency labels **faded up in place** | they **fly in** at full colour, converging on the band. No opacity ramp anywhere |
+| flows | page-1 collapse = a squash | each half **slides rigidly** into the band and the band **eats** it; above travels 1.21× below |
+| cities | badge B = a **full r69 disc from f1012** | it **grows from a point**, f1024→f1042, solid from the first pixel. We drew ~14,000px of navy the ref does not have |
+| gantt | rows 3–8 **fade** out and back | they are **WEDGED** — the card shoves rows 2–8 down as one rigid block and 3–8 ride off-screen |
+| payment | a **second horizon line** at y368-370, full width | the ref has ONE line, y364–367. We drew a **7px double line across all 1920px, every frame** |
+| payment | two orange **up-arrows** rising into the cities | an arrowhead scan of the ref returns **zero** at every frame 2490–2612 |
+| report tail | **four invented clocks**, all settled by f2315 | **ONE rigid scale** about pivot (374.8, 534.3), RMS 1.24px — not settled until **f2333**. We drew a settled report for 18 frames against a ref still 2.5× oversized |
+| report tail | a +125px **drift** | it does not drift. It **freezes** (byte-stable f2334–2348), then **falls** |
+| reportCard (r17) | the **merge** | never happens |
+
+### The large elements at the wrong size or place
+- **flows hex row 6% small** — `hexW 320` shrank the trace to 0.941. Backing the trace's
+  native size out of our own render gives 316.6×280.5; the ref's hexes measure 316–317 ×
+  281–282 **at every frame f330–450**. *The potrace was the ref's art at scale 1.0 and we
+  had been rendering it shrunk.* True: `hexW 340`, cy 334.
+- **the ruler band entered 15 frames late** (starts f349, not f366) — 63k px of flat grey
+  absent through the whole entry.
+- **the gantt detail card's rules were NAVY, 5px, inset** — the ref's are **WHITE, 5px,
+  full-width**. A contrast inversion over 24% of the frame. Its text was fs30 against a
+  ref fs37; its corners square against the ref's diagonal (the r17 house motif).
+- **the cities collapse ran 10f late and 5f short** on a linear ramp — the ref runs
+  f1051→f1080 on an S-curve, p=0.5 exactly at f1065. At f1065 we sat at p=0.23 while the
+  ref was **half collapsed**: every large element in the window was misplaced through the
+  entire motion. (`CITIES.smallScale` 0.62 → **0.667**.)
+- **`ClsNetBox`'s label was misplaced at EVERY call site** (a shared primitive). The ref
+  seats the label's advance-centre **2.26% of the box side left of the box centre**, and
+  **fs = 47·scale**; we sat **+8.00px right** and 2.4% large everywhere.
+- **the settlement plumbing** starts at **y384** (a deliberate 16px gap below the line),
+  drops, and turns through a **19px rounded corner** into a horizontal at y579. We drew
+  372→520 with a hard right angle — the horizontal leg sat **59px** above the ref's.
+- **road furniture**: the ref draws pavement ticks and a **car** on both horizon lines out
+  to x≈1860 as **world objects at constant velocity**, riding the same collapse transform.
+  Absent from our crops. Added as new traces (append-only: 60 pre-existing assets, **0
+  changed**, `art.ts` diff **+6/−0**).
+
+### Two new laws, both discovered twice independently this round
+- **Chrome SNAPS painted boxes to whole pixels; the ref's boundary rows are PARTIAL.**
+  A 1px full-width overshoot on both horizon lines was 3840px of misplaced ink per settled
+  frame — ~18% of every disagreeing pixel across f913–1300, and worth an order of magnitude
+  more than the furniture it was found beside. Partial rows must be painted as their own
+  1px divs at measured coverage. Landed 3× (`055e8db93`, `7a923bf9e`, and the cities).
+- **A negative A/B can be an ARTIFACT of a misplaced element.** The gantt pills' white
+  outline had been refuted in an earlier round. Once the pills were placed correctly it
+  **wins everywhere** (+0.021 at f2300). *Re-test refuted fixes after you move the thing
+  they sit on.*
+
+### Gate — whole-frame SSIM, ref vs pre-r18 HEAD vs r18 HEAD
+| window | frames | OLD → NEW |
+|---|---|---|
+| **flows** (rank 1+2, worst in the video) | f360–455, 8 frames | **0.856 → 0.956 (+0.100 mean)** |
+| flows collateral (hexRow) | f335 / f345 | .880→.964 · .897→.981 |
+| **cities collapse** | f1056 / f1064 / f1068 | .801→.958 · **.778→.973 (+0.195)** · .802→.978 |
+| cities settled (furniture + edges) | f980…f1290, 8 frames | every frame +.0016…+.0027; r5c7 cell +.007…+.031 |
+| **gantt** (rank 3+7) | f2190 / f2288 / f2300 | **.806→.919** · **.793→.935** · **.821→.931** |
+| **report tail** | f2313 / f2320 / f2364 / f2367 | .834→.926 · **.899→.925** · +.062 · +.085 |
+| **payment** (rank 4) | f2540–2632 | flat **+.009…+.010** every frame; f2645 **+.018** |
+| ClsNetBox law | flows / tradeDocs / locks | box-crop +.028…+.031 · +.012 · **+.053** |
+| page-1 pill collapse | f406–411 | pill-crop +.012…+.051 |
+
+**Zero regressions at any gated frame.** Byte-identity proved outside every window
+(f800, f2200, f2400, f2930, f2660 md5 OLD==NEW). `CrxNetting` renders clean at every
+touched scene — and the gantt wrap fix **repaired a real CRX defect**: its hyphenated RFQ
+ids were shattering into four lines because the row wrapper had no containing block.
+`npx tsc --noEmit`: 0 clsnet errors.
+
+### Commits (20, all path-scoped)
+`944118666` flows hex row · `fedac65bf` cities collapse · `1e8a6e1a6` ruler band ·
+`398b13853` gantt transcription · `80aa2dccc` currency labels · `844da5fec` exit slide ·
+`055e8db93` horizon sub-pixel edges · `48a252f92` payment double-horizon + arrows ·
+`128c3564c` pill entry · `7a923bf9e` payment sub-pixel edges · `11fe9306e` gantt wrap ·
+`eea75f59f` gantt pill outlines · `d7f0e1875` the wedge · `252ac552b` road furniture ·
+`cef071f22` the tail is one scale · `c2cee657f` the ClsNetBox label law · `dec2ae1f2`
+page-1 collapse · `9c50fa27e` freeze, then fall · `68a5f7a9e` flows box rect/mark ·
+`03bae0afc` the plumbing curves
+
+### ⚠ INDEX POISONING — one incident, contained, and a rule for every lane
+`844da5fec` also swept `cls-day/scenes1.tsx` (**175 deletions**), silently reverting that
+lane's S4 work. Caught and restored by the cls-day track (`09600156e`, in HEAD ancestry).
+**Cause: `git checkout <rev> -- <path>` writes the file AND STAGES it**, so the next
+`git add <ownfile> && git commit` sweeps the other lane's reverted file into your commit.
+An audit of all 20 r18 commits found **this one instance and no other**.
+**The rule, for every agent in every lane, without exception:**
+- **NEVER `git checkout <rev> -- <path>`. NEVER `git add -A`. NEVER `--amend`.**
+- Read an old version: `git show <rev>:<path> > <path>` — writes the file, does NOT touch the index.
+- A/B against HEAD: `git stash push -- <your file>` → render → `git stash pop`. Stash leaves the index clean.
+- **Before every commit:** `git status --porcelain -- .../cls-day/ .../cls-shared/` must be EMPTY and `git diff --cached --name-only` must show only your lane.
+
+### Residuals — named, measured, NOT shipped
+1. **`data.ts` GANTT/DETAIL/REPORT are stale and wrong.** The measured truth now lives as
+   local constants at the top of `scenesC.tsx` (rows drift 39px left; ruler 19px right,
+   11px short; `rowFs` 30 vs 37; `labelFs` 28 vs 36). Fold them back and delete the locals.
+2. **Three `ClsNetBox` sites are opted out of the label law because their BOXES are
+   misplaced** — `MATCH.box` (ref x769 y341 side 156; we draw y350 side 152) and
+   `REPORT.box` (ref x794 y475 side 331; we draw side 322 at y482). Fix the box, delete the
+   `labelFs` opt-out, and the site adopts the law. `scenesC:551` (payment) and `:237`
+   (gantt) need **only the opt-out deleted** — their boxes are already true (~+0.003 each).
+   `scenesB:301` (tradeDocs) needs its own y (ref y661, not 675).
+3. **A determinism bug (law 15).** The `ClsNetBox` wordmark renders **~20% narrow in
+   roughly one render in five** — same code, same frame; a **font-load race**, not noise.
+   Costs only ~0.0003 whole-frame, but it makes md5 byte-identity unprovable on any frame
+   carrying the wordmark. Owner: `ui.tsx` / the font loader. **Worth its own fix — a
+   nondeterministic composition is a broken instrument.**
+4. **The traces contain frozen, recoloured copies of the traffic** (`trace.py` maps the blue
+   ticks to grey, baking them at the trace frame). Standing misplaced ink inside the city
+   crops. Removable only by re-tracing the cities with the traffic masked.
+5. **`cityA` at payment is the wrong art** — the ref's payment cityA is a wider arrangement
+   (skyline from x49; ours starts at x170; 121px simply not in the trace). `cityB` already
+   has a dedicated `cityBPay` for exactly this reason. `cityA` needs the same.
+6. **The serif face is the real floor on text.** Our face carries **1.45× the ref's ink mass**
+   at matched cap height (Georgia's thins vs the ref Didone's hairlines). Position and extent
+   land within 1–2px; the mass does not. Lives in `cls-shared/fonts` — a face swap, not a round.
+7. The `Doc` primitive draws three flat bars where the ref has a folded corner, a mesh glyph
+   and micro-text (four on screen). The ref's mesh is a **denser polyhedron at different
+   nodes** — re-drawing it is the texture floor, confirmed by a negative A/B.
+
+### Next-worst (post-r18 sweep of scenesC, every 25f, mean 0.929)
+| rank | frame | ssim | what |
+|---|---|---|---|
+| 1 | **f2130** | **.785** | a **1920×23px white SLIT** between the strip's retreating navy and the gantt page — open at f2128, *before* GanttScene mounts, so the strip's band bottom is lifting off the frame edge. The ref has unbroken navy. SSIM on a flat navy cell collapses to **0.009** when a white stripe crosses it — that one slit IS the 0.785. **COUPLED**: the gantt page's ride-in is also wrong (ref snaps up in 4 frames — 723·364·196·116; ours crawls 825·750·671·587, up to 470px low), and fixing the page ALONE widens the slit to 50px. They must land together. |
+| 2 | f3305 | .852 | mapBadges implode |
+| 3 | f2680 | .860 | strip2 grow |
+| 4 | f3105 | .866 | mapBadges entry |
+| 5 | f3005 | .874 | reportCard collapse pill (r17's named residual — the pill is too narrow; its f≥2982 keyframes are hardcoded) |
+
+**The lesson of r18, plainly: the ceiling was never the line-art. It was the fiction we
+had drawn on top of it.** Nineteen structural errors survived fifteen rounds of SSIM
+grinding because every round asked "is this stroke crisp enough" instead of "does the
+reference do this at all". The metric could not see them; the question found them all.
