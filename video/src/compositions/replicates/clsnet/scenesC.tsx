@@ -465,15 +465,22 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   // (kills the f2480 dip — cities solid by 2482 like the ref)
   if (f < SEG.payment[0] - 8 || f >= 2652) return null;
   const inOp = lerp(f, [2472, 2482], [0, 1]);
-  // ref holds the payment layout well past 2612 (fr_2630 still shows the
-  // below-line plumbing), everything cleared by 2650 (fr_2650 = bare line)
-  const out = lerp(f, [2636, 2650], [1, 0]);
+  // r18: the tableau is whipped off by f2635 and the ref is blank white behind
+  // it, so `out` now only governs the horizon line — which does NOT fade, it
+  // DESCENDS into Strip2's band. Hand it over at 2640, the frame Strip2 mounts.
+  const out = lerp(f, [2639, 2641], [1, 0]);
   const arrOp = lerp(f, [2505, 2518], [0, 1]);
   const belowOp = lerp(f, [2520, 2538], [0, 1]);
-  // r5: ref shows the orange return plumbing SOLID by 2560 (was fading in
-  // 2556-2580); the orange up-arrows into the cities are gone by ~2610
+  // r5: ref shows the orange return plumbing SOLID by 2560 (was fading in 2556-2580)
   const orangeP = lerp(f, [2532, 2546], [0, 1]);
-  const upArrowOp = orangeP * lerp(f, [2596, 2612], [1, 0]);
+  // r18 HORIZON. The ref's line is y364-367 (4px, full width) at EVERY frame
+  // 2480-2632 — we drew it at 368-370 while the traced cities carry their own
+  // baseline at 364-366, so the replica showed a SEVEN-pixel double line across
+  // the whole 1920px frame for the entire scene. That full-width misplaced band
+  // is why this window sat flat at ~0.888 with no timing spike anywhere in it.
+  // It then descends into Strip2, transcribed frame by frame from the ref's own
+  // dark rows: 365@2633 · 366@2634 · 367@2635 · 369@2636 · 374@2638 · 381@2640.
+  const lineY = interpolate(f, [2632, 2633, 2634, 2635, 2636, 2638, 2640], [364, 365, 366, 367, 369, 374, 381], clamp);
   // r15: the ref does NOT hold this layout static — it whip-scrolls the whole
   // payment tableau LEFT and off-screen, then Strip2 grows from the bare line.
   // Measured rigidly (badge/box/text move as one): 0 until f2615, then an
@@ -484,7 +491,7 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const scrollX = interpolate(f, [2615, 2620, 2625, 2630, 2635], [0, -11, -104, -468, -1730], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
-      <div style={{ position: "absolute", left: 0, top: 368, width: 1920, height: 3, backgroundColor: C.navy }} />
+      <div style={{ position: "absolute", left: 0, top: lineY, width: 1920, height: 4, backgroundColor: C.navy }} />
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${scrollX}px)` }}>
       <div style={{ position: "absolute", left: 215, top: 368 - 295 * 0.47, opacity: 1 }}>
         <TracedArt name="cityA" scale={0.47} />
@@ -527,12 +534,12 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           <Doc x={1495} y={392} w={70} h={95} />
         </div>
       )}
-      {/* orange up-arrows delivering payment into the cities (fade ~2596) */}
-      {upArrowOp > 0 && (
-        <svg width={1920} height={1080} style={{ position: "absolute", opacity: upArrowOp }}>
-          <path d="M396,366 V205 M396,205 l-9,16 M396,205 l9,16 M1415,366 V205 M1415,205 l-9,16 M1415,205 l9,16" stroke={C.orange} strokeWidth={3.5} fill="none" />
-        </svg>
-      )}
+      {/* r18: the two orange up-arrows (x396/x1415, y205-366, rising off the
+          horizon into the cities) are FICTION — an orange-arrowhead scan of the
+          ref at x384-412 and x1402-1430, y200-240 returns ZERO at every frame
+          2490-2612 while ours carried 163/191px. The ref's return plumbing stops
+          AT the line; nothing is ever drawn above it. Deleted (lesson: deleting
+          fiction is the highest-yield move in this codebase). */}
       </div>
     </AbsoluteFill>
   );
@@ -548,8 +555,11 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < 2640 || f >= 2833) return null;
   // entry (fr_2650 → fr_2680): the payment line descends to y455, then grows
-  // into the band while clusters + box fade in
-  const lineY = lerp(f, [2640, 2654], [368, 455]);
+  // into the band while clusters + box fade in. r18: the descent is measured off
+  // the ref's own line (dark rows at x60) — 381@2640 · 412@2645 · 456@2650 — and
+  // continues PaymentScene's, which now hands over at exactly f2640. It was
+  // 368@2640 → 455@2654: seven frames late at the top, four at the bottom.
+  const lineY = interpolate(f, [2640, 2645, 2650], [381, 412, 455], clamp);
   const growP = lerp(f, [2656, 2678], [0, 1]);
   const grownTop = interpolate(f, STRIP2.expandF as unknown as number[], STRIP2.expandTop as unknown as number[], clamp);
   const grownBot = interpolate(f, STRIP2.expandF as unknown as number[], STRIP2.expandBot as unknown as number[], clamp);
