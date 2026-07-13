@@ -1830,3 +1830,118 @@ the still the gate was scored on. `tsc` clean at every landing. Harness shells d
 The tagline underneath it is still hand-set Helvetica and still ~5.4k px light — and its weight
 A/B (29b4c5e40) genuinely refuted, because a font HAS advances (law 23). It remains the floor.
 `ClsMark` is already a faithful potrace and was not touched.
+
+## r22 — the hexagon shape corrected + three fresh-window fixes. SCORE HELD 96.0. (round lead + 5 sub-subagents, 4 commits)
+
+**Official verify: 96.0 (video_ssim 0.952857→0.952983, keyframe 0.9412319→0.9414684).** Raw numbers up,
+composite rounds unchanged. Whole-video frame-mean 0.94587→0.94600 = **+0.00013**. The round banked
+four correct, independently-gated fixes and one honest revert. **The gap to 96.5 is unchanged, and the
+round taught exactly why: every landed fix is SMALL-AREA (law 18), and the one LARGE-AREA lever left —
+the outro rise — is walled off by a mis-proportioned trace (law 19).**
+
+### The main bet — hexagon shape — was RIGHT, and composite-NEUTRAL. Both are true.
+`0cd36e0a9`: **h/w 0.906 → 0.866, inset 0.25 unchanged.** The defect was HEIGHT, not inset. Fitted the
+straight diagonal edges (rounding/stroke-immune) at 12 hexes across all families: slope **1.731±0.003**,
+inset 0.248±0.002. The r19 "inset 0.265" guess is refuted; the scenesA-1193 "h/w 0.889" was a
+rounded-corner bbox artifact (sharp points round in more than flat edges — law 25). TRACE families
+(hexRow/map/network) already bake the hexagon into the potrace at ~1.73 → **left alone** (their 0.906 is
+art-position, not shape). POLYGON families (Hexagon default, HexCity, SmallHex, PayHex, 2 map bg-hexes)
+fixed. clipPaths are box-relative → a shorter box auto-corrects its own clip; untouched. CrxNetting
+eyecheck PASS. Law-27 resolution: locks and matching are the SAME `SmallHex` primitive with OPPOSITE
+seat optima (locks temple was ref-true → hold; matching sat 3px high → gains riding down) — resolved
+with a per-call `fillDyFrac` prop (default −0.02, matching passes 0).
+
+**But the composite-honest per-window (mp4-vs-mp4, no PNG codec bonus) tells the real story:**
+
+| hex family | crop Δ (builder gate) | WHOLE-WINDOW Δ (verify) |
+|---|---|---|
+| matching | **+0.140** | **+0.00379** |
+| payment mHexHeli | +0.050 | −0.00023 |
+| locks | +0.0045 | **−0.00152** |
+| hexify | +0.0003 | **−0.00066** |
+| mapHexes (bg-hex 177→172) | — | **−0.00187** |
+
+The matching win (+0.0038) is almost exactly cancelled by the mapHexes/locks/hexify regressions.
+**Net hex contribution to the composite ≈ +0.00003 — a wash.** The builder gated whole-frame WITH the
++0.006–0.008 PNG-vs-mp4 codec bonus (it flagged this and leaned on the crop for signal), which FLATTERED
+the map/locks/hexify families that actually drift slightly worse in the codec-honest composite. The
+shape is geometrically correct (0.3px residual, matching +0.140 crop is a real fidelity win the eye
+sees), so it STAYS — a documented correct-but-metric-flat spend, not a revert. **Lesson: a whole-frame
+gate rendered as PNG against an mp4 ref carries a per-family bonus that can hide a small real regression.
+Gate small-area shape changes on the CROP and on an mp4-vs-mp4 proxy, never PNG-vs-mp4 whole-frame.**
+
+### The composite movers were the FRESH WINDOWS, not the main bet
+- **Handshake W2 `214d63081` — the round's biggest composite mover, +0.00577** (f2432-2482). The two hex
+  documents were the plain `<Doc>` (3 bars); they are the full `ReportDoc` (folded doc + mesh seal +
+  mini-gantt + pill). Swapped both (docA ink 3179→7134 vs ref 9190; docB 3430→7406 vs 8851). The navy
+  handshake box was 55px short at top → navy filler rect (box-top-strip ink 4678→29490 vs ref 28966; the
+  r21 "art.ts-only" claim was wrong — done from scenesC). Arrows 6→16px. Fiction-law 18: a wrong CARD is
+  the biggest per-frame lever in a window.
+- **Strip `3ca8c0498` (data.ts, 3 pure-data fixes to the worst 2s window):** 19:00 trio bottom pill was
+  154px low → +0.00277 (crop +0.153); day-A navy/orange entered too early, ref DROPS them (fallKeys not
+  `in`) → +0.00072 (crop +0.107); 21:00 trio never faded during the push → `out:[2127,2136]`, +0.00009
+  (the fade dims it but `pushY` still lifts it 197px — see residual 2b).
+- **Globe `94fc4b0f0` (scenesA), +0.00069.** Continents displaced on BOTH axes: mapOx held flat (kill the
+  over-scroll), mapOy drifted down to 248. Law-8 lesson: the fix is SSIM-MUTED for PARTIAL corrections —
+  fixing one axis scores flat/negative because thin white lines still miss; the gain only appears at full
+  pose. The builder OVERRODE the diagnostician's mapOy=190 (closed only 28% of the gap, regressed SSIM),
+  switched from centroid (a disc-clipped lying proxy) to line-overlap count, scanned, found a real
+  optimum at 248 by turnover. Defect 1.3 (disc 8px big) REFUTED by measurement — ref r296.0 vs ours
+  295.5 (<1px); the r21 comment had grown it wrongly, correcting it would regress. Not applied.
+
+### W3 outro-rise — REVERTED. The r21 refutation holds, and now we know the wall is a TRACE.
+MISC-DIAG rated the outro rise (cities pan up with the sea instead of drowning) the single biggest lever
+in the video — the whole top half goes white→skyline across ~22 frames. The builder built 3.1 exactly
+(content-only rise, `dyRise = 595 − seaTop`, band left put) and re-adjudicated under law 24. **The
+refutation reproduces:** f3935 +0.009 but f3940/f3942 **−0.013/−0.011**, window mean −0.0011. Also tried
+rising the band — worse. **Root cause, measured (clean numpy):** the city/stack TRACES are
+mis-proportioned vs the ref — temple aspect 1.59 vs ref 1.96, cityB 2.18 vs 3.03, all 30–70% undersized
+in width. `TracedArt` scales uniformly, so no scale matches ref width without a height overshoot; a
+correctly-scheduled rise makes the undersized skyline MISREGISTER worse than blank at the top-pan
+(**law 19 — you cannot fix a mis-proportioned trace with schedule or scale**). Defect 3.2 (resize) is
+blocked by the same wall plus a data matter (the left stack is short because it has 5 rows not 7). The
+diagnostician's law-24 hypothesis ("prior loss was from also rising the band") is WRONG for this window;
+content-only rise loses too. Perceptual note (genuine law-8 conflict): the eye prefers the rise at f3942
+(skyline vs blank void) but SSIM rewards the blank; net-negative window, negligible score impact, no
+owner order → NOT shipped. Diff saved at `work/clsnet/r22/W3-rise-plus-band.diff` if an owner wants it as
+a documented spend. **Next-round path: re-proportion cityA/cityB/left-stack traces in art.ts toward the
+ref aspect (and fix the 5→7 row count), THEN the 3.1 rise becomes a clean win. This is the only
+LARGE-AREA lever left and the correct main bet for r23.**
+
+### The hard lesson of r22 (law 18, paid in full)
+> The metric is a whole-frame mean. A +0.140 crop on a small element is a +0.003 window and a +0.00003
+> composite. Every hexagon, pill, continent and doc we fixed is small-area; their crops improved a lot
+> and the eye sees it, but 96.0 did not move. **The gap to 96.5 lives in LARGE-AREA structure — and the
+> largest piece left, the outro skyline, is gated behind a trace that must be re-proportioned before any
+> schedule or scale fix can pay.** Chase area. Fix the trace before you fix the clock.
+
+### Fresh next-worst windows entering r23 (r22 framessim, 2s, top-12)
+1. **f2085-2135 0.9168** strip 21:00 — residual 2b (`pushY` still lifts the fading trio 197px; scenesB)
+2. **f723-773 0.9189** mapHexes/network — ROSE this round (hex-seat regression, −0.0019)
+3. f2583-2633 0.9220 payment/strip2 tail
+4. f523-573 0.9221 globe (improved, still ranked — SSIM-muted floor, law 8)
+5. f1295-1345 0.9225 pairs→hexify handoff
+6. **f673-723 0.9249** mapHexes — hex-seat regression
+7. f1969-2019 0.9251 strip
+8. f2024-2074 0.9265 strip 19:00 (improved +0.0028, dropped from rank 6)
+9. **f608-658 0.9285** mapHexes — hex-seat regression
+10. **f1875-1925 0.9287** locks — hex-seat regression (fillDyFrac tunable)
+11. f3890-3940 0.9291 outro W3 — blocked on art.ts trace re-proportion (r23 main bet)
+12. f469-519 0.9308 globe intro / mapDraw (new to top-12)
+
+### Residuals — named, measured, NOT shipped
+- **W3 outro rise (TOP, large-area):** blocked by mis-proportioned city/stack traces (art.ts) + 5→7 stack
+  rows. Re-proportion traces first, then the rise pays. r23 main bet.
+- **mapHexes/locks hex-seat regression** (−0.0019 / −0.0015 whole-window): the height fix drifts the
+  bg-hex and locks temple slightly; recoverable by per-site seat tuning, but small-area/low-value.
+- **strip 2b** (scenesB): exempt the 21:00 trio from `pushY` so it stays low where the ref keeps it dim.
+  Low-contrast law-8 second-order; the fade already took the contrast win.
+- **strip day-A settled ~18px high** (pre-existing, out of r22 scope).
+- **mHexCity2 bucket-and-grass fiction** (−0.016 crop): outline fixed, art held; re-trace without the
+  bucket to unlock its resize (family nets +0.0059, so it stays for now).
+
+### Commits (4, all path-scoped, tree clean, tsc clean, no foreign files staged)
+- `0cd36e0a9` hexagon shape h/w 0.906→0.866 (ui.tsx, scenesA/B/C)
+- `3ca8c0498` strip: three data-only fixes to the worst 2s window (data.ts)
+- `94fc4b0f0` globe: hold the scroll, drift the continents down (scenesA)
+- `214d63081` scenesC W2: hexes carry real reports, box stands full, arrows land bold (scenesC)
