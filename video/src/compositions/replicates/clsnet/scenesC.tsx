@@ -6,7 +6,7 @@ import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { Badge, ClsNetBox, Doc, Elbow, Hexagon, Pill, SansText, SerifLabel, lerp } from "./ui";
 import { TitleCard } from "./scenesA";
-import { GANTT_PAGE_DY, SmallHex, stripPushY } from "./scenesB";
+import { GANTT_PAGE_DY, stripPushY } from "./scenesB";
 
 const PILL_COL: Record<string, string> = {
   lavender: C.lavender,
@@ -981,7 +981,7 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           {hexS > 0 && (
             <>
               <div style={{ position: "absolute", inset: 0, transform: hexS < 1 ? `scale(${hexS})` : undefined, transformOrigin: "785px 589px" }}>
-                <SmallHex art="mHexCity2" cx={785} cy={590} w={240} artW={215} />
+                <PayHex art="mHexCity2" cx={785} cy={590} w={240} artScale={1.05} artLeft={4} artBottom={5} />
               </div>
               <div style={{ position: "absolute", inset: 0, transform: hexS < 1 ? `scale(${hexS})` : undefined, transformOrigin: "1148px 592px" }}>
                 <PayHex art="mHexHeli" cx={1148} cy={592} w={240} artScale={1.246} artLeft={0.2} artBottom={-7.7} />
