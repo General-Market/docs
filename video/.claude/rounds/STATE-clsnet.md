@@ -1148,3 +1148,66 @@ ONLY texture-floor / rewrite-only work remaining:
 The remaining named lever anywhere in clsnet is the reportCard card-size REWRITE
 (coupled, own round). Everything else is the re-DRAWN line-art pipeline (lesson 9
 texture floor) — not a surgical round. 96 walls here without the pipeline project.
+
+### r16 HEX LINE-ART RE-DRAW — 2026-07-12 (owner dropped "subtle only", authorized native re-draw toward 96.5) — NO COMMIT, mandate REFUTED
+Mandate: replace the soft potrace hex interiors (network/cities/mbadge) with a
+hand-authored parametric native `HexFacade` vector primitive (crisp hex outline +
+building line-art at native comp resolution), toward SCORE 96.5. Method: prove on the
+CLEAREST/highest-contrast/largest hex first (network HELI, w375, settled f800+), gate
+NEW≥OLD, then fan out. Instruments in `work/clsnet/r16/` (still.sh/ssim.sh gate helpers,
+vf/ exact ref frames, base_{800,850,890}.png = OLD trace, heli/bank/bank2/city2_2x.png
+= 2× ref zooms). Gate law: EXACT ref video frames (25fps, ref n = comp n), ffmpeg-ssim
+whole + heli-crop `440x400+173+209`, NEW≥OLD at every frame + eye-cleaner + other hexes
+byte-unchanged. Serialized through the one `/tmp/replica-render.lock`, no full verify (OOM).
+
+**MEASURED BASELINE (ref-vs-OLD trace):** f890 whole **0.981094** / heli-crop **0.966204**
+/ bank-crop 0.962889 / bank2-crop 0.954113 / city2-crop 0.963570; f800 whole 0.973492;
+f850 whole 0.973973. The hex crops are ALREADY 0.954-0.966 — the positions match to
+sub-pixel; the residual is stroke softness. Probed heli geometry precisely (hex cx393
+cy409 w372 h331, navy outline ~5px, rounded corners; orange tower left window-box
+section x323-383, right section 7 mullion lines pitch~12 spanning x380-455) — the
+geometry IS recoverable; the redraw was feasible, not blocked on measurement.
+
+**HELI PROOF — FAIL, decisive (a builder authored HexFacade + a data-driven
+HeliBuildingArt spec, gated, reverted byte-identical):**
+| frame | whole OLD→NEW | heli-crop OLD→NEW |
+|---|---|---|
+| f800 | .97349→.96191 (−.0116) | .95377→**.81463** (−.139) |
+| f850 | .97397→.96249 (−.0115) | .96196→**.82335** (−.139) |
+| f890 | .98109→.96920 (−.0119) | .96620→**.82365** (−.142) |
+
+**WHY (measured, not theory) — the trace IS the floor, third independent confirmation:**
+- The potrace has ZERO geometry error (it is a faithful trace of the ref's own vector
+  art) and is compression-soft LIKE the ref → it sits at the SSIM ceiling (soft-vs-soft,
+  lesson 21). A hand redraw sits ~1px off on EVERY interior stroke; the diff composite
+  lights both edges of every stroke × ~50 strokes. Misplaced ink loses to absent ink
+  (lesson 4), overwhelmingly (−0.14 crop).
+- Crispness was NEVER the binding constraint: blur 0.4 (.82365) ≈ blur 1.0 (.82252).
+  The limiter is edge POSITION, which no crispness/color fix touches. The builder's own
+  progression: first pass .783 → hex-border fix .824 → asymptote at ~.824. Closing the
+  last 0.14 = replicating the trace stroke-for-stroke, i.e. NOT beating it.
+- **The diagnosed "orange fringe on navy skyline" defect was NOT real** — probing the
+  OLD render's left navy edges returned clean navy (0,39,83), no orange. The cmp_heli
+  crop's apparent fringe was a display/JPEG artifact. There is no visible re-draw win:
+  the trace is already faithful to the EYE, so the eye gate (owner's mandate) also fails.
+- Confirms gen12 (finer re-trace LOST −.005) and the HEX-WINDOW round's stated residual.
+  **The re-draw pipeline the owner authorized would make the video WORSE on both the
+  metric and the eye. DO NOT build it.** The 94.2 wall is NOT the hex line-art (those
+  crops are ~0.96, at the encoding floor) — it is elsewhere (r15 named it: card2
+  font-face width, reportCard/payment scene rewrites).
+
+**ONE real residual surfaced (documented, NOT shipped):** the traced illustration orange
+`#D45837`=(212,88,55) is LIGHTER than the ref's true orange (heli deep-core (202,69,35),
+median (188,74,45)). A SCOPED recolor (network-hex `recolor` map, same pattern as
+GREY_FACE — zero geometry risk) deepening it toward ~(200,73,42) gains ~**+0.0012 on the
+heli crop** (simulated on the render; optimum R≈195-202). Real but negligible: the orange
+is almost entirely THIN STROKES (the tower body is white with orange OUTLINE — few solid
+px), so whole-frame impact ≈ +0.0001, below the verify noise floor. The SAME light-orange
+error afflicts every orange element video-wide (cities/mbadge/flows/strips) — a BROAD
+recolor could be a micro-win but needs a full-verify gate (global palette). NOT committed
+this round; folded into a future broad-orange pass if the owner wants it.
+
+**VERDICT:** RE-DRAW mandate refuted by direct measurement. Tree clean, byte-identical
+to HEAD d7c24da00, nothing committed. clsnet stays at its r15 surgical ceiling; the hex
+line-art is a proven SSIM floor (soft trace = soft ref), unbreakable by re-draw. Remaining
+real levers are the r15-named font-face + scene-rewrite items, not the hexes.
