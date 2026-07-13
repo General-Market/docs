@@ -1038,7 +1038,39 @@ const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
         <>
           <div style={{ position: "absolute", left: front, top: 0, width: 1980 - front, height: btop, background: C.white }} />
           <div style={{ position: "absolute", left: front, top: btop + bh, width: 1980 - front, height: 1080 - btop - bh, background: C.navyBg }} />
-          {/* incoming S5 tick chains (above navy-on-white, below mirrored white) */}
+          {/* incoming S5 tick chains (above navy-on-white, below mirrored white).
+              ── gen20 — THE EXIT SWEEPS IN AN EMPTY WORLD, AND THE STAND-IN CITY LOST ──
+              The ref's front reveals a full SKYLINE behind it. We reveal bare white above
+              the band and bare navy below, and draw only the two chains. Measured at
+              f673, where the front has crossed the whole frame:
+                          above-band ink    RED ink     below-band white
+                ref            41,795       42,787          20,589
+                ours            7,438            0           7,124
+              A whole city, absent, on the frame that scores .8657. So I built it: the
+              world rides the SAME lattice as the ticks and needs no fit of its own — hour
+              i sits at local (i-9)*301.5, the tick at k carries the true index h5 + k - 24
+              (the exit runs one cycle BEHIND S5's i=0..23: at f673 the ref reads
+              21:00..04:00, i.e. i = -3..4), screen x of local L is X0 + L*syp with
+              X0 = phase + (33 - h5)*pitch, and world y maps straight through the band,
+              screen y = btop + (worldY - 490)*syp. One scale wrapper, no new numbers.
+              It came out REGISTERED — cross-correlation of the ink profile puts it within
+              1-3px of the ref above AND below — and with the ink mass closed to within
+              11% (7,438 -> 37,024 above; 0 -> 37,442 red). AND IT LOST AT EVERY FRAME:
+                f668 .8817 -> .8772 · f670 .8661 -> .8567 · f671 .8712 -> .8607
+                f672 .8877 -> .8618 · f673 .8657 -> .8322  (-.034)
+              Because the DESIGNS are wrong. The cruise only ever shows hours 09-15, so
+              ClA/ClB/ClC/ClG are the only clusters anyone has ever traced; the exit shows
+              hours 21-05, which are OTHER buildings, and the left tiles just cycle the
+              four we have on a 4-slot period. Profile correlation tops out at 0.56.
+              Right slot, right mass, WRONG SHAPE — and SSIM punishes wrong structure on a
+              white ground harder than it punishes none. Lesson 4, a fifth time: misplaced
+              ink loses to absent ink, and a stand-in is misplaced ink.
+              THE FIX IS TRACED ART, NOT A BETTER FORMULA. ref f673 shows hours 21:00-04:00
+              across one frame with the whole skyline visible — trace those four above
+              clusters and four below clusters there, hang them on CITY_ABOVE/CITY_BELOW at
+              local -2798/-2194/-1590/-986 (and -3107/-2503/-1899/-1295), and the mount
+              above becomes a win. The mount is 20 lines and is recorded in this comment;
+              do not re-derive it. Do NOT re-mount it against cycled stand-ins. */}
           <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, clipPath: `inset(0 0 0 ${front}px)` }}>
             {ticks.map(({ x, h, hs }) => (
               <React.Fragment key={h}>
@@ -1286,35 +1318,21 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
                 <rect x={1287} y={576} width={117} height={285} />
               </g>
             </svg>
-            {/* distinct traced clusters (ref f750/f900), world-fixed.
+            {/* distinct traced clusters (ref f750/f900), world-fixed — CITY_ABOVE /
+                CITY_BELOW, the one table the S4 exit reads too.
                 Above: A@-152 B@452 C@1060 G@1657 (center world x, slot 604).
-                Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse). */}
-            <div style={{ position: "absolute", left: -382, top: 170 }}><ClA /></div>
-            <div style={{ position: "absolute", left: 222, top: 170 }}><ClB /></div>
-            <div style={{ position: "absolute", left: 830, top: 170 }}><ClC /></div>
-            <div style={{ position: "absolute", left: 1427, top: 170 }}><ClG /></div>
-            <div style={{ position: "absolute", left: -691, top: bandY + bandH - 5 }}><ClE /></div>
-            <div style={{ position: "absolute", left: -88, top: bandY + bandH - 5 }}><ClD /></div>
-            <div style={{ position: "absolute", left: 519, top: bandY + bandH - 5 }}><ClE /></div>
-            <div style={{ position: "absolute", left: 1115, top: bandY + bandH - 5 }}><ClF /></div>
-            {/* ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there */}
-            {/* entry-whip left tiles (hours 2..7, visible only f674..~690):
-                designs cycle on — real per-slot identity unreadable at
-                100..300px/f; position+mass carry the window (lesson 4).
+                Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse).
+                ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there. */}
+            <CityRow slots={CITY_ABOVE} top={170} />
+            <CityRow slots={CITY_BELOW} top={bandY + bandH - 5} />
+            {/* entry-whip left tiles (visible only f674..~690).
                 gen20: the x9 correction pushes the world 302 units RIGHT at f674, so
-                the visible local range opens to [-2659, -396] and the old leftmost
-                tiles (-2194 above, -2503 below) left ~400px of BARE WHITE down the
-                left edge. One more slot each end fills it. */}
+                the visible local range opens to [-2659, -396] and three tiles left
+                ~400px of BARE WHITE down the left edge. Four cover it. */}
             {frame < 692 && (
               <>
-                <div style={{ position: "absolute", left: -986, top: 170 }}><ClG /></div>
-                <div style={{ position: "absolute", left: -1590, top: 170 }}><ClC /></div>
-                <div style={{ position: "absolute", left: -2194, top: 170 }}><ClB /></div>
-                <div style={{ position: "absolute", left: -2798, top: 170 }}><ClA /></div>
-                <div style={{ position: "absolute", left: -1295, top: bandY + bandH - 5 }}><ClF /></div>
-                <div style={{ position: "absolute", left: -1899, top: bandY + bandH - 5 }}><ClE /></div>
-                <div style={{ position: "absolute", left: -2503, top: bandY + bandH - 5 }}><ClD /></div>
-                <div style={{ position: "absolute", left: -3107, top: bandY + bandH - 5 }}><ClE /></div>
+                <CityRow slots={leftAbove(4)} top={170} />
+                <CityRow slots={leftBelow(4)} top={bandY + bandH - 5} />
               </>
             )}
           </div>
@@ -1861,6 +1879,34 @@ const ClF: React.FC = () => (
     {/* small hanging box right of the 20:00 tick (ref f900) */}
     <rect x={392} y={-4} width={32} height={80} fill="none" stroke={WHT} strokeWidth="3.5" />
   </svg>
+);
+
+// ─── the skyline's world-fixed slot table ───
+// ONE table. S5Skyline's cruise and the S4 exit's INCOMING world both read it — a
+// hand-copied twin is two primitives that agree right up until one of them is fixed
+// (gen19, the ClsPillSlot). Settled slots are traced off ref f750/f900; the left tiles
+// repeat on the measured 604 pitch, designs cycling, because at 100-300px/f no per-slot
+// identity is readable and only position and mass carry the window (lesson 4).
+type Slot = [number, React.FC];
+const CITY_ABOVE: Slot[] = [[-382, ClA], [222, ClB], [830, ClC], [1427, ClG]];
+const CITY_BELOW: Slot[] = [[-691, ClE], [-88, ClD], [519, ClE], [1115, ClF]];
+const ABOVE_CYCLE = [ClG, ClC, ClB, ClA];
+const BELOW_CYCLE = [ClF, ClE, ClD, ClE];
+// n tiles to the LEFT of the settled run. S5's entry needs 4 (visible local reaches
+// -2659 at f674); the S4 exit needs 7, because at f667-672 the incoming world is still
+// zoomed far out (syp 0.50-0.69) and its visible local range reaches -4368.
+const leftAbove = (n: number): Slot[] =>
+  Array.from({ length: n }, (_, m) => [-382 - 604 * (m + 1), ABOVE_CYCLE[m % 4]] as Slot);
+const leftBelow = (n: number): Slot[] =>
+  Array.from({ length: n }, (_, m) => [-691 - 604 * (m + 1), BELOW_CYCLE[m % 4]] as Slot);
+const CityRow: React.FC<{ slots: Slot[]; top: number }> = ({ slots, top }) => (
+  <>
+    {slots.map(([x, Cl]) => (
+      <div key={x} style={{ position: "absolute", left: x, top }}>
+        <Cl />
+      </div>
+    ))}
+  </>
 );
 
 // ─── S6: pay-in schedule 00:00 (f923..1176) ───
