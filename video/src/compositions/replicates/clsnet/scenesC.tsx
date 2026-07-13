@@ -1121,7 +1121,15 @@ const S2_BAND_BOT = [
 // data.ts STRIP2 is the stale copy (see r18 residual 1).
 const S2_RATE = 9.92;
 const S2_UPS = [
-  { art: "s2UpBank", sx: -656, y: 215, w: 532 },
+  // r20: s2UpBankW is a seam-free re-trace of the WHOLE three-building cluster.
+  // The old s2UpBank (w532) cut its left edge through the third building — the
+  // rank-1 residual entering this round (grid cell 0.39 @ f2680). w in this array
+  // is a CULL viewport only (line ~1187), not a drawn width; TracedArt draws at
+  // scale=1 native px, so no scale change is needed. The origin shifts LEFT by the
+  // measured left-extension: aligning the two traces on their orange columns (the
+  // one unambiguous landmark; the solid navy masses slide degenerately) gives a
+  // sharp IoU peak at dx=132, dy=0. So sx: -656 - 132 = -788, y unchanged, w=666.
+  { art: "s2UpBankW", sx: -788, y: 215, w: 666 },
   { art: "s2UpCenter", sx: 696, y: 126, w: 614 },
   { art: "s2UpSail", sx: 1927, y: 52, w: 489 },
 ];
