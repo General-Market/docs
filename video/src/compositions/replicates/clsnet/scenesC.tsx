@@ -2061,8 +2061,17 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* cities standing on the flat band (fr_3840: bases at y555) */}
       {citiesOp > 0 && (
         <>
-          <div style={{ position: "absolute", left: 370 + cityDx, top: 557 - 295 * 0.44, opacity: citiesOp }}>
-            <TracedArt name="cityA" scale={0.44} />
+          {/* r23 (law 21). cityA stood ~14% too SMALL on the band — not
+              mis-proportioned: its aspect is the ref's (measured f3815, our orange
+              temple 1.60 vs the ref's 1.58), it is uniformly undersized (ours w195
+              vs the ref's w227). So this is a native re-scale of a FAITHFUL trace,
+              which pays — scale 0.44→0.512 (227/443·native) and re-seat so the orange
+              temple lands on the ref's own x500-727, base y555. cityB already matched
+              (aspect 1.98 vs 1.96, w426 vs 424) and is left untouched. This is the
+              real defect behind r22's "undersized skyline"; the trace never needed
+              re-proportioning. */}
+          <div style={{ position: "absolute", left: 296.3 + cityDx, top: 409.8, opacity: citiesOp }}>
+            <TracedArt name="cityA" scale={0.512} />
           </div>
           <div style={{ position: "absolute", left: 1210 + cityDx, top: 557 - 545 * 0.42, opacity: citiesOp }}>
             <TracedArt name="cityB" scale={0.42} />
