@@ -637,6 +637,7 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const bDy = bCy - HS_B.y1;
   const graphicOp = lerp(f, [2405, 2420], [0, 1]);
   const arrowP = lerp(f, [2424, 2440], [0, 1]);
+  const arrowHeadOp = lerp(f, [2436, 2440], [0, 1]);
   return (
     <AbsoluteFill style={{ opacity: out }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: C.white, opacity: bgOp }} />
@@ -666,11 +667,31 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", inset: 0, transform: `translate(${bDx}px, ${bDy}px)`, opacity: 1 - u }}>
         <Doc x={1611} y={900} w={90} h={110} />
       </div>
-      {/* handshake graphic + horizontal arrows form later (~2405-2425) */}
+      {/* handshake graphic + connector arrows form later (~2405-2425).
+          r21 (window #11). The two connectors were thin straight horizontals at
+          y460/y830 — ~100px BELOW the reference, with no elbow and Elbow's 12px
+          head. The ref draws two ORANGE ELBOWS off the handshake box (all traced off
+          ref_2455): the TOP leaves the box top, climbs to y343 and turns LEFT into a
+          bold ~57px arrowhead at (672,343) aimed at hexA; the BOTTOM leaves the box
+          bottom, drops to y747 and turns RIGHT into a bold arrowhead at (1255,747)
+          aimed at hexB. Horizontals measured y342-344 / 746-748, verticals x967-970,
+          heads xspan 672-729 / 1170-1255 (y305-381 / 709-785). The LINES are only
+          3px — it is the heads that are bold — so Elbow draws the 3px elbow lines
+          (keeping its pen draw-in) and the heavy chevrons are manual paths.
+          (The navy box itself is 53px too SHORT at the top — ref 349x237 vs our
+          342x184, same width, bottom-aligned — a trace-aspect defect that lives in
+          art.ts and cannot be fixed from this file; it does not land in the window's
+          ranked grid cells, the arrows do.) */}
       <div style={{ position: "absolute", inset: 0, opacity: graphicOp }}>
         <TracedArt name="handshake" x={715} y={490} />
-        <Elbow points={[[1010, 460], [690, 460]]} arrow="end" drawP={arrowP} />
-        <Elbow points={[[930, 830], [1245, 830]]} arrow="end" drawP={arrowP} />
+        <Elbow points={[[968, 492], [968, 343], [690, 343]]} drawP={arrowP} width={3} />
+        <Elbow points={[[968, 672], [968, 747], [1237, 747]]} drawP={arrowP} width={3} />
+        {arrowHeadOp > 0 && (
+          <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, opacity: arrowHeadOp }}>
+            <path d="M727,306 L672,343 L727,380" stroke={C.orange} strokeWidth={6} fill="none" strokeLinejoin="miter" />
+            <path d="M1200,710 L1255,747 L1200,784" stroke={C.orange} strokeWidth={6} fill="none" strokeLinejoin="miter" />
+          </svg>
+        )}
       </div>
     </AbsoluteFill>
   );
