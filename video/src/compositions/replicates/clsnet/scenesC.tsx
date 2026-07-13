@@ -661,11 +661,15 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
           offsets the motion track above was solved with, so they cross-check. */}
       <PayHex art="cityA" cx={aCx} cy={aCy} w={385} artScale={0.539} artLeft={-139.7} artBottom={86.9} hexOp={hexOp} letter="A" badgeDx={aBadgeDx} badgeDy={aBadgeDy} badgeR={badgeR} />
       <div style={{ position: "absolute", inset: 0, transform: `translate(${aDx}px, ${aDy}px)`, opacity: 1 - u }}>
-        <Doc x={255} y={510} w={91} h={110} />
+        {/* r22 (window #2, law 18): each hex carries the FULL ReportDoc — folded-corner
+            doc + header lines + geodesic seal + navy mini-gantt + pill — not the plain
+            3-bar Doc (ref card ink ≈4100/7351 vs our 1473/2223). Reuse the same component
+            ReportOutScene uses; seat measured off ref_2460 (doc A card x246 y448 w108 h144). */}
+        <ReportDoc x={244} y={450} w={108} h={143} pillColor={C.orangeDeep} meshP={1} />
       </div>
       <PayHex art="cityB" cx={bCx} cy={bCy} w={396} artScale={0.5343} artLeft={-94.6} artBottom={-2.0} hexOp={hexOp} letter="B" badgeDx={bBadgeDx} badgeDy={bBadgeDy} badgeR={badgeR} />
       <div style={{ position: "absolute", inset: 0, transform: `translate(${bDx}px, ${bDy}px)`, opacity: 1 - u }}>
-        <Doc x={1611} y={900} w={90} h={110} />
+        <ReportDoc x={1600} y={845} w={112} h={143} pillColor={C.pillNavy} meshP={1} />
       </div>
       {/* handshake graphic + connector arrows form later (~2405-2425).
           r21 (window #11). The two connectors were thin straight horizontals at
@@ -678,18 +682,22 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
           heads xspan 672-729 / 1170-1255 (y305-381 / 709-785). The LINES are only
           3px — it is the heads that are bold — so Elbow draws the 3px elbow lines
           (keeping its pen draw-in) and the heavy chevrons are manual paths.
-          (The navy box itself is 53px too SHORT at the top — ref 349x237 vs our
-          342x184, same width, bottom-aligned — a trace-aspect defect that lives in
-          art.ts and cannot be fixed from this file; it does not land in the window's
-          ranked grid cells, the arrows do.) */}
+          (r22 window #2.2: the navy box trace is 55px too SHORT at the top — ref
+          y[435,674] h240 vs our y[490,674] h184, same width — so a 457×55 navy strip
+          reads white. The trace aspect lives in art.ts, but the box is a solid navy
+          fill, so a navy rect BEHIND the art extends the top without touching art.ts.) */}
       <div style={{ position: "absolute", inset: 0, opacity: graphicOp }}>
+        {/* navy top-filler: seats under the box art, extends its top edge 490→435 (ref) */}
+        <div style={{ position: "absolute", left: 740, top: 435, width: 457, height: 60, backgroundColor: C.navy, borderRadius: 16 }} />
         <TracedArt name="handshake" x={715} y={490} />
         <Elbow points={[[968, 492], [968, 343], [690, 343]]} drawP={arrowP} width={3} />
         <Elbow points={[[968, 672], [968, 747], [1237, 747]]} drawP={arrowP} width={3} />
         {arrowHeadOp > 0 && (
+          // r22 window #2.3: ref arrowheads are BOLD chevrons (~73px span, ~1470px ink)
+          // not the 6px outline (756px) — strokeWidth 6 → 16.
           <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, opacity: arrowHeadOp }}>
-            <path d="M727,306 L672,343 L727,380" stroke={C.orange} strokeWidth={6} fill="none" strokeLinejoin="miter" />
-            <path d="M1200,710 L1255,747 L1200,784" stroke={C.orange} strokeWidth={6} fill="none" strokeLinejoin="miter" />
+            <path d="M727,306 L672,343 L727,380" stroke={C.orange} strokeWidth={16} fill="none" strokeLinejoin="miter" />
+            <path d="M1200,710 L1255,747 L1200,784" stroke={C.orange} strokeWidth={16} fill="none" strokeLinejoin="miter" />
           </svg>
         )}
       </div>
