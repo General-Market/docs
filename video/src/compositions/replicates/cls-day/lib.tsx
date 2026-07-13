@@ -711,7 +711,13 @@ export const HexCity: React.FC<{
   ink?: string;
   badgeP?: number;
   dense?: boolean;
-}> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1, dense }) => {
+  // Interior reveal, INDEPENDENT of the outline. The ref draws the hex OUTLINE
+  // around an EMPTY interior through f442..452 and only then fills the skyline
+  // in — one `opacity` on the whole group cannot express that, because it fades
+  // the outline and the buildings together. Default 1 = the style is not emitted
+  // at all, so every existing call site stays byte-identical.
+  contentsP?: number;
+}> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1, dense, contentsP = 1 }) => {
   const hw = w / 2;
   const hh = h / 2;
   const path = hexPath(w, h);
@@ -729,9 +735,20 @@ export const HexCity: React.FC<{
       </svg>
       {/* gen12: the re-traced skyline fills the hex interior; clip to the SAME
           rounded-hex path so edge buildings under the chamfer read as white. */}
-      <div style={{ position: "absolute", inset: 0, clipPath: `path("${path}")` }}>
-        <Buildings w={w} h={h} variant={variant} dense={dense} />
-      </div>
+      {contentsP > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            clipPath: `path("${path}")`,
+            // emit `opacity` ONLY when it does something — an opacity:1 layer
+            // still forces a stacking context and can shift antialiasing.
+            ...(contentsP < 1 ? { opacity: contentsP } : null),
+          }}
+        >
+          <Buildings w={w} h={h} variant={variant} dense={dense} />
+        </div>
+      )}
       {letter && badgeP > 0 && (
         <div
           style={{
