@@ -39,16 +39,32 @@ const lutS =
   };
 
 // ─── Logo card (intro + end card share this layout) ───
-// End-card geometry: mark x422 y166 size 235; letters x702 y166 h230;
-// tagline x442 y426 (65px light sans); icons y651 h170; labels y866 serif 34.
+// gen19: THE REF HAS TWO LOCKUP POSES, AND THEY ARE ONE POSE UNDER A SIMILARITY.
+// Measured ink (ref f80 = intro settled · ref f3700 = end card):
+//              intro                       end card
+//   mark    x454..666  y187..401      x422..648  y162..388
+//   letters x696..1465 y187..400      x679..1497 y162..388
+//   tagline x472..1449 y434..495      x442..1479 y424..489
+//   iconS   x599..780                 x577..768
+//   iconD   x1165..1319               x1177..1341
+//   labS/labD centres 689.5 / 1226    672.5 / 1242
+// Solve intro = s·(end − P) + P on the x extremes: s = 0.9405, P = (960, 592) —
+// and every remaining feature falls out to <=1px. So the CSS below IS the END-CARD
+// pose (S19 mounts it bare); S1Intro passes `scale` and gets the intro pose free.
+//
+// The old code was a MIXTURE — mark/letters at the end-card pose, icons fitted to
+// the intro, and a tagline (fs66/ls1 → ink 674x49) that was wrong in BOTH: the ref's
+// is 1038x66 here and 978x62 in the intro. 2.4x too little ink on ~250 frames.
 //
 // The intro is a DRAW-ON reveal (measured from ref f0..62, 25fps — the ink
 // mechanism, not the old opacity fade): the mark+letters wipe on L-to-R
 // under one soft-edged front (mark done ~f2, C ~f8, L ~f14, S ~f23); the
 // tagline fades in at rest; the whole lockup then RISES ~180px into place
-// (f31..48) while each pillar icon draws on L-to-R (Settlement leads). The
-// reveal props are all optional and default to fully-shown, so S19's end
-// card (which passes none) stays static.
+// (f31..48; ref mark-ink top 368@f10 → 187@f50, so the rise is 181) while each
+// pillar icon draws on L-to-R (Settlement leads). The reveal props are all
+// optional and default to fully-shown, so S19's end card stays static.
+// Reveal fronts are CARD-space x (inside the scale wrapper), refitted to the new
+// card-space ink spans.
 // L-to-R soft reveal: everything left of `front` is opaque, a ~52px feather
 // straddles it. `undefined` ⇒ no mask (fully shown, for the end card).
 const revealMask = (front?: number): React.CSSProperties =>
@@ -59,104 +75,126 @@ const revealMask = (front?: number): React.CSSProperties =>
         maskImage: `linear-gradient(to right, #000 ${front - 46}px, transparent ${front + 6}px)`,
       };
 
+// intro pose = end-card pose scaled about this pivot
+export const CARD_SCALE = 0.9405;
+export const CARD_PIVOT: [number, number] = [960, 592];
+
 export const LogoCard: React.FC<{
-  logoFront?: number; // L-to-R reveal front x for mark+letters (undefined = full)
+  logoFront?: number; // L-to-R reveal front x (CARD space) for mark+letters
   taglineOpacity?: number;
   labelOpacity?: number;
-  iconFronts?: [number, number, number]; // per-pillar reveal front x
-  riseY?: number; // whole-content vertical offset (intro lift-in)
+  iconFronts?: [number, number, number]; // per-pillar reveal front x (CARD space)
+  riseY?: number; // whole-content vertical offset (intro lift-in), VIDEO px
+  scale?: number; // 1 = end-card pose; CARD_SCALE = intro pose
   pack: Pack;
   BrandLogo?: React.FC<{ markP: number; lettersP: number }>;
-}> = ({ logoFront, taglineOpacity = 1, labelOpacity = 1, iconFronts, riseY = 0, pack, BrandLogo }) => {
-  // per-icon left/top/size fitted to the ref f80 ink bboxes (measured, not the
-  // label centers): handshake sits right+low of its label, data left of its.
+}> = ({ logoFront, taglineOpacity = 1, labelOpacity = 1, iconFronts, riseY = 0, scale = 1, pack, BrandLogo }) => {
+  // per-icon left/top/size in CARD space. S and D are the intro fit (which landed
+  // ref f80 to 1-2px) pushed out through the similarity; P is re-CENTRED on the
+  // ref's ink (our IconProcess art is 14px narrow — an aspect error in lib.tsx,
+  // left alone: centring beats left-aligning when the art is the wrong width).
   const icons = [
-    { X: 600, ty: 666, size: 180, Icon: IconHandshake, label: pack.pillars[0], cx: 672 },
-    { X: 856, ty: 653, size: 180, Icon: IconProcess, label: pack.pillars[1], cx: 950 },
-    { X: 1148, ty: 645, size: 180, Icon: IconData, label: pack.pillars[2], cx: 1260 },
+    { X: 577.2, ty: 670.7, size: 191.4, Icon: IconHandshake, label: pack.pillars[0], cx: 672.4 },
+    { X: 864.3, ty: 656.9, size: 191.4, Icon: IconProcess, label: pack.pillars[1], cx: 960 },
+    { X: 1159.9, ty: 648.4, size: 191.4, Icon: IconData, label: pack.pillars[2], cx: 1242.8 },
   ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.navyBg }}>
       <div style={{ position: "absolute", inset: 0, transform: riseY ? `translateY(${riseY}px)` : undefined }}>
-        {/* mark + letters, revealed under one L-to-R front */}
-        <div style={{ position: "absolute", inset: 0, ...revealMask(logoFront) }}>
-          {BrandLogo ? (
-            <BrandLogo markP={1} lettersP={1} />
-          ) : (
-            <>
-              <div style={{ position: "absolute", left: 422, top: 166 }}>
-                <ClsMark size={235} />
-              </div>
-              <div style={{ position: "absolute", left: 702, top: 168 }}>
-                <ClsLetters height={230} />
-              </div>
-            </>
-          )}
-        </div>
         <div
           style={{
             position: "absolute",
-            left: 0,
-            top: 420,
-            width: 1920,
-            textAlign: "center",
-            fontFamily: pack.sans,
-            fontWeight: 300,
-            fontSize: 66,
-            letterSpacing: 1,
-            color: "#FCFCFC",
-            opacity: taglineOpacity,
+            inset: 0,
+            transform: scale === 1 ? undefined : `scale(${scale})`,
+            transformOrigin: `${CARD_PIVOT[0]}px ${CARD_PIVOT[1]}px`,
           }}
         >
-          {pack.tagline}
-        </div>
-        {icons.map(({ X, ty, size, Icon, label, cx }, i) => (
-          <div key={i}>
-            {/* line-art icon draws on L-to-R */}
-            <div style={{ position: "absolute", inset: 0, ...revealMask(iconFronts?.[i]) }}>
-              <div style={{ position: "absolute", left: X, top: ty }}>
-                <Icon size={size} />
+          {/* mark + letters, revealed under one L-to-R front */}
+          <div style={{ position: "absolute", inset: 0, ...revealMask(logoFront) }}>
+            {BrandLogo ? (
+              <BrandLogo markP={1} lettersP={1} />
+            ) : (
+              <>
+                <div style={{ position: "absolute", left: 416, top: 156 }}>
+                  <ClsMark size={239} />
+                </div>
+                {/* ClsLetters' glyph runs w/h 3.658; the ref's is 3.60 — scaleX lands
+                    the S's right edge without moving the C's left */}
+                <div style={{ position: "absolute", left: 679, top: 162, transform: "scaleX(0.985)", transformOrigin: "0 0" }}>
+                  <ClsLetters height={235} />
+                </div>
+              </>
+            )}
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              left: 4,
+              top: 401,
+              width: 1920,
+              textAlign: "center",
+              fontFamily: pack.sans,
+              fontWeight: 300,
+              fontSize: 89,
+              letterSpacing: 7,
+              color: "#FCFCFC",
+              opacity: taglineOpacity,
+            }}
+          >
+            {pack.tagline}
+          </div>
+          {icons.map(({ X, ty, size, Icon, label, cx }, i) => (
+            <div key={i}>
+              {/* line-art icon draws on L-to-R */}
+              <div style={{ position: "absolute", inset: 0, ...revealMask(iconFronts?.[i]) }}>
+                <div style={{ position: "absolute", left: X, top: ty }}>
+                  <Icon size={size} />
+                </div>
+              </div>
+              <div
+                style={{
+                  position: "absolute",
+                  left: cx - 150,
+                  top: 874,
+                  width: 300,
+                  textAlign: "center",
+                  fontFamily: pack.serif,
+                  fontSize: 46,
+                  color: "#FCFCFC",
+                  opacity: labelOpacity,
+                }}
+              >
+                {label}
               </div>
             </div>
-            <div
-              style={{
-                position: "absolute",
-                left: cx - 150,
-                top: 862,
-                width: 300,
-                textAlign: "center",
-                fontFamily: pack.serif,
-                fontSize: 34,
-                color: "#FCFCFC",
-                opacity: labelOpacity,
-              }}
-            >
-              {label}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-// intro draw-on tables (ref f0..62, 25fps — measured per-pixel):
-// LOGO_FRONT — the mark+letters L-to-R wipe front (video x). Mark 422..657
-// clears f0..2, then letters 702..1514 at ~41px/f (C right 997 done f8, L
-// right 1310 done f14, S right 1514 done f23).
-const LOGO_FRONT = lutS([[0, 440], [2, 760], [5, 880], [8, 1015], [11, 1075], [14, 1320], [17, 1410], [20, 1492], [23, 1550]]);
-// RISE — the lockup lifts from a centered-low rest (mark-crescent top y428)
-// into the end-card layout (y248): translateY +180 held f0..31, eased to 0
-// by f48 (measured mark-left-column trims f24..60).
+// intro draw-on tables (ref f0..62, 25fps — measured per-pixel). gen19: all four
+// fronts are now CARD-space x (they live inside the scale wrapper) — each remapped
+// from its old ink span onto the new card-space one, so every letter/icon still
+// clears at the frame the ref clears it.
+// LOGO_FRONT — the mark+letters L-to-R wipe front. Mark+letters ink 422..1497
+// clears f0..23 (mark ~f2, C ~f8, L ~f14, S ~f23).
+const LOGO_FRONT = lutS([[0, 434], [2, 751], [5, 870], [8, 1004], [11, 1063], [14, 1306], [17, 1395], [20, 1476], [23, 1534]]);
+// RISE — the lockup lifts from a centered-low rest into the settled layout:
+// translateY +180 held f0..31, eased to 0 by f48. Confirmed gen19 against the ref's
+// mark-ink top (368@f10/f20 · 347@f34 · 257@f38 · 202@f42 · 190@f46 · 187@f50 —
+// settled 187, so RISE(f) = ref_top − 187 reproduces this table to <=2px). VIDEO px:
+// the rise rides OUTSIDE the scale wrapper.
 const RISE = lutS([[0, 180], [31, 180], [32, 171], [34, 160], [36, 137], [38, 70], [40, 30], [44, 7], [48, 1], [50, 0]]);
-// per-pillar icon draw-on fronts (video x across each 180px icon; Settlement
-// leads, Data trails — ref shows all three tracing ~f36..62). Each icon spans
-// left..left+180 (S 572..752, P 857..1037, D 1177..1357); the soft mask clears
-// only where x <= front-46, so the front must reach icon_right+46 or the right
-// edge sits permanently dimmed (was ~27%, the S1 "grey right edge" defect).
-const ICON_S = lutS([[36, 588], [58, 788], [64, 828]]);
-const ICON_P = lutS([[38, 844], [58, 1044], [64, 1085]]);
-const ICON_D = lutS([[40, 1136], [60, 1336], [66, 1377]]);
+// per-pillar icon draw-on fronts (CARD x; Settlement leads, Data trails — ref shows
+// all three tracing ~f36..62). Card-space icon ink: S 577..769, P 875..1045,
+// D 1176..1343; the soft mask clears only where x <= front-46, so each front must
+// reach icon_right+46 or the right edge sits permanently dimmed (was ~27%, the S1
+// "grey right edge" defect).
+const ICON_S = lutS([[36, 564], [58, 778], [64, 821]]);
+const ICON_P = lutS([[38, 851], [58, 1065], [64, 1109]]);
+const ICON_D = lutS([[40, 1147], [60, 1361], [66, 1405]]);
 
 // ─── S1: intro (f0..123) — draw-on reveal, then rise + icon draw ───
 // Exit f108..122: a white slash splits the card in two; both pieces are
@@ -182,6 +220,7 @@ export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC
       labelOpacity={labelOpacity}
       iconFronts={iconFronts}
       riseY={riseY}
+      scale={CARD_SCALE}
     />
   );
   if (frame < 107) return card;
