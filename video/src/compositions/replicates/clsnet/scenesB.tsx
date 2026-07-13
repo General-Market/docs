@@ -193,12 +193,20 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const aY = at(CITIES.line1 - CITIES.cityA.h + 2, CITY_A_END.y);
   const bX = at(CITIES.cityB.x, CITY_B_END.x);
   const bY = at(CITIES.line2 - CITIES.cityB.h + 2, CITY_B_END.y);
-  // hexify handoff: the ref fades the horizon LINES + pill stacks + currency
-  // labels out (f1290-1304) while the CITIES stay put; then HexifyScene draws
-  // hexagons around the stationary cities (its opaque bg takes the frame at
-  // f1302). So only the lines/pills/labels fade here — the cities hold to the
-  // handoff (matching hex-cities appear at their exact positions).
-  const linesOut = lerp(f, [1290, 1303], [1, 0]);
+  // hexify handoff (r23): the ref HOLDS the horizon LINES at full through ~f1301
+  // (line-ink solid f1295-1300), then HexifyScene's opaque white bg takes the
+  // frame at f1302 — the r18 [1290,1303] ramp had faded the line to 23% by f1300,
+  // where the ref draws it solid. Holding the line full is a clean +0.19 on the
+  // line crop at f1300 (0.804→0.993). So the LINES hold to f1301.
+  //   BUT the PILLS do the opposite (pillsOut, below). Our pair-stack rects were
+  // measured for ONE pair (fr_1150); the ref's final pair here is USD/THB, whose
+  // bar arrangement differs — so our full stack is MISPLACED ink. r23 A/B: holding
+  // the pills full LOSES −0.043/−0.058 on the pill crops (lesson 4, misplaced ink
+  // loses to absent ink). They keep the r18 fade. The real fix is the USD/THB
+  // pair + its pill arrangement in COPY.pairSchedule (data.ts) — out of this lane,
+  // recorded for that owner; the pair LABEL is absent for the same reason.
+  const linesOut = lerp(f, [1301, 1304], [1, 0]);
+  const pillsOut = lerp(f, [1290, 1303], [1, 0]);
 
   // pair carousel: each pair CONVERGES onto its horizon line — the above-line
   // word DROPS in from the frame top (glyph-tracked y62→316 over in..in+12,
@@ -275,11 +283,13 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
           <SerifLabel text={p.top} x={113} capTop={line2 + 2 + p.rise} fs={CITIES.pairFs} color={C.orangeDeep} opacity={p.op * linesOut} />
         </React.Fragment>
       ))}
-      {/* pill stacks at measured column centers (fr_1150) */}
+      {/* pill stacks at measured column centers (fr_1150). r23: on pillsOut (the
+          r18 fade), NOT linesOut — our stack is the wrong pair's arrangement, so
+          holding it full through the ref's solid USD/THB stack LOSES (see above). */}
       {stacksOp > 0 && (
         <>
-          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={pillBase} opacity={stacksOp * linesOut} />
-          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={pillBase} opacity={stacksOp * linesOut} />
+          <PairStacks cols={PAIR_STACKS_R} lineY={line1} f={f} base={pillBase} opacity={stacksOp * pillsOut} />
+          <PairStacks cols={PAIR_STACKS_L} lineY={line2} f={f} base={pillBase} opacity={stacksOp * pillsOut} />
         </>
       )}
     </AbsoluteFill>
@@ -1246,7 +1256,19 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
         if (x < -300 || x > 2000) return null;
         const op = pillOp(p);
         if (op <= 0) return null;
-        const y = p.fallKeys ? interpolate(f, p.fallKeys as unknown as number[], p.fallY as unknown as number[], clamp) : p.y;
+        // r23: the 21:00 trio (out[0]===2127) does NOT ride the exit push. The
+        // ref keeps it screen-fixed (measured f2133: pill tops 578/609/684 vs
+        // data 596/641/688 — barely a drift) while the whole strip band lifts
+        // ~197px away: the trade at the settlement deadline persists as the strip
+        // clears. The pushY wrapper lifts everything, so cancel it for the trio
+        // (X still scrolls at rate 9; only the vertical push is exempted). The
+        // 22:00 pair (no out) correctly rides the push and is left untouched.
+        const trioFixed = p.out?.[0] === 2127;
+        const y = trioFixed
+          ? p.y - pushY
+          : p.fallKeys
+            ? interpolate(f, p.fallKeys as unknown as number[], p.fallY as unknown as number[], clamp)
+            : p.y;
         return <Pill key={`p${i}`} x={x} y={y} w={p.w} h={p.h} color={p.c} opacity={op} />;
       })}
       {/* grey band on top of clusters */}
