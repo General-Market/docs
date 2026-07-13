@@ -959,7 +959,12 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
   const mapOy = 174;
   const ringSpin = lerp(f, [478, 566], [0, -38]);
-  const lockState = f < 500 ? "lockOpen" : f < 528 ? "lockList" : "lockClosed";
+  // r21: the padlock CLOSES at f522, not f528. Shackle crops f515/517/519/521/523
+  // show it open (hook leaning right) through f521 and fully closed (symmetric
+  // arch) at f523 — the ref lock is CLOSED at both gated globe frames (523, 548).
+  // The old 528 threshold left it "lockList" (open shackle, bottom dot still grey)
+  // at f523. Only f522-527 change (open→closed), all toward the ref; no regression.
+  const lockState = f < 500 ? "lockOpen" : f < 522 ? "lockList" : "lockClosed";
   const lockOp = lerp(f, [470, 480], [0, 1]);
   // GLOBE→MAP ZOOM (anim round, eye-measured; work/clsnet/anim/zoom). The disc
   // is a WINDOW onto the same worldMap the MapScene shows in full. At the
@@ -1155,6 +1160,45 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scenes 6-7: full-bleed map, hexes, 120 currencies (f568-745) ═══
+//
+// ═══ r21: THE SEVEN MINI-HEXES POPPED IN 60 FRAMES TOO LATE, AND TWO OF THEM
+//          NEVER GREW A WHITE HEX AT ALL ═══
+// SCHEDULE (law 26 — schedule errors dominate). The pop was `pop = 600 + i*9`,
+// so mHexHeli (i0) opened f600 but mHexCity2 (i6) not until f654. At f606 only
+// Heli had started and the OTHER SIX HEXES WERE ABSENT — six white hexes of
+// missing content on a flat map, every frame f600-654. The reference pops them
+// ALL together by ~f605: each hex SCALES up from ~0.7 and is full by then
+// (ref Towers2 crop f600 ~70% → f606 100%). Office & Sail lead (~f586-600),
+// Heli/Bank/Bank2 next (~f590-602), Towers2/City2 trail to ~f605. Per-hex
+// [start,end] below is that measurement; ALL full by ~f604, so the earliest
+// gated frame f606 sees seven full hexes — the r21a first cut ran the trail
+// pair to f610 and left them 67%-scale at f606, which REGRESSED it (partial
+// hex vs the ref's full one), a scale-transient the gate caught.
+const HEX_POP: Record<string, [number, number]> = {
+  mHexHeli: [590, 602],
+  mHexOffice: [586, 599],
+  mHexBank: [588, 601],
+  mHexBank2: [589, 602],
+  mHexTowers2: [594, 604],
+  mHexSail: [588, 600],
+  mHexCity2: [594, 604],
+};
+// MISSING WHITE HEX (law 17/18, ~5% of frame across the two). mHexHeli and
+// mHexCity2's potrace arts carry ONLY [#002753 buildings, #D45837, #A8A8A8] —
+// they lack the #FFFFFF fill AND the navy hex-border path that the other five
+// arts bake as their first two layers. Both therefore rendered as bare building
+// line-art floating on blue; white(ref)−blue(mine) is the solid-orange fill the
+// difference composite lit up over each hex. The ref draws all seven as a white
+// hex + navy border. Measured ref navy-border outer bbox (f723): w199 h177,
+// flat-top span 100 (= 0.5·w) → the existing Hexagon at w199/h177 reproduces it
+// (its default h=0.906w renders 4px too tall, so h is passed). Centres are the
+// ref navy-border centres. The backing rides the same pop scale s and returns
+// null with the hex; NetworkScene already backs these two from f756+, so this
+// only fills the MapScene gap. NOT a hex-slope edit (that is the reserved lane).
+const HEX_BG: Record<string, { cx: number; cy: number }> = {
+  mHexHeli: { cx: 378, cy: 405 },
+  mHexCity2: { cx: 1463, cy: 709 },
+};
 export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
   // (the label copy is no longer one string — see the label block below)
   const f = frame;
@@ -1239,23 +1283,36 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
         {MAP.hexes.map((hx, i) => {
           const start = NET_MORPH_START[hx.art];
           if (start !== undefined && f >= start) return null;
-          const pop = 600 + i * 9;
-          let s = lerp(f, [pop, pop + 12], [0, 1]);
+          const [p0, p1] = HEX_POP[hx.art];
+          let s = lerp(f, [p0, p1], [0, 1]);
           if (start === undefined) s *= lerp(f, [750 + i * 2, 756 + i * 2], [1, 0]);
           if (s <= 0) return null;
+          const bg = HEX_BG[hx.art];
           return (
-            <div
-              key={hx.art}
-              style={{
-                position: "absolute",
-                left: hx.cx - (MAP.hexW * s) / 2,
-                top: hx.cy - (MAP.hexW * 0.906 * s) / 2,
-                width: MAP.hexW * s,
-                height: MAP.hexW * 0.906 * s,
-              }}
-            >
-              <TracedArt name={hx.art} scale={s} />
-            </div>
+            <React.Fragment key={hx.art}>
+              {bg && (
+                <Hexagon
+                  cx={bg.cx}
+                  cy={bg.cy}
+                  w={199 * s}
+                  h={177 * s}
+                  fill={C.white}
+                  stroke={C.navy}
+                  strokeWidth={3 * s}
+                />
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  left: hx.cx - (MAP.hexW * s) / 2,
+                  top: hx.cy - (MAP.hexW * 0.906 * s) / 2,
+                  width: MAP.hexW * s,
+                  height: MAP.hexW * 0.906 * s,
+                }}
+              >
+                <TracedArt name={hx.art} scale={s} />
+              </div>
+            </React.Fragment>
           );
         })}
         {/* digits — own element, own clock, Didot for LINING figures */}
