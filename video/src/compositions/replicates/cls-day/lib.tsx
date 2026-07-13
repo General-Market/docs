@@ -334,8 +334,15 @@ export const ClsPill: React.FC<{
   h: number;
   logoP?: number; // wordmark reveal 0..1
   opacity?: number;
-  logoScale?: number; // wordmark height / pill height (rig constant: 0.366)
-}> = ({ x, y, w, h, logoP = 1, opacity = 1, logoScale = 0.5 }) => (
+  logoScale?: number; // logo height / pill height (rig constant: 0.366)
+  // Brand-swap slot. The CRX cut needs a different logo inside the SAME pill,
+  // and used to get it from a hand-copied twin of this component that carried
+  // its own uniform radius and a hardcoded h*0.5 logo (36% oversized). It rides
+  // the rig laws here instead — chip radius, logoScale, overflow clip — so a
+  // brand swap can never drift the geometry again. Absent => wordmark, and the
+  // DOM is byte-identical to before this prop existed.
+  Logo?: React.FC<{ h: number }>;
+}> = ({ x, y, w, h, logoP = 1, opacity = 1, logoScale = 0.5, Logo }) => (
   <div
     style={{
       position: "absolute",
@@ -353,7 +360,7 @@ export const ClsPill: React.FC<{
     }}
   >
     <div style={{ opacity: logoP }}>
-      <ClsWordmark height={h * logoScale} />
+      {Logo ? <Logo h={h * logoScale} /> : <ClsWordmark height={h * logoScale} />}
     </div>
   </div>
 );
