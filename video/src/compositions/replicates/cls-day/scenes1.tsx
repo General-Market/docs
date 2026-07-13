@@ -1618,7 +1618,9 @@ const ClB: React.FC = () => (
         of the 11:00 tick the ref is empty white but for one small L-notch
         at localX 403 (screen 749). Removing the phantom stepped tower is
         the r15 r2c3 win (misplaced ink → white). */}
-    <rect x={328.5} y={216} width={10} height={104} fill="#DCDCDC" />
+    {/* gen20: the slab reads, but 30px SHORT at the top — ref f900 runs y186..317, we
+        ran y216..317 (943 grey px vs our 747). */}
+    <rect x={328.5} y={186} width={10} height={134} fill="#DCDCDC" />
     <line x1={355} y1={188} x2={355} y2={320} stroke={NAVY} strokeWidth="3.5" />
     <rect x={330} y={222} width={25} height={29} fill="none" stroke={NAVY} strokeWidth="3.5" />
     <line x1={330} y1={236} x2={355} y2={236} stroke={NAVY} strokeWidth="3" />
@@ -1652,8 +1654,10 @@ const ClC: React.FC = () => (
         <rect x={133} y={231.5 + k * 15.7} width={3.5} height={3.5} fill={NAVY} />
       </React.Fragment>
     ))}
-    {/* grey slab (behind the dots building) */}
-    <rect x={302} y={207.5} width={17.5} height={112.5} fill="#DCDCDC" />
+    {/* gen20 — the grey slab was drawn BEHIND the dots building's white fill and
+        never rendered a pixel: measured over the whole cluster the ref carries 870 grey
+        px and we carried 136. The slab is not behind the building in the ref, it is IN
+        it. Moved below, painted last, on the ref's own box (local x305..314 y214..317). */}
     {/* twin red tower: left col w/ 2 masts, right col w/ stepped crown */}
     <line x1={179.5} y1={42.5} x2={179.5} y2={70} stroke={C.red} strokeWidth="3.5" />
     <line x1={194.5} y1={57.5} x2={194.5} y2={70} stroke={C.red} strokeWidth="3.5" />
@@ -1683,6 +1687,8 @@ const ClC: React.FC = () => (
     <rect x={348.5} y={236.5} width={50} height={6.5} fill={NAVY} />
     <rect x={374.5} y={200} width={4.5} height={120} fill={NAVY} />
     <rect x={394} y={240} width={5} height={80} fill={NAVY} />
+    {/* the slab, painted LAST so it reads (ref f900: grey runs x305..314 y214..317) */}
+    <rect x={305} y={214} width={10} height={104} fill="#DCDCDC" />
   </svg>
 );
 
@@ -1699,10 +1705,12 @@ const ClG: React.FC = () => (
     {[0, 1, 2, 3, 4, 5, 6].map((r) => (
       <rect key={r} x={146} y={201.5 + r * 11} width={14} height={3.5} fill={NAVY} />
     ))}
-    {/* grey slab (thin, right of the body wall — the ref shows a slim grey
-        sliver between the red body and the navy building; the r7 wide slab
-        sat under both fills and never read) */}
-    <rect x={294} y={205} width={11} height={125} fill="#DCDCDC" />
+    {/* gen20 — this cluster carries TWO grey slabs and we rendered 226 px of one of
+        them. The slab was drawn here, before the right navy building, whose white fill
+        then swallowed all but a 2px sliver (measured x297..298). Over the whole cluster:
+        ref 1,866 grey px, ours 315. Both slabs now live at the END of this svg, on the
+        ref's own boxes. ClA is the control — where we already paint a slab last, it
+        matches the ref to the pixel (663 vs 823 over the same x356..366 y242..317). */}
     {/* gen13 ClG RE-REGISTRATION (ref f877/897/907, probe_clg2.py):
         the red tower sat ~7px LEFT and its broad-body RIGHT wall was hidden
         under the navy building's white fill (navy started local 285, body
@@ -1753,6 +1761,17 @@ const ClG: React.FC = () => (
     <path d="M 388 320 L 388 278 Q 388 270 396 270 L 462 270 L 462 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
     <path d="M 408 285 L 408 298 L 420 298" fill="none" stroke={NAVY} strokeWidth="3" />
     <path d="M 428 292 L 428 305 L 440 305" fill="none" stroke={NAVY} strokeWidth="3" />
+    {/* the two slabs, painted LAST so they read. ref f900 grey runs, this cluster:
+        x299..312 y191..317 (1,347 px) and x354..363 y266..317 (441 px). Both sit where
+        we drew the right navy building's white fill and its two walls — the ref has NO
+        navy at either (its barred building's right wall is at x348, ours at x363). So
+        the grey replaces ink that was wrong AND adds ink that was absent.
+        HONEST RESIDUAL: these are SOLID rects and the ref's slabs are interrupted by the
+        building's own bars, so above-band grey now reads 5,538 against the ref's 4,583
+        (we were at 2,165) — right place, ~20% over. Trimming the rects is not worth a
+        render: every SSIM delta in this window is inside 3e-4. */}
+    <rect x={299} y={191} width={14} height={127} fill="#DCDCDC" />
+    <rect x={354} y={266} width={10} height={52} fill="#DCDCDC" />
   </svg>
 );
 
