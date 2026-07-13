@@ -1460,3 +1460,72 @@ An audit of all 20 r18 commits found **this one instance and no other**.
 had drawn on top of it.** Nineteen structural errors survived fifteen rounds of SSIM
 grinding because every round asked "is this stroke crisp enough" instead of "does the
 reference do this at all". The metric could not see them; the question found them all.
+
+### r18 addendum — the coupled slit, the row entry, the boxes (3 more commits, 23 total)
+
+Dispatched after the four window builders reported, to close the defect none of them could
+land alone.
+
+**`732d058ad` — the strip and the gantt page are ONE RIGID OBJECT.** The worst frame in the
+file (f2130 = 0.785) was a **1920×23px white slit** — and it was *two clocks disagreeing*.
+Two independent tracers (grey band top → pushY; white ruler bar → pageY) give
+**pageY − pushY = 1090 at f2132, f2133 AND f2134** — one number, no drift. One transcribed
+table now drives both, and it predicts, with no free parameters, how deep the inverted
+clusters still hang into frame (178 vs ref 179 @f2135; 10 vs 11 @f2136; gone @f2137).
+The slit itself was **structural**: the night half was `height: 1080 − bandBot` inside a
+1080-tall wrapper, so the navy rode up *with* the push and uncovered white beneath it. The
+ref is navy to y=1079 at every frame. It is now semi-infinite.
+Gate: **f2130 .785→.872 (+0.087) · f2134 .748→.893 (+0.145) · f2137 .850→.995 (+0.145)**;
+bracket crop .87→.97. (Also killed the bracket's dash-wipe — the ref draws bar + both end
+drops WHOLE on frame one — and fixed its stroke, 4.3 not 3.)
+*A half-pixel instrument bug — coverage centroid taken over pixel INDICES — was the whole
+difference between this losing 0.001 and winning 0.004. Documented in-code.*
+
+**`12bd26976` — the gantt row entry was invented too** (found while gating the above): at
+f2145 the ref has two rows mid-flight and **we drew an empty page**. The rows fly up from
+below and decelerate; they never fade (pill fill reads (171,179,203) at f2140 *and* f2178).
+The nine offset columns are **one sequence shifted in time** — `796·646·379·231·154·105·71·
+47·30·17·8·3·0` — reproducing every track to ≤2px; only the spawn frame differs. Settled y's
+were already exact; only the entry was fiction. Gate: f2150 .939→.965 · **f2155 .904→.940** ·
+f2160 .908→.928; f2178/f2190 byte-identical.
+
+**`f9137b6dd` — fix the BOXES, then let them adopt the label law.** All three handover reads
+confirmed against the ref: tradeDocs **14px low** (ref x823.5 y660.5 side 270.8, and
+pixel-identical f1400–1450 → transcribed); MATCH.box **8.6px low, 4.4px narrow**;
+REPORT.box **9.2px narrow** (x and y were already right — only `w` moved). Then the
+`labelFs` opt-outs were deleted and the sites adopted the `ClsNetBox` law.
+Gate (whole / box+label crop): **tradeDocs f1400 .919→.933 / .691→.901 (+0.210)** ·
+**match f1600 .882→.887 / .745→.881 (+0.136)** · **report f2360 .927→.936 / .755→.859
+(+0.104)** · gantt tail f2320 .924→.940.
+
+**PAYMENT: the predicted +0.003 was REFUTED — and the refutation named a real bug.**
+Deleting its opt-out *loses* 0.0006. Adopting the law makes the label **exact in every
+dimension the law governs** (centre 954.5 vs ref 954.5; cap-height 22 vs 22; ink mass 1150
+vs 1156 — against the hand-fit's +5.0px centre, −3px cap, −20% mass) — and it *still* loses,
+because it lands **3px low**. `ui.tsx` seats the cap-top at **301.8·scale**; the ref seats it
+at **296.6·scale here** (flows 301, locks 302). **The seat is not the constant it is taken
+for.** The bigger, correctly-placed glyph makes that 3px more visible, so the metric prefers
+the small wrong one. Opt-out kept, reasoning left at the call site.
+**HANDOFF: correct the cap-top seat in `ui.tsx` (per-site or measured law) and payment +
+gantt delete for a clean win.** This is the top open lever.
+
+### r18 final state
+23 commits. **Zero regressions at any gated frame, in any window, all round.** tsc: 0 clsnet
+errors. Tree clean, nothing staged, no cross-lane dirt. `CrxNetting` renders clean at every
+touched scene. Byte-identity proved outside every window (f400, f1064, f1740, f2000, f2400,
+f2762, f2930).
+
+### Next-worst entering r19 (f2130 is SOLVED and gone from the list)
+| rank | frame | ssim | what |
+|---|---|---|---|
+| 1 | f3305 | .852 | mapBadges implode |
+| 2 | f2680 | .860 | strip2 grow |
+| 3 | f3105 | .866 | mapBadges entry |
+| 4 | f3005 | .874 | reportCard collapse pill — too narrow; f≥2982 keyframes hardcoded (r17's residual) |
+| 5 | f2380–2455 | .889–.898 | handshake — a flat band, four frames |
+| — | open lever | — | **the `ui.tsx` cap-top seat** (above) — blocks two clean label wins |
+| — | open lever | — | **the wordmark font-load race** (law 15) — nondeterministic composition, ~1 render in 5 |
+| — | open lever | — | `data.ts` GANTT/DETAIL/REPORT still stale; truth lives in scenesC local constants |
+
+**None of the r18 windows appear on this list.** Flows, cities, gantt, payment, the report
+tail and the strip→gantt seam are all off the board. **The ceiling was never the line-art.**
