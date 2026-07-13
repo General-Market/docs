@@ -281,25 +281,53 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
 const travel = (frame: number, t0: number, t1: number) =>
   interpolate(frame, [t0, t1], [0, 1], { ...clamp, easing: Easing.inOut(Easing.quad) });
 
-// ─── S11: payment instruction docs row (f2075..2237) ───
+// ─── S11: payment instruction docs row (f2075..2250) ───
 // Measured f2150 (row is STATIC once settled — f2150 == f2200): 6 regular
 // docs 228x285 at y390 (3 navy/grey-blue left, 3 red/cream right) + the
 // 2-page focus doc 355x457 at (750,288) under the 07:00 marker.
+//
+// gen18 — THE EXIT WAS FICTION. The old scene held all 7 docs frozen at their
+// settled pose until an outP fade at f2237-2250. The ref (probe_exit2.py /
+// probe_cols.py / probe_tail.py, work/cls-day/gen18-s2) does something else
+// entirely, starting at f2200:
+//   • the SIX side docs fly OUTWARD off-frame (left three leftward, right three
+//     rightward), accelerating ~1.4x/frame, staggered from the outside in — the
+//     leftmost/rightmost leave first. All six are GONE by f2217 (ref ink in the
+//     doc bands drops to the focus doc's edge alone: 20.7k@f2213 -> 2.7k@f2216
+//     -> 0@f2217). We were drawing 6 docs x 65k px (≈19% of the frame) on white
+//     for ~33 frames.
+//   • the FOCUS doc stays and SCALES UP 1.0 -> 1.219 about (1022, 474) over
+//     f2205..f2228 — page-1 left border 753->694, right 1107->1126, top 289.5->249,
+//     bottom 745->803. It then holds that pose right through S12 (ref f2230 ==
+//     f2260 == f2300 to the pixel).
+// Per-doc dx = dir * EXIT(frame + shift) * gain — one measured base curve, a
+// per-doc time offset and gain (lesson 14: per-event tables, not one easing).
+const S11_EXIT: Lut = [
+  [2200, 0], [2201, 0], [2202, 0], [2203, 1], [2204, 5], [2205, 11], [2206, 19],
+  [2207, 32], [2208, 48], [2209, 71], [2210, 103], [2211, 149], [2212, 215],
+  [2213, 300], [2214, 410], [2215, 560], [2216, 760], [2217, 1030], [2220, 2400],
+];
+// focus-doc scale (measured per frame off the page-1 left/right borders)
+const S11_FOCUS_S: Lut = [
+  [2204, 1], [2205, 1.002], [2206, 1.0085], [2207, 1.0155], [2208, 1.0226],
+  [2209, 1.0311], [2210, 1.0452], [2211, 1.0621], [2212, 1.0932], [2213, 1.1271],
+  [2214, 1.1568], [2215, 1.1751], [2216, 1.1879], [2217, 1.1977], [2218, 1.2048],
+  [2219, 1.209], [2220, 1.2119], [2221, 1.2147], [2228, 1.2203],
+];
+const S11_DOCS = [
+  { x: -62, seal: "lines" as const, red: false, dir: -1, sh: 2, g: 0.94 },
+  { x: 208, seal: "square" as const, red: false, dir: -1, sh: 1, g: 1.01 },
+  { x: 475, seal: "circle" as const, red: false, dir: -1, sh: 0, g: 1.0 },
+  { x: 1224, seal: "square" as const, red: true, dir: 1, sh: 0, g: 0.855 },
+  { x: 1493, seal: "triangle" as const, red: true, dir: 1, sh: 1, g: 0.895 },
+  { x: 1742, seal: "circle" as const, red: true, dir: 1, sh: 2, g: 0.9 },
+];
+
 export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2075 || frame >= 2250) return null;
   const inP = interpolate(frame, [2092, 2110], [0, 1], { ...clamp, easing: EASE });
   const outP = interpolate(frame, [2237, 2250], [0, 1], clamp);
-  // gen13: re-registered doc x from ref f2150 body-left borders (probe: leftedges).
-  // doc4 body-left 1226 (was 1230), doc6 body-left 1744 (was 1765 — 20px too far
-  // right). doc2/3/5 already matched. y 390->387 (ref doc top 388, replica sat 391).
-  const docs = [
-    { x: -62, seal: "lines" as const, red: false },
-    { x: 208, seal: "square" as const, red: false },
-    { x: 475, seal: "circle" as const, red: false },
-    { x: 1224, seal: "square" as const, red: true },
-    { x: 1493, seal: "triangle" as const, red: true },
-    { x: 1742, seal: "circle" as const, red: true },
-  ];
+  const fs = lut(frame, S11_FOCUS_S);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
@@ -307,11 +335,20 @@ export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
       <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
       <div style={{ opacity: inP, transform: `scale(${0.92 + 0.08 * inP})`, transformOrigin: "960px 500px" }}>
-        {docs.map((d, i) => (
-          <RefDoc key={i} x={d.x} y={387} seal={d.seal} red={d.red} />
-        ))}
+        {S11_DOCS.map((d, i) => {
+          // gen13: doc x re-registered from ref f2150 body-left borders.
+          const dx = d.dir * lut(frame + d.sh, S11_EXIT) * d.g;
+          if (d.x + 232 + dx < -40 || d.x + dx > 1960) return null;
+          return (
+            <div key={i} style={{ position: "absolute", transform: `translateX(${dx}px)` }}>
+              <RefDoc x={d.x} y={387} seal={d.seal} red={d.red} />
+            </div>
+          );
+        })}
         {/* gen13: focus doc re-reg from ref f2150 (page-1 left border 753, top 289) */}
-        <FocusDoc x={753} y={291} />
+        <div style={{ position: "absolute", transform: `scale(${fs})`, transformOrigin: "1022px 474px" }}>
+          <FocusDoc x={753} y={291} />
+        </div>
       </div>
     </div>
   );
