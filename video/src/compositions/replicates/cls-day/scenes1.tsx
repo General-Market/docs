@@ -829,7 +829,17 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   // gen12: settled hexes registered to ref f640 (A cx471 cy527, B cx1450;
   // outline flat-to-flat 273 → HH282, vertex 370 → HW382).
   const HW = 382;
-  const HH = 282;
+  // r21: the hex outline is ~4-6px TOO TALL through the animated entrance/spread
+  // (a mis-proportioned trace — law 39; law 21 does NOT protect an unfaithful one).
+  // Measured ref-vs-render flat-edge centroids (work/cls-day/r21-scenes1/edgecentroid.py):
+  // the CENTRE is matched to <1px (so it is NOT a translation — r20-lib mis-read it),
+  // but our height runs 274·s where the ref runs ~270·s in-window (f453-553) and 273·s
+  // at settle (f556+, gen12's flat-to-flat 273 @f640). So the ref hex is SHORTER while
+  // it flies/spreads, exactly 282 when it lands. Localized hex crop-SSIM gate (law 38):
+  // HH277.5 wins the whole f460-553 window (hexA +.011 / hexB +.019 mean, up to +.035)
+  // and LOSES the settle (−.006..−.014) — so hold 277.5 in-window and ramp back to 282
+  // across the f553..556 land, which keeps f556+ byte-identical to the settled hold.
+  const HH = frame < 553 ? 277.5 : frame > 556 ? 282 : 277.5 + (282 - 277.5) * (frame - 553) / 3;
   const s = S4_S(frame);
   const ax = S4_AX(frame);
   const ay = S4_AY(frame);
