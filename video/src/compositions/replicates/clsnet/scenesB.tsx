@@ -814,6 +814,35 @@ const entryDx = (f: number) => {
   return interpolate(f, K, V, clamp);
 };
 
+// ═══ THE EXIT PUSH — the strip and the gantt page are ONE rigid object ══════
+// r18. The strip does not "fade up while a page rides in from below". The whole
+// world slides up as one piece, and the gantt page is nailed to it 1090px below
+// the band's top edge. Proven twice over, on two independent tracers:
+//   band top (grey, x60)  384@f2132 · 304@f2133 · 136@f2134  → pushY -118/-198/-366
+//   ruler bar (white)     973@f2132 · 893@f2133 · 725@f2134  → pageY  973/ 893/ 725
+// pageY − pushY = 1090 at all three, to the pixel. So ONE table drives both, and
+// GanttScene reads pageY = 1090 + stripPushY(f). The old code had two invented
+// clocks — a quad-in push (2127-2141) and a t^1.4 ride-in (2129-2143) — that
+// disagreed by up to 470px and tore a 1920×23px WHITE SLIT open between the
+// retreating band and the arriving page at f2130 (whole-frame SSIM 0.785, the
+// worst frame in the file: a white stripe across a flat navy cell collapses that
+// cell's SSIM to 0.009).
+//
+// The second half of the slit was structural: the night half was drawn
+// `height: 1080 - bandBot` inside a 1080-tall wrapper, so the navy ENDED at the
+// wrapper's bottom edge and rode up with it, uncovering white beneath. The ref's
+// night half is semi-infinite — navy to y=1079 at EVERY frame of the exit. It is
+// now drawn 2160px past the band, so no push can lift it off the frame edge.
+//
+// Past f2134 the band is off-screen and the ruler carries the table alone; the
+// values reproduce, with no free parameters, exactly how deep the inverted
+// clusters still hang into the frame (ref non-navy rows 0-179 at f2135, 0-11 at
+// f2136, none at f2137 — we predict 178, 10, gone).
+const PUSH_F = [2126, 2127, 2128, 2129, 2130, 2131, 2132, 2133, 2134, 2135, 2136, 2137, 2138, 2139, 2140, 2141, 2142, 2143];
+const PUSH_Y = [0, -1, -8, -19, -39, -69, -117, -197, -365, -724, -892, -972, -1020, -1050, -1070, -1082, -1088, -1090];
+export const stripPushY = (f: number) => interpolate(f, PUSH_F, PUSH_Y, clamp);
+export const GANTT_PAGE_DY = 1090;
+
 export const StripScene: React.FC<{ frame: number; from?: number; to?: number }> = ({
   frame,
   to = SEG.strip[1],
@@ -849,9 +878,7 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
     clamp,
   );
 
-  // ref pushes the whole strip up (no fade): measured -200px at f2133, quad-in
-  const pushT = lerp(f, [2127, 2141], [0, 1]);
-  const pushY = -1080 * pushT * pushT;
+  const pushY = stripPushY(f);
   const dx = entryDx(f);
   const hourX = (h: number) =>
     STRIP.anchorX + (h - STRIP.anchorHour) * STRIP.hourPx - (f - STRIP.anchorF) * STRIP.rate + dx;
@@ -889,8 +916,10 @@ export const StripScene: React.FC<{ frame: number; from?: number; to?: number }>
   return (
     <AbsoluteFill>
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${pushY}px)`, backgroundColor: C.white }}>
-      {/* night half */}
-      <div style={{ position: "absolute", left: 0, top: bandBot, width: 1920, height: 1080 - bandBot, backgroundColor: C.navy }} />
+      {/* night half — semi-infinite. It must NOT end at the wrapper's bottom
+          edge: the exit push lifts the wrapper, and a 1080-tall navy field lifts
+          the frame's bottom edge with it (the r18 white slit). */}
+      <div style={{ position: "absolute", left: 0, top: bandBot, width: 1920, height: 3240 - bandBot, backgroundColor: C.navy }} />
       {/* hour grid + labels */}
       {hours.map((h) => {
         const x = hourX(h);

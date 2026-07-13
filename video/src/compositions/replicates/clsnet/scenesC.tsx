@@ -6,7 +6,7 @@ import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { Badge, ClsNetBox, Doc, Elbow, Pill, SansText, SerifLabel, lerp } from "./ui";
 import { TitleCard } from "./scenesA";
-import { SmallHex } from "./scenesB";
+import { GANTT_PAGE_DY, SmallHex, stripPushY } from "./scenesB";
 
 const PILL_COL: Record<string, string> = {
   lavender: C.lavender,
@@ -45,9 +45,19 @@ const G_PILL_H = 51; // measured fills 48-53, mean 50.6
 const G_LABEL_FS = 36; // ref cap-height 27 (ours was 21 at fs28)
 // SansText(lineHeight 1.15) puts the cap-top fs*0.179 below its `y`.
 const G_CAP_OFF = G_LABEL_FS * 0.179;
-// ruler: 3px bar y89-91 spanning x191-1679, SEVEN identical drops to y135
-// (pitch 248). We drew it at x210..1710 with unequal 17/25px ticks.
-const G_RULER = { x: 191, w: 1488, barY: 90, dropY: 135 };
+// ruler bracket — every number sub-pixel, coverage-integrated off v_2178.
+// (Instrument note: a coverage centroid computed over pixel INDICES sits half a
+// pixel below the truth — pixel i covers [i, i+1). Every value here is corrected.)
+//   stroke   4.30 (bar thickness 4.26/4.30/4.29/4.29 at four clear x; drop widths
+//            4.25-4.40). We drew 3 — 30% thin, over the ~190 frames it is on screen.
+//   barY     90.4 (bar centroid, identical at all four x)
+//   drops    centres 193.0 → 1679.0, pitch 247.667. With THAT anchor, even spacing
+//            reproduces all five interior centroids to 0.02px (440.67/688.33/936.00/
+//            1183.67/1431.33 predicted vs 440.68/688.33/936.02/1183.68/1431.31
+//            measured). The end drops read 0.36px inward of it because the bar's
+//            miter corner adds ink on their outer side. Old x191/pitch-248: 2px left.
+//   dropY    135.4 (butt caps: the painted bottom IS the path endpoint)
+const G_RULER = { x: 193, w: 1486, barY: 90.4, dropY: 135.4, sw: 4.3 };
 // detail card (v_2240 scan): outer 536,270,760,666; 5px WHITE border; corners
 // DIAGONAL — TL+BR r30, TR+BL square (the house motif, cf. the r17 reportCard).
 // Row separators are WHITE 5px bands spanning the FULL card width (we drew them
@@ -130,10 +140,28 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
   if (f < 2129 || f >= 2324) return null;
-  // ride-in from below (p ≈ t^1.4 fits the f2133 measurement)
-  const rideT = lerp(f, [2129, 2143], [0, 1]);
-  const pageY = 1080 * (1 - Math.pow(rideT, 1.4));
-  const bracketP = lerp(f, [2131, 2142], [0, 1]);
+  // THE PAGE DOES NOT RIDE IN. It is nailed to the strip, 1090px below the
+  // band's top edge, and the two leave together as one rigid object — see
+  // scenesB's stripPushY, where the law is derived and cross-proven on two
+  // tracers. Transcribed off the ref's own white ruler bar (barTop − 88):
+  // 973@2132 · 893@2133 · 725@2134 · 366@2135 · 198@2136 · 118@2137 · 0@2143.
+  // Our old t^1.4 crawl sat up to 470px low AND disagreed with the strip's push,
+  // which is what tore the white slit open at f2130.
+  const pageY = GANTT_PAGE_DY + stripPushY(f);
+  // The bracket is not wiped in. The ref shows the bar FULL WIDTH (x191-1679)
+  // with both end drops at full 47px length on the very first frame it is
+  // visible (f2134) — the dash-wipe drew a bar 250px short at f2134 and then,
+  // worse, five INTERIOR drops from f2137 that the ref does not have yet. Those
+  // grow separately, from nothing at f2142 to full at f2155 (measured per frame
+  // at all five x's — they are identical to the pixel, one shared clock).
+  // growth = ink mass below the bar at the five drop cores, normalised against the
+  // settled frame (identical at all five to ≤0.5px — one shared clock, transcribed)
+  const interiorDropY = interpolate(
+    f,
+    [2142, 2143, 2144, 2145, 2146, 2147, 2148, 2149, 2150, 2151],
+    [92.55, 94.3, 97.9, 105.4, 119.3, 126.7, 130.6, 132.7, 134, G_RULER.dropY],
+    clamp,
+  );
   // THE WEDGE. The rows below the card are not faded out and back in — the card
   // SHOVES them down as one rigid block and rows 3-8 simply ride off the bottom
   // of the screen. Blob-tracked per frame: every one of rows 2..8 carries the
@@ -198,18 +226,24 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
         }}
       >
         <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, transform: `scale(${R.w / 1920}, ${R.h / 1080})`, transformOrigin: "0 0" }}>
-      {/* top bracket ruler — 3px bar x191-1679 @ y90, seven identical 45px drops */}
+      {/* the bracket: bar + both end drops, WHOLE from the first frame it is
+          visible (ref f2134: full width x191-1679, both drops at full 47px). The
+          old dash-wipe drew a bar 250px short at f2134 and then five interior
+          drops from f2137 that the ref does not grow until f2143. */}
       <svg width={1920} height={150} style={{ position: "absolute", top: 0, left: 0 }}>
         <path
-          d={`M${G_RULER.x},${G_RULER.dropY} V${G_RULER.barY} H${G_RULER.x + G_RULER.w} V${G_RULER.dropY} ${Array.from(
-            { length: 5 },
-            (_, i) => `M${G_RULER.x + ((i + 1) * G_RULER.w) / 6},${G_RULER.barY} V${G_RULER.dropY}`,
-          ).join(" ")}`}
+          d={`M${G_RULER.x},${G_RULER.dropY} V${G_RULER.barY} H${G_RULER.x + G_RULER.w} V${G_RULER.dropY}${
+            interiorDropY > 92.6
+              ? " " +
+                Array.from(
+                  { length: 5 },
+                  (_, i) => `M${G_RULER.x + ((i + 1) * G_RULER.w) / 6},${G_RULER.barY} V${interiorDropY}`,
+                ).join(" ")
+              : ""
+          }`}
           fill="none"
           stroke={C.white}
-          strokeWidth={3}
-          strokeDasharray={4700}
-          strokeDashoffset={4700 * (1 - bracketP)}
+          strokeWidth={G_RULER.sw}
         />
       </svg>
       {/* rows */}
