@@ -956,7 +956,21 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* r5: the ref payment cityB is a WIDER arrangement than the intro art
           (w873×h277 vs uniform-scale 630) — traced at native scale from
           ref_2610 (badge painted out) */}
-      <TracedArt name="cityBPay" x={1000} y={80} />
+      {/* r24: ref_2610 was cropped wide enough to catch the RIGHT TAIL of the
+          "Payment complete" caption + its arrowhead, and potrace baked those glyphs
+          into this art's top-left sky (measured art x[0,185] y[71,134]; the nearest
+          building — the sail — is at x>=262, so the region is empty sky otherwise).
+          That baked caption sat UNDER the live SansText caption above, overprinting
+          "complete" into an unreadable "complette" smear the ref never has — and it
+          rides the CRX cut too, cutting "Settled atomically". Clip the empty top-left
+          corner out (an L-shaped clip-path around every building) so only the one live
+          caption reads. The art itself is untouched (law 19). */}
+      <TracedArt
+        name="cityBPay"
+        x={1000}
+        y={80}
+        style={{ clipPath: "polygon(210px 0, 890px 0, 890px 288px, 0 288px, 0 150px, 210px 150px)" }}
+      />
       <Badge letter="A" cx={188} cy={265} r={40} />
       <Badge letter="B" cx={1728} cy={265} r={40} />
       {/* Payment complete double arrow.
