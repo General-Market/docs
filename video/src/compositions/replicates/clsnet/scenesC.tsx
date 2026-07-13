@@ -177,7 +177,12 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
         // EYE-correct but SSIM-adverse when the pill geometry was still wrong;
         // re-test now that the fills are transcribed.
         return (
-          <div key={i} style={{ position: "absolute", left: 0, top: 0, opacity: rowOp }}>
+          // width:1920 so the absolutely-positioned label has a real containing
+          // block — without it the wrapper is shrink-to-fit ZERO and any label
+          // with a break opportunity wraps to one glyph per line (the CLSNet ids
+          // have none, so it never showed; the CRX brand's hyphenated RFQ ids
+          // shattered into four lines).
+          <div key={i} style={{ position: "absolute", left: 0, top: 0, width: 1920, opacity: rowOp }}>
             <Pill x={r.x} y={y} w={r.w} h={G_PILL_H} color={PILL_COL[r.color]} />
             <SansText text={COPY.ganttIds[i]} x={r.lx} y={y + G_LABEL_DY} fs={G_LABEL_FS} color={C.white} />
           </div>
