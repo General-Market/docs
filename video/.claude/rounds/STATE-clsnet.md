@@ -1211,3 +1211,97 @@ this round; folded into a future broad-orange pass if the owner wants it.
 to HEAD d7c24da00, nothing committed. clsnet stays at its r15 surgical ceiling; the hex
 line-art is a proven SSIM floor (soft trace = soft ref), unbreakable by re-draw. Remaining
 real levers are the r15-named font-face + scene-rewrite items, not the hexes.
+
+---
+
+## r17 — reportCard STRUCTURAL REWRITE (2026-07-12) — **WIN, SHIPPED** `96c42312d`
+
+Inherited a dirty, compiling, half-audited reportCard edit from a predecessor killed
+mid-round by the session limit. Audited it, found it had located the RIGHT category of
+error but only ONE of four instances, re-measured the whole scene from the ref, and
+rewrote it. **Every gated frame improved; the collapse is byte-identical.**
+
+### What the ref actually says (pixel scans of `work/clsnet/r17/vf/v_*.png`, f2822..2990)
+
+Four structural errors in `ReportCardScene`. None of them was reachable by re-drawing —
+each is wrong *structure*, which is the category that WINS (cf. r16: re-drawing faithful
+traced art LOST 3× this session).
+
+| # | Error | We drew | Ref (measured) |
+|---|---|---|---|
+| 1 | **Card extent** | 840×700 @ (530,190), 2.5px stroke, 4× r40 corners | **1192×802 @ (364,139)**, 4px stroke, **diagonal** corners (TL+BR r64; TR+BL square) |
+| 2 | **Segments** | 6/row, 10px gaps, bunched x[600,1175] | **8/row**, 3–4px gaps, x[496,1475], each with a **3px white stroke** repeating the card's diagonal |
+| 3 | **The merge** | `mergeP` swaps in 3 fat blocks at f2940, holds to f2976 | **Never happens.** Rows draw in by f2926 then hold **frozen to the pixel** through f2978 |
+| 4 | **The clock** | card 2874→2898; rows settle 2942; rows cross-fade out 2972–2982 | card **2856→2872**; rows settle **2926**; rules **retract** rightward 2970–2983; rows **hard-cut**: tan f2979, org f2980, lav f2981 |
+
+Error 3 is the big one: the fictional merge corrupted **f2940–2976 — precisely the r13
+worst window.** The predecessor had kept it.
+
+Two further measured facts, both now transcribed rather than modelled:
+- **Per-segment (x,w) tables.** The settled rows are pixel-identical across every frame
+  2926–2978, so the 24 rects are transcribed, not fitted.
+- **One pen draws the outline AND the rules**, counter-clockwise from the bottom-right
+  (bottom → left → top → right), on a hard S-curve (6% @2860, 18% @2862, 66% @2864,
+  96% @2868). The rules ride the same clock — measured 0.666 at f2864 vs the card's 0.663.
+
+### The one regression, and lesson 4 again
+
+First gate pass: **f2860 = −0.0055**. A straight lerp on the pen put ink on the TOP edge
+at f2860 while the ref was still drawing the BOTTOM. *Misplaced ink losing to absent ink* —
+OLD drew nothing there and scored better. Reversing the path to the measured route and
+fitting the measured S-curve turned it into **+0.0018**. Fourth confirmation of lesson 4;
+it is now also a lesson about draw-in ROUTE, not just position.
+
+### Gate — ref vs OLD(HEAD 238a07b3f) vs NEW, whole-frame / card-crop `1250x850+340+120`
+
+OLD stills validated as true HEAD by md5 against a fresh stash-render (byte-identical —
+determinism holds, lesson 15).
+
+| frame | wf OLD | wf NEW | Δ wf | cr OLD | cr NEW | Δ cr |
+|---|---|---|---|---|---|---|
+| 2860 | 0.9973 | 0.9990 | **+0.0018** | 0.9947 | 0.9982 | +0.0034 |
+| 2865 | 0.9690 | 0.9899 | **+0.0209** | 0.9391 | 0.9802 | +0.0411 |
+| 2870 | 0.9548 | 0.9793 | **+0.0245** | 0.9112 | 0.9593 | +0.0482 |
+| 2880 | 0.9120 | 0.9397 | **+0.0277** | 0.8271 | 0.8815 | +0.0544 |
+| 2905 | 0.8825 | 0.9197 | **+0.0372** | 0.7692 | 0.8422 | +0.0730 |
+| 2920 | 0.8834 | 0.9298 | **+0.0464** | 0.7710 | 0.8621 | +0.0910 |
+| 2930 | 0.8905 | 0.9520 | **+0.0615** | 0.7850 | 0.9058 | **+0.1208** |
+| 2950 | 0.8957 | 0.9661 | **+0.0704** | 0.7951 | 0.9335 | **+0.1383** |
+| 2965 | 0.8957 | 0.9661 | **+0.0704** | 0.7951 | 0.9335 | **+0.1383** |
+| 2973 | 0.8987 | 0.9540 | **+0.0553** | 0.8010 | 0.9096 | +0.1086 |
+| 2980 | 0.9395 | 0.9706 | **+0.0311** | 0.8812 | 0.9422 | +0.0610 |
+| 2990 | 0.9723 | 0.9723 | +0.0000 | 0.9455 | 0.9455 | +0.0000 |
+| 3000 | 0.9196 | 0.9196 | +0.0000 | 0.9744 | 0.9744 | +0.0000 |
+| 3013 | 0.9463 | 0.9463 | +0.0000 | 0.9089 | 0.9089 | +0.0000 |
+| 3030 | 0.9689 | 0.9689 | +0.0000 | 0.9465 | 0.9465 | +0.0000 |
+| 3060 | 0.9605 | 0.9605 | +0.0000 | 0.9332 | 0.9332 | +0.0000 |
+| 3103 | 0.7385 | 0.7385 | +0.0000 | 0.8324 | 0.8324 | +0.0000 |
+
+**The collapse and build-pop are BYTE-IDENTICAL** (+0.0000 at all six frames ≥2990) — not
+merely "did not regress". The f≥2982 pill trajectory is hardcoded and card-independent, so
+the resize provably cannot reach it. The f2976–2982 handoff (which *does* read `card`) is
+the +0.0311 gain at f2980, and it moves the right way: the ref card compresses vertically
+IN PLACE (top y139, left x364), which the new `card.{x,w}` now feed straight into the wide
+pill instead of the old 530→365 sideways jump.
+
+### Eye
+
+- `rows_montage_r17.png` (REF / OLD / NEW × f2905,2930,2950,2973) — OLD shows the three
+  fat merge blocks the ref never has; NEW tracks the ref's 8 full-width stroked segments.
+- `collapse_montage_r17.png` (× f2980,2990,3013,3060) — collapse holds; f2980 now shows
+  the ref's wide pill with its segments still inside.
+- `crx_eyecheck_r17.png` — **CrxNetting brand variant clean** at f2930/2965/2980/3013.
+  Card, rows, rules, pill, build-pop city all render; no brand breakage.
+
+### Honest residuals (NOT shipped, next-round candidates)
+
+1. **The row ENTRY is a converge animation, not a fade-in-place.** The ref f2890–2925
+   deals the pills in scattered across the card and settles them into the rows; we fade
+   them up at their final positions. We still win f2905 (+0.0372) because the card and
+   rules dominate — but the entry window is the weakest remaining part of the scene.
+2. **The collapse pill is too narrow at f2990.** The ref's pill is visibly wider than
+   ours. The f≥2982 keyframes are hardcoded and were deliberately NOT touched (they are
+   what made the collapse byte-identical). Re-measuring that trajectory is a clean,
+   self-contained next round.
+3. Rule retract is fitted linear [2970,2982] / [2970,2979]; the ref's is slightly eased.
+   ~6px-tall bars — below the noise floor, not worth a round.
