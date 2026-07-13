@@ -20,20 +20,26 @@ loadFont({
   display: "block",
 });
 
-// CRX lockup replaces the CLS wordmark on the intro/end cards…
+// CRX lockup replaces the CLS wordmark on the intro/end cards. Sized to the CLS
+// wordmark's on-screen MASS: at height 210 the lockup ink was only ~60% of the
+// CLS mark's (h127 vs 226, w581 vs 1010) and sat ~20px high. The PNG carries
+// ~17.5% padding top+bottom (ink is 0.651 of PNG height), so height 347 at
+// top 102 lands the ink at CLS's own extents — end card y175-399 vs CLS y174-401
+// (h224 vs 227, w1022 vs 1074); intro y188-399 vs CLS y188-401. The residual
+// lighter read is the CRX mark's thinner stroke (a property of the asset).
 const CrxBrandLogo: React.FC<{ markP: number; lettersP: number }> = ({ lettersP }) => (
   <div
     style={{
       position: "absolute",
       left: 0,
-      top: 150,
+      top: 102,
       width: 1920,
       display: "flex",
       justifyContent: "center",
       opacity: lettersP,
     }}
   >
-    <Img src={staticFile("crx-assets/crx-lockup-white.png")} style={{ height: 210 }} />
+    <Img src={staticFile("crx-assets/crx-lockup-white.png")} style={{ height: 347 }} />
   </div>
 );
 
