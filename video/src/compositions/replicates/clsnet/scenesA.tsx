@@ -951,13 +951,34 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // Now: worldMap scaled 0.76 (grid-fit vs the f582 full map, score .88),
   // vertically centred (oy 174), x-origin scrolled per the measured ox table.
   const MAP_SCALE = 0.76;
+  // r22 (globe lane): the continents were displaced on BOTH axes — over-scrolled
+  // right AND ~20px too high. The two fixes below are SYNERGISTIC: with thin white
+  // lines on blue (method law 8), fixing one axis while the other is 20px off leaves
+  // the lines non-overlapping, so SSIM stays flat/negative; only the FULL pose
+  // correction crosses into line-overlap and lifts the metric. Measured by continent
+  // centroid + line-overlap count + disc-crop SSIM at f523/540/550/557 (r22 A/B).
+  //
+  // X: ref centroid cx settles ~948 by f500 and holds FLAT through f557; ours matched
+  // at f523 then ramped +45px of map-origin (~+14px visible) to f558. Fix: hold mapOx
+  // at its f523 value (~478) from f526 on (tail keys 526..558 flat at 478). Kills the
+  // over-scroll: centroid dx -13..-17px → -1..-3px at f540/f550.
   const mapOx = interpolate(
     f,
     [478, 486, 494, 502, 510, 518, 526, 534, 542, 550, 558],
-    [300, 319, 362, 401, 435, 464, 487, 504, 516, 523, 525],
+    [300, 319, 362, 401, 435, 464, 478, 478, 478, 478, 478],
     clamp
   );
-  const mapOy = 174;
+  // Y: ref continents drift DOWN through the window; a fixed oy=174 held ours ~20px
+  // too high. The disc CLIPS which continents are visible, so aggregate-ink-centroid
+  // is a poor proxy (non-monotonic under translation) — line-OVERLAP against the ref
+  // is the honest instrument. A mapOy scan (174/190/238/275/290) found a real
+  // registration peak near ~240-250: overlap at f550 rises 655→854 then falls to 635
+  // at 290, and disc-SSIM turns over the same way. Below sits on that plateau and
+  // gains at all four gate frames (disc +0.005..+0.008, whole +0.001, NO regression).
+  // The zoom ramp `moy` reads this, so the f556+ handoff stays continuous. Overrides
+  // both the r21 "dy=0" note and the inherited oy=174 (that was fit to the f582 full
+  // map, never to the disc window) — direct per-frame overlap wins (method laws 2, 8).
+  const mapOy = interpolate(f, [510, 523, 540, 550], [174, 203, 238, 248], clamp);
   const ringSpin = lerp(f, [478, 566], [0, -38]);
   // r21: the padlock CLOSES at f522, not f528. Shackle crops f515/517/519/521/523
   // show it open (hook leaning right) through f521 and fully closed (symmetric
@@ -986,7 +1007,7 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
     clamp
   );
   const mapScale = interpolate(f, [556, 568], [MAP_SCALE, 1], clamp);
-  const mox = f < 556 ? mapOx : interpolate(f, [556, 568], [525, MAP.x], clamp);
+  const mox = f < 556 ? mapOx : interpolate(f, [556, 568], [478, MAP.x], clamp);
   const moy = interpolate(f, [556, 568], [mapOy, MAP.y], clamp);
   const discLeft = G_CX - dr;
   const discTop = G_CY - dr;
