@@ -282,7 +282,15 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
   if (frame < 1837 || frame >= 2090) return null;
   const outP = interpolate(frame, [2075, 2090], [0, 1], clamp);
   const exitDy = lut(frame, S10_EXIT);
-  const hexP = interpolate(frame, [1845, 1868], [0, 1], { ...clamp, easing: EASE });
+  // r22 EYE-FIX: the ref's city hexes are NOT a fade — they BUILD, solid, left-to-right
+  // (hexagon + central red temple present from the f1837 mount, side towers filling in),
+  // reaching FULL by ~f1848 and already ~53%/71% of settled ink at f1837 (ink-counted per
+  // frame, law 26). The old ramp faded uniform opacity 0@f1845 -> 15%@f1850 -> full only by
+  // f1868 — a translucent GHOST for 30 frames where the ref is a solid cityscape, and BLANK
+  // at f1845 where the ref is 96% in. HexCity lives in lib (no per-building build available
+  // to this lane), so opacity is the only lever: land it near-full fast — present at the
+  // f1837 cut, solid by f1846 as the ref is. Settled frames (>=f1846) are byte-unchanged.
+  const hexP = interpolate(frame, [1837, 1846], [0.5, 1], clamp);
   const pillP = interpolate(frame, [1872, 1890], [0, 1], clamp);
   // gen19: the bank hex SNAPS IN at f1951-1957 (ref dark-ink in its box, probed per
   // frame: f1930 84 · f1950 0 · f1955 2556 · f1958 2857 · steady 2861). We faded it in
