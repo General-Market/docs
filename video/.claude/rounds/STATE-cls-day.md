@@ -2834,3 +2834,137 @@ share its mechanism *and* its mount. The tagline's weight refutation did not tra
 transfer out of its own tail. The marker's SIZE does not transfer between scenes. The
 marker's STROKE does — because a stroke is a property of the rig, and a size is a property
 of the call.
+
+## gen20 THE ENTRANCE — 2026-07-13 (scenes2, second shift)
+
+Three commits, each gated on its own baseline. Instruments in `work/cls-day/r17-scenes2b/`
+(`ink.py` per-element ink counts, `geo.py` per-frame band/pill/capsule/rail geometry;
+`refs/` a DENSE ref sweep f2335-2425 every frame; `old/` the pre-gen20 baseline, `new/`
+`vB/` `vC/` `vD/` `vE/` `vF/` the gated attempts, `mont/` the eye strips). Stills only.
+
+### The handoff said "S13 mounts 14 frames late." It was ninety-four, and it had no entrance.
+
+OLD: S13 mounted at f2362 with its band, then faded the pill in over f2370-2390, the
+cities over f2380-2405 and the rails over f2410-2440. The ref is FULLY SETTLED at f2378.
+**From f2344 to f2361 our comp rendered a completely blank white frame** — and at f2372 it
+still drew ZERO ink below y140. Forty frames of an empty scene under a band. The
+predecessor's own organising insight, running backwards: white where the reference draws
+large art.
+
+### The measured entrance clock — FIVE clocks, and the flock is NOT rigid
+
+| element | ref clock | what it does |
+|---|---|---|
+| **band** | f2339 → f2361 | does not cut — **MORPHS**. S12's strip (y88 h40, pph 141.6, 21px labels) grows into S13's (y0 h57, pph 286, 42px) with **07:00 pinned at x959 in every frame** (tick-nearest-958 reads 959.0 at f2336 AND at f2400). ONE parameter z = (pph−141.6)/144.4 drives labelSize 21+21z, labelDx 8+7z, labelDy 2+2z, tickAbove 4(1−z), tickBelow 20+25z — at z=0 those ARE S12's props, at z=1 they are S13's, exactly. y/bottom get their own tables (the strip fattens to 71px at f2351, then settles to 57). |
+| **marker** | f2339 → f2350 | S12's MarkerTriangle rides the morph (size 60·pph/141.6, y = bandY − 61·pph/141.6) and **clips off the top edge**, gone at f2350. |
+| **pill + both capsules** | f2346 → f2361 | ONE global scale about **(723, 219)**: 0.40 @f2346 · 0.635 @f2348 · 0.812 @f2349 · 0.940 @f2352 · 0.992 @f2357 · 1 @f2361. Cross-checked three ways — pill height/213, left-capsule height/476, right-capsule height/646 — and they agree to **0.003**. That origin also predicts the pill's x0/x1 to ±6px at every frame. |
+| **left capsule** | f2349 → f2362 | X-COMPRESSED to a vertical line and swings open. At f2349 it is a **6px-wide, 388px-tall navy sliver at x275**. The STROKE does not compress (a 4-6px line at k=0.006) — so it is a non-scaling-stroke scaleX, not a shape scale. |
+| **right capsule** | f2352 → f2362 | the same, but it **LEADS THE LEFT BY ~4 FRAMES** (k=0.30 at f2356 against the left's f2358; the red-tower tracer confirms — right snaps in over f2357-2359, left over f2359-2361). **Measure each element. The flock is not rigid.** |
+| **rails** | f2355 → f2369 | they DRAW, they do not fade. Stub+elbow ~f2355-2356, then the horizontal extends OUT of the pill at ~44px/frame: top-rail left end 848 (f2357) → 401 (f2369); bottom-rail right end 1051 → 1499 on the same curve. |
+| **arrowheads** | f2361 → f2369 | **ride the drawing tip and grow with it** — nothing at f2360 (tip x714), an 11px stub at f2362, 29px arms at f2366, full 52px at f2369. |
+| **city interiors** | f2358 → f2378 | two waves, ~70% of the ink by f2362, a plateau to f2368, the rest by f2378. **We do not draw them there. See the negative A/B.** |
+
+### 1 — the entrance (733284507)
+
+Band morph + global scale + capsule swing + rail draw + the S12 band handoff (S12 kept its
+band inside its own dissolving div, so the band FADED OUT with the doc — the ref's band
+never fades).
+
+### 2 — the rails: every number in the lane was wrong (3effd9ab0)
+
+The grid ranked r4c3/r4c4/r4c5 — a strip under the pill that is not city art. Opened them:
+- the **BOTTOM lane sits at y774** (ref rows 772..776). We drew it at **y770** — a 490px line
+  4.5px off its own centre, for all 350 frames of the scene.
+- stroke is **5**, not 3.5.
+- the top line ends at **x401**, not 445; the bottom at **x1499**, not 1435.
+- the arrowheads are **OPEN SWEPT CHEVRONS** (tip on the lane, arms 52 back and ±32, stroke 8),
+  not small solid triangles — and the **TOP one pointed the WRONG WAY**: `rotate(180 462 290)`
+  put its apex at x477, to the RIGHT of its own base, aiming back at the pill. It has been
+  drawing backwards for the whole life of the scene. Same family as gen19's S10 chevrons.
+
+### 3 — the left vertex and both elbows (6ffa82525)
+
+Re-gridded. r2c2 came back rank 2, r4c3 rank 3 — both near-flat white cells owned by one curve.
+- **LEFT CAPSULE VERTEX**, the twin of the right one gen19 fixed. Ref max-navy-x per row (f2400):
+  490 @y430 · 494 @y442 · **495 @y448..466** · 492 @y478. Ours bottomed at **488** — 7px short,
+  on an approach diagonal 2-4px inside the ref's the whole way down.
+- **BOTH ELBOWS were the wrong CURVE, not the wrong size.** The bottom is a circular quarter of
+  **radius 70**, not 55 (our parabola sat 18px low at x960). The top is an **ELLIPTICAL** quarter,
+  rx60 ry80, tangent to the vertical at **y370**, not y345 — which is why our corner hugged the
+  horizontal 14-18px too long. Both re-cut as cubics through the measured points.
+
+### Gate — ref vs OLD vs FINAL, every frame
+
+| frame | OLD | FINAL | Δ |
+|---|---|---|---|
+| f2330 (S12 settled) | .924060 | .924060 | **BYTE-IDENTICAL** |
+| f2344 | .939758 | .958587 | **+.0188** |
+| f2347 | .950360 | .967018 | **+.0167** |
+| f2350 | .939714 | .974684 | **+.0350** |
+| f2353 | .934957 | .971554 | **+.0366** |
+| f2356 | .928565 | .966918 | **+.0384** |
+| f2359 | .897822 | .933232 | **+.0354** |
+| f2362 | .891349 | .906497 | **+.0151** |
+| f2366 | .885887 | .907355 | **+.0215** |
+| f2372 | .869903 | .890678 | **+.0208** |
+| f2380 | .867434 | .895387 | **+.0280** |
+| f2400 | .889392 | .895956 | +.0066 |
+| f2450 | .887179 | .893447 | +.0063 |
+| f2600 | .888222 | .891618 | +.0034 |
+| f2700 | (settled) | .893595 | — |
+
+The rail + vertex + elbow work lifts **every settled frame of the scene** (+.0015..+.0048),
+not just the entrance. CrxSettlementDay eyechecked at f2355 and f2450 — inherits cleanly.
+
+**SPENDS** (both rounding-level, both against gains across ~350 frames):
+`3effd9ab0` f2356 −.0001 (the elbow at 26% draw, stroke 5 vs 3.5) · `6ffa82525` f2353
+−.00004 (the capsule at 3% open, new vertex path).
+
+### NEGATIVE A/B — our city interiors are metric-POISON while the ref is mid-animation
+
+The ref starts its buildings at f2358 and finishes at ~f2378. **We hold ours to f2371/f2374
+and snap.** That is deliberate. FOUR interior schedules were rendered and gated against the
+same baseline (ΔSSIM vs OLD at f2359 / f2362 / f2366 / f2372):
+
+| schedule | f2359 | f2362 | f2366 | f2372 |
+|---|---|---|---|---|
+| ink-fitted opacity RAMP (the ref's own curve) | −.0074 | **−.0186** | −.0036 | +.0106 |
+| binary SNAP at the ref's 50% ink crossing | +.0099 | **−.0193** | −.0041 | +.0106 |
+| the ramp + the interior riding the capsule's X-compression (the *physically right* model — the ref DOES pile its interior ink into a narrow column early: 249% of settled ink in x0..90 at f2360) | +.0013 | **−.0186** | −.0036 | +.0106 |
+| **HOLD, then snap when the ref is ~95% in** | **+.0323** | **+.0118** | **+.0176** | **+.0145** |
+
+**Every form of drawing our interior art early LOSES. Holding it back wins at every frame,
+by a lot.** The cause is the defect gen19 measured and could not fix: our capsules carry
+62-71% of the ref's ink with line centres 1-4px off. Against a ref that is *mid-animation*
+— buildings still sliding and scaling in — that art is worse than white. It is gen19's S12
+law running the other way: solid ink over the ref's UNFINISHED ink loses to white over it.
+*Classified: reference-self-contradiction FOR OUR RIG, not for the reference.* It becomes
+drawable early only after the per-edge re-registration.
+
+### Every ranked grid cell, adjudicated
+
+Grid 1 (8x6, f2353/2359/2366/2380, 14 cells ranked) and grid 2 (f2380/f2400, 10 cells):
+
+| cells | what they are | verdict |
+|---|---|---|
+| r4c3, r4c4, r4c5 | the RAIL LANE — not city art | **FIXED** (3effd9ab0, 6ffa82525) |
+| r2c2 | the LEFT CAPSULE'S VERTEX | **FIXED** (6ffa82525) |
+| r1c0, r2c0, r2c1, r3c0, r3c1 | LEFT city interior | our ink **0.51x–0.84x** of the ref's, centroids **4-9px** off |
+| r2c6, r2c7, r3c6, r3c7, r4c6, r4c7 | RIGHT city interior | our ink **0.62x–0.82x**, centroids **4-9px** off |
+
+Every city cell resolves to the SAME defect, now measured cell by cell rather than in
+aggregate: *not a shift, not a scale — absent content plus a distributed per-edge
+mis-registration.* Widening loses (gen19), re-scaling loses (gen19), drawing it early loses
+(gen20). **It is one job: trace the interiors and re-register each edge. Nothing else in
+these two capsules will move until that is done.**
+
+### The next-worst thing
+
+**The pill's settled pose is 7-8px off.** Back-projected through the entrance scale from
+f2356 (s=0.986), the ref's pill is **x752..1143, y427..640 (w391, h213)**. We draw
+**x759, y435, w380, h213** — 7px right, 8px low, 11px narrow, on a 65,000-px solid navy
+block that sits in the middle of the frame for 350 frames. It is measured, it is large-area,
+and it is cheap. It is NOT free: the pill's pose is where the chips spawn (x942) and where
+both rails begin, so moving it moves them, and it wants its own gated commit.
+
+After that, the city interiors — and that one is a trace, not a nudge.
