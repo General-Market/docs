@@ -820,7 +820,13 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
       {frame < 656 ? (
         <div style={{ opacity: bandIn }}>
           <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} />
-          <MarkerTriangle x={960} y={35} size={60} />
+          {/* gen19: measured at THIS mount off ref f600 (rust-masked). y was 8px HIGH
+              (our ink top 27, the ref's 35) and the ref's triangle is 62 wide, not 60.
+              The lib lane's S10 fit said 50 wide — it does NOT transfer, and that is what
+              a per-mount `size` prop is for. The strokeWidth term DOES transfer and is
+              corroborated here from a second scene: the ref's marker has MORE extent
+              (62x53 vs our 60x49) and 38% LESS ink (696 vs 1123). That excess is lib's. */}
+          <MarkerTriangle x={960} y={35} size={62} />
         </div>
       ) : (
         <S4ExitBand frame={frame} />
