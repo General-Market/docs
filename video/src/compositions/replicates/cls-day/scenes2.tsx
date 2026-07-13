@@ -394,6 +394,8 @@ const S11_FOCUS_S: Lut = [
   [2214, 1.1568], [2215, 1.1751], [2216, 1.1879], [2217, 1.1977], [2218, 1.2048],
   [2219, 1.209], [2220, 1.2119], [2221, 1.2147], [2228, 1.2203],
 ];
+// the pose S11 hands to S12 — the ref holds the doc here, unmoving, for the whole scene
+export const S11_FOCUS_GROWN = 1.2203;
 const S11_DOCS = [
   { x: -62, seal: "lines" as const, red: false, dir: -1, sh: 2, g: 0.94 },
   { x: 208, seal: "square" as const, red: false, dir: -1, sh: 1, g: 1.01 },
@@ -581,71 +583,75 @@ const FocusDoc: React.FC<{ x: number; y: number }> = ({ x, y }) => (
   </svg>
 );
 
-export const MiniDoc: React.FC<{ x: number; yMid: number; w: number; h: number; big?: boolean; seed: number }> = ({
-  x,
-  yMid,
-  w,
-  h,
-  big,
-  seed,
-}) => {
-  const ink = C.navyDeep;
-  const accents = [C.navyBg, C.chipGrey, C.red, C.chipCream];
-  const acc = accents[seed % 4];
-  return (
-    <div style={{ position: "absolute", left: x, top: yMid - h / 2 - (big ? 40 : 0) }}>
-      {big && (
-        <div
-          style={{
-            position: "absolute",
-            left: 14,
-            top: 14,
-            width: w,
-            height: h,
-            background: C.white,
-            border: `3px solid ${ink}`,
-            borderRadius: 4,
-          }}
-        />
-      )}
-      <div style={{ position: "relative", width: w, height: h, background: C.white, border: `3px solid ${ink}`, borderRadius: 4 }}>
-        <div style={{ position: "absolute", left: w * 0.1, top: h * 0.08, width: w * 0.28, height: h * 0.09, background: acc }} />
-        <div style={{ position: "absolute", left: w * 0.1, top: h * 0.3, width: w * 0.8, height: h * 0.1, border: `2px solid ${ink}` }} />
-        <div style={{ position: "absolute", left: w * 0.1, top: h * 0.48, width: w * 0.55, height: 3, background: ink }} />
-        <div style={{ position: "absolute", left: w * 0.1, top: h * 0.58, width: w * 0.4, height: 3, background: ink }} />
-        <div style={{ position: "absolute", left: w * 0.1, top: h * 0.74, width: w * 0.3, height: h * 0.1, background: acc, opacity: 0.6 }} />
-      </div>
-    </div>
-  );
-};
-
 // ─── S12: checks on the big doc (f2237..2362) ───
+// gen19 — S12 WAS DRAWING THE WRONG DOCUMENT. The ref's S12 is the SAME 2-page focus doc
+// S11 grows, held at the grown pose and never touched again: ref ink below the band is a
+// flat 52,140 px at f2240 with bbox x692..1203 y247..846, and f2230 == f2260 == f2300 on
+// the doc to the pixel. We drew a generic 260x330 MiniDoc at (840,720) — a fifth of the
+// area, in the wrong place. S11 already hands the grown doc over (scale 1.2203 about
+// (1022,474)), so S12 just mounts the same thing at the same pose.
+//
+// The CHECKS were wrong too. Ref discs (red mask, eroded to isolate them from their
+// leaders): d=160 at (456,428), (1360,312), (1550,714). We drew d=74 at (640,620),
+// (1275,590), (1320,830). Each disc is ~19k px — three of them is 58k, half the scene.
+// Arrival, from the ref's ink steps below the band (52.1k doc-only @f2240 -> 70.0k @f2250
+// -> 91.9k @f2270 -> 111.7k @f2290, then FLAT to f2335): ~f2243 / f2263 / f2283, not
+// 2255/2290/2320. Each leader is an L: disc -> elbow -> a small ring on the doc.
+// S12's EXIT, measured per frame (ink below the band + doc top + red mask):
+//   checks hold at 58,127 red px to f2336, then 10,344 @f2338 -> 140 @f2340 -> 0 @f2342.
+//   the doc then FALLS: top 247 (f2342) -> 289 (f2344) -> 303 (f2346) -> 349 (f2348) ->
+//   396 (f2350), i.e. it starts moving only once the checks are gone.
+// We held the whole scene frozen and fade-covered it at f2362 — so the tail regressed hard
+// once the doc was drawn at its true (much larger) size: f2340 .9122 -> .8921 and
+// f2350 .9038 -> .8657 before this exit was added.
+const S12_DOC_EXIT: Lut = [
+  [2341, 0], [2342, 3], [2344, 42], [2346, 56], [2348, 102], [2350, 149],
+];
+const S12_CHECKS = [
+  { cx: 456, cy: 428, at: 2243, path: "M 536 428 L 757 428 L 757 302", rx: 757, ry: 298 },
+  { cx: 1360, cy: 312, at: 2263, path: "M 1360 392 L 1360 522 L 1037 522", rx: 1029, ry: 522 },
+  { cx: 1550, cy: 714, at: 2283, path: "M 1470 714 L 1034 714", rx: 1026, ry: 714 },
+];
+
 export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2237 || frame >= 2375) return null;
-  const outP = interpolate(frame, [2362, 2375], [0, 1], clamp);
-  const checks = [
-    { x: 640, y: 620, at: 2255, tx: 850, ty: 640 },
-    { x: 1275, y: 590, at: 2290, tx: 1080, ty: 690 },
-    { x: 1320, y: 830, at: 2320, tx: 1090, ty: 800 },
-  ];
+  // The ref CUTS to S13 at ~f2347 — at f2350 it is already showing S13's band at y0, the
+  // handshake pill and the city capsules, and the doc is gone. S12 was holding its content
+  // to f2362 and fading out to f2375, fifteen frames of a document the ref has replaced.
+  // (S13's own mount still starts at f2362 — the ref begins it ~14f earlier. Noted, not
+  // fixed here: retiming S13's entrance moves its band, pill, cities and rails together.)
+  // And the doc does not merely fall: it DISINTEGRATES — its ink breaks into fragments in
+  // place while the sheet drifts down (ref ink 48.0k @f2342 -> 32.9k @f2344 -> 25.5k @f2346
+  // -> gone). Solid ink over broken ink loses to WHITE over broken ink, so a fast dissolve
+  // beats every attempt to draw the doc through it: holding the doc to f2348 cost f2345
+  // .0138; matching the ink-decay ramp still cost it .0138; dissolving over f2341-2343.5
+  // GAINS .0332 there. SPEND: f2342 (the one frame where the ref's doc is 92% intact and
+  // ours is half-faded) −.0049, against +.010..+.036 across the ~110 frames around it.
+  const outP = interpolate(frame, [2341, 2343.5], [0, 1], clamp);
+  const checkOut = interpolate(frame, [2336, 2339.5], [1, 0], clamp);
+  const docDy = lut(frame, S12_DOC_EXIT);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       {/* r8: S10-S12 hour labels remeasured — ref cap-height 14 (fs21, not
           the default 30); at fs21 the label auto-sits at ref cap-top y135. */}
       <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
-      <MiniDoc x={840} yMid={720} w={260} h={330} big seed={0} />
-      {checks.map((c, i) => {
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${docDy}px)` }}>
+        <div style={{ position: "absolute", transform: `scale(${S11_FOCUS_GROWN})`, transformOrigin: "1022px 474px" }}>
+          <FocusDoc x={753} y={291} />
+        </div>
+      </div>
+      {checkOut > 0 && S12_CHECKS.map((c, i) => {
         const p = interpolate(frame, [c.at, c.at + 10], [0, 1], { ...clamp, easing: Easing.out(Easing.back(1.8)) });
         const lineP = interpolate(frame, [c.at + 4, c.at + 14], [0, 1], clamp);
         if (frame < c.at) return null;
         return (
           <React.Fragment key={i}>
             <svg width={1920} height={1080} style={{ position: "absolute", opacity: lineP }}>
-              <line x1={c.x} y1={c.y} x2={c.x + (c.tx - c.x) * lineP} y2={c.y + (c.ty - c.y) * lineP} stroke={C.marker} strokeWidth={3} />
-              <circle cx={c.tx} cy={c.ty} r={5} fill="none" stroke={C.marker} strokeWidth={2.5} opacity={lineP} />
+              <path d={c.path} fill="none" stroke={C.marker} strokeWidth={3} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - lineP} opacity={checkOut} />
+              <circle cx={c.rx} cy={c.ry} r={5} fill="none" stroke={C.marker} strokeWidth={2.5} opacity={lineP * checkOut} />
             </svg>
-            <CheckCircle x={c.x} y={c.y} size={74 * Math.min(p, 1.15)} opacity={Math.min(p * 2, 1)} />
+            <CheckCircle x={c.cx} y={c.cy} size={160 * Math.min(p, 1.15)} opacity={Math.min(p * 2, 1) * checkOut} />
           </React.Fragment>
         );
       })}
