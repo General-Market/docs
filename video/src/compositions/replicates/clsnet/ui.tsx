@@ -99,20 +99,56 @@ export const HexIcon: React.FC<{
 // (strip2 = 200.5 for w=200); artDx/artDy are per-site measured content
 // nudges (ref strip2 draws the diamond +3/+4 vs pure scaling — human
 // layout, confirmed dot AND diamond offset together).
+// ─── r18: the LABEL is a property of the box, not of the call site ───
+// Every site drew it 8px right and ~20% small. Measured ref-vs-render at SIX
+// sites (ink bboxes, th=160 on both — one predicate family):
+//   site         boxSide   ref labelCtr−boxCtr   ratio    ref inkH   ref fs   we drew
+//   flows f400     269           −6.0          −0.0223      36        46.7      48.0
+//   locks f1740    221           −5.0          −0.0226      30        38.9      39.2
+//   match f1600    156           −4.0          −0.0256      21        27.2      22.0
+//   pay   f2560    166           −4.0          −0.0241      22        28.5      26.0
+//   detail f2360   331           −7.5          −0.0227      44        57.1      45.8
+//   gantt f2320    516*          −             −            69        89.5      73.3
+// TWO laws, and each holds at every site:
+//   POSITION  the ref seats the label's advance centre 2.26% of the box side
+//             LEFT of the box centre. We centred it on `w` — itself 2.75·scale
+//             RIGHT of the box centre (box = 0.98·w) — so the ink landed a flat
+//             8px right EVERYWHERE (subpixel profile fit: dx = 8.00 at flows AND
+//             at locks, ncc 0.998).
+//   SIZE      fs = 47·scale reproduces every ref fs above to ±1px. The same
+//             profile fit reads our glyphs 2.25%/1.90% wide and 2.6%/1.5% tall at
+//             the two default-fs sites → fs 46.94/47.11. Default 48 → 47.
+//
+// LEGACY ESCAPE HATCH. Both laws are anchored to the BOX, so a site whose box is
+// misplaced inherits the error — and a bigger, correctly-centred label on a
+// misplaced box is MORE misplaced ink, which loses (lesson 4). Three of the four
+// `labelFs` sites have exactly that: match's box is 9px low and 4px narrow (ref
+// x769 y341 side 156; we draw x768 y350 side 152), detail's is 7px low and 9px
+// narrow (ref x794 y475 side 331; we draw x795 y482 side 322), and gantt's is
+// keyframed off it. Applying the law there took the match label crop from .459 to
+// .254 — the box error swamps the label. So: **passing `labelFs` opts the site
+// out of both laws** (it keeps its hand-fit size and the old centring), and the
+// law lands wherever the box is already true — flows, tradeDocs, locks.
+// TO THE OWNERS OF scenesB / scenesC / data.ts: fix the box, delete `labelFs`,
+// and the site adopts the law for free. Payment is the cheap one — its box is
+// already right (ref x876 side 166; we draw x875 side 166.6), so deleting
+// `labelFs={26}` alone is worth ~+0.003 on its crop, measured.
 export const ClsNetBox: React.FC<{
   x: number;
   y: number;
   w?: number;
   opacity?: number;
   label?: boolean;
+  /** legacy hand-fit; passing it opts this site out of BOTH label laws */
   labelFs?: number;
+  labelDx?: number;
   border?: "none" | "orange";
   bg?: string;
   markP?: number;
   side?: number;
   artDx?: number;
   artDy?: number;
-}> = ({ x, y, w = 274, opacity = 1, label = true, labelFs, border = "none", bg = C.navy, markP = 1, side, artDx = 0, artDy = 0 }) => {
+}> = ({ x, y, w = 274, opacity = 1, label = true, labelFs, labelDx, border = "none", bg = C.navy, markP = 1, side, artDx = 0, artDy = 0 }) => {
   const brand = useBrand();
   if (opacity <= 0) return null;
   const scale = w / 274;
@@ -143,16 +179,18 @@ export const ClsNetBox: React.FC<{
         <div
           style={{
             position: "absolute",
-            // label glyph top measured y975 at f400 (div y675) = CSS top
-            // 292·scale with the 8px strut — independent of box height
-            top: 292 * scale,
+            // ref cap-top sits 301·scale below the BOX top (flows 974−673=301;
+            // locks (797−550)/0.8175=302). With fs 47 the strut eats 10.8·scale
+            // of that, so the CSS top is 291·scale (was 292 with fs 48)
+            top: (labelFs === undefined ? 291 : 292) * scale,
+            // 0.5 − 0.0226 = 0.4774 of the box side, minus the div's own centre
+            left: labelDx ?? (labelFs === undefined ? 0.4774 * box - 0.5 * w : 0),
             width: w,
             textAlign: "center",
+            whiteSpace: "nowrap",
             fontFamily: brand.sans,
             fontWeight: 700,
-            // ref f400 label ink 34px tall / 168 wide -> fs 48 at scale 1
-            // (old default 34 rendered 24/121)
-            fontSize: labelFs ?? 48 * scale,
+            fontSize: labelFs ?? 47 * scale,
             color: C.navy,
           }}
         >
