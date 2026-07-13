@@ -3063,3 +3063,175 @@ paths do not.
 
 **A measurement can be right at every mount and still be the wrong change. The gate is not
 a formality — it is the only thing that knows what the measurement left out.**
+
+## gen20 — S4 EXIT / S5 ENTRY (rank 3, f673-723) + the S5 floor's grey — 2026-07-13 (scenes1, 2nd shift)
+
+Four landings, each gated and committed on its own. Instruments + artifacts in
+`work/cls-day/r17-scenes1b/` (probe_band.py band/ink counts, probe_tick2.py the strict
+tick detector, probe_xfit.py the ink-profile cross-correlator, still.sh + stillcrx.sh;
+ref frames `refs/` f660-735 + f880-920; baselines `head*/`, attempts `att*/`, montages
+`mont/`). Build-only still gates + eye montages; NOT a full verify.
+
+### Where the rank-3 window actually is
+
+Not the S4 exit. The pit is **f674-678, the S5 ENTRY**: .770 / .766 / .823 / .786 / .838
+against a .87 cruise. The S4 exit (f666-673) sits at .87-.89 and was never the problem.
+
+### 1 — THE S5 ENTRY WORLD WAS A FULL HOUR OFF AT f674 (39309fa13)
+
+Every instrument said the entry was registered. Band descent, band height and band centre
+reproduce the ref to **1-2px at five columns across every frame f673-684**; a global
+x-correlation of the ink profile returns **dx = 0**. And f674/f675/f677 still scored .77.
+
+**A TICK CHAIN IS PERIODIC.** An x9 error of exactly one pitch puts every tick line on the
+ref's to half a pixel and reads every HOUR LABEL one hour late. That is f674: x9 **2184.8
+against the ref's 2485.8 — 301 units, one pitch, to within a pixel.** Six rounds of tick
+trackers could not see it, *because a tick tracker is precisely the instrument that cannot.*
+**The LABELS are the only witness. Read them.**
+
+Re-anchored per frame on (hour, screen x of its tick) off the ref's own label glyphs, with
+sx from the full-span tick pitch measured INSIDE the grey strip (dark columns spanning the
+whole band — the one detector no building can fool):
+
+| f | ref anchor | ref pitch | x9 old → new | sx old → new |
+|---|---|---|---|---|
+| 674 | 02:00@464.5 | 255.58 | 2184.8 → **2485.8** | 0.8475 (kept) |
+| 675 | 04:00@420.5 | 269.42 | 1751 → **1863.8** | 0.885 → **0.8936** |
+| 676 | 06:00@566.5 | 278.83 | 1438.7 (exact) | 0.9254 (kept) |
+| 677 | 07:00@554 | 285.60 | 1150.5 → **1134.4** | 0.945 → **0.9473** |
+| 678 | 08:00@622.5 | 290.50 | 911.3 (exact) | 0.9642 (kept) |
+| 679 | 08:00@456 | 294.10 | 744.9 (exact) | 0.9761 (kept) |
+| 680 | 09:00@626.5 | 296.83 | 621.3 (exact) | 0.9847 (kept) |
+
+`x9 = 960 + (x − 960)/sx − (i − 9)·301.5`. **Four of the seven keys came back EXACT** — which
+is why the whip looked plausible and still scored .77. The corrected series is also the only
+smooth one: the world's hour at screen x=0 runs 20.75 → 24.18 → 26.44 → 27.97 → 29.06 →
+29.86 (Δ 3.43, 2.26, 1.53, 1.09, 0.80 — a clean deceleration). The old x9 stuttered.
+
+**NEGATIVE A/B — do not re-fight.** Nudging sx(676) to its nominal 0.9237 **LOST**
+(.8226 → .8145). At f676 a 0.0017 scale change is 4px at the left edge, and the old key sits
+inside the pitch's own error bar. *Inside the error bar, do not move a gated key.*
+
+The 302-unit shift opens the visible world to local [-2659, -396] at f674 and left ~400px of
+bare white down the left edge — one more entry tile at each end (-2798 above, -3107 below).
+
+Gate: **f674 .7698 → .8164 (+.047) · f675 .7660 → .8211 (+.055) · f677 .7860 → .8349
+(+.049).** f676 / f678 / f680 / f684 / f690 **BYTE-IDENTICAL**. Nothing regressed.
+
+### 2 — THE S4 EXIT CARRIES TWO CLOCKS AND WE DROVE BOTH OFF ONE (5742165bf)
+
+The S4 hour axis (labels BELOW the strip, left of the front) and the incoming S5 world
+(labels ABOVE it, right of the front) are **different clocks** in the ref: the S5 chain runs
+**six hours earlier** than the S4 axis. We fed the incoming chain the S4 `h`, so at f673 all
+eight of its labels were six hours wrong, and worse at f670-672, where `h0` itself had
+drifted. Both re-read off the ref's own glyphs:
+
+- **S4 axis, hour at k=0:** f668 22 ✓ · f669 23 ✓ · f670 **25** · f671 **27** · f672 **31**  (we had 24 / 25 / 26)
+- **S5 chain, hour at k=0** (new `S4X_H5`): f670 **11** · f671 **13** · f672 **17** · f673 **21**
+
+`h0` was RIGHT through f669 and drifts from f670 — *exactly where the whip accelerates.*
+f673's S4 labels are fully clipped (front = 0); f666-669's S5 labels sit above the frame
+edge — those keys are back-extrapolated and marked unverifiable in-code.
+
+Gate: f666 **BYTE-IDENTICAL** · f668 .881715 → .881740 · f670 .865899 → .866104 · f672
+.887221 → .887749 · f673 .865037 → .865703. **SPEND: f671 −0.000007** (numerically zero —
+the new glyphs carry the same ink mass as the wrong ones, so the metric cannot see them.
+The eye can: `mont/clocksAB.png`).
+
+### 3 — NEGATIVE A/B: THE EXIT SWEEPS IN AN EMPTY WORLD, AND A STAND-IN CITY LOST (1894a0cb3)
+
+**The defect is real and it is the largest absent area in the window.** The ref's front
+reveals a full SKYLINE. We reveal bare white above the band and bare navy below, and draw
+only the two tick chains. At f673, where the front has crossed the whole frame:
+
+|  | above-band ink | RED ink | below-band white |
+|---|---|---|---|
+| ref | 41,795 | 42,787 | 20,589 |
+| ours | 7,438 | **0** | 7,124 |
+
+**So I built it, and it was RIGHT, and it still LOST.** The world rides the same lattice as
+the ticks and needs no fit of its own: hour i at local (i−9)·301.5, the tick at k carrying
+true index **h5 + k − 24** (the exit runs one cycle behind S5's i=0..23 — at f673 the ref
+reads 21:00..04:00, i.e. i = −3..4), screen x of local L = **X0 + L·syp** with
+**X0 = phase + (33 − h5)·pitch**, world y straight through the band
+(**screen y = btop + (worldY − 490)·syp**). It came out **REGISTERED** — ink-profile
+cross-correlation puts it within **1-3px** of the ref above AND below — with the mass closed
+to 11% (above 7,438 → 37,024; red 0 → 37,442). And:
+
+> f668 .8817 → .8772 · f670 .8661 → .8567 · f671 .8712 → .8607 · f672 .8877 → .8618 ·
+> **f673 .8657 → .8322 (−.034)**
+
+Every frame. Because the **DESIGNS** are wrong. The cruise only ever shows hours 09-15, so
+ClA/ClB/ClC/ClG are the only clusters anyone has traced; the exit shows **hours 21-05** —
+other buildings. The left tiles cycle the four we have. Profile correlation tops out at 0.56.
+**Right slot, right mass, WRONG SHAPE.** Lesson 4, a fifth time this round: *misplaced ink
+loses to absent ink, and a stand-in IS misplaced ink.* REVERTED — f668/f671/f673/f675/f690
+byte-identical to the gated state again.
+
+**What ships instead: the slot table.** `CITY_ABOVE` / `CITY_BELOW` / `leftAbove` /
+`leftBelow` / `CityRow` are now ONE table that S5Skyline reads and the exit's mount will
+read — the twin is killed before it is born (gen19's ClsPillSlot). f690/f700 byte-identical
+across the refactor.
+
+**THE FIX IS TRACED ART, NOT A BETTER FORMULA.** ref f673 shows hours 21:00-04:00 with the
+whole skyline in ONE frame. Trace those four above clusters and four below, hang them on the
+table at local −2798/−2194/−1590/−986 and −3107/−2503/−1899/−1295, and **the mount is kept
+verbatim in a 20-line in-code comment at the S4ExitBand incoming block — do not re-derive
+it.** Do NOT re-mount it against cycled stand-ins.
+
+### 4 — ClC's GREY SLAB RENDERED ZERO PIXELS — and gen19 over-priced this lever 10x (3dd29d1df)
+
+Target B. Opened all four above-band clusters at ref f900, counting **GREY** (a colour with
+no competitor — nothing else in the frame is that value), with **ClA as the control**.
+
+| cluster | ref grey | ours | what |
+|---|---|---|---|
+| ClA | 663 | 823 | **MATCHES** — we paint its slab LAST and it lands on the ref to the pixel. The control holds. |
+| ClB | 1,184 | 891 | reads, but 30px short at the top (ref y186, we y216) |
+| ClC | 870 | **136** | **THE SLAB RENDERS NOTHING** — declared before the dots building, whose white fill swallows it whole |
+| ClG | 1,866 | **315** | TWO slabs; one declared before the navy building (a 2px sliver survives), the other never drawn |
+
+**It is not a tracing problem, it is a PAINT-ORDER problem.** *A rect declared under a white
+fill is not a faint rect — it is no rect.* All four now go last, on the ref's measured boxes.
+Above-band grey f900: **2,165 → 5,538** against the ref's 4,583 (right place, ~20% over —
+our rects are solid, the ref's slabs are interrupted by the buildings' own bars).
+
+**AND THE GAIN IS +.0002, NOT +.002.** gen19 sized this off the doc-area calibration (an
+8.9k-px navy-on-white doc = +.002). **That calibration does not transfer: grey on white is
+nearly invisible to SSIM.** f880 +1e-5 · f900 +3.0e-4 · f910 +2.5e-4 · f920 +3.2e-4.
+**SPEND: f890 −6e-5 · f700 −2e-5 · f675 −1e-4** (the entry tiles carry ClC/ClG too). Net
+positive; every delta inside 3e-4, i.e. the whole lever lives at the noise floor. Landed
+because a rect that paints nothing is a bug, not a matter of taste — and reported at its
+true size so the next agent does not budget +.002 for it.
+
+CrxSettlementDay eyechecked at f672 / f675 / f900 (`mont/crxcheck.png`) — clean.
+
+### Residual (honest, classified)
+
+- **fixable, needs TRACED ART (the big one)** — the S4 exit's incoming world is EMPTY.
+  ~35k px of above-band ink and ~43k px of RED missing at f673 alone. The mount is written
+  and proven-registered; only the four above + four below clusters at **hours 21-05** are
+  missing. Trace them off **ref f673**. This is the largest single absent-content area left
+  on the track.
+- **fixable, needs TRACED ART** — ClG's barred navy building is the wrong SHAPE (not paint
+  order): the ref's right wall is at local x348, ours at x363; the ref has a wall at x395
+  and a full-height one at x438 that we do not draw at all. Navy in that cell: ref 7,899,
+  ours 6,814. This is the real residual of the rank-1 window (f878-928) and it is what is
+  left of gen19's "missing navy buildings".
+- **hand-drawn texture / floor** — the red building stroke (−12%, gen19's verdict stands);
+  the below-band cells' 1-2px edge jitter.
+- **at the noise floor** — everything in the S5 cruise the grey could reach. Deltas of 3e-4
+  are not a lever.
+
+### Two notes for the next agent
+
+- **A baseline render needs a COPY of the file, not a SWAP of it.** I rendered an old
+  baseline by writing `git show HEAD:./scenes1.tsx` over the live file and restoring it
+  after. A sibling agent did the same thing, on the same file, in the same hour. Nothing was
+  lost — but had either of us written between the swap and the restore, the other's in-flight
+  work would have been destroyed. **Render the OLD baseline BEFORE you edit, or write the old
+  version to a scratch path.** Never over the live file.
+- **When a periodic structure "registers", the metric you used cannot see a period-sized
+  error.** Ticks, dashes, hatches, tile grids, dot fills — for every one of them there is a
+  displacement that is invisible to any tracker of the structure itself. Find the aperiodic
+  thing riding on it (here: the hour LABELS) and read *that*.
