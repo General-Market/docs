@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate } from "remotion";
-import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG, W, H } from "./data";
+import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG, H } from "./data";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { ClsNetBox, Hexagon, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
@@ -216,8 +216,8 @@ export const TitleCard: React.FC<{ frame: number; endcard?: boolean }> = ({
         opacity={card2Op}
         growP={card2Grow}
         parts={card2Parts}
-        stripDy={7}
-        stripLh={1.3}
+        stripDy={11}
+        stripLh={1.0086}
       />
       {/* transient loader bars under/next to cards */}
       <div style={{ position: "absolute", left: 875, top: 708, width: 430, height: 22, backgroundColor: "#8286A0", opacity: bar1Op }} />
@@ -249,7 +249,7 @@ export const PrincipleCard: React.FC<{
   // its lines WIDER than lineHeight 1.15 puts them — card2 pitch measured 47px
   // (=fs36·1.3), not 41px. 1-line labels are pitch-agnostic, so card1 keeps 1.15.
   stripLh?: number;
-}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts, stripDy = 32, stripLh = 1.15 }) => {
+}> = ({ x, y, w, h, stripY, body, strip, num, kicker, stripText, opacity = 1, growP = 1, parts, stripDy = 31, stripLh = 1.15 }) => {
   const { serif: SERIF, sans: SANS } = useBrand();
   if (opacity <= 0) return null;
   // bar rect in card-local coords: y 204-244 (screen 560-600)
@@ -334,9 +334,27 @@ export const PrincipleCard: React.FC<{
           // is PER-CARD (stripLh) — card1 is 1-line and pitch-agnostic, keeps
           // 1.15. The \n is explicit + no width on this div, so opening the
           // pitch cannot re-wrap the block.
+          //
+          // ═══ r20: THE CAPTION WAS 23% TOO SMALL, AND THE CAP-HEIGHT READ THAT
+          // SET fs36 WAS SIMPLY WRONG. ═══
+          // r15 measured "ref 310×28" and fitted fs36 to the 28. The ref ink is
+          // **311 × 35.5**, not 311 × 28. Both dimensions then say the SAME thing:
+          //   cap1  width ref 311 / ours 240 = 1.296  ·  height ref 35 / ours 28 = 1.29
+          //   cap2  width ref 395 / ours 305 = 1.295  ·  ink mass ref/ours = 1.63
+          // A width ratio and a height ratio agreeing to 0.5% are not a font-face
+          // problem — they are a SIZE problem. r15 saw the 23% width shortfall, blamed
+          // "our Helvetica is narrower than the ref face", and deferred it to
+          // letterSpacing. There was never a face-width gap: at the correct size the
+          // widths land within 1.4%. **A wrong measurement was enshrined as a law and
+          // then defended with a theory** (r19's payment box, again).
+          // fs 46.6 lands BOTH widths exactly (240→311, 305→395) and the cap at 36.
+          // Measured identically at the TITLE (f110/f120) and the ENDCARD (f4090/
+          // f4141) — one component, one ref geometry — so the fix pays at both, and
+          // the endcard holds it for a 130-frame hold.
+          // Pitch stays 47px, so stripLh follows the size: 47/46.6 = 1.0086.
           top: stripY - y + stripDy,
           fontFamily: SANS,
-          fontSize: 36,
+          fontSize: 46.6,
           lineHeight: stripLh,
           color: C.navy,
           whiteSpace: "pre-wrap",
@@ -349,26 +367,83 @@ export const PrincipleCard: React.FC<{
   );
 };
 
-// Title outro: a white diagonal wipe sweeps in from the RIGHT (f139-152) while
-// the title drifts UP, revealing the next scene behind. Measured from the exact
-// ref video (work/clsnet/anim): the wordmark stays HORIZONTAL (no panel
-// rotation — the old −10° tilt + left-wipe were invented) and its centroid
-// rises ~57px by f142; the white/navy boundary is a diagonal whose LEFT edge
-// (navy→white) sweeps top 1920→0 / bottom 1920→0, top leading. Clipping the
-// title away (not painting a white rect) exposes the real RowsBuild/white bg.
+// ═══ Title outro (f133-151): the title TURNS, and a slit opens down its spine ═══
+//
+// r20. The old build was fiction: a white diagonal wipe sweeping in from the RIGHT
+// while the title drifted up-left, with the panel held HORIZONTAL ("no rotation —
+// the −10° tilt was invented"). The reference does none of that. At f140 that wipe
+// painted WHITE over ~950×1080 of frame that the ref still holds NAVY — half the
+// frame at maximum contrast. It was the worst frame in the file: **f140 = 0.707**.
+//
+// What the reference actually does, measured two independent ways that agree:
+//
+//   1. The WHOLE title rotates CLOCKWISE about the frame centre (960,540), with
+//      ZERO translation. Tracking two features on opposite sides of the frame —
+//      the CLS logo (x≈288) and the Principle-50 card (x≈1540) — a pure rotation
+//      about (960,540) predicts BOTH to ≤3px through f141 (logo +1.1,-0.3 @f134
+//      … +5.2,+2.3 @f141; card50 +0.1,+0.9 … -3.8,+1.1). The r19-era `dx`/`dy`
+//      drift does not exist.
+//   2. A white SLIT opens down the panel's spine and widens. Its two edges stay
+//      exactly PARALLEL at every frame, and its centre line passes through
+//      (959.5, 540) at EVERY frame — 959.5 at f136, f138, f140, f142, f144, f146,
+//      f147, f148. Dead constant. The slit is a vertical strip in the panel's own
+//      frame, centred on the pivot.
+//
+// The proof the two are one motion: the slit-edge angle and the CONTENT rotation
+// angle, measured from completely different pixels, agree to <0.15° at every
+// frame — 0.77/0.82 · 1.90/1.99 · 3.79/3.87 · 6.67/6.89 · 11.67/11.63 · 15.45/15.60.
+//
+// So: rotate the panel, cut a widening vertical slit at local x=959.5, let white
+// through. Two tables, no free parameters. The model reproduces every measured
+// screen edge to ≤3.4px — at f148 it predicts the navy edges at x=858.5 / 2140.5
+// and the ref measures 858 / 2139.
+//
+// The navy plane is SEMI-INFINITE (an oversized rect behind the children). A
+// 1920×1080 fill rotated 45° would expose white at the corners where the ref is
+// still navy — the same class of bug as the r18 strip slit.
+const OUT_F = [132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151];
+// clockwise degrees, screen coords (CSS rotate positive = CW)
+const OUT_A = [0, 0.10, 0.20, 0.45, 0.79, 1.28, 1.94, 2.77, 3.83, 5.16, 6.78, 8.94, 11.65, 15.52, 20.81, 29.49, 45.0, 60.4, 69.0, 73.0];
+// HORIZONTAL width of the slit at y=540 (screen px). Perpendicular width = G·cos A.
+const OUT_G = [0, 0, 2.5, 7.2, 14.9, 25.2, 38.9, 56.6, 79.3, 107.6, 142.3, 188.2, 248.8, 332.8, 459.7, 696.1, 1282, 2422, 3767, 5042];
+const SPLIT_X = 959.5; // slit centre in panel-local coords == the pivot
+const PIVOT = { x: 960, y: 540 };
+
+const NavyPlane: React.FC = () => (
+  <div style={{ position: "absolute", left: -2000, top: -2000, width: 5920, height: 5080, backgroundColor: C.navy }} />
+);
+
 export const TitleOutro: React.FC<{ frame: number; children: React.ReactNode }> = ({
   frame,
   children,
 }) => {
-  const dy = interpolate(frame, [136, 142, 150], [0, -50, -150], clamp);
-  const dx = interpolate(frame, [136, 150], [0, 25], clamp);
-  const edgeTop = interpolate(frame, [139, 142, 144, 146, 148, 150, 152], [W, 944, 928, 888, 744, 168, 0], clamp);
-  const edgeBot = interpolate(frame, [139, 142, 144, 146, 148, 150, 152], [W, 840, 752, 568, 0, 0, 0], clamp);
+  // Static title. Returned bare so the settled window (f0-132) stays byte-identical.
+  if (frame < 133) return <>{children}</>;
+  const A = interpolate(frame, OUT_F, OUT_A, clamp);
+  const G = interpolate(frame, OUT_F, OUT_G, clamp);
+  const rot = { transform: `rotate(${A}deg)`, transformOrigin: `${PIVOT.x}px ${PIVOT.y}px` } as const;
+  // Slit half-width measured PERPENDICULAR to the panel's local vertical.
+  const p = (G / 2) * Math.cos((A * Math.PI) / 180);
+  // Below ~1.5px the slit is sub-pixel; drawing it as two adjacent clips would
+  // only risk an antialiased hairline through a still-whole panel.
+  if (G < 1.5) {
+    return (
+      <AbsoluteFill style={rot}>
+        <NavyPlane />
+        {children}
+      </AbsoluteFill>
+    );
+  }
+  const L = SPLIT_X - p;
+  const R = SPLIT_X + p;
   return (
-    <AbsoluteFill
-      style={{ clipPath: `polygon(0 0, ${edgeTop}px 0, ${edgeBot}px ${H}px, 0 ${H}px)` }}
-    >
-      <AbsoluteFill style={{ transform: `translate(${dx}px, ${dy}px)` }}>
+    <AbsoluteFill style={rot}>
+      <AbsoluteFill style={{ clipPath: `polygon(-2000px -2000px, ${L}px -2000px, ${L}px 3080px, -2000px 3080px)` }}>
+        <NavyPlane />
+        {children}
+      </AbsoluteFill>
+      <AbsoluteFill style={{ clipPath: `polygon(${R}px -2000px, 3920px -2000px, 3920px 3080px, ${R}px 3080px)` }}>
+        <NavyPlane />
         {children}
       </AbsoluteFill>
     </AbsoluteFill>
@@ -828,6 +903,32 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 5: Globe + lock (f462-566) ═══
+//
+// ═══ r20: THE WHOLE GLOBE ASSEMBLY WAS ~3% TOO SMALL ═══
+// The disc is STATIC f484-556 — every per-frame read of its bbox is identical to
+// the pixel — so this is measured on bedrock, not on a moving target:
+//   ref navy disc stroke, row y=540:  x 661-665  and  1253-1257
+//        → OUTER radius 298.2 · stroke 5px · centre x 959.0
+//   ref column x=959: navy y 242-245 / 834-837   → centre y 539.5
+//   ref grey ring OUTER edge: x=615 at row 540, y=884 at col 959 → radius 344.3
+// We drew r=293 (outer) with a 4px stroke, and ringR=335. So:
+//   · our navy circle sat at r 289-293 where the ref draws 293-298. **FULLY
+//     DISJOINT** — ~9,000px of navy ink lighting BOTH edges (lesson 4: misplaced
+//     ink loses to absent ink), against the brightest possible ground.
+//   · our grey annulus stopped 10px short, leaving a ~21,000px white ring the ref
+//     fills with grey. Gain ∝ area (law 18); this is the area.
+// SAFE TO RESCALE (law 21): the continents are a disc-clipped WINDOW onto worldMap
+// whose SCREEN origin is `mox`/`moy` — computed independently of `dr`. Growing the
+// disc does not drag the interior off; it only uncovers map the ref already shows.
+// This is an EDGE-POSITION fix on drawn primitives, not a re-scale of an invented
+// interior — which is exactly the case law 21 says pays.
+// Local, because data.ts is another lane's file this round. GLOBE.r/ringR there are
+// now stale; fold these back and delete these constants.
+const G_CX = 959;
+const G_CY = 539.5;
+const G_R = 298; // disc OUTER radius (was 293)
+const G_RING = 344; // grey ring OUTER radius (was 335)
+const G_STROKE = 5; // navy disc border (was 4)
 export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { sans: SANS } = useBrand();
   const f = frame;
@@ -868,17 +969,22 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // clean from the disc's left edge (ring hides it ≤f561): r 293 held to f556,
   // then 424(f562) 569(f564) 830(f566) → full-bleed f568. Replaces the old
   // cross-dissolve (globe FADED out under an expanding blue rect + fading map).
+  // NOTE (r20): the zoom keys below (330/375/424/569/830) are NOT re-verified —
+  // only the f556 anchor changes here, because that anchor IS the settled radius.
+  // Measuring the ref's disc edge mid-zoom defeats a run-scan (the white continent
+  // outlines cut the blue run, and the grey ring hides the border to f561), so the
+  // curve needs a real edge tracker. Left as a named residual, not guessed at.
   const dr = interpolate(
     f,
     [556, 558, 560, 562, 564, 566, 568],
-    [GLOBE.r, 330, 375, 424, 569, 830, 1200],
+    [G_R, 330, 375, 424, 569, 830, 1200],
     clamp
   );
   const mapScale = interpolate(f, [556, 568], [MAP_SCALE, 1], clamp);
   const mox = f < 556 ? mapOx : interpolate(f, [556, 568], [525, MAP.x], clamp);
   const moy = interpolate(f, [556, 568], [mapOy, MAP.y], clamp);
-  const discLeft = GLOBE.cx - dr;
-  const discTop = GLOBE.cy - dr;
+  const discLeft = G_CX - dr;
+  const discTop = G_CY - dr;
   // ring fades as the disc grows over it. The triangle + lock are drawn BENEATH
   // the disc fill (below) so the growing disc OVERTAKES them — exactly the ref.
   const ringFade = lerp(f, [556, 561], [1, 0]);
@@ -916,37 +1022,39 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${slideIn}px)` }}>
         {/* ring: grey donut with ticks + time labels */}
         <svg
-          width={2 * GLOBE.ringR + 40}
-          height={2 * GLOBE.ringR + 40}
-          viewBox={`0 0 ${2 * GLOBE.ringR + 40} ${2 * GLOBE.ringR + 40}`}
+          width={2 * G_RING + 40}
+          height={2 * G_RING + 40}
+          viewBox={`0 0 ${2 * G_RING + 40} ${2 * G_RING + 40}`}
           style={{
             position: "absolute",
-            left: GLOBE.cx - GLOBE.ringR - 20,
-            top: GLOBE.cy - GLOBE.ringR - 20,
+            left: G_CX - G_RING - 20,
+            top: G_CY - G_RING - 20,
             opacity: ringFade,
           }}
         >
-          <g transform={`rotate(${ringSpin} ${GLOBE.ringR + 20} ${GLOBE.ringR + 20})`}>
+          <g transform={`rotate(${ringSpin} ${G_RING + 20} ${G_RING + 20})`}>
+            {/* grey annulus: spans the disc's outer edge (G_R) to G_RING — the ref
+                fills 298→344; we filled 293→335. */}
             <circle
-              cx={GLOBE.ringR + 20}
-              cy={GLOBE.ringR + 20}
-              r={(GLOBE.ringR + GLOBE.r) / 2}
+              cx={G_RING + 20}
+              cy={G_RING + 20}
+              r={(G_RING + G_R) / 2}
               fill="none"
               stroke={C.band}
-              strokeWidth={GLOBE.ringR - GLOBE.r}
+              strokeWidth={G_RING - G_R}
             />
             {Array.from({ length: 48 }, (_, i) => {
               const a = (i * Math.PI * 2) / 48;
               const long = i % 2 === 0;
-              const r0 = GLOBE.r - 4;
-              const r1 = long ? GLOBE.ringR + 14 : GLOBE.ringR - 4;
+              const r0 = G_R - 4;
+              const r1 = long ? G_RING + 14 : G_RING - 4;
               return (
                 <line
                   key={i}
-                  x1={GLOBE.ringR + 20 + r0 * Math.sin(a)}
-                  y1={GLOBE.ringR + 20 - r0 * Math.cos(a)}
-                  x2={GLOBE.ringR + 20 + r1 * Math.sin(a)}
-                  y2={GLOBE.ringR + 20 - r1 * Math.cos(a)}
+                  x1={G_RING + 20 + r0 * Math.sin(a)}
+                  y1={G_RING + 20 - r0 * Math.cos(a)}
+                  x2={G_RING + 20 + r1 * Math.sin(a)}
+                  y2={G_RING + 20 - r1 * Math.cos(a)}
                   stroke={C.navy}
                   strokeWidth={1.6}
                 />
@@ -954,16 +1062,16 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             })}
             {["23:00", "00:00", "06:30", "07:00", "09:00"].map((t, i) => {
               const a = ((i * 47 - 8) * Math.PI) / 180;
-              const rr = GLOBE.ringR + 28;
+              const rr = G_RING + 28;
               return (
                 <text
                   key={i}
-                  x={GLOBE.ringR + 20 + rr * Math.sin(a)}
-                  y={GLOBE.ringR + 20 - rr * Math.cos(a)}
+                  x={G_RING + 20 + rr * Math.sin(a)}
+                  y={G_RING + 20 - rr * Math.cos(a)}
                   fontFamily={SANS}
                   fontSize={20}
                   fill={C.navy}
-                  transform={`rotate(${(a * 180) / Math.PI} ${GLOBE.ringR + 20 + rr * Math.sin(a)} ${GLOBE.ringR + 20 - rr * Math.cos(a)})`}
+                  transform={`rotate(${(a * 180) / Math.PI} ${G_RING + 20 + rr * Math.sin(a)} ${G_RING + 20 - rr * Math.cos(a)})`}
                 >
                   {t}
                 </text>
@@ -976,8 +1084,22 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
         <svg width={60} height={52} viewBox="0 0 60 52" style={{ position: "absolute", left: GLOBE.triangle.x - 30, top: GLOBE.triangle.y }}>
           <path d="M4,4 H56 L30,48 Z" fill="none" stroke={C.orange} strokeWidth={5} strokeLinejoin="round" />
         </svg>
-        {/* lock — beneath the disc; covered as the disc grows past it */}
-        <TracedArt name={lockState} x={GLOBE.lock.x} y={GLOBE.lock.y} opacity={lockOp} />
+        {/* lock — beneath the disc; covered as the disc grows past it.
+            r20: the lock's DROP SHADOW was TAN. All three lock traces carry an
+            `#E9C8B0` layer (233,200,176 — peach); the ref's shadow is flat GREY,
+            **#D7D7D7** (215,215,215, n=2991 exact pixels in the lock box at f522).
+            potrace put a warm colour on a neutral shadow and eighteen rounds read
+            past it. Recoloured at the call site because art.ts is another lane's
+            file this round — the layer itself should be re-fill'd there.
+            The shadow is also ~2× too BIG (ours 6019px of flat fill vs the ref's
+            2991): a geometry error in the trace, NOT fixable from here. Reported. */}
+        <TracedArt
+          name={lockState}
+          x={GLOBE.lock.x}
+          y={GLOBE.lock.y}
+          opacity={lockOp}
+          recolor={{ "#E9C8B0": "#D7D7D7" }}
+        />
         {/* globe blue disc fill — grows with dr through the zoom */}
         <div
           style={{
@@ -1023,7 +1145,7 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
             width: 2 * dr,
             height: 2 * dr,
             borderRadius: dr,
-            border: `4px solid ${C.navy}`,
+            border: `${G_STROKE}px solid ${C.navy}`,
             boxSizing: "border-box",
           }}
         />
