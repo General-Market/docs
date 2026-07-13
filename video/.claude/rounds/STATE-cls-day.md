@@ -3377,3 +3377,135 @@ paid on the left capsule. **Take it before the city trace: it is a nudge, and th
 
 *The pill was never the hard part. The hard part was believing that the four things hanging off
 it did not need to move — and only the ref could say so.*
+
+---
+
+# ROUND LEAD CONSOLIDATION — r17 (gen19+gen20), 2026-07-13
+
+Three lanes, collision-free by file (`scenes1.tsx` / `scenes2.tsx` / `lib.tsx`), six
+builder shifts, **26 commits**, every one path-scoped. My lane never touched
+`clsnet/` or `cls-shared/` (verified per-commit). Entering 93.6.
+
+## The organising finding: THE REPLICA WAS ON THE WRONG CLOCK
+
+Every one of the round's largest wins was a **schedule** error, not a geometry error —
+and each was invisible frame-by-frame, because each frame looked plausible in isolation.
+We were drawing large art on white that the reference does not draw, and white where the
+reference draws large art.
+
+| defect | window | gain |
+|---|---|---|
+| S15 exit **30f late** (S16 **23f late**) | f2999-3049 | **+.060 .. +.093** |
+| S1 exit is a **ROLL**, not a static slit-cut | f96-116 | **+.255** at f110 |
+| S13 had **no entrance at all** — 94f late, 40 blank frames | f2344-2380 | +.015 .. +.038 |
+| S1 lockup + end card are **ONE pose** under a similarity (s=0.9405, P=(960,592)) | ~250f | **+.034** flat |
+| S12 drew the **wrong document**, 1/5 the area, and never left | f2230-2340 | +.010 .. +.036 |
+| S5 entry world a **FULL HOUR** off (one tick-pitch) | f673-723 | +.047 .. +.055 |
+| S13 pill **7px right, 9px low, 10px narrow** — 60k px, 350 frames | f2362-2700 | +.0061 at *every* frame |
+| S10 connector lane mis-scheduled; arrowheads drawn *inside* the pill | f1900-2055 | +.0035 .. +.0061 |
+
+**Therefore: on a motion-design replica, ink-count the reference per element per frame
+BEFORE fitting any geometry.** A wrong clock is worth ten times a wrong curve, and no
+amount of grinding on the curve will find it.
+
+## The shared-primitive lesson: a hand-copied twin is not a shared primitive
+
+`ClsPillSlot` short-circuited `ClsPill` whenever a `PillLogo` was passed, into a
+hand-copied div with its own uniform radius and a hardcoded `h*0.5` logo. `ClsDay-Replicate`
+took the good branch; **`CrxSettlementDay` — the publishable CRX cut — took the twin, and
+inherited none of the round's pill fixes.** It had been silently stale.
+Closed in two moves: `ClsPill` gained an optional `Logo` (byte-identity proven), then the
+twin was collapsed onto it (`9625bcd57`). **A shared primitive with a hand-copied twin is
+two primitives that agree until one of them is fixed.**
+
+Rig laws established (one constant, all mounts): `PILL_R = 0.265·h` (chip radius — rounded
+TL+BR, square TR+BL), `logoScale = 0.366`, `HexCity.contentsP` (outline and interior are
+separable — the interior is keyed to how far OPEN the hex is, not to a clock).
+
+## SIX REFUTATIONS — the round's most valuable output
+
+Each cost a gate and each is now recorded in-code so it is never re-lost:
+
+1. **Bolding a faithful trace LOSES.** City strokes widened to the ref's TRUE measured
+   weight lost at all 8 frames — our line *centres* sit 1-4px off, so a wider stroke
+   doubles the error band. (Law 1, confirmed again.)
+2. **The S10 hex-width refit LOSES.** The 5.3% scale error is real, but `HexCity` scales
+   its *invented* interior with `w`; outline and interior corrections cancel exactly.
+   **The clsnet "+0.100 by native re-scale" pattern does NOT carry to a component whose
+   interior is invented. Trace first, scale second.**
+3. **`MarkerTriangle` stroke 4→2 REFUTED.** `strokeLinejoin="miter"` couples ink to extent —
+   the fat stroke was *propping up a path that is too small*. Only a co-fit of stroke AND
+   path can win. There was never a clean deletion available.
+4. **A stand-in is misplaced ink.** The S4 exit sweeps in an EMPTY world (ref: 41,795
+   above-band ink, 42,787 RED; ours: 7,438 and ZERO). A stand-in city, registered to 1-3px
+   with mass closed to 11%, **lost at every frame (−.034)** — the designs are cycled, and
+   the exit shows hours 21-05 while the cruise shows 09-15.
+5. **Drawing S13's city interiors during the entrance LOSES.** Four schedules gated,
+   including the *physically correct* one. Holding them back and snapping late won at every
+   frame. Against a reference mid-animation, our 62-71%-ink art is **worse than white.**
+6. **The tagline's deficit is FACE, not weight.** Weights 400 and 500 both lost — advances
+   widen and the ink walks off its registration.
+
+## THE STANDING LAWS THIS ROUND ADDED
+
+- **A refutation transfers only to elements that share its MECHANISM and its MOUNT.**
+  Helvetica has advances; a traced path does not. A **stroke** is a property of the rig;
+  a **size** is a property of the call. (`MarkerTriangle` is 52 wide at S10 and 62 at S4 —
+  taking one mount's number on trust would have shrunk a marker already too small.)
+- **A measurement can be right at every mount and still be the wrong change. The gate is
+  the only thing that knows what the measurement left out.**
+- **A cell you rank and never open is a defect you found and did not report.** Three
+  separate structural defects (connector lane, hex cities, `Milestone`) sat in ONE grid
+  output for an hour, and two were filed as noise. **Open EVERY ranked cell; fix it or
+  classify its floor.**
+- **When a periodic structure "registers", the instrument you used cannot see a
+  period-sized error.** A tick-chain off by exactly one pitch lands every tick on the ref's
+  to half a pixel — and reads every hour label an hour late. Six rounds of tick trackers
+  could not see it. **Find the aperiodic thing riding on it (the hour labels) and read that.**
+- **A rect declared under a white fill is not a faint rect. It is no rect.** (`ClC`'s grey
+  slab rendered ZERO px — a paint-order bug, not a tracing one.)
+- **An instrument that cannot recover a value you already know cannot fit one you don't.**
+  (An ink/perimeter stroke estimator returned 4.97 and 4.81 for a known 4.0. Its outputs
+  were correctly thrown away.)
+- Calibration is per-material: **grey-on-white is worth ~10x less to SSIM than navy-on-white.**
+  gen19 over-priced the S5 grey lever tenfold.
+
+## INFRA — two near-misses, both from breaking a shared resource
+
+- **The render lock was bypassed.** Caught live: lock HELD, three concurrent renders.
+  A correct harness that an agent declines to invoke is not protection — it is
+  documentation. **The only ground truth is `ps`, not the `.sh` files.**
+  Rule: never `rmdir` a lock your shell did not create; blocked >10min → escalate, don't break.
+- **A baseline render needs a COPY of the file, not a SWAP of it.** Two agents wrote
+  `git show HEAD:./scenes1.tsx > scenes1.tsx` over a LIVE shared file in the same hour.
+  Nothing was lost. It could have been. (My dispatch error: I had two agents in one file.)
+- **An OOM-killed render batch loses frames SILENTLY** — a baseline came back 6-of-10 and
+  the four missing scored as *blank columns, not errors*. **Count the files before you read
+  the numbers.**
+
+## RESIDUAL — ranked, classified, for r18
+
+1. **The S4 exit's empty world** — ~35k px ink, ~43k px RED absent at f673. **The largest
+   absent-content area left on the track.** Trace hours 21-05 off ref f673; the mount
+   (`CITY_ABOVE`/`CITY_BELOW`/`CityRow`, one slot table) is already written and shipped.
+   *Traced art — a real trace, not a stand-in. Do not re-attempt the stand-in.*
+2. **`ClsLetters` — 12,953px of ink thin at CORRECT extents** (ref 71,270 / ours 58,317).
+   **70% of the lockup's entire ink deficit, ~250 cls-day frames + unknown clsnet frames.**
+   **ESCALATED, NOT TAKEN:** it lives in `cls-shared/logo.tsx`, which `clsnet/scenesA.tsx`
+   imports and a live clsnet session owns. **Needs ONE agent owning `cls-shared/logo.tsx`,
+   gating on BOTH `ClsDay-Replicate` AND `ClsNet-Replicate`, in a window where neither
+   track has an in-flight logo change.** Blob map transcribed verbatim in gen19 addendum.
+   *Two lanes racing one shared file is how the CRX pill twin was born.*
+3. **S13 r3c5 (.595) — the right capsule's LEFT vertex.** The ref's point is BLUNT (holds
+   x1420 across a 24px flat); ours holds it over 8px. **A nudge, and the city is a trace —
+   take the nudge first.**
+4. **The S13 cities' per-edge re-registration.** 62-71% of the ref's ink, centres 1-4px off,
+   and the RIGHT city's ink mass sits **12.2px LEFT** of the ref's (not the 4-9px on record).
+   **One whole-city x-translate deserves a gate BEFORE any trace is started.**
+5. `ClG`'s barred navy building is the wrong SHAPE (ref right wall at local x348, ours x363;
+   ref has walls at x395/x438 we don't draw). The real residual of the rank-1 window.
+6. Small, measured, unspent: S13's pill settles at **f2359, not f2361**; **f2344-2347 is not
+   a uniform scale** (ref pill is squat, w/h 2.30 vs settled 1.83 — wants its own 4-frame
+   `sx` LUT). `HandshakePill`'s icon `translateY` −8 → **−2.5**, now that the pill is home.
+7. **Floor (do not spend):** red stroke −12% (hand-drawn texture); below-band edge jitter;
+   S5's cruise texture (law 1 — re-tracing it LOSES).
