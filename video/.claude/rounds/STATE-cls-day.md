@@ -1732,3 +1732,125 @@ cluster; the area is the prize.
 - ClA's dashed risers are `strokeDasharray "11 15"` fitted to a 4-dash read; the
   ref's phase may be 1-2px off at the bottom of each leg.
 - No full verify run — the orchestrator owns it.
+
+## gen18 LARGE-AREA STRUCTURE round — 2026-07-12 (scenes1)
+
+Three levers, all in `scenes1.tsx`, each committed on landing. Instruments +
+artifacts in `work/cls-day/gen18-s1/` (probe_s4.py, probe_badge.py, still.sh,
+still2.sh, ssim.sh, ssim5.sh; ref frames `ref/` f440-690 and `ref5/` f860-945;
+montages `mont/`). Build-only gates (still A/B + eye montage + CrxSettlementDay
+at f600 and f900); NOT a full verify.
+
+### THE INDEX TRAP — read this before any A/B (it cost a commit)
+
+`git checkout <rev> -- <path>` **STAGES**. Using it to swap in an OLD baseline
+for a render poisons the SHARED index, and the next sibling agent's `git commit`
+sweeps the reverted file into their commit — 844da5fec silently reverted the
+whole S4 re-registration this way, 20 minutes after it landed. Restored in
+09600156e. **Use `git show <rev>:<path> > <path>` for A/B baselines** — it
+writes only the working tree. Copy your new file aside first and copy it back.
+
+### Lever 1 — S4's whole trade diagram, re-registered per frame (aa7b3c8c6)
+
+The worst cluster in the video (r15 rank1 f466-516 .8584) was blamed on
+"HexCity/Buildings interior texture" by a prior round. That verdict was wrong.
+It is a **large-area structural error**, and it is the biggest single one found
+in this track:
+
+The old model held BOTH hexes on one baseline (y527) and spread them in x,
+scaling each about its own centre. The ref does something else entirely —
+tracked per frame off the two badge discs (`probe_s4.py`; hex centre = badge
+centroid + s·offset, s = badge diameter / 91):
+
+| frames | ref | we drew |
+|---|---|---|
+| 446–480 | OVERLAPPED + DIAGONAL at s=1.53: A(723, 527), B(1191, **738**) | both at y527, B **212px too high** |
+| 482–504 | punch apart AND DOWN, s 1.53 → 1.25 | spread in x only |
+| 504–536 | frozen wide+low: A(349, 569) B(1572, 569), s=1.25 | already at settled x, s=1.10 — **120px off in x** |
+| 538–556 | pull back in and UP | — |
+| 556+ | settled A(471,527) B(1450,527) s=1 | correct (banked, byte-identical) |
+
+Hex B is 584×431 at s=1.53 — **12% of the frame, nearly disjoint from its ref
+for 100 frames.** Every other part of the diagram is rigidly attached to those
+two centres and rides the same s (verified: the arrow tips land at
+Ax + 186.5·s / Bx − 187·s to ±2px across the whole window).
+
+Also killed, in the same commit:
+- **the coin is FICTION.** We drew a static red coin under hex A that faded in
+  at f606 and then NEVER LEFT (56 frames of ink the ref does not have). The ref
+  slides a **$ doc out from under hex A and a € doc out from under hex B** —
+  the same SettleDoc art S5 drops from its towers, at 1.084× — rides each DOWN
+  its connector and ALONG the arm into the CLS pill, occluded, gone by f632.
+  Tracked per frame off the red ring centroid.
+- **the connector opacity fade f544-560 is FICTION.** The ref DRAWS the line
+  from f538 (dash-offset). Its geometry was also wrong: corner radius 52 (we
+  had ~27), arm at hexcy + 263·s (we had a flat y=812), open chevron head at
+  the pill edge (we had a filled triangle), 2px ink (we had 3.5).
+- **the CLS pill is 437×197 at (741,692) with the brand CHIP radius** (rounded
+  TL+BR, square TR+BL). We drew a 250×107 all-round pill 67px low — under a
+  third of its area. It SCALES up about (946,835) f549-560; the wordmark wipes
+  O→C→L→S inside it to ~f570. (S10 and S17 in scenes2 mount the same
+  `ClsPillSlot` at the same wrong 250×107 — worth a look, scenes2's call.)
+
+Gate, all 10 frames win: f466 .8386→.8587 · f490 .8341→**.8661** ·
+f500 .8392→**.8928 (+.054)** · f516 .8435→.8913 · f550 .8664→.9037 ·
+f566 .8709→.9066 · f600 .8685→.9040 · f616 .8621→.9026 · f640 .8682→.9046 ·
+f660 .8719→.9084. Plus f480 .8397→.8604, f545 .8548→.8947, f560 .8727→.9087,
+f620 .8621→.9030.
+
+### Lever 2 — the S4 exit whip zooms the diagram too (09600156e)
+
+f670 was the one frame Lever 1 REGRESSED (.8127→.8003), and it exposed the
+rest: the ref does not merely clip the diagram behind the S5 front — it ZOOMS
+IT IN and pans it left/down with the band (badge dia 91→113, hex A off the left
+edge by f670, pill ~540 wide). We held it dead still. Folded into the same
+LUTs; the pill rides the same affine from f660, where the affine is identity —
+so f560-660 stay byte-identical.
+
+Gate: f665 .8294→.8811 · f668 .8075→**.8817 (+.074)** · f670 .8127→.8659 ·
+f672 .8784→.8872. f640/f660 unchanged (no seam).
+
+### Lever 3 — sy was drifting through the ENTIRE S5 cruise (fadb50045)
+
+**The gen17 "unprojection trap" was itself the bug.** The sy LUT jumped
+`[684, 1] → [916, 0.988]` with NOTHING measured in between, so lutS
+interpolated a silent 1.2% vertical compression across 232 frames of cruise.
+Every line of art in the frame sat wrong by up to 6px (above-band tick tops at
+y184 vs the ref's 180; below-band tick feet at 878 vs 884).
+
+Measured off the above-band tick line (world y180; screen y = 532.5 − 352.5·sy)
+at f690/700/720/750/780/800/830/850/880/900/910/914/916 — the top reads **180
+at EVERY frame. sy = 1.0000.** Exit keys from f918 untouched.
+
+**Therefore: with sy = 1 in the cruise, screen y IS world y and the gen17
+unprojection `532.5 + (y − 532.5)/sy` is the identity. The trap is retired.**
+gen17's docs were placed by unprojecting through a scale that was never real;
+they now sit exactly at their measured screen y, which is what the tracker read.
+
+Second fix in the same commit: the **ABOVE-band hour chain draws OVER the
+skyline**, not under. Probe: at f880 the ref reads 7 full-height ticks above the
+band, we read 5 — our white-filled tower bodies painted out the 12:00 and 15:00
+lines. (The below chain already matched 7-for-7 — its clusters are outline-only.)
+
+Gate: f690 .8738→.8739 · f700 .8715→.8716 · f750 .8754→.8767 ·
+f800 .8729→.8760 · f850 .8678→.8727 · f880 .8525→.8587 · f895 .8637→.8717 ·
+f910 .8487→.8555 · **f916 .8677→.8776** · f920 .8570→.8574.
+**SPEND: f927 .8563→.8560 (−.0002)** — the tick z-order move costs 2e-4 at one
+exit frame against +.008 elsewhere. The ref draws 7 ticks; we drew 5. Recorded.
+
+### Residual (honest)
+
+- **S5's cruise is now near its structural floor.** With sy pinned, the
+  difference composite at f895/f910 lights up EVERY building edge faintly and
+  nothing in bulk — distributed 1-2px trace/edge error across dense line art
+  (**hand-drawn texture class**), not a large-area defect. The band renders 84
+  tall vs the ref's 85; the above ticks stop at the band where the ref runs them
+  8px into it (24 × 3 × 9 px — not worth it). Do NOT re-trace the clusters.
+- ClG's leftmost ink sits ~14px left of the ref's (the bridge element), ticks
+  matching to 1px — a single sub-element, small.
+- S4's hexes still FADE in f446-472 (`opacity: hexInA/B`); the ref DRAWS them
+  (ink is full-dark from f450, extent grows 5.3k → 57k px). A reveal-mask
+  draw-on is the honest fix; only f466-472 of it falls in the ranked window.
+- S4 f671-673 hex/pill values are extrapolated past the last badge read — by
+  then the S5 front has eaten all but a sliver.
+- P3 (S1/S2 f66-116) not opened.
