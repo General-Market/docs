@@ -1,0 +1,4 @@
+/Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/refs/f2353.png /Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/new/f2353.png
+/Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/refs/f2359.png /Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/new/f2359.png
+/Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/refs/f2366.png /Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/new/f2366.png
+/Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/refs/f2380.png /Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/new/f2380.png

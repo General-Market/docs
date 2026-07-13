@@ -806,12 +806,15 @@ const S13_RCAP_TX: Lut = [
 // Classified: reference-self-contradiction FOR OUR RIG, not for the reference.
 const S13_LINT: Lut = [[2373, 0], [2374, 1]];
 const S13_RINT: Lut = [[2370, 0], [2371, 1]];
-// rail draw, as a fraction of the S-path's length (stub+elbow = the first 0.275)
+// rail draw, as a fraction of the S-path's length (stub+elbow = the first 0.256)
 const S13_RAIL: Lut = [
-  [2354, 0], [2355, 0.13], [2356, 0.275], [2357, 0.351], [2358, 0.415], [2359, 0.479],
-  [2360, 0.546], [2361, 0.612], [2362, 0.677], [2363, 0.737], [2364, 0.793], [2365, 0.846],
-  [2366, 0.894], [2367, 0.932], [2368, 0.963], [2369, 1],
+  [2354, 0], [2355, 0.12], [2356, 0.256], [2357, 0.32], [2358, 0.387], [2359, 0.454],
+  [2360, 0.524], [2361, 0.594], [2362, 0.661], [2363, 0.724], [2364, 0.782], [2365, 0.839],
+  [2366, 0.889], [2367, 0.928], [2368, 0.962], [2369, 1],
 ];
+// the arrowhead RIDES the drawing tip and grows with it (ref: nothing at f2360 when the
+// tip is at x714; an 11px stub at f2362; 29px arms at f2366; full 52px at f2369).
+const S13_ARROW: Lut = [[2361, 0], [2362, 0.21], [2366, 0.56], [2369, 1]];
 
 export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2339 || frame >= 2726) return null;
@@ -855,6 +858,10 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   // the S-rail dash-draw: dasharray only while drawing, so every settled frame is
   // byte-identical to the pre-gen20 render.
   const dash = railP < 1 ? { pathLength: 1, strokeDasharray: 1, strokeDashoffset: 1 - railP } : {};
+  // the chevrons ride the line's tip (top path 657 long, stub+elbow the first 168)
+  const arrowP = frame >= 2369 ? 1 : lut(frame, S13_ARROW);
+  const tipT = Math.max(401, 890 - (railP * 657 - 168));
+  const tipB = Math.min(1499, 1010 + (railP * 661 - 172));
   // the band morph re-expressed at S13's own origin: originX 959 / hour 7 with
   // pxPerHour 286 puts 04:00 at x101 — identical ticks to the old (101, hour 4).
   return (
@@ -888,13 +895,37 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
       >
       <PvpLeftCity k={lcapK} tx={lcapTx} interior={lInt} />
       <PvpRightCity k={rcapK} tx={rcapTx} interior={rInt} />
-      {/* S-rail: pill top → arc → leftward arrow; pill bottom → arc → rightward arrow */}
+      {/* S-rail: pill top → elbow → leftward chevron; pill bottom → elbow → rightward
+          chevron. gen20 RE-MEASURED off ref f2400, and every number was wrong:
+            · the BOTTOM lane sat at y770; the ref's is at y774 (rows 772..776) — a
+              490px line 4.5px off its centre, and it owned grid cells r4c3/r4c4/r4c5.
+            · the stroke is 5, not 3.5 (ref rows 288..292 / 772..776).
+            · the top line ends at x401, not 445; the bottom at x1499, not 1435.
+            · the arrowheads are OPEN SWEPT CHEVRONS — tip on the lane, arms 52 back
+              and ±32, stroke 8 — not the small solid triangles we drew. And the TOP
+              one pointed the WRONG WAY: `rotate(180)` put its apex at x477, to the
+              RIGHT of its own base, so it aimed back at the pill.
+          Same family as gen19's S10 connector arrowheads (apex on the edge, big sweep). */}
       {railP > 0 && (
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <path d="M 950 425 L 950 345 Q 950 290 895 290 L 445 290" fill="none" stroke={C.navyDeep} strokeWidth={3.5} {...dash} />
-        {railP >= 1 && <path d="M 447 290 l 30 -15 v 30 z" fill={C.navyDeep} transform="rotate(180 462 290)" />}
-        <path d="M 950 635 L 950 715 Q 950 770 1005 770 L 1435 770" fill="none" stroke={C.navyDeep} strokeWidth={3.5} {...dash} />
-        {railP >= 1 && <path d="M 1433 770 l 30 -15 v 30 z" fill={C.navyDeep} />}
+        <path d="M 950 425 L 950 345 Q 950 290 890 290 L 401 290" fill="none" stroke={C.navyDeep} strokeWidth={5} {...dash} />
+        {arrowP > 0 && (
+          <path
+            d={`M ${tipT + 52 * arrowP} ${290 - 32 * arrowP} L ${tipT} 290 L ${tipT + 52 * arrowP} ${290 + 32 * arrowP}`}
+            fill="none"
+            stroke={C.navyDeep}
+            strokeWidth={5 + 3 * arrowP}
+          />
+        )}
+        <path d="M 950 635 L 950 719 Q 950 774 1010 774 L 1499 774" fill="none" stroke={C.navyDeep} strokeWidth={5} {...dash} />
+        {arrowP > 0 && (
+          <path
+            d={`M ${tipB - 52 * arrowP} ${774 - 32 * arrowP} L ${tipB} 774 L ${tipB - 52 * arrowP} ${774 + 32 * arrowP}`}
+            fill="none"
+            stroke={C.navyDeep}
+            strokeWidth={5 + 3 * arrowP}
+          />
+        )}
       </svg>
       )}
       <HandshakePill x={759} y={435} w={380} h={213} opacity={1} />
