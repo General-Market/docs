@@ -977,6 +977,42 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
               const top = top0 - 33.75 * (frame - t0);
               return <DocPop key={i} x={wx} y={top} />;
             })}
+            {/* gen17 — the MIRRORED world's docs. This region rendered BLANK:
+                the ref drops four instruction docs OUT of the hanging towers
+                (white-on-navy twins of the rising ones, $ € € $) and we had
+                none. Tracked per-frame off the red ring's centroid
+                (work/cls-day/gen17/probe_ring.py): world x fixed, cy
+                ACCELERATES ~27 → 39 px/f (the above-band docs, by contrast,
+                rise at a flat rate — the ref is hand-animated, so each doc
+                carries its own measured table, lesson 14). */}
+            {BELOW_DOCS.map((d, i) =>
+              frame >= d.from && frame <= d.to ? (
+                // the tables are SCREEN y (that is what the tracker reads);
+                // this div rides scaleY(sy) about y=532.5, and sy drifts
+                // 1 → 0.988 across the cruise, so unproject before placing.
+                // Skipping this put the last doc 4px high and LOST SSIM.
+                <SettleDoc key={`bd${i}`} cx={d.cx} cy={532.5 + (d.cy(frame) - 532.5) / sy} glyph={d.glyph} below />
+              ) : null,
+            )}
+            {/* opaque hanging-tower bodies. The ref hides each doc until it
+                clears its tower's base; the ABOVE clusters occlude for free
+                (their bodies are white-filled) but the BELOW clusters are
+                outline-only, so the navy fill lives here. Reveal edges from
+                row scans of the ref, unprojected to world y: D 855 (+ the
+                base-beam foot notch down to 873), E 731 (+ the two capsule
+                legs down to 792 — they hide the doc's side edges), F 861.
+                Drawn AFTER the docs and BEFORE the clusters, which repaint
+                their own ink over it. */}
+            <svg width={5200} height={1200} viewBox="0 0 5200 1200" style={{ position: "absolute", left: 0, top: 0 }}>
+              <g fill={C.navyBg}>
+                <rect x={67} y={576} width={150} height={279} />
+                <rect x={94.5} y={855} width={40} height={18} />
+                <rect x={687} y={576} width={120} height={155} />
+                <path d="M 687 731 L 687 777 Q 687 792 702 792 Q 717 792 717 777 L 717 731 Z" />
+                <path d="M 777 731 L 777 777 Q 777 792 792 792 Q 807 792 807 777 L 807 731 Z" />
+                <rect x={1287} y={576} width={117} height={285} />
+              </g>
+            </svg>
             {/* distinct traced clusters (ref f750/f900), world-fixed.
                 Above: A@-152 B@452 C@1060 G@1657 (center world x, slot 604).
                 Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse). */}
@@ -1067,6 +1103,70 @@ const DocPop: React.FC<{ x: number; y: number }> = ({ x, y }) => (
     </text>
   </svg>
 );
+
+// gen17 settlement doc, traced 1:1 off ref f829 (outer ink box 83x108, so the
+// svg is 84x109 and its origin IS the doc's outer top-left): rounded
+// bottom-left (r14), square bottom-right, top-right fold at x58/y25, two rule
+// lines, a red currency ring (cx 41.5, cy 61, r 22.75). Placed by RING CENTRE
+// — that is what the per-frame tracker measures. `below` flips the doc into
+// the mirrored world: white outline, no fill, navy showing through.
+const SettleDoc: React.FC<{ cx: number; cy: number; glyph: string; below?: boolean }> = ({ cx, cy, glyph, below }) => {
+  const ink = below ? WHT : C.navyDeep;
+  return (
+    <svg width={84} height={109} viewBox="0 0 84 109" style={{ position: "absolute", left: cx - 41.5, top: cy - 61 }}>
+      <path
+        d="M 1.75 1.75 L 58 1.75 L 81.25 25 L 81.25 105.25 L 15.75 105.25 Q 1.75 105.25 1.75 91.25 Z"
+        fill={below ? "none" : C.white}
+        stroke={ink}
+        strokeWidth="3.5"
+        strokeLinejoin="round"
+      />
+      <path d="M 58 1.75 L 58 25 L 81.25 25" fill="none" stroke={ink} strokeWidth="3.5" strokeLinejoin="round" />
+      <line x1={12} y1={11} x2={41} y2={11} stroke={ink} strokeWidth="3.5" />
+      <line x1={12} y1={21} x2={30} y2={21} stroke={ink} strokeWidth="3.5" />
+      <circle cx={41.5} cy={61} r={22.75} fill="none" stroke={C.red} strokeWidth="3.5" />
+      <text x={41.5} y={73} textAnchor="middle" fontFamily="Georgia, serif" fontSize="33" fill={C.red}>
+        {glyph}
+      </text>
+    </svg>
+  );
+};
+
+// The four BELOW-band docs. cy = the ref's red-ring centroid, world y (at the
+// cruise sy=1 so world y == screen y). Frames before the reveal edge are
+// free — the doc is fully behind its tower — so only the visible keys are
+// measured; the leading keys just carry it up out of sight.
+const BELOW_DOCS: { cx: number; glyph: string; from: number; to: number; cy: (f: number) => number }[] = [
+  {
+    cx: 141.6, glyph: "$", from: 717, to: 735,
+    cy: lutS([
+      [718, 660], [722, 703], [724, 757], [725, 788.8], [726, 822.8], [727, 858.8], [728, 894.8],
+      [729, 932.8], [730, 970.6], [731, 1008.7], [732, 1047.7], [733, 1086], [735, 1166],
+    ]),
+  },
+  {
+    cx: 143.9, glyph: "€", from: 766, to: 782,
+    cy: lutS([
+      [767, 705], [771, 766], [772, 793], [773, 823.8], [774, 856.8], [775, 889.8], [776, 925.2],
+      [777, 960.9], [778, 997.4], [779, 1034.6], [780, 1072], [782, 1149],
+    ]),
+  },
+  {
+    cx: 750.1, glyph: "€", from: 817, to: 835,
+    cy: lutS([
+      [818, 638], [820, 657], [821, 677], [822, 700.5], [823, 727.5], [824, 758.6], [825, 790.8],
+      [826, 824.6], [827, 859.4], [828, 895.2], [829, 931.7], [830, 968.8], [831, 1006.7],
+      [832, 1045], [833, 1084], [835, 1163],
+    ]),
+  },
+  {
+    cx: 1341.6, glyph: "$", from: 869, to: 885,
+    cy: lutS([
+      [870, 700], [874, 762], [875, 790], [876, 822], [877, 856.8], [878, 889.8], [879, 925],
+      [880, 960.8], [881, 997.2], [882, 1034.5], [883, 1072], [885, 1149],
+    ]),
+  },
+];
 
 // ── traced skyline clusters (r3, per-tower tracing from ref f750/f900) ──
 // Above-world slots are 604x330 SVGs at world (center-230), y170; local
