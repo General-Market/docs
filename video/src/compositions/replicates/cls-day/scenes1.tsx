@@ -1013,8 +1013,25 @@ const S4X_PHASE: [number, number][] = [[656, 111], [660, 108], [662, 90], [664, 
 // f673's S4 labels are fully clipped (front = 0), so its h0 is cosmetic; f666-669's S5
 // labels sit ABOVE the frame (tick top = btop - 314·syp < 0) and are invisible — those
 // keys are back-extrapolated and unverifiable, and marked so.
+//
+// ── r18 — THE FRONT IS THE WORLD'S LEFT EDGE, AND THAT PINS THE UNVERIFIABLE KEYS ──
+// gen20 could read h5 off the ref's own labels only from f670 (before that the ABOVE
+// labels sit above the frame edge) and marked f666-669 "back-extrapolated and
+// unverifiable". They were also WRONG — and the tell is not a label, it is the FRONT.
+// Project the measured front through each frame's own lattice into world-local x:
+//   local(front) = (front − X0)/syp,  X0 = phase + (33 − h5)·pitch
+// and with h5 = 8 at f668 and 9 at f669 it comes out −4367 · −4363 · −4364 · −4368 ·
+// −4366 at f668/669/670/671/672 — the SAME world x, to three pixels, at every frame of
+// the whip. The incoming world is a finite panel and the front is its left edge. That
+// one invariant does three things at once: it CONFIRMS the measured h5 at f670-673, it
+// DERIVES h5 at f666-669 (6 · 7 · 8 · 9 — the old 8/9/9/10 put the front 300 world units
+// too far right, and drew a whole cluster into a strip the ref leaves empty: at f668 the
+// ref carries 402px of above-band ink there and we drew 2,383), and it says the city
+// has a LEFT END. See the slot table: it does.
+// The BELOW labels are readable from f668 and confirm it independently — the tick at
+// screen 1847 reads 01:00 (= h5 + k + 6, k = 11), which is h5 = 8, not 9.
 const S4X_H0: [number, number][] = [[656, 18], [662, 18], [664, 19], [666, 20], [667, 21], [668, 22], [669, 23], [670, 25], [671, 27], [672, 31], [673, 35]];
-const S4X_H5: [number, number][] = [[666, 8], [667, 9], [668, 9], [669, 10], [670, 11], [671, 13], [672, 17], [673, 21]];
+const S4X_H5: [number, number][] = [[666, 6], [667, 7], [668, 8], [669, 9], [670, 11], [671, 13], [672, 17], [673, 21]];
 const S4X_MARKX: [number, number][] = [[656, 961], [664, 961], [666, 900], [668, 835], [669, 745], [670, 640], [671, 480], [672, 270], [673, 40]];
 const S4X_FRONT: [number, number][] = [[666, 1980], [667, 1858], [668, 1770], [669, 1640], [670, 1434], [671, 1084], [672, 451], [673, 0]];
 
@@ -1031,6 +1048,15 @@ const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
   // one tick lattice, two hour readings: `h` is the S4 axis (below, left of the front),
   // `hs` the S5 world (above, right of it — and its own +6 mirror below).
   const ticks = Array.from({ length: 15 }, (_, k) => ({ x: phase + k * pitch, h: h0 + k, hs: h5 + k }));
+  // ── the incoming world's own frame ──
+  // The exit runs one CYCLE behind the cruise's i = 0..23: the tick at k carries the
+  // true index h5 + k − 24 (at f673 the ref reads 21:00..04:00, i.e. i = −3..4). Hour i
+  // sits at world-local (i − 9)·301.5 exactly as it does in the cruise, so the screen x
+  // of local 0 is X0 = phase + (33 − h5)·pitch, and 301.5·syp === pitch by construction:
+  // the world needs no fit of its own. It rides the tick lattice.
+  const X0 = phase + (33 - h5) * pitch;
+  const visLo = (front - X0) / syp;
+  const visHi = (1920 - X0) / syp;
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       {/* S5 world wiping in behind the front: white above, navy below */}
@@ -1038,49 +1064,45 @@ const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
         <>
           <div style={{ position: "absolute", left: front, top: 0, width: 1980 - front, height: btop, background: C.white }} />
           <div style={{ position: "absolute", left: front, top: btop + bh, width: 1980 - front, height: 1080 - btop - bh, background: C.navyBg }} />
-          {/* incoming S5 tick chains (above navy-on-white, below mirrored white).
-              ── gen20 — THE EXIT SWEEPS IN AN EMPTY WORLD, AND THE STAND-IN CITY LOST ──
-              The ref's front reveals a full SKYLINE behind it. We reveal bare white above
-              the band and bare navy below, and draw only the two chains. Measured at
-              f673, where the front has crossed the whole frame:
+          {/* ── r18 — THE EXIT SWEEPS IN A CITY, AND NOW IT SWEEPS IN THE RIGHT ONE ──
+              gen20 measured the hole and could not fill it. At f673, where the front has
+              crossed the whole frame:
                           above-band ink    RED ink     below-band white
                 ref            41,795       42,787          20,589
                 ours            7,438            0           7,124
-              A whole city, absent, on the frame that scores .8657. So I built it: the
-              world rides the SAME lattice as the ticks and needs no fit of its own — hour
-              i sits at local (i-9)*301.5, the tick at k carries the true index h5 + k - 24
-              (the exit runs one cycle BEHIND S5's i=0..23: at f673 the ref reads
-              21:00..04:00, i.e. i = -3..4), screen x of local L is X0 + L*syp with
-              X0 = phase + (33 - h5)*pitch, and world y maps straight through the band,
-              screen y = btop + (worldY - 490)*syp. One scale wrapper, no new numbers.
-              It came out REGISTERED — cross-correlation of the ink profile puts it within
-              1-3px of the ref above AND below — and with the ink mass closed to within
-              11% (7,438 -> 37,024 above; 0 -> 37,442 red). AND IT LOST AT EVERY FRAME:
-                f668 .8817 -> .8772 · f670 .8661 -> .8567 · f671 .8712 -> .8607
-                f672 .8877 -> .8618 · f673 .8657 -> .8322  (-.034)
-              Because the DESIGNS are wrong. The cruise only ever shows hours 09-15, so
-              ClA/ClB/ClC/ClG are the only clusters anyone has ever traced; the exit shows
-              hours 21-05, which are OTHER buildings, and the left tiles just cycle the
-              four we have on a 4-slot period. Profile correlation tops out at 0.56.
-              Right slot, right mass, WRONG SHAPE — and SSIM punishes wrong structure on a
-              white ground harder than it punishes none. Lesson 4, a fifth time: misplaced
-              ink loses to absent ink, and a stand-in is misplaced ink.
-              THE FIX IS TRACED ART, NOT A BETTER FORMULA. ref f673 shows hours 21:00-04:00
-              across one frame with the whole skyline visible — trace those four above
-              clusters and four below clusters there, hang them on CITY_ABOVE/CITY_BELOW at
-              local -2798/-2194/-1590/-986 (and -3107/-2503/-1899/-1295), and the mount
-              above becomes a win. The mount is 20 lines and is recorded in this comment;
-              do not re-derive it. Do NOT re-mount it against cycled stand-ins. */}
+              A whole city, absent, on the frame that scores .8657 — the largest absent-
+              content area on the track. gen20 mounted one and it LOST at every frame
+              (−.034 at f673), because the tiles cycled the four cruise designs on a
+              4-slot period. The period is SIX (see the slot table): the exit shows hours
+              21-05, and three of those slots are buildings the cruise never shows.
+              With the six real designs the mount is the same twenty lines gen20 wrote —
+              and the world needs no fit of its own, it rides the tick lattice.
+              PAINT ORDER MATTERS AND IS THE REF'S: the below chain goes UNDER the city
+              (the below clusters are outline-only and let it through), the above chain
+              goes OVER it (gen18 — the white-filled tower bodies swallow whole ticks
+              otherwise). Same order as the cruise. */}
           <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, clipPath: `inset(0 0 0 ${front}px)` }}>
+            {/* below chain — under the city */}
             {ticks.map(({ x, h, hs }) => (
-              <React.Fragment key={h}>
-                <div style={{ position: "absolute", left: x, top: btop - 310 * syp, width: 3, height: 310 * syp, background: C.navyDeep }} />
-                <div style={{ position: "absolute", left: x + 16 * syp, top: btop - 314 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: C.navyDeep }}>
-                  {String(((hs % 24) + 24) % 24).padStart(2, "0")}:00
-                </div>
+              <React.Fragment key={`b${h}`}>
                 <div style={{ position: "absolute", left: x, top: btop + bh, width: 3, height: 308 * syp, background: "#FDFDFD" }} />
                 <div style={{ position: "absolute", left: x + 19 * syp, top: btop + bh + 292 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: "#FDFDFD" }}>
-                  {String(((hs + 6) % 24 + 24) % 24).padStart(2, "0")}:00
+                  {String((((hs + 6) % 24) + 24) % 24).padStart(2, "0")}:00
+                </div>
+              </React.Fragment>
+            ))}
+            {/* the city — world coords, scaled onto the incoming lattice. World (L, wy)
+                lands at screen (X0 + L·syp, btop + (wy − 490)·syp). */}
+            <div style={{ position: "absolute", left: X0, top: btop, width: 1, height: 1, transform: `scale(${syp})`, transformOrigin: "0 0" }}>
+              <CityRow slots={tiles(CITY_ABOVE, visLo, visHi)} top={170 - 490} />
+              <CityRow slots={tiles(CITY_BELOW, visLo, visHi)} top={570 - 490} />
+            </div>
+            {/* above chain — over the city */}
+            {ticks.map(({ x, h, hs }) => (
+              <React.Fragment key={`a${h}`}>
+                <div style={{ position: "absolute", left: x, top: btop - 310 * syp, width: 3, height: 310 * syp, background: C.navyDeep }} />
+                <div style={{ position: "absolute", left: x + 16 * syp, top: btop - 314 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: C.navyDeep }}>
+                  {String((((hs % 24) + 24) % 24)).toString().padStart(2, "0")}:00
                 </div>
               </React.Fragment>
             ))}
@@ -1266,6 +1288,9 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
     [936, 32], [938, 4], [940, 0],
   ])(frame);
   const frontLocal = 960 + (front5 - 960) / sx - x9;
+  // what the camera can see, in world-local x (the city tiles off this)
+  const visLo = 960 - 960 / sx - x9;
+  const visHi = 960 + 960 / sx - x9;
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white }}>
       <div
@@ -1344,23 +1369,14 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
                 <rect x={1287} y={576} width={117} height={285} />
               </g>
             </svg>
-            {/* distinct traced clusters (ref f750/f900), world-fixed — CITY_ABOVE /
-                CITY_BELOW, the one table the S4 exit reads too.
-                Above: A@-152 B@452 C@1060 G@1657 (center world x, slot 604).
-                Below: E@-691* D@-88 E@519 F@1115 D@1721 (slot left x, *edge reuse).
-                ref: the 21:00 zone (world 1721+) is EMPTY — no cluster there. */}
-            <CityRow slots={CITY_ABOVE} top={170} />
-            <CityRow slots={CITY_BELOW} top={bandY + bandH - 5} />
-            {/* entry-whip left tiles (visible only f674..~690).
-                gen20: the x9 correction pushes the world 302 units RIGHT at f674, so
-                the visible local range opens to [-2659, -396] and three tiles left
-                ~400px of BARE WHITE down the left edge. Four cover it. */}
-            {frame < 692 && (
-              <>
-                <CityRow slots={leftAbove(4)} top={170} />
-                <CityRow slots={leftBelow(4)} top={bandY + bandH - 5} />
-              </>
-            )}
+            {/* the city — ONE periodic law, six designs, 12-hour period, tiled to
+                whatever the camera can actually see. The old code carried a settled
+                4-slot table plus a hand-cranked `leftAbove(4)/leftBelow(4)` behind a
+                `frame < 692` guard, which is how the entry came to draw the wrong
+                buildings: the tiles were in the right SLOTS (the 604 pitch is right)
+                and carried the wrong DESIGNS. `tiles()` derives both from the world. */}
+            <CityRow slots={tiles(CITY_ABOVE, visLo, visHi)} top={170} />
+            <CityRow slots={tiles(CITY_BELOW, visLo, visHi)} top={bandY + bandH - 5} />
           </div>
           {/* gen18 — the ABOVE-band hour chain draws OVER the skyline. We had it
               under: the white-filled tower bodies swallowed whole ticks (probe:
@@ -1926,24 +1942,121 @@ const ClF: React.FC = () => (
   </svg>
 );
 
+// 16:30 (=04:30) — twin round-turret block; navy slab-tower left, small navy right.
+// POTRACED off ref f675, slot -1587 (work/…/r18-scenes1/trace.py). Not hand-drawn:
+// law 19 — a trace of the ref's own vector art is soft exactly as the ref is soft and
+// sits AT the SSIM ceiling; a hand redraw lands ~1px off on every stroke.
+const ClX: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill="#DCDCDC" d="M176 114 c0 -24 1 -34 1 -22 0 12 0 32 0 44 0 12 -1 2 -1 -22z M259 101 c0 -17 1 -24 1 -15 0 8 0 22 0 30 0 9 -1 2 -1 -15z M105 106 c0 -14 1 -19 1 -12 0 7 0 17 0 24 0 6 -1 1 -1 -12z M311 49 c0 -17 1 -24 1 -15 0 8 0 22 0 30 0 9 -1 2 -1 -15z M388 72 l0 -1 19 0 c24 0 24 1 -1 1 l-18 1 0 -1z M259 44 c0 -12 1 -17 1 -11 0 6 0 16 0 22 0 6 -1 1 -1 -11z" />
+      <path fill={NAVY} d="M139 139 l0 -5 -5 0 -5 0 0 -4 0 -4 -11 0 -11 0 0 -1 c-1 -1 -1 -12 -1 -24 l0 -22 -10 -1 -11 0 0 -2 0 -1 11 0 10 0 0 -32 0 -33 2 0 2 0 0 56 0 56 18 0 19 0 0 -18 0 -18 2 0 1 0 0 20 0 20 -1 0 c0 0 -1 2 -1 4 l0 4 -3 0 -3 0 0 5 0 5 -1 0 -2 0 0 -5z m6 -11 l0 -2 -7 0 -6 0 0 3 0 2 6 0 6 0 1 -3z M123 115 l0 -2 7 0 6 0 0 2 0 1 -6 0 -7 0 0 -1z M123 106 l0 -2 7 0 6 0 0 2 0 1 -6 0 -7 0 0 -1z M319 96 l0 -10 1 0 2 0 0 8 1 8 13 0 14 0 2 -3 2 -2 0 -44 0 -43 2 0 2 0 0 29 0 28 10 0 9 0 0 2 0 1 -9 0 -10 0 0 3 0 3 10 0 9 0 0 2 0 1 -9 0 -10 0 0 9 -1 10 -1 2 c-1 2 -3 4 -5 4 l-2 1 -15 0 -15 0 0 -9z M123 96 l1 -1 6 -1 6 0 0 1 0 2 -7 0 -6 0 0 -1z M343 95 c0 0 0 -2 0 -3 l-1 -3 2 0 2 0 0 3 0 3 -1 0 c-1 0 -2 0 -2 0z M123 87 l1 -1 6 0 5 0 1 1 0 1 -6 0 -7 0 0 -1z M343 77 l0 -3 2 0 1 0 0 3 0 3 -1 0 -2 1 0 -4z M408 79 l-22 0 0 -2 0 -1 21 0 21 0 0 -3 0 -2 -21 -1 -21 0 0 -2 0 -1 21 0 21 0 0 -28 0 -29 2 0 1 0 0 35 c0 19 0 35 0 35 0 0 -11 -1 -23 -1z M124 78 c-1 0 -1 -1 -1 -2 l0 -1 5 0 4 0 0 2 0 2 -4 0 c-2 0 -4 0 -4 -1z M50 77 c-1 -1 -5 -4 -7 -6 l-5 -5 -1 -4 -1 -5 0 -24 0 -23 2 0 2 1 0 26 1 26 1 2 c1 2 6 7 10 8 l3 2 10 0 11 0 0 2 0 1 -11 0 -11 0 -4 -1z M123 68 l0 -2 5 0 4 0 0 2 0 1 -4 0 -5 0 0 -1z M124 59 c-1 0 -1 -1 -1 -2 l0 -1 5 0 4 0 0 2 0 2 -4 0 c-2 0 -4 0 -4 -1z M79 4 l0 -4 2 0 1 0 0 4 0 4 -1 0 -2 0 0 -4z M380 4 l0 -4 2 0 1 0 0 4 0 4 -1 0 -2 0 0 -4z" />
+      <path fill={C.red} d="M186 200 c-1 -1 -3 -3 -3 -4 -1 -1 -2 -25 -2 -32 l0 -2 -2 0 -1 0 0 -43 c0 -23 0 -44 0 -46 l-1 -3 -6 0 -6 1 -1 7 0 7 -15 0 c-8 -1 -15 -1 -15 -1 l-1 0 0 -37 0 -37 2 0 1 0 0 36 0 35 6 0 5 0 0 -23 0 -24 1 0 2 0 0 23 1 24 5 0 5 0 0 -36 0 -35 2 0 1 0 0 28 0 28 7 0 7 0 0 -28 0 -28 1 0 2 0 0 74 0 74 12 0 12 0 0 -74 0 -74 2 0 2 0 0 28 0 28 25 0 c13 0 24 0 25 0 l1 0 0 -28 0 -28 2 0 2 0 0 74 0 74 13 0 12 0 0 -73 c0 -41 0 -74 0 -74 0 -1 1 -1 1 -1 l2 0 0 28 0 28 7 0 6 0 0 -28 0 -28 1 0 2 0 0 2 c1 1 1 17 1 35 0 17 0 32 0 33 l0 1 5 0 5 0 0 -22 0 -23 1 0 2 0 0 22 1 23 5 0 5 0 0 -36 0 -35 1 0 2 0 0 3 c1 2 1 19 1 38 l0 34 -13 0 c-7 0 -14 0 -16 -1 l-3 0 0 -7 0 -6 -6 0 -6 0 -1 45 0 46 -2 0 -2 1 0 14 0 15 -1 3 c-1 2 -3 4 -4 5 l-3 2 -3 0 c-5 0 -9 -2 -10 -5 l-2 -3 0 -15 0 -16 -2 -1 -2 0 0 -4 c0 -2 0 -5 0 -6 l0 -3 -26 -1 -26 0 0 7 0 7 -2 0 -2 1 -1 14 c0 7 0 15 0 16 l0 2 -3 4 -4 3 -4 0 -3 0 -4 -2z m11 -3 l3 -1 1 -4 c0 -3 0 -10 0 -17 l0 -12 -8 0 -7 0 -1 14 c0 8 0 16 0 17 l1 2 3 2 c4 1 4 1 8 -1z m84 0 c1 0 2 -2 3 -4 l1 -3 0 -12 c0 -6 0 -13 -1 -14 l0 -2 -8 0 -7 1 -1 14 0 15 1 2 c1 1 3 3 4 4 l2 1 3 -1 c1 0 3 0 3 -1z m-21 -90 l0 -37 -3 0 -2 1 -1 22 0 23 -1 0 -1 -1 -1 -22 0 -22 -8 0 -7 0 0 22 c0 13 0 23 -1 23 0 0 -1 0 -1 -1 l-2 0 0 -23 0 -22 -7 0 -7 0 0 23 0 23 -2 0 -2 0 0 -23 0 -23 -2 0 -3 0 0 37 0 37 26 0 25 0 0 -37z M191 142 l1 -4 1 0 2 0 0 4 0 5 -2 0 -2 0 0 -5z M274 142 l0 -5 2 0 2 0 0 5 0 5 -2 0 -2 0 0 -5z M191 120 l0 -5 2 0 2 0 0 5 0 4 -2 1 -2 0 0 -5z M274 120 l0 -5 2 0 2 0 0 5 0 5 -2 0 -2 0 0 -5z M191 96 l0 -5 2 0 2 0 0 5 0 5 -2 0 -2 0 0 -5z M274 96 l0 -5 2 0 2 0 0 5 0 5 -2 0 -2 0 0 -5z M191 79 c0 -1 0 -4 0 -6 l1 -3 1 0 2 0 0 4 0 5 -2 0 -1 1 -1 -1z M274 75 l0 -5 2 0 2 0 0 5 0 4 -2 0 -2 0 0 -4z M219 19 c1 -2 1 -5 1 -6 l0 -3 2 0 1 0 0 5 0 4 5 0 4 0 0 -4 0 -5 1 0 2 0 0 5 1 5 2 0 c1 0 3 0 5 0 l2 -1 0 -5 0 -4 2 0 1 0 0 7 0 6 -15 0 -14 0 0 -4z" />
+    </g>
+  </svg>
+);
+
+// 18:30 (=06:30) — trapezoid-cap tower over a ladder shaft; navy rail-block left, navy gantry right.
+// POTRACED off ref f677, slot -984 (work/…/r18-scenes1/trace.py). Not hand-drawn:
+// law 19 — a trace of the ref's own vector art is soft exactly as the ref is soft and
+// sits AT the SSIM ceiling; a hand redraw lands ~1px off on every stroke.
+const ClY: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill="#DCDCDC" d="M169 198 l0 -43 -1 0 -1 -1 1 0 c2 0 2 1 2 45 l-1 42 0 -43z M169 79 c0 -18 0 -40 0 -50 0 -10 1 5 1 33 l0 50 -1 0 0 0 0 -33z M283 70 l-1 0 0 -18 0 -17 9 0 8 0 0 18 0 18 -7 0 c-4 0 -8 0 -9 -1z M283 27 l-1 0 0 -8 0 -8 9 0 8 0 0 9 0 8 -7 0 c-4 0 -8 0 -9 -1z" />
+      <path fill={NAVY} d="M120 153 l-3 -1 -3 -4 -3 -3 0 -14 0 -14 -1 -1 c-1 0 -2 0 -3 0 l-2 0 -1 -21 0 -21 -9 -1 -10 0 0 -2 0 -2 9 0 10 0 0 -29 0 -30 2 0 2 0 0 51 -1 51 20 0 21 0 0 -51 0 -51 2 0 2 0 0 51 0 51 9 0 9 0 0 1 c0 2 -2 3 -7 3 l-4 0 0 9 1 9 -2 0 -2 0 0 -9 0 -9 -7 0 -6 1 0 8 0 9 -2 0 c-1 0 -2 0 -2 -1 0 0 0 -4 0 -9 l0 -8 -6 0 -7 0 0 9 0 9 -1 0 -2 0 0 -9 0 -9 -4 0 -5 0 0 14 0 13 3 4 4 3 24 0 25 0 0 2 0 2 -23 0 -23 0 -4 -1z M336 113 l0 -37 -28 -1 -28 0 0 -2 0 -1 28 0 27 0 0 -18 c0 -11 0 -19 0 -20 0 0 -12 0 -27 0 l-27 0 -1 -2 0 -2 28 0 27 0 0 -10 0 -10 2 0 2 0 0 35 1 36 18 -1 19 0 0 2 0 1 -6 0 -6 1 -1 4 0 5 6 0 7 0 0 1 0 2 -19 0 -18 1 -1 4 0 5 19 0 19 0 0 2 0 2 -6 0 -7 0 0 5 0 4 7 0 6 0 0 1 0 2 -19 0 -18 1 0 12 0 12 18 0 19 0 0 2 0 1 -20 0 -21 0 0 -37z m12 2 l0 -5 -4 0 -5 0 0 5 0 4 5 0 4 0 0 -4z m13 0 l0 -5 -5 0 -5 0 0 5 0 4 5 0 5 0 0 -4z m-13 -27 l0 -4 -4 0 -4 0 -1 4 0 5 5 0 4 0 0 -5z m13 0 l0 -4 -5 0 -4 0 -1 4 0 5 5 0 5 0 0 -5z M386 149 l0 -2 3 0 2 0 0 -12 0 -12 -3 0 -2 0 0 -2 0 -2 3 0 2 0 0 -4 0 -5 -3 0 -2 0 0 -2 1 -1 2 0 2 0 0 -6 0 -5 -2 0 -3 0 0 -1 0 -2 3 0 2 0 0 -5 0 -5 -2 0 -3 0 0 -1 0 -2 2 1 3 0 0 -35 1 -35 1 -1 2 0 0 70 0 70 -5 0 -4 0 0 -1z M118 104 l-3 0 0 -3 c-1 -2 0 -4 2 -4 l1 0 0 2 0 2 9 0 10 0 0 -2 1 -2 1 1 2 0 0 3 0 3 -10 0 c-6 0 -12 0 -13 0z M115 89 c0 0 0 -2 -1 -4 l0 -4 2 0 2 0 0 2 0 2 10 0 9 0 1 -2 c0 -1 1 -2 2 -2 l1 0 0 4 0 4 -13 0 c-7 0 -13 0 -13 0z M43 72 c0 0 0 -14 0 -31 l1 -30 1 0 1 0 0 29 0 29 15 0 15 0 0 2 0 2 -16 0 c-9 0 -17 0 -17 -1z M114 70 l0 -4 2 0 2 -1 0 2 0 3 9 -1 10 0 0 -2 0 -1 2 0 2 0 0 3 0 4 -14 0 -13 0 0 -3z M114 53 l1 -3 1 -1 2 0 0 2 0 3 9 0 c9 0 11 -1 11 -3 l0 -1 1 0 2 0 0 3 0 4 -13 0 -14 0 0 -4z M79 4 l0 -4 2 0 1 0 0 4 0 4 -1 0 -2 0 0 -4z M380 4 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z" />
+      <path fill={C.red} d="M203 276 c-1 -3 -3 -7 -4 -9 -2 -6 -2 -6 -12 -6 l-8 0 0 -7 0 -7 -5 -1 -4 0 0 -118 c0 -65 0 -118 1 -118 0 -1 1 -1 2 0 l1 0 0 116 0 117 51 -1 51 0 0 -116 0 -115 1 -1 c1 -1 2 -1 2 0 l1 0 0 118 0 118 -3 0 c-2 0 -5 0 -5 1 l-2 0 0 7 0 7 -8 0 -8 1 -5 10 -4 10 -19 0 -20 0 -3 -6z m39 2 l2 0 0 -2 c0 -2 0 -3 1 -3 0 -1 1 -2 2 -4 0 -2 1 -4 1 -5 l1 -2 -23 0 -24 0 0 1 c0 0 2 4 3 8 l4 8 16 0 c9 0 17 0 17 -1z m25 -26 l0 -5 -1 0 c-1 0 -20 0 -42 0 l-41 0 0 5 0 6 42 0 42 -1 0 -5z M210 216 c0 -1 0 -3 0 -3 -1 -1 -1 -2 -1 -3 l0 -2 -1 0 c-2 0 -2 -2 0 -3 l1 -1 0 -10 1 -11 -1 -1 -1 -1 -10 0 -10 0 0 -1 1 -1 10 -1 10 0 1 -3 c0 -1 0 -3 0 -3 l-1 -2 -10 0 -11 0 0 -2 1 -1 10 -1 11 0 0 -2 c0 -1 0 -3 -1 -5 l0 -3 -10 0 -10 0 0 -2 0 -1 9 -1 10 0 1 -1 1 -1 0 -2 -1 -3 -10 0 -10 0 0 -1 c0 -2 0 -2 10 -2 l8 0 1 -1 2 -1 -1 -65 0 -65 2 0 2 0 0 6 0 6 5 0 5 0 0 -6 0 -6 2 0 2 0 0 6 0 6 6 0 5 0 0 -6 0 -7 2 0 2 1 0 66 0 66 8 -1 c4 0 9 0 11 0 l2 1 0 2 0 1 -10 0 -11 0 0 4 0 4 10 0 10 0 1 1 0 2 -10 0 -11 0 0 5 0 6 8 -1 c4 0 9 0 11 0 l2 1 0 2 0 1 -10 0 -11 0 0 4 0 4 11 0 10 0 0 2 0 1 -10 0 -11 0 0 12 0 12 1 0 c1 0 1 1 1 2 0 0 0 1 -1 1 l-1 0 0 4 0 5 -2 0 c0 1 -8 1 -16 1 l-14 0 0 -2z m28 -5 l0 -3 -12 0 -13 0 0 3 0 3 13 0 12 0 0 -3z m0 -96 l0 -89 -12 0 -13 0 0 89 c0 49 0 89 0 89 1 0 6 1 13 1 l12 0 0 -90z M216 195 c0 -1 0 -5 0 -9 l1 -7 2 -1 c1 0 5 0 9 0 l7 0 0 9 0 9 -9 0 -9 0 -1 -1z M217 169 c-1 -3 -1 -13 0 -15 l0 -2 9 0 9 0 0 9 0 9 -9 0 -9 1 0 -2z m14 -8 l0 -4 -5 0 -5 0 -1 4 0 5 6 0 5 0 0 -5z M216 143 c0 -2 0 -5 0 -9 l1 -6 9 -1 9 0 0 9 0 9 -9 0 -9 0 -1 -2z M216 114 c0 -4 0 -8 1 -9 l0 -2 9 0 9 0 0 9 0 9 -9 0 -10 0 0 -7z m15 -2 l0 -5 -5 0 -5 0 0 5 0 5 5 0 5 0 0 -5z M217 96 c-1 0 -1 -4 -1 -9 l0 -8 10 0 9 0 0 9 0 9 -9 0 c-5 0 -9 0 -9 -1z m14 -8 l0 -5 -5 0 -5 0 0 2 c0 1 0 4 0 5 l0 3 5 0 5 0 0 -5z" />
+    </g>
+  </svg>
+);
+
+// 07:30 — hanging dot-grid tower over a nested-frame base.
+// POTRACED off ref f679, slot -691 (work/…/r18-scenes1/trace.py). Not hand-drawn:
+// law 19 — a trace of the ref's own vector art is soft exactly as the ref is soft and
+// sits AT the SSIM ceiling; a hand redraw lands ~1px off on every stroke.
+const ClH: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M14 266 l0 -56 20 0 21 0 3 2 3 2 3 3 2 3 0 19 0 19 9 0 9 0 0 2 0 2 -9 0 -9 0 0 21 0 21 9 0 9 0 0 2 0 2 -9 0 -9 0 0 7 0 6 -2 0 -2 0 0 -50 0 -51 -3 -2 -2 -3 -19 0 -19 0 -1 53 0 53 -2 0 -2 0 0 -55z M114 315 l0 -7 -10 0 -11 0 0 -2 0 -2 11 0 10 0 0 -21 0 -21 -10 0 -11 0 0 -2 0 -2 11 0 11 0 -1 -41 0 -42 33 0 33 0 0 9 0 10 -2 0 -2 1 0 -8 0 -8 -29 0 -29 0 0 13 0 13 29 0 28 0 0 2 0 3 -14 0 -14 0 0 5 0 5 14 0 14 0 0 1 0 2 -28 0 -28 1 -1 5 0 5 28 0 29 0 0 2 0 3 -14 0 -14 0 -1 4 0 5 14 0 15 0 0 2 0 3 -20 0 c-11 0 -23 0 -28 0 l-9 0 0 34 0 34 -2 0 -2 0 0 -6z m13 -72 l0 -5 -2 0 c0 1 -2 1 -4 1 l-3 0 0 5 0 4 5 0 4 0 0 -5z m15 0 l0 -4 -5 0 -4 0 -1 4 0 5 5 0 5 0 0 -5z m-15 -29 l0 -5 -4 0 -4 1 -1 3 c0 2 0 5 0 6 l1 1 4 0 4 0 0 -6z m15 1 l0 -5 -5 0 c-5 -1 -5 -1 -5 4 l-1 3 2 1 1 2 4 0 4 0 0 -5z M361 252 l0 -69 -25 0 -26 0 0 11 0 11 -1 -3 c-1 -1 -2 -2 -2 -2 l-1 0 0 -10 0 -11 2 0 1 0 0 -6 0 -6 4 0 4 0 0 -6 0 -6 2 0 2 0 0 6 0 6 7 0 6 0 0 6 0 6 16 0 16 0 0 71 0 71 -2 0 -3 0 0 -69z m-31 -76 c0 -2 0 -4 -1 -4 l-1 -1 -7 0 -8 1 0 3 c0 4 1 4 9 4 l8 0 0 -3z M47 277 l0 -5 -8 -1 -8 0 0 -2 0 -1 10 0 10 0 0 7 0 8 -2 0 -2 0 0 -6z M325 267 l0 -2 8 0 8 0 0 2 0 2 -8 0 -9 0 1 -2z M325 255 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M47 248 l0 -6 -8 0 -8 0 0 -2 0 -3 10 0 10 0 0 8 0 8 -2 0 -2 0 0 -5z M325 243 l0 -2 2 0 c0 -1 4 -1 8 -1 l6 0 0 3 0 2 -8 0 -8 0 0 -2z M325 229 l1 -2 7 0 8 0 0 2 0 2 -9 0 -8 0 1 -2z M325 218 l-1 -2 9 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M333 207 l-8 0 0 -2 0 -2 8 0 8 0 0 3 c0 1 0 2 0 2 0 0 -4 -1 -8 -1z M325 193 l-1 -2 9 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z" />
+      <path fill={C.red} d="M176 259 l0 -64 2 0 c1 0 4 0 6 0 l5 -1 0 -58 c0 -32 1 -59 1 -59 0 0 2 0 5 0 l4 0 0 -3 0 -3 -2 0 c0 -1 -3 -1 -5 -1 l-3 0 0 -12 0 -12 25 0 24 0 0 -6 0 -5 2 0 2 1 0 5 0 5 3 0 3 0 0 -5 0 -5 2 0 c0 -1 1 -1 2 -1 0 0 0 2 0 6 l0 5 23 0 23 0 0 12 0 12 -3 0 c-2 0 -4 0 -6 1 l-2 0 1 3 0 3 6 0 5 0 0 60 0 59 2 0 2 0 0 2 c1 1 1 1 2 1 0 -1 2 1 3 4 l3 5 0 54 c0 29 0 55 -1 57 l0 4 -2 0 -2 0 0 -59 0 -59 -3 -2 -3 -3 -60 0 -59 0 0 62 0 61 -2 0 -3 0 0 -64z m118 -64 l1 -1 0 -56 0 -55 -1 0 c0 -1 -23 -1 -50 -1 l-49 0 0 1 c-1 0 -1 26 -1 56 l1 55 5 1 5 0 0 -45 0 -46 2 0 c0 -1 18 -1 38 -1 l36 0 0 46 0 46 5 0 c3 0 6 1 6 1 0 0 1 -1 2 -1z m-76 -1 l1 0 0 -39 0 -39 11 0 10 0 0 39 0 39 3 0 3 0 0 -39 0 -39 10 0 11 0 1 2 c0 2 0 19 0 39 l0 37 4 0 5 0 0 -43 0 -43 -33 0 -33 0 0 43 0 42 0 1 c1 0 3 1 7 0z m18 -9 l0 -8 -6 0 -6 1 0 8 0 8 5 0 c3 0 6 0 6 0 1 0 1 -4 1 -9z m27 1 l0 -8 -6 0 -6 0 -1 8 0 8 7 0 6 0 0 -8z m-27 -28 l0 -15 -6 -1 -6 0 0 2 c0 1 0 8 0 15 l0 14 6 0 6 0 0 -15z m27 13 c0 -1 0 -8 0 -15 l0 -13 -6 0 -6 0 -1 13 c0 8 0 15 0 16 l1 1 5 0 6 0 1 -2z m-27 -42 l0 -8 -6 -1 -6 0 0 5 c-1 3 -1 7 -1 9 1 1 1 3 1 3 0 1 3 1 6 1 l6 0 0 -9z m47 -55 l0 -3 -40 0 -40 0 0 3 0 3 40 0 40 0 0 -3z m10 -16 l0 -7 -48 0 c-27 0 -50 0 -50 1 l-2 0 0 7 0 6 50 0 50 0 0 -7z M225 315 l1 -8 17 0 18 0 1 2 c0 1 0 5 -1 8 l0 6 -2 0 -2 0 -1 -4 c0 -2 0 -5 0 -6 l0 -2 -5 0 -5 0 0 6 0 6 -2 0 -2 0 0 -4 c0 -3 0 -6 -1 -6 l0 -2 -6 0 -5 0 0 6 0 6 -3 0 -2 0 0 -8z M198 285 l-1 0 0 -7 0 -6 2 0 2 0 0 7 c0 7 0 7 -3 6z M220 284 c-1 0 -1 -4 -1 -7 l0 -5 2 0 3 0 0 5 c-1 3 -1 6 -1 7 l0 2 -1 0 c-1 0 -2 -1 -2 -2z M241 285 l-1 -1 0 -5 0 -4 1 -2 c1 0 3 -1 3 -1 l2 0 -1 6 c0 8 -1 10 -4 7z M264 285 c-1 -1 -2 -8 -2 -11 l1 -2 2 0 2 0 0 6 c0 7 -1 8 -3 7z M285 279 l0 -7 2 0 2 0 0 7 0 7 -2 0 -2 0 0 -7z M197 251 l0 -5 1 -2 c3 -2 3 -1 3 6 l0 7 -2 0 -2 0 0 -6z M219 251 c0 -6 0 -7 3 -6 l2 0 0 3 c0 2 0 4 -1 6 l0 3 -2 0 -2 0 0 -6z M241 256 l-1 -2 0 -4 0 -5 2 -1 2 -1 0 2 c1 0 1 4 1 7 l0 5 -1 0 c-1 0 -2 -1 -3 -1z M263 255 c-1 0 -1 -3 -1 -5 l0 -5 2 -1 2 -1 0 2 c1 0 1 4 1 7 l0 5 -2 0 -2 0 0 -2z M285 251 c0 -6 0 -7 3 -6 l1 0 0 6 0 6 -2 0 -2 0 0 -6z M220 228 c-1 0 -1 -3 -1 -6 l0 -6 2 0 3 1 0 5 0 6 -2 1 c-1 0 -2 0 -2 -1z M241 228 l-1 0 0 -6 0 -6 3 0 2 0 0 6 0 6 -1 1 c-1 0 -2 0 -3 -1z M264 228 l-2 0 0 -6 1 -5 1 -1 c2 -1 3 0 3 6 0 6 0 7 -3 6z M285 223 l0 -7 2 0 2 0 0 6 0 6 -2 0 c0 1 -1 1 -2 1 0 0 0 -3 0 -6z M197 222 l0 -6 2 0 2 0 0 6 0 6 -2 0 -2 0 0 -6z" />
+    </g>
+  </svg>
+);
+
+// 15:30 — hanging rail stack with a solid red bar and a comb foot.
+// POTRACED off ref f675, slot -1897 (work/…/r18-scenes1/trace.py). Not hand-drawn:
+// law 19 — a trace of the ref's own vector art is soft exactly as the ref is soft and
+// sits AT the SSIM ceiling; a hand redraw lands ~1px off on every stroke.
+const ClW: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M15 276 l0 -45 35 0 34 0 0 2 0 2 -31 0 c-17 0 -32 0 -33 0 l-1 0 0 4 0 4 33 0 32 0 0 2 0 2 -32 0 -33 0 0 37 0 37 -2 0 -2 0 0 -45z M104 298 l0 -23 -2 0 -3 0 0 -2 0 -2 3 0 2 0 0 -12 0 -12 -5 0 -6 0 0 -2 0 -2 6 0 5 0 0 -4 0 -4 -5 0 -6 0 0 -2 0 -2 5 0 6 0 0 -13 1 -12 1 -3 c1 -1 3 -3 4 -4 l4 -2 21 0 21 0 0 2 0 2 -21 0 -21 0 -3 3 -3 3 0 32 0 32 24 0 24 0 0 2 0 2 -24 0 -24 0 0 23 0 23 -2 0 -2 0 0 -23z M373 249 l0 -72 -25 0 -26 0 0 4 0 4 -2 0 -2 0 0 -6 0 -6 2 0 1 0 0 -5 0 -6 4 0 4 0 0 -6 1 -6 1 -1 2 0 0 6 0 7 6 0 7 0 0 5 0 6 15 0 16 0 0 31 0 31 5 0 4 0 0 2 0 2 -4 0 -4 0 0 41 0 41 -2 0 -3 0 0 -72z m-31 -80 l0 -3 -8 0 -9 0 0 4 0 3 8 0 9 0 0 -4z M463 292 l0 -29 -1 -5 -2 -5 -4 -4 -3 -5 -5 -2 -4 -2 -25 -1 -24 0 0 -2 0 -2 24 0 25 1 5 2 c6 3 10 7 14 13 l3 5 0 32 0 33 -1 0 -2 0 0 -29z M344 263 l-8 0 1 -2 0 -1 8 0 8 0 0 2 c0 1 0 2 0 2 0 0 -4 -1 -9 -1z M337 249 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M337 237 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M118 235 c0 0 -1 -1 0 -2 0 -1 0 -3 0 -4 l0 -2 2 0 1 0 0 5 0 4 -1 0 c-1 0 -2 0 -2 -1z M132 232 l1 -4 1 -1 2 0 0 4 0 5 -2 0 -2 0 0 -4z M147 232 c0 -2 0 -4 0 -4 1 0 2 0 2 -1 l2 0 0 4 0 5 -2 0 -2 0 0 -4z M337 225 c0 -2 2 -3 10 -3 l6 0 0 2 0 2 -8 0 -8 0 0 -1z M118 217 c0 -1 0 -3 0 -4 l0 -4 2 0 1 0 0 4 0 4 -1 0 c-1 0 -2 0 -2 0z M132 213 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M147 213 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M337 212 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M337 200 l-1 -2 9 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M345 189 l-8 0 0 -1 0 -2 8 0 8 0 0 2 c0 1 0 2 0 2 0 0 -4 -1 -8 -1z" />
+      <path fill={C.red} d="M157 255 l0 -69 3 0 c2 0 7 0 12 0 l9 0 0 -1 c1 0 1 -29 1 -64 l1 -63 0 -2 1 -2 2 0 c1 0 2 0 2 -1 0 -1 2 -3 5 -5 l3 -1 21 0 22 0 0 -7 c0 -4 0 -8 1 -9 l0 -2 19 0 18 0 0 -6 0 -7 2 0 2 0 0 7 0 6 3 0 4 0 0 9 0 9 6 0 6 0 0 3 c0 1 0 32 0 68 0 35 0 65 1 66 l0 2 11 0 10 0 0 69 0 68 -2 0 -2 0 0 -66 0 -66 -7 0 c-4 -1 -11 -1 -15 -1 l-7 1 -1 66 0 66 -2 0 -2 0 0 -54 0 -55 -2 0 c0 -1 -20 -1 -43 -1 l-42 0 0 55 0 55 -2 0 -3 0 0 -66 0 -66 -2 0 c-3 -1 -25 -1 -27 0 l-2 1 0 65 1 66 -3 0 -2 0 0 -68z m51 -53 l0 -6 -6 -1 -5 0 0 7 0 7 6 0 5 0 0 -7z m60 0 l0 -7 -28 0 -27 1 0 6 c-1 3 0 6 0 6 l0 1 28 0 27 0 0 -7z m16 1 l0 -7 -2 0 c0 -1 -3 -1 -5 -1 l-4 0 0 2 c-1 2 -1 10 0 11 0 1 3 1 6 1 l5 0 0 -6z m0 -18 l0 -6 -2 0 c0 -1 -20 -1 -43 -1 l-42 0 0 7 0 6 44 0 43 0 0 -6z m-92 -45 l1 -45 6 -1 7 0 0 -15 0 -15 2 0 1 -1 1 1 c1 1 1 8 1 16 l0 14 7 0 6 0 0 -15 0 -16 1 0 c3 0 3 2 3 17 l0 14 5 0 6 0 0 -15 1 -15 2 -1 2 0 0 15 0 16 6 0 5 0 0 -1 c0 -1 0 -8 0 -15 l1 -13 1 -1 c3 -2 3 -1 3 15 l0 15 6 0 7 0 0 -15 c0 -16 0 -17 2 -16 l2 1 0 15 0 15 5 0 6 1 0 45 1 46 2 0 3 0 1 -1 1 -1 0 -66 0 -66 -50 0 -50 0 -3 2 c-1 0 -3 2 -4 3 l-1 1 -1 63 c0 34 0 63 0 64 1 0 2 1 3 1 l2 0 0 -46z m16 27 l0 -7 -2 0 c0 -1 -3 -1 -5 -1 l-4 0 0 7 0 7 6 0 5 0 0 -6z m60 -1 l0 -7 -27 0 -28 0 0 5 c0 2 0 6 -1 7 l0 2 28 0 28 0 0 -7z m16 1 l0 -6 -1 -1 c-2 -1 -7 -1 -9 0 l-1 1 0 5 c0 3 0 6 0 6 l0 1 5 0 6 0 0 -6z m0 -18 l0 -7 -2 0 c0 -1 -20 -1 -43 -1 l-42 0 0 7 0 7 44 0 43 0 0 -6z m-76 -19 l0 -6 -6 -1 -5 0 0 7 0 7 6 0 5 0 0 -7z m76 1 l0 -7 -2 -1 c-3 0 -10 0 -9 1 0 1 0 4 0 7 l0 6 6 0 5 0 0 -6z m-1 -13 l1 -2 0 -8 0 -9 -43 0 -44 0 0 10 0 10 42 0 42 0 2 -1z m1 -76 c0 -3 0 -6 -1 -6 l0 -2 -20 0 -19 0 0 7 0 6 20 0 20 0 0 -5z M219 314 l0 -9 19 0 19 0 0 9 0 9 -2 0 -2 0 0 -6 0 -7 -6 0 -6 0 0 7 0 6 -2 0 -2 0 0 -6 0 -7 -1 0 c-1 0 -4 0 -7 0 l-5 0 0 7 0 6 -2 0 -3 0 0 -9z M175 292 l0 -7 2 0 2 0 0 7 0 6 -2 0 -2 0 0 -6z M302 292 l0 -7 2 0 2 0 0 5 0 6 -1 1 c-2 2 -3 1 -3 -5z M176 270 l-1 0 0 -6 0 -6 2 0 2 0 0 1 c1 4 1 10 0 11 0 1 -1 1 -3 0z M302 264 c-1 -5 0 -7 3 -6 l1 1 0 5 0 5 -2 0 c0 1 -1 1 -1 1 -1 0 -1 -3 -1 -6z M176 240 l-1 0 0 -5 c0 -6 1 -8 3 -8 l1 0 0 7 c0 7 0 7 -3 6z M302 237 c0 -3 0 -5 0 -6 -1 -1 -1 -2 0 -3 l1 -1 1 1 2 2 0 4 0 5 -1 1 c-3 2 -3 1 -3 -3z M175 207 l0 -7 2 0 2 0 0 7 0 6 -2 0 -2 0 0 -6z M302 208 c0 -3 0 -6 -1 -6 l0 -2 2 0 3 0 0 5 c0 6 -1 8 -3 8 l-1 0 0 -5z" />
+    </g>
+  </svg>
+);
+
+// 17:30 — hanging pinstripe monolith beside a square-window column.
+// POTRACED off ref f676, slot -1294 (work/…/r18-scenes1/trace.py). Not hand-drawn:
+// law 19 — a trace of the ref's own vector art is soft exactly as the ref is soft and
+// sits AT the SSIM ceiling; a hand redraw lands ~1px off on every stroke.
+const ClZ: React.FC = () => (
+  <svg width={604} height={330} viewBox="0 0 604 330">
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M76 287 l0 -35 4 0 4 0 0 2 0 2 -2 0 -2 0 0 18 c0 10 0 19 1 21 l0 3 2 0 1 0 0 2 0 2 -2 0 -2 1 0 9 0 9 -2 0 -2 0 0 -34z M129 312 l0 -10 -18 0 -18 0 0 -2 0 -2 18 0 18 0 0 -21 0 -20 -18 -1 -18 0 0 -2 0 -2 18 0 18 0 0 -41 0 -42 18 0 17 0 0 2 0 2 -16 0 -15 0 0 13 1 14 15 0 15 0 0 2 0 2 -1 0 -2 0 0 4 0 4 2 1 1 2 0 1 -1 2 -15 0 -14 0 -1 5 0 5 15 0 16 0 0 2 0 2 -1 0 -2 0 0 5 0 5 2 0 1 0 0 2 0 2 -15 0 -16 0 0 38 0 37 -2 0 -2 0 0 -9z m13 -75 l0 -5 -4 0 -5 0 0 5 0 5 5 0 4 0 0 -5z m15 0 l0 -5 -4 0 c-6 0 -7 1 -7 6 l0 4 6 0 5 0 0 -5z m-17 -24 l2 0 0 -4 0 -5 -4 0 -5 0 0 4 c0 5 1 6 3 6 1 -1 2 -1 4 -1z m17 -4 l0 -5 -5 0 -6 0 0 4 0 5 1 0 c1 1 3 1 6 1 l4 0 0 -5z M402 258 l0 -63 -4 -1 -3 0 0 -2 0 -2 6 0 5 0 0 66 0 65 -2 0 -2 0 0 -63z M372 281 l0 -2 7 0 7 0 0 2 0 2 -7 0 -8 0 1 -2z M372 269 l0 -2 7 0 7 0 0 2 0 2 -7 0 -7 0 0 -2z M372 259 c0 0 0 -1 0 -2 l-1 -2 8 0 7 0 0 2 0 2 -7 0 c-4 0 -7 0 -7 0z M372 246 c0 0 0 -1 0 -2 l-1 -2 8 0 7 0 0 2 0 2 -7 0 c-4 0 -7 0 -7 0z M372 234 c0 0 0 -1 0 -2 l-1 -2 8 0 7 0 0 2 0 2 -7 0 c-4 0 -7 0 -7 0z M371 220 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M372 208 l0 -2 7 0 7 0 0 2 0 2 -7 0 -7 0 0 -2z M347 192 l0 -2 3 0 2 0 0 -6 0 -7 12 0 11 0 0 -9 0 -10 2 0 2 0 0 9 0 10 3 0 4 0 0 2 0 2 -15 0 -14 1 -1 3 0 4 15 0 15 0 0 3 0 2 -19 0 -20 0 0 -2z" />
+      <path fill={C.red} d="M165 282 c0 -194 0 -225 2 -225 0 0 1 -1 2 -2 1 -4 5 -8 6 -7 0 0 1 -1 1 -2 l1 -2 2 0 c1 0 2 0 2 -1 0 -1 7 -2 26 -3 l19 0 0 -6 0 -6 19 0 18 0 0 -7 0 -7 21 0 20 0 0 -7 0 -7 3 0 2 0 0 4 c0 7 0 7 1 9 l1 1 5 0 5 0 0 13 0 13 12 0 13 0 0 6 c1 3 1 67 1 141 l0 136 -3 0 -3 0 0 -139 0 -139 -8 -1 -8 0 -2 1 -2 1 0 139 0 138 -2 0 -2 0 0 -153 0 -152 -24 0 -24 1 -1 4 c0 2 -1 70 -1 152 l1 148 -3 0 -2 0 0 -139 0 -139 -38 0 -38 1 -5 2 c-5 3 -7 5 -10 11 l-2 4 0 130 0 130 -3 0 -2 0 0 -41z m98 -245 l0 -4 -16 0 -16 0 0 0 c0 1 0 6 0 7 0 0 7 0 16 0 l16 0 0 -3z M181 210 c1 -63 1 -114 1 -115 0 0 1 -1 2 -1 1 0 2 1 2 1 0 1 0 52 0 115 l0 113 -3 0 -2 0 0 -113z M198 209 l0 -115 2 0 2 0 0 115 0 114 -2 0 -2 0 0 -114z M215 209 l0 -115 2 0 2 0 0 2 c1 0 1 52 1 114 l0 113 -2 0 -3 0 0 -114z M232 318 c-1 -7 -1 -220 0 -222 l0 -2 2 0 2 0 0 115 0 114 -2 0 -2 0 0 -5z M248 209 l0 -115 2 0 2 0 0 115 0 114 -2 0 -2 0 0 -114z M274 314 l0 -9 7 0 c3 -1 12 -1 18 -1 l12 1 1 1 c0 1 1 3 0 4 0 2 0 6 0 8 l0 5 -2 0 -2 0 0 -7 0 -6 -6 0 -5 0 -1 6 0 7 -3 0 -2 0 0 -7 0 -7 -6 0 -6 0 0 1 c-1 1 -1 4 -1 7 l0 6 -2 0 -2 0 0 -9z M283 170 l0 -11 11 0 10 0 0 11 0 10 -10 0 -11 0 0 -10z m15 2 c1 -1 1 -4 0 -5 l0 -3 -5 0 -4 1 -1 3 c0 2 0 4 0 5 l1 3 4 -1 4 0 1 -3z M283 142 l0 -11 11 0 10 0 0 11 0 10 -10 0 -11 0 0 -10z M283 114 l0 -11 11 0 10 0 0 11 0 10 -10 0 -11 0 0 -10z m15 5 c0 0 0 -2 1 -5 l0 -4 -1 -2 -1 -1 -4 0 -4 0 0 2 c-1 2 -1 8 0 9 0 1 9 1 9 1z M283 87 l0 -10 3 -1 c2 0 7 0 11 0 l7 1 0 9 0 10 -1 1 c-1 1 -6 1 -11 1 l-9 0 0 -11z m16 2 c0 -2 0 -4 0 -6 l-1 -2 -5 0 -4 1 -1 5 0 5 5 0 6 0 0 -3z M287 70 l-4 0 0 -10 0 -10 10 0 11 0 0 10 0 10 -3 0 c-2 0 -5 0 -7 0 -1 1 -4 1 -7 0z" />
+    </g>
+  </svg>
+);
+
+
 // ─── the skyline's world-fixed slot table ───
-// ONE table. S5Skyline's cruise and the S4 exit's INCOMING world both read it — a
-// hand-copied twin is two primitives that agree right up until one of them is fixed
-// (gen19, the ClsPillSlot). Settled slots are traced off ref f750/f900; the left tiles
-// repeat on the measured 604 pitch, designs cycling, because at 100-300px/f no per-slot
-// identity is readable and only position and mass carry the window (lesson 4).
+// r18 — THE CITY IS A 12-HOUR CYCLE OF SIX DESIGNS. WE MODELLED IT AS FOUR, AND
+// TWO OF THE SIX HAD NEVER BEEN TRACED.
+// The cruise only ever shows hours 08-15, so only ClA/ClB/ClC/ClG (above) and
+// ClD/ClE/ClF (below) were ever traced, and the tiles outside that span cycled
+// them on a 4-slot period. That period is fiction. The reference repeats every
+// SIX slots — 12 hours, 3618 world units — and the proof is in the reference's own
+// glyphs: ClA sits between 08:00 and 09:00 AND between 20:00 and 21:00 (ref f672,
+// unmistakable), ClB at 10-11 and 22-23, ClC at 12-13 and 00-01 (rectified crop vs
+// the cruise crop: .734 overlap, against .39/.46 for the wrong designs), ClG at
+// 14-15 and 02-03. Between ClG and the next ClA sit two designs the cruise never
+// shows — and gen20 filled them with cycled stand-ins, which is why its stand-in
+// city LOST at every frame (-.034): right slots, right mass, WRONG SHAPE.
+//
+// And a fourth reuse was fiction too: `ClE` was mounted at BOTH -691 and 519 (r3
+// marked it "edge reuse" — slot -691 is never fully visible in the cruise). It is
+// not ClE. Rectify slot -691 out of f679 and correlate it against the canonical ClE
+// crop: .485, where the ClD control in the same frame scores .979. It is its own
+// building — ClH — and it has been wrong at the left edge of every cruise frame.
+//
+// The six are now traced end to end. The four new ones (ClX ClY ClH ClW ClZ) are
+// POTRACES of the reference's own art, not redraws (law 19).
+//
+// AND THE CITY IS FINITE — IT IS NOT AN INFINITE TILING. Both ends are measured:
+//  · LEFT. Project the S4 exit's own front through its lattice and it lands on world
+//    local −4366 at EVERY frame of the whip (see S4X_H5). The front is the world's left
+//    edge. The first ABOVE cluster after it is ClA at −4000 (ref f670: bare white from
+//    the front until ClA's bridge at screen 1662, exactly as predicted), and the first
+//    BELOW cluster is ClH at −4309. Tiling past them draws buildings into a strip the
+//    reference leaves empty.
+//  · RIGHT. The BELOW city ends after ClF: at f900/f916 the span past below-21:00 is
+//    bare navy (r3 saw this and was right). The ABOVE city ends after ClG.
+// So the world is exactly TEN slots wide in each half — one and two-thirds of a period.
 type Slot = [number, React.FC];
-const CITY_ABOVE: Slot[] = [[-382, ClA], [222, ClB], [830, ClC], [1427, ClG]];
-const CITY_BELOW: Slot[] = [[-691, ClE], [-88, ClD], [519, ClE], [1115, ClF]];
-const ABOVE_CYCLE = [ClG, ClC, ClB, ClA];
-const BELOW_CYCLE = [ClF, ClE, ClD, ClE];
-// n tiles to the LEFT of the settled run. S5's entry needs 4 (visible local reaches
-// -2659 at f674); the S4 exit needs 7, because at f667-672 the incoming world is still
-// zoomed far out (syp 0.50-0.69) and its visible local range reaches -4368.
-const leftAbove = (n: number): Slot[] =>
-  Array.from({ length: n }, (_, m) => [-382 - 604 * (m + 1), ABOVE_CYCLE[m % 4]] as Slot);
-const leftBelow = (n: number): Slot[] =>
-  Array.from({ length: n }, (_, m) => [-691 - 604 * (m + 1), BELOW_CYCLE[m % 4]] as Slot);
+const CITY_PERIOD = 3618; // 12 h × 301.5 world units
+const ABOVE_CYCLE: Slot[] = [[-382, ClA], [222, ClB], [830, ClC], [1427, ClG], [2031, ClX], [2634, ClY]];
+const BELOW_CYCLE: Slot[] = [[-691, ClH], [-88, ClD], [519, ClE], [1115, ClF], [1721, ClW], [2324, ClZ]];
+const cityOf = (cycle: Slot[], lo: number, hi: number): Slot[] =>
+  [-1, 0]
+    .flatMap((k) => cycle.map(([x, Cl]) => [x + k * CITY_PERIOD, Cl] as Slot))
+    .filter(([x]) => x >= lo && x <= hi)
+    .sort((a, b) => a[0] - b[0]);
+const CITY_ABOVE = cityOf(ABOVE_CYCLE, -4000, 1427);
+const CITY_BELOW = cityOf(BELOW_CYCLE, -4309, 1115);
+// the slots whose 604-wide box touches the visible local span [from, to]
+const tiles = (city: Slot[], from: number, to: number): Slot[] =>
+  city.filter(([x]) => x + 604 > from && x < to);
 const CityRow: React.FC<{ slots: Slot[]; top: number }> = ({ slots, top }) => (
   <>
     {slots.map(([x, Cl]) => (
