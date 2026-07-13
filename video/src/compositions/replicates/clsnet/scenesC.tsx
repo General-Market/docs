@@ -750,6 +750,24 @@ const S2_DNS = [
   { art: "s2DnA", sx: -27, y: 678, w: 732 },
   { art: "s2DnB", sx: 1270, y: 678, w: 616 },
 ];
+// r19 THE ENTRY. The skyline does not FADE in. It FLIES in from the right and
+// decelerates into the steady scroll — the same grammar as r18's gantt rows and
+// pill field. Tracked on the bank's leftmost orange column in the ref, frame by
+// frame: 1816@2676 · 1288@2678 · 862@2680 · 583@2682 · 394@2684 · 263@2686 ·
+// 172@2688 · 112@2690 · 73@2692 · 51@2694 · 42@2695, from which point the step is
+// a flat 10px/f — the settled rate. Subtracting the steady path leaves the offset
+// table below, which decays to zero by f2695. The INVERTED half rides the SAME
+// curve, in the same frames (its per-frame steps are identical to 1px) — one
+// motion, two clusters. Before f2676 the ref's ink above and below the band is
+// ZERO at every frame; we were drawing the whole skyline at 15% from f2663.
+const S2_ENTRY_F = [
+  2676, 2677, 2678, 2679, 2680, 2681, 2682, 2683, 2684, 2685,
+  2686, 2687, 2688, 2689, 2690, 2691, 2692, 2693, 2694, 2695,
+];
+const S2_ENTRY_DX = [
+  1586, 1337, 1078, 853, 673, 529, 414, 320, 245, 183,
+  134, 94, 63, 39, 22, 10, 4, 2, 1, 0,
+];
 export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < 2640 || f >= 2833) return null;
@@ -773,37 +791,55 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const entryBot = interpolate(f, S2_BAND_F, S2_BAND_BOT, clamp);
   const bandTop = f < 2672 ? entryTop : grownTop;
   const bandBottom = f < 2672 ? entryBot : grownBot;
-  const contentOp = lerp(f, [2660, 2680], [0, 1]);
-  const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * S2_RATE;
+  // The skyline is off-frame until f2676 (ref ink above and below the band is
+  // ZERO at every earlier frame); from there it flies in on the measured offset
+  // and lands on the steady scroll at f2695. No opacity anywhere — the ink is
+  // solid from its first frame, as in every other entry in this film.
+  const fly = interpolate(f, S2_ENTRY_F, S2_ENTRY_DX, clamp);
+  const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * S2_RATE + fly;
+  const skyline = f >= 2676;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
-      <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
+      <div style={{ position: "absolute", inset: 0 }}>
       {/* recolor: the traces' white fill plane is #FFFFFF but the page is
           #FDFDFD — the plate edge reads as a faint rectangle otherwise */}
-      {S2_UPS.map((u, i) => {
+      {skyline && S2_UPS.map((u, i) => {
         const x = sx(u.sx);
         if (x + u.w < -50 || x > 1970) return null;
         return <TracedArt key={i} name={u.art} x={x} y={u.y} scale={1} recolor={{ "#FFFFFF": C.white }} />;
       })}
-      {S2_DNS.map((d, i) => {
+      {skyline && S2_DNS.map((d, i) => {
         const x = sx(d.sx);
         if (x + d.w < -50 || x > 1970) return null;
         return <TracedArt key={i} name={d.art} x={x} y={d.y} scale={1} recolor={{ "#FFFFFF": C.white }} />;
       })}
       </div>
       <div style={{ position: "absolute", left: 0, top: bandTop, width: 1920, height: Math.max(3, bandBottom - bandTop), backgroundColor: C.navy, overflow: "hidden" }}>
-        {/* vertical pill traversals (screen-fixed x, ~30px/f), clipped to the band */}
-        {contentOp >= 1 && STRIP2.vpills.map((p, i) => {
+        {/* vertical pill traversals (screen-fixed x, ~30px/f), clipped to the band.
+            r19: these were gated on the (now deleted) content fade reaching 1, i.e.
+            f>=2680 — but the ref's first pill falls through the opening band from
+            f2664 (orange at x178-261, y494→674, 29px/f: data.ts's first vpill,
+            exactly). Seven frames of a pill the ref shows and we hid. The band
+            clips them, so no gate is needed at all. */}
+        {STRIP2.vpills.map((p, i) => {
           const top = p.top0 + 30 * p.dir * (f - p.f0);
           if (top + p.h < bandTop || top > bandBottom) return null;
           return <Pill key={i} x={p.x} y={top - bandTop} w={p.w} h={p.h} color={p.c} />;
         })}
       </div>
-      <div style={{ position: "absolute", inset: 0, opacity: contentOp }}>
+      <div style={{ position: "absolute", inset: 0 }}>
       {/* CLSNet box fixed at center, orange border, no label. side/artD*
           measured r8: ref outer 200.5² at (860,436), content +3/+4 vs
-          pure scaling */}
-      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2668, 2690], [0, 1])} side={200.5} artDx={3} artDy={4} opacity={lerp(f, [2826, 2832], [1, 0])} />
+          pure scaling.
+          r19 SCHEDULE: the ref does not fade this in either. The orange border is
+          STROKED — top-left corner first at f2664, three sides by f2668, closed at
+          f2671 — and only then does the white mark draw, f2672→2682. We ramped the
+          whole box 2660→2680 and the mark 2668→2690, so the box was a grey ghost
+          for four frames before the ref draws anything and the mark led its own
+          border. ClsNetBox has no border-draw parameter (it lives in another lane),
+          so the border still arrives as an 8-frame ramp over the ref's stroke —
+          but on the ref's frames, and the mark now follows it instead of leading. */}
+      <ClsNetBox x={STRIP2.box.x} y={STRIP2.box.y} w={STRIP2.box.w} label={false} border="orange" markP={lerp(f, [2672, 2682], [0, 1])} side={200.5} artDx={3} artDy={4} opacity={lerp(f, [2664, 2671], [0, 1]) * lerp(f, [2826, 2832], [1, 0])} />
       </div>
     </AbsoluteFill>
   );
