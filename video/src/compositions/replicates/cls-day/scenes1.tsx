@@ -758,13 +758,29 @@ const S4_DOCL_Y = lutS([[600, 625], [601, 630], [602, 637], [603, 644], [604, 65
 const S4_DOCR_X = lutS([[600, 1443], [611, 1443.5], [612, 1444.5], [613, 1432.5], [614, 1407.5], [615, 1379.5], [616, 1351], [617, 1324.5], [618, 1299], [619, 1276.5], [620, 1256], [621, 1238], [622, 1222], [623, 1208], [624, 1198], [626, 1178], [628, 1159], [631, 1131]]);
 const S4_DOCR_Y = lutS([[600, 617.5], [601, 623], [602, 629], [603, 637], [604, 645], [605, 655], [606, 666], [607, 678], [608, 693.5], [609, 709.5], [610, 727.5], [611, 747.5], [612, 770.5], [613, 791.5], [614, 798.5], [616, 797.5], [618, 796.5]]);
 
+// r19: THE BAND ENTERS BY SLIDING IN FROM THE LOWER-RIGHT — it does NOT fade in
+// place. Measured off the ref's grey-band top edge and the orange marker centroid
+// (work/cls-day/r19-scenes1/entrance.py): the whole band-unit (band + labels +
+// marker) translates rigidly along a straight diagonal (dx/dy ≈ 3.5, constant) from
+// (+579, +165) at f444 to (0, 0) at f464, at FULL opacity — the old `bandIn`
+// opacity fade was fiction (ref band is full grey the instant it exists, just 31px
+// low at f453). dx = markerCx − 960.7, dy = bandTop − 96; both settle to 0 at f464
+// so f464+ is byte-identical to before. A law-26 clock/motion error on a full-width
+// element: the largest lever left in the S4 draw-in.
+const S4_BAND_DX = lutS([[444, 578.9], [445, 485.5], [446, 407.1], [447, 341.5], [448, 286], [450, 198.4], [452, 133.7], [453, 108], [454, 86.1], [456, 51.2], [458, 27.1], [460, 11.5], [462, 2.7], [464, 0]]);
+const S4_BAND_DY = lutS([[444, 165], [445, 138], [446, 116], [447, 97], [448, 81], [450, 57], [452, 38], [453, 31], [454, 25], [456, 15], [458, 8], [460, 4], [462, 1], [464, 0]]);
+
 export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<{ h: number }> }> = ({
   frame,
   pack,
   PillLogo,
 }) => {
   if (frame < 440 || frame >= 674) return null;
-  const bandIn = interpolate(frame, [440, 462], [0, 1], clamp);
+  // band appears at f444 (nothing before) and slides in from the lower-right; opacity
+  // ramps over the first 3 frames only (the ref's marker is ~1/3 ink at f444).
+  const bandIn = interpolate(frame, [443, 446], [0, 1], clamp);
+  const bandDx = frame < 656 ? S4_BAND_DX(frame) : 0;
+  const bandDy = frame < 656 ? S4_BAND_DY(frame) : 0;
   // measured: marker fixed at 960; 23:00 under it at f550; pan -1.3px/f
   const hourAt = 23 + (frame - 550) * 0.00917;
   // ANIM-FIDELITY (ref f440-618, dense-frame traced): the hexes draw in place
@@ -818,7 +834,7 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
       {frame < 656 ? (
-        <div style={{ opacity: bandIn }}>
+        <div style={{ opacity: bandIn, transform: `translate(${bandDx}px, ${bandDy}px)` }}>
           <TimelineBand y={96} originX={960} originHour={hourAt} pxPerHour={141.7} />
           {/* gen19: measured at THIS mount off ref f600 (rust-masked). y was 8px HIGH
               (our ink top 27, the ref's 35) and the ref's triangle is 62 wide, not 60.
