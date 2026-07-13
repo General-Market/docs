@@ -1939,9 +1939,22 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const [pcx, pcy] = LEDGE.center;
   // group settle: stacks ride slightly high, sink to rest (fr_3732 vs fr_3762)
   const settleDy = interpolate(f, [3705, 3732, 3762], [90, 40, 0], clamp);
-  // citiesStacks phase: stacks shrink+slide, cities fade in on the band
-  const slideP = lerp(f, [3800, 3835], [0, 1]);
-  const citiesOp = lerp(f, [3815, 3838], [0, 1]);
+  // citiesStacks phase: stacks shrink+slide, cities slide in on the band.
+  // r21 SCHEDULE (window #10, 3792-3842). The ref runs this transition ~38 frames
+  // EARLIER than we did and SETTLES by f3810, not f3838 — measured off the ref's
+  // own ink. The left steel stack is full at f3762 (x319-629, 30525px), shrunk and
+  // moved left by f3792 (x181-365, 15562px), settled by f3822. The orange cities
+  // are ABSENT until ~f3785, appear at f3792 (temple median x1110, sail max x1877)
+  // and settle by f3810 (temple median x696, sail max x1471). Our old
+  // slideP[3800,3835]/citiesOp[3815,3838] faded the cities in AT their final seat
+  // 28 frames late, so f3792-3822 showed big un-shrunk stacks with NO cities where
+  // the ref was already near-settled — the whole window-#10 defect.
+  const slideP = lerp(f, [3763, 3805], [0, 1]);
+  const citiesOp = lerp(f, [3784, 3798], [0, 1]);
+  // The two cities enter as ONE group, translated +410px right, decelerating to
+  // their seat by f3810 (temple Δ414 ≡ sail Δ406 — one translate, not two; the
+  // temple's own +414 then predicts the skyline's f3792 position to 8px, law 37).
+  const cityDx = interpolate(f, [3792, 3798, 3804, 3810], [414, 165, 55, 0], clamp);
   // hold the ledge fully opaque through f3940 (was [3936,3946], which greyed it
   // as it faded to the dark behind while the ref stays white through ~f3938).
   // The endcard navy wipes in over the top from f3938-3940 (EndCardScene enterOp)
@@ -1992,10 +2005,10 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* cities standing on the flat band (fr_3840: bases at y555) */}
       {citiesOp > 0 && (
         <>
-          <div style={{ position: "absolute", left: 370, top: 557 - 295 * 0.44, opacity: citiesOp }}>
+          <div style={{ position: "absolute", left: 370 + cityDx, top: 557 - 295 * 0.44, opacity: citiesOp }}>
             <TracedArt name="cityA" scale={0.44} />
           </div>
-          <div style={{ position: "absolute", left: 1210, top: 557 - 545 * 0.42, opacity: citiesOp }}>
+          <div style={{ position: "absolute", left: 1210 + cityDx, top: 557 - 545 * 0.42, opacity: citiesOp }}>
             <TracedArt name="cityB" scale={0.42} />
           </div>
         </>
