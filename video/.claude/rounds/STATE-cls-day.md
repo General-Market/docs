@@ -2183,3 +2183,43 @@ Also live: **a HUNG clsnet still, PID 93864, alive 2h24m**, which will never fin
 "wait for the renders to drain" is not a viable strategy for anyone. Either every harness
 honours the lock or none can. **An agent that respects a lock everyone else deletes is not
 safe — it is merely slow.**
+
+### gen19 handover — the six S10 cells I ranked but never diagnosed
+
+The r17 grid on S10 f1900 ranked EIGHT cells. The connector lane took the top two and
+landed as `34e89401b`. I had never diagnosed the other six. Diagnosed now, read-only —
+these are measurements, not edits. Round lead called stop on editing; I obeyed.
+
+**1. The hex cities are PLACED RIGHT and DRAWN THIN.** (cells r2c1 .302, r2c2 .261,
+r2c5 .156, r2c6 .095 — dark ink, f1900)
+
+| | ref px | our px | ratio | centroid Δ | ink width |
+|---|---|---|---|---|---|
+| LEFT hex | 12,647 | 9,663 | **0.76x** | (−2, 0) | 351 vs ref **371** |
+| RIGHT hex | 13,229 | 8,888 | **0.67x** | (−4, +3) | 351 vs ref **371** |
+
+**The centroids agree to within 4px — this is NOT a shift.** We draw a quarter to a third
+less ink inside a correctly-placed, 20px-narrow footprint. So it is CONTENT: missing
+detail / thinner strokes / a narrower building cluster. Same class as the S13 city job
+(gen17), and the same remedy — measured model detail, eye-judged, **not an SSIM nudge and
+not a re-trace of what is already registered.** This is the biggest remaining lever in S10.
+
+**2. `Milestone` (lib.tsx:229) is wrong in two ways — and it is a SHARED primitive.**
+
+- **The accent rule is MISSING ENTIRELY.** The ref draws a rust vertical rule at
+  **x956..960, y180..242 (314px), colour (204,68,30)** — the CLS accent red. We draw
+  **ZERO px** there. Absent ink, and cheap. (This is cell r1c3 .349; the rule is the only
+  thing in it.)
+- **The label copy does not wrap.** Ref's label ink is a tight column — **114 x 55 @
+  x966..1080, y190..245**. Ours sprawls **527 x 124 @ x972..1499** — **4.6x too wide**,
+  centroid off by (+21, −10). Our body line runs on where the ref's wraps into a narrow
+  column. That is cell **r1c4 at .098 — the 3rd worst cell in the whole frame**, and
+  ~1.6k px of misplaced text ink.
+
+Both live in `Milestone`, so **a fix lands across every mount at once** — the same leverage
+the pill had. I did not touch it: the copy width needs a proper per-pixel fit of the wrap
+column and the rule's offset, at ≥2 mounts, and a hurried edit to a shared primitive is how
+the CRX twin was born in the first place.
+
+**A cell I ranked and did not open is a defect I found and did not report.** Six of them
+sat in my own grid output for a whole round.
