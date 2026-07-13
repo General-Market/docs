@@ -1697,9 +1697,14 @@ export const S16Payouts: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
               {m}
             </div>
             {cols.map((col, k) => {
-              // settle-in: each chip rises + fades in (staggered), settled by ~f3068
-              const t0 = 3050 + i * 2 + k * 3;
-              const appear = interpolate(frame, [t0, t0 + 14], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
+              // r22 EYE-FIX: the chips arrived ~30 frames LATE. The ref builds the whole S16
+              // scene — circles AND chip-stacks together — as it cuts in over f3016-3030, the
+              // chip band settled-full (66k ink) from ~f3045 (ink-counted per frame). The old
+              // per-chip `appear` started only at f3050, so the circles faded in with the scene
+              // (inP) but the chips lagged, leaving bare A-H circles at f3050 where the ref is
+              // fully stacked. Retimed to build WITH the scene (t0 ~f3016, full by ~f3040).
+              const t0 = 3016 + i * 1.2 + k * 1.6;
+              const appear = interpolate(frame, [t0, t0 + 11], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
               const op = appear * (1 - exitP);
               if (op <= 0) return null;
               const rise = (1 - appear) * 18; // small settle drop
