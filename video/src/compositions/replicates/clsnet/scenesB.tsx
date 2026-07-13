@@ -481,8 +481,19 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
   const fr = keys.map((k) => k[0]) as unknown as [number, number];
   const un = Math.round(interpolate(f, fr as unknown as number[], keys.map((k) => k[1]), clamp));
   const ma = Math.round(interpolate(f, fr as unknown as number[], keys.map((k) => k[2]), clamp));
+  // r19: THE EXIT IS TWO DIFFERENT MOTIONS, and the old 14-frame opacity ramp
+  // from f1648 was neither. The pill columns CONVERGE on the line and are eaten
+  // by it (measured; see PillColumn) — they hold full colour to the f1656 cut and
+  // leave through geometry. The panel/box/legend/check leave a different way: the
+  // check disc SHRINKS away (r44 -> 36 @f1646 -> 28 -> 14 -> gone @f1649) and the
+  // whole card TRANSLATES down-right (panel top-left 771,399 @f1646 -> 791,463
+  // @f1654 -> 820,525 @f1656, the box widening with it). That translation is NOT
+  // modelled here — so the card leaves as ABSENT ink, not misplaced ink: holding
+  // it at full through the ref's move costs f1654 .904 -> .887 (lesson 4, seventh
+  // confirmation). Ramp it from the frame the ref starts moving it.
   const checkOp = lerp(f, [1612, 1622], [0, 1]);
-  const out = lerp(f, [1648, 1662], [1, 0]);
+  const cardOut = lerp(f, [1646, 1653], [1, 0]);
+  const pillOut = f < 1656 ? 1 : 0;
   // r19: MatchingScene mounts at f1448 but its content does not start until
   // f1462 — and its root AbsoluteFill was OPAQUE WHITE, so for 14 frames it
   // painted over a still-live HexifyScene (the ref is showing the hexes, the
@@ -492,7 +503,7 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: f < 1476 ? undefined : C.white }}>
       <EdgeRulers f={f} />
-      <div style={{ position: "absolute", inset: 0, opacity: inOp * out }}>
+      <div style={{ position: "absolute", inset: 0, opacity: inOp * cardOut }}>
         {/* gen9: reuse the native-scale lock city traces (r8, 385 bbox) instead
             of clipping the 1150/1190 full-city traces at 0.184 — the ref hex is
             FILLED by the building, mine was crushed tiny at the bottom (the
@@ -502,40 +513,41 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
             dx-0.327/dy-0.374 lands both on the ref; r stays 0.14*w=30. */}
         <SmallHex art="lockCityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={385} letter="A" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex />
         <SmallHex art="lockCityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={385} letter="B" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex />
-        {/* elbows + pill columns */}
-        <Elbow points={[[MATCH.hexA.cx, 400], [MATCH.hexA.cx, 648], [652, 648]]} arrow="end" opacity={panelOp} />
-        <Elbow points={[[MATCH.hexB.cx, 400], [MATCH.hexB.cx, 648], [1298, 648]]} arrow="end" opacity={panelOp} />
-        <PillColumn x={612} f={f} base={1482} />
-        <PillColumn x={1292} f={f} base={1556} />
-        {/* panel */}
+        {/* elbows — the SAME path the locks scene uses: shafts at x412.5 / 1519.5
+            (we had the right one on the hex centre, 6.5px in), horizontal at
+            y661 (we drew 648), arrow tips x653 / x1296. */}
+        <Elbow points={[[412.5, 400], [412.5, 661], [653, 661]]} arrow="end" opacity={panelOp} />
+        <Elbow points={[[1519.5, 400], [1519.5, 661], [1296, 661]]} arrow="end" opacity={panelOp} />
+        {/* panel — ref x769-1180 y419-750 (we drew x776 w405), shade E1E1E1 not
+            E8E8E8: 7 levels too light over 412x332 = 137k px of flat grey. */}
         <div
           style={{
             position: "absolute",
-            left: MATCH.panel.x,
-            top: MATCH.panel.y,
-            width: MATCH.panel.w,
-            height: MATCH.panel.h,
-            backgroundColor: C.panel,
+            left: 769,
+            top: 419,
+            width: 412,
+            height: 332,
+            backgroundColor: MATCH_PANEL,
             opacity: panelOp,
           }}
         />
         <ClsNetBox x={MATCH.box.x} y={MATCH.box.y} w={MATCH.box.w} opacity={panelOp} />
         {panelOp > 0 && (
           <>
-            <LegendRow y={588} swatch={C.swatchBlue} label={COPY.unmatched} value={un} />
-            <LegendRow y={650} swatch={C.orangeDeep} label={COPY.matched} value={ma} />
+            <LegendRow y={586} swatch={C.swatchBlue} label={COPY.unmatched} value={un} />
+            <LegendRow y={646} swatch={C.orangeDeep} label={COPY.matched} value={ma} />
           </>
         )}
-        {/* check badge */}
+        {/* check badge — ref disc cx1181.5 cy418 r44 (we drew cx1191.5 cy427.5 r41.5) */}
         {checkOp > 0 && (
           <div
             style={{
               position: "absolute",
-              left: MATCH.check.cx - MATCH.check.r,
-              top: MATCH.check.cy - MATCH.check.r,
-              width: MATCH.check.r * 2,
-              height: MATCH.check.r * 2,
-              borderRadius: MATCH.check.r,
+              left: 1181.5 - 44,
+              top: 418 - 44,
+              width: 88,
+              height: 88,
+              borderRadius: 44,
               backgroundColor: C.orangeDeep,
               opacity: checkOp,
               display: "flex",
@@ -543,16 +555,27 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
               justifyContent: "center",
             }}
           >
-            <svg width={44} height={34} viewBox="0 0 44 34">
+            <svg width={46} height={36} viewBox="0 0 44 34">
               <path d="M4,18 L16,30 L40,4" fill="none" stroke={C.white} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         )}
       </div>
+      {/* the pills leave through geometry, not opacity — after the elbow so they
+          sit on top of it, exactly as the ref stacks them */}
+      <div style={{ position: "absolute", inset: 0, opacity: inOp * pillOut }}>
+        <PillColumn col={MATCH_PILLS_L} x={545} f={f} lineY={661} />
+        <PillColumn col={MATCH_PILLS_R} x={1325} f={f} lineY={661} />
+      </div>
     </AbsoluteFill>
   );
 };
 
+// Measured at f1625 (settled): swatch 26px at x822, rows at y586/646 (pitch 60,
+// not 62). Label ink starts x871 — we drew it at 908, 37px right. The VALUE is
+// LEFT-ALIGNED at x1094 ("0" reads x1094-1107 and "298" reads x1094-1140, both
+// starting on the same column) — we right-aligned it at x1148. fs 29 (ref
+// "Unmatched" ink is 149px wide against our 142 at fs 28, "Matched" 111 vs 107).
 const LegendRow: React.FC<{ y: number; swatch: string; label: string; value: number }> = ({
   y,
   swatch,
@@ -560,20 +583,115 @@ const LegendRow: React.FC<{ y: number; swatch: string; label: string; value: num
   value,
 }) => (
   <>
-    <div style={{ position: "absolute", left: 864, top: y, width: 24, height: 24, backgroundColor: swatch }} />
-    <SansText text={label} x={906} y={y - 3} fs={28} color={C.navy} />
-    <SansText text={String(value)} x={1050} y={y - 3} fs={28} color={C.navy} width={100} align="right" />
+    <div style={{ position: "absolute", left: 822, top: y, width: 26, height: 26, backgroundColor: swatch }} />
+    <SansText text={label} x={869} y={y - 4} fs={29} color={C.navy} />
+    <SansText text={String(value)} x={1092} y={y - 4} fs={29} color={C.navy} />
   </>
 );
 
-const PillColumn: React.FC<{ x: number; f: number; base: number }> = ({ x, f, base }) => {
-  const cols = [C.steel, C.steelDark, C.pillNavy, C.orangeDeep, C.tan, C.tan, C.tan];
-  const n = Math.max(0, Math.min(7, Math.floor((f - base) / 7)));
+// ═══ The matching pill columns ══════════════════════════════════════════════
+// r19. We drew seven identical 75x34 pills on a 44px pitch, in a 298px stack,
+// entering one every 7 frames at their final position. NONE of that is in the
+// ref. The ref's left column is EIGHT pills of two heights (31 and 61) on an
+// irregular pitch spanning 445px; the right is SIX. Both columns are 78px wide,
+// and both are in the wrong place (left 545 not 575; right 1325 not 1255 — 70px
+// out, the width of the pills themselves).
+//
+// The corner grammar is the pair-stack grammar, mirrored about the line: an
+// above-line pill has its LINE-SIDE outer corner square (probed on the navy pill
+// at f1625 — top-left square at x546 from row one, top-right rounded r~12 over
+// rows 582-590, bottom-left rounded, bottom-right square).
+//
+// The entry is the r18 flows law, again: each pill FLIES IN along the column and
+// DECELERATES onto its slot — offsets from the settled top, in frames after the
+// pill's own spawn, are [190, 104, 52, 20, 4, 0], the same six-frame curve for
+// every pill in both columns and both directions (blob-tracked; the model
+// reproduces every measured bbox to <=2px, including the ones clipped off-frame).
+// Pills above the line fall DOWN into place, pills below RISE. Spawn is one
+// frame apart, INNERMOST FIRST — the pill nearest the line lands first. They
+// never fade: the fill is full colour on the first frame they exist.
+const P_STEEL = "#8A9DB2";
+const P_MID = "#4B6686";
+const P_NAVY = "#002753";
+const P_ORANGE = "#CC441E";
+const P_TAN = "#F0C8AF";
+const MATCH_PANEL = "#E1E1E1";
+type MPill = [number, number, string, number]; // top, height, colour, spawn frame
+const MATCH_PILLS_L: MPill[] = [
+  [438, 31, P_STEEL, 1508],
+  [476, 61, P_MID, 1507],
+  [544, 31, P_MID, 1506],
+  [582, 61, P_NAVY, 1505],
+  [678, 61, P_ORANGE, 1512],
+  [747, 31, P_TAN, 1513],
+  [786, 60, P_TAN, 1514],
+  [852, 31, P_TAN, 1515],
+];
+const MATCH_PILLS_R: MPill[] = [
+  [506, 31, P_STEEL, 1542],
+  [544, 31, P_STEEL, 1541],
+  [582, 61, P_MID, 1540],
+  [678, 61, P_ORANGE, 1544],
+  [747, 31, P_TAN, 1545],
+  [785, 31, P_TAN, 1546],
+];
+const FLY_K = [0, 1, 2, 3, 4, 5, 6];
+const FLY_D = [190, 190, 104, 52, 20, 4, 0];
+
+// And they leave the way they came, inverted: from f1647 the whole column
+// CONVERGES on the line and the line EATS it. Blob-tracked on the left column —
+// every pill's offset from its settled top, above and below alike, is the same
+// accelerating table, and each pill vanishes as it crosses the line (the navy
+// pill's bottom stays clamped at 653 from f1652 while its top keeps falling).
+// So the columns are clipped to their own side of the line: the clip changes
+// NOTHING while they are settled (the innermost pills stop at 643 and 678) and
+// reproduces the swallow for free. The old code fanned the whole scene out on a
+// 14-frame opacity ramp instead; holding a settled column through the ref's
+// convergence LOSES (f1654 .904 -> .887 when tried) — misplaced ink again.
+const EXIT_F = [1647, 1648, 1649, 1650, 1651, 1652, 1653, 1654, 1655, 1656];
+const EXIT_D = [0, 3, 6, 10, 15.5, 23.5, 35.5, 55, 91, 163];
+const LINE_TOP = 654; // above-line pills are eaten here
+const LINE_BOT = 660; // below-line pills are eaten here (probed at x560, clear
+//                       of the arrow: the ref clamps their top edge to exactly
+//                       660 from f1652, and the above-line pills to 653)
+
+const PillColumn: React.FC<{ col: MPill[]; x: number; f: number; lineY: number }> = ({
+  col,
+  x,
+  f,
+  lineY,
+}) => {
+  const e = interpolate(f, EXIT_F, EXIT_D, clamp);
+  const draw = (above: boolean) =>
+    col
+      .map((p, i) => [p, i] as const)
+      .filter(([[top, h]]) => top + h / 2 < lineY === above)
+      .map(([[top, h, color, f0], i]) => {
+        if (f < f0) return null;
+        const d = interpolate(f - f0, FLY_K, FLY_D, clamp);
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: x,
+              top: top + (above ? e - d : d - e),
+              width: 78,
+              height: h,
+              backgroundColor: color,
+              borderRadius: above ? "0 12px 0 12px" : "12px 0 12px 0",
+            }}
+          />
+        );
+      });
   return (
     <>
-      {cols.slice(0, n).map((c, i) => (
-        <Pill key={i} x={x - 37} y={448 + i * 44} w={75} h={34} color={c} />
-      ))}
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: LINE_TOP, overflow: "hidden" }}>
+        {draw(true)}
+      </div>
+      <div style={{ position: "absolute", left: 0, top: LINE_BOT, width: 1920, height: 1080 - LINE_BOT, overflow: "hidden" }}>
+        <div style={{ position: "absolute", left: 0, top: -LINE_BOT, width: 1920, height: 1080 }}>{draw(false)}</div>
+      </div>
     </>
   );
 };
@@ -791,8 +909,12 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const lockClosedP = f >= 1838 ? 1 : 0;
   // no exit fade: ref keeps the locks layout intact until the strip's band
   // wipe (1909-1930) has fully covered it (measured: content static at f1914)
+  // r19: LocksScene mounts at f1652 but the ref is still showing the FULL
+  // matching scene (panel 225, pills solid) at f1652-1655 — this opaque white
+  // root was painting over it, the same mount-fill defect MatchingScene had.
+  // The frame goes white at f1656 in the ref; the fill starts there.
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white }}>
+    <AbsoluteFill style={{ backgroundColor: f < 1656 ? undefined : C.white }}>
       <EdgeRulers f={f} />
       {phase1 && (
         <>
