@@ -1565,380 +1565,107 @@ const WHT = "#FDFDFD";
 //     step running off the frame edge at x-60.
 //   · the right side is a dotted building + a two-rail gantry that STOPS at
 //     x435. The old model stepped on toward the 10:00 slot at x519 — ink the
-//     ref does not have.
+//     ref does not have.// ── r18 — THE SEVEN CRUISE CLUSTERS ARE NOW TRACES, NOT REDRAWS ──
+// These were hand-built from measurements over r3/r7/r10/gen13/gen17 and re-registered
+// again and again, and they still carried 0.85x of the reference's ink with their line
+// CENTRES 1-4px off — which is why gen19's "bold them to the ref's true weight" LOST at
+// all eight frames (a wider stroke about a wrong centre lights both edges), and why the
+// r18 exit mount had to spend .005 at f672: at syp 0.69 a near-miss thin line costs SSIM
+// more than an absent one. Law 19 is the way out. A potrace of the reference's own vector
+// art is compression-soft EXACTLY as the reference is soft, sits AT the SSIM ceiling, and
+// has no centre error to bold about. Nothing here is drawn by hand.
+//
+// Cut through the same rectifier that recovers a known cluster at dx=dy=0, off frames
+// chosen to be free of the rising docs and the navy sweep. The hour chain is cut OUT of
+// the ink layers (S5Skyline draws its own from the lattice), and the white tower BODIES —
+// white on a white ground, which no colour separation can find — are recovered as the
+// white the background flood cannot reach with the band as a floor. Those bodies are
+// load-bearing: the instruction docs rise BEHIND the clusters and it is the fills that
+// hide them until they clear the tower base.
+// KNOWN LOSS, small and recorded: ClG's pale peach window slot (#F2C7A9) is neither red
+// nor grey nor navy, so it traces as white — 16x25px.
+// 08:30 (and 20:30) — red bar-panel tower on open legs; navy barred block left, dotted block + gantry right.
+// POTRACED off ref f690 (x9=384, sx=1 — the last frame before the first rising doc), slot -382.
 const ClA: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* grey slabs, behind everything (measured #D7D7D7 == the band grey) */}
-    <rect x={308} y={212} width={12} height={108} fill={C.bandGrey} />
-    <rect x={356} y={244} width={11} height={76} fill={C.bandGrey} />
-    {/* left bridge — the ref curves down to the band */}
-    <path d="M 109 242.5 L 48 242.5 Q 28.5 242.5 28.5 262 L 28.5 320" fill="none" stroke={NAVY} strokeWidth="3.5" />
-    {/* navy barred building + roof box + antenna */}
-    <line x1={149.5} y1={163} x2={149.5} y2={177} stroke={NAVY} strokeWidth="3" />
-    <rect x={137.5} y={176.5} width={20.5} height={11} fill={WHT} stroke={NAVY} strokeWidth="3" />
-    <rect x={109.5} y={187.5} width={50} height={132.5} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4, 5, 6].map((r) => (
-      <rect key={r} x={130} y={197 + r * 11} width={15} height={3.5} fill={NAVY} />
-    ))}
-    {/* red tower — antenna, crown, shell (square top-left, ROUNDED top-right),
-        5 hanging stripes. The white shell fill is what hides the rising doc. */}
-    <line x1={197} y1={44} x2={197} y2={58} stroke={C.red} strokeWidth="3" />
-    <rect x={189.5} y={59.5} width={42} height={12} fill={WHT} stroke={C.red} strokeWidth="3" />
-    <path d="M 179.5 199 L 179.5 75.5 L 271.5 75.5 Q 281.5 75.5 281.5 85.5 L 281.5 199" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {[201, 215.5, 231, 245.5, 259.5].map((x, i) => (
-      <line key={i} x1={x} y1={86} x2={x} y2={117} stroke={C.red} strokeWidth="3" />
-    ))}
-    {/* bar panel: two columns run all the way to the band; 7 rungs at a 16.3
-        pitch (the first gap is wider — it holds the solid band); short ticks
-        sit in the 4th and 6th gaps */}
-    <line x1={191} y1={115} x2={191} y2={320} stroke={C.red} strokeWidth="3" />
-    <line x1={273} y1={115} x2={273} y2={320} stroke={C.red} strokeWidth="3" />
-    {[116.5, 138.5, 154.5, 171.5, 187.5, 203.5, 219.5].map((y, i) => (
-      <line key={i} x1={190} y1={y} x2={274} y2={y} stroke={C.red} strokeWidth="3.5" />
-    ))}
-    <rect x={204} y={141} width={56} height={12} fill={C.red} />
-    {[174, 206].map((y) =>
-      [205, 259].map((x) => <line key={`${x}-${y}`} x1={x} y1={y} x2={x} y2={y + 11} stroke={C.red} strokeWidth="3" />),
-    )}
-    {/* legs: top bars, outer walls to the band, one dashed riser each */}
-    <path d="M 158 198.5 L 192 198.5 M 272 198.5 L 306 198.5" fill="none" stroke={C.red} strokeWidth="3.5" />
-    <line x1={159.5} y1={198} x2={159.5} y2={320} stroke={C.red} strokeWidth="3.5" />
-    <line x1={304} y1={198} x2={304} y2={320} stroke={C.red} strokeWidth="3.5" />
-    <line x1={175} y1={206} x2={175} y2={300} stroke={C.red} strokeWidth="3" strokeDasharray="11 15" />
-    <line x1={288.5} y1={206} x2={288.5} y2={300} stroke={C.red} strokeWidth="3" strokeDasharray="11 15" />
-    {/* base box under the open span */}
-    <line x1={218} y1={307} x2={250} y2={307} stroke={C.red} strokeWidth="3" />
-    {[219.5, 233, 248.5].map((x, i) => (
-      <line key={i} x1={x} y1={307} x2={x} y2={320} stroke={C.red} strokeWidth="3" />
-    ))}
-    {/* navy dotted building — OPEN on the left, so the grey slab reads through */}
-    <path d="M 307 208.5 L 342.5 208.5 Q 352.5 208.5 352.5 218.5 L 352.5 320" fill="none" stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1].map((r) =>
-      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={312 + c * 13.5} y={217 + r * 17} width={4} height={7.5} fill={NAVY} />),
-    )}
-    <line x1={307} y1={274.5} x2={358} y2={274.5} stroke={NAVY} strokeWidth="3.5" />
-    {/* right gantry: two rails, one leg to the band — and it STOPS at x434 */}
-    <line x1={352} y1={239} x2={434} y2={239} stroke={NAVY} strokeWidth="3" />
-    <line x1={352} y1={249.5} x2={434} y2={249.5} stroke={NAVY} strokeWidth="3" />
-    <line x1={432.5} y1={239} x2={432.5} y2={320} stroke={NAVY} strokeWidth="3.5" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M194 269 c-1 0 -1 -3 -1 -6 l0 -5 18 0 18 0 0 6 0 6 -18 0 c-9 0 -17 0 -17 -1z M182 193 l0 -60 3 0 4 0 0 41 1 41 4 0 5 0 0 3 c1 1 1 7 0 13 l0 11 2 0 2 0 0 -13 0 -14 6 0 5 0 0 14 0 14 2 -1 2 0 0 -14 0 -13 5 0 6 1 0 13 0 13 2 0 c0 0 1 -1 1 -1 0 -1 0 -7 0 -13 l1 -12 5 -1 6 0 0 14 0 14 2 -1 2 0 0 -14 0 -13 5 0 5 0 0 12 c0 13 0 15 3 15 l1 0 0 -13 0 -14 7 0 6 0 0 -41 0 -41 3 0 2 0 0 56 0 56 -1 2 c-2 3 -3 4 -5 6 l-2 1 -45 0 -45 0 0 -61z M193 202 l0 -9 39 0 40 1 0 8 0 9 -39 0 -40 0 0 -9z M194 189 c-1 0 -1 -3 -1 -6 l0 -6 5 0 5 0 0 6 0 7 -5 0 c-2 0 -4 -1 -4 -1z M262 189 c-1 0 -1 -3 -1 -6 l0 -6 5 0 5 0 0 6 0 7 -5 0 c-2 0 -4 0 -4 -1z M193 167 l0 -7 39 0 40 1 0 6 0 6 -40 0 -39 0 0 -6z M193 150 l0 -6 5 0 5 0 0 6 0 6 -5 0 -5 0 0 -6z M207 150 l0 -6 25 0 25 0 0 6 0 6 -25 0 -25 0 0 -6z M261 150 l0 -6 5 0 5 0 0 6 0 6 -5 0 -5 0 0 -6z M140 148 l0 -3 8 0 7 0 0 3 0 3 -7 0 -8 0 0 -3z M112 76 l0 -66 23 0 23 0 0 66 0 65 -23 0 -23 0 0 -65z m33 56 l0 -2 -7 0 -8 0 0 2 0 1 8 0 7 0 0 -1z m0 -11 l0 -3 -7 0 -8 0 0 2 -1 3 9 0 8 0 -1 -2z m0 -12 l0 -2 -7 0 -8 0 0 2 -1 3 8 -1 8 0 0 -2z m0 -10 l0 -2 -8 0 -8 0 1 1 0 2 8 0 7 0 0 -1z m0 -12 l0 -2 -8 0 -8 0 1 2 0 2 8 0 7 0 0 -2z m0 -12 l1 -1 -8 0 -9 0 1 1 0 2 8 0 7 0 0 -2z m0 -10 l0 -2 -8 0 -8 0 1 1 0 2 8 0 7 0 0 -1z M193 134 l0 -6 39 0 39 0 1 4 c0 3 0 6 0 6 l-1 2 -39 0 -39 0 0 -6z M162 70 l0 -60 14 0 13 0 0 60 0 59 -13 0 -14 0 0 -59z m15 44 l0 -6 -1 0 -2 0 0 6 0 6 2 0 1 0 0 -6z m0 -24 l0 -6 -1 0 -2 0 0 6 0 5 2 0 1 0 0 -5z m0 -27 l0 -6 -1 0 -2 0 0 6 0 5 2 0 1 0 0 -5z m0 -25 l0 -6 -1 0 -2 0 0 6 0 6 2 0 1 0 0 -6z M276 71 c0 -32 0 -59 -1 -59 l0 -2 13 0 14 0 0 55 c0 30 0 57 1 59 l0 5 -13 0 -14 0 0 -58z m15 46 c0 -1 0 -4 0 -6 l-1 -3 -1 0 -1 1 -1 5 0 6 1 0 2 0 1 -3z m-1 -28 l1 -5 -2 0 -2 0 0 6 0 5 1 0 2 0 0 -6z m1 -27 c-1 -6 -1 -7 -3 -6 l-1 1 0 6 0 5 2 0 2 0 0 -6z m0 -21 c0 -2 0 -4 -1 -6 l0 -3 -2 0 -1 0 0 6 0 7 2 -1 2 0 0 -3z M193 118 l0 -6 5 0 5 0 0 6 0 6 -5 0 -5 0 0 -6z M207 118 l0 -6 25 0 25 0 0 6 0 6 -25 0 -25 0 0 -6z M261 118 l0 -6 5 0 5 0 0 6 0 6 -5 0 -5 0 0 -6z M307 119 c0 -2 -1 -66 0 -66 0 0 0 -10 0 -21 l0 -22 22 0 22 0 0 22 0 21 -21 0 -22 0 0 2 -1 2 22 -1 22 0 0 29 0 29 -1 0 -1 -1 1 1 0 2 -3 2 -3 2 -18 0 -18 0 -1 -1z m9 -1 l4 0 0 -30 0 -30 -6 0 -6 0 0 31 0 30 2 0 c0 -1 3 -1 6 -1z m13 -9 l0 -4 -1 0 -2 0 0 4 0 3 2 0 1 0 0 -3z m13 0 l0 -4 -1 0 -2 0 0 4 0 3 2 0 1 0 0 -3z m-13 -18 l1 -3 -2 0 -3 0 1 3 0 4 2 0 1 0 0 -4z m13 1 l0 -4 -2 0 -2 -1 1 4 0 4 2 0 1 0 0 -3z m-22 -60 l0 -21 -6 0 -6 0 0 21 0 20 6 0 6 0 0 -20z M311 113 c0 -1 0 -3 0 -5 l1 -3 3 -1 3 0 0 4 0 3 -1 2 c-2 1 -5 1 -6 0z m5 -4 l0 -4 -2 0 -2 0 0 4 0 3 2 0 2 0 0 -3z M311 94 c-1 -1 0 -6 1 -7 1 0 2 0 4 0 l2 1 0 4 0 4 -1 0 -1 0 0 -4 0 -4 -2 0 -2 0 0 3 0 4 2 0 2 1 -2 0 c-1 0 -2 -1 -3 -2z M193 59 l0 -49 12 0 12 0 0 8 0 9 17 0 17 0 -1 -9 0 -8 10 0 11 0 0 2 c1 2 1 92 0 94 l0 2 -39 0 -39 0 0 -49z M220 20 c1 0 1 -3 1 -6 l0 -4 6 0 5 0 0 6 0 6 -6 0 -6 0 0 -2z M235 16 l0 -6 6 0 6 0 0 6 0 6 -6 0 -6 0 0 -6z" />
+      <path fill="#DCDCDC" d="M308 89 l0 -31 6 0 6 0 0 30 0 30 -4 0 c-3 0 -6 0 -6 1 l-2 0 0 -30z m9 24 l1 -2 0 -3 0 -4 -3 0 -3 1 -1 3 c0 6 2 8 6 5z m1 -21 l0 -4 -2 -1 c-2 0 -3 0 -4 0 -1 1 -2 6 -1 7 l1 2 3 0 3 0 0 -4z M356 85 l0 -3 6 0 5 0 0 3 0 3 -5 0 -6 0 0 -3z M356 71 l0 -5 1 0 c1 0 1 -4 0 -4 l-1 -1 2 -2 2 -2 0 -2 0 -3 -2 -1 -2 -1 0 -20 0 -19 6 0 5 0 0 33 0 32 -5 0 -6 0 0 -5z M308 32 l0 -21 6 0 6 0 0 21 0 20 -6 0 -6 0 0 -20z" />
+      <path fill={NAVY} d="M148 160 l0 -6 -5 0 -6 0 0 -5 0 -4 -15 -1 -14 0 0 -28 0 -27 -11 0 -12 0 0 -2 0 -2 12 0 11 0 0 -37 0 -38 2 0 2 0 0 66 0 65 23 0 23 0 0 -4 0 -4 2 0 c0 1 1 1 2 1 0 0 0 2 0 5 l0 5 -1 0 -2 0 0 5 0 5 -3 0 -4 0 0 6 0 6 -2 0 -2 0 0 -6z m7 -12 l0 -3 -7 0 -8 0 0 3 0 3 8 0 7 0 0 -3z M130 132 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M308 122 l0 -2 18 0 17 0 3 -2 c2 0 3 -2 4 -3 l1 -2 0 -28 0 -29 -21 0 -22 0 0 -1 0 -2 22 0 21 0 0 -21 0 -22 1 0 2 0 0 21 1 22 2 0 2 0 0 1 0 2 -2 0 -2 1 0 10 0 11 11 0 11 0 0 2 0 1 -11 0 -11 1 0 3 0 4 11 0 11 0 0 2 0 1 -11 0 -11 1 -1 12 0 12 -4 3 -3 3 -20 0 -19 0 0 -1z M130 120 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M312 109 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M326 109 l0 -4 2 0 1 0 0 4 0 3 -1 0 -2 0 0 -3z M339 109 l0 -4 2 0 1 0 0 4 0 3 -1 0 -2 0 0 -3z M130 109 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M130 99 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M314 95 l-2 0 0 -4 0 -3 2 0 2 0 0 4 c0 2 0 4 0 4 0 0 -1 0 -2 -1z M326 92 l0 -4 2 0 1 0 0 4 0 3 -1 0 -2 0 0 -3z M339 92 l0 -4 2 0 1 0 0 4 0 3 -1 0 -2 0 0 -3z M386 91 l0 -2 23 0 22 0 0 -4 0 -4 -22 0 -23 0 0 -1 0 -2 23 0 22 0 0 -34 0 -34 2 0 2 0 0 41 0 41 -24 0 -25 0 0 -1z M51 88 c-9 -1 -16 -7 -21 -15 l-1 -3 -1 -30 0 -30 1 0 2 0 0 27 0 28 2 5 c3 5 6 9 12 12 l4 2 13 1 14 0 0 2 0 2 -11 0 c-6 0 -12 -1 -14 -1z M130 87 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M130 76 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M130 65 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M79 4 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M380 4 l0 -4 3 0 2 0 0 4 0 4 -2 0 -3 0 0 -4z" />
+      <path fill={C.red} d="M196 280 l0 -6 -4 -1 -3 0 0 -8 0 -7 -6 -1 -5 0 0 -62 0 -62 -8 0 c-5 0 -10 0 -10 -1 l-2 0 0 -61 0 -61 2 0 2 0 0 60 0 59 14 0 13 0 0 -59 0 -60 2 0 2 0 0 49 0 49 39 0 39 0 1 -2 c0 -1 0 -24 0 -49 l0 -47 1 0 c1 0 2 1 2 2 1 0 1 27 1 59 l0 58 13 0 14 0 -1 -59 0 -60 2 0 3 0 0 22 1 21 -1 0 c-1 0 -1 1 -1 2 0 1 0 2 1 2 l1 -1 0 32 0 32 -1 0 c-1 0 -1 3 -1 7 l0 6 -11 0 -11 0 0 57 0 57 -3 3 c-1 2 -3 5 -4 5 l-2 2 -21 0 -21 1 -1 7 0 8 -16 0 -16 1 -1 6 0 6 -1 0 -2 0 0 -6z m33 -16 l0 -6 -18 0 -18 0 0 5 c0 3 0 6 1 6 0 1 8 1 17 1 l18 0 0 -6z m45 -11 c2 -2 3 -3 5 -6 l1 -2 0 -56 0 -56 -2 0 -3 0 0 41 0 41 -6 0 -7 0 0 14 0 13 -1 0 c-3 0 -3 -2 -3 -15 l0 -12 -5 0 -5 0 0 14 0 13 -2 0 -2 0 0 -14 0 -13 -6 0 -5 1 -1 12 c0 6 0 12 0 13 0 0 -1 1 -1 1 l-2 0 0 -13 0 -13 -6 -1 -5 0 0 13 0 14 -2 0 -2 0 0 -13 0 -14 -5 0 -6 0 0 14 0 13 -2 0 -2 0 0 -11 c1 -6 1 -12 0 -13 l0 -3 -5 0 -4 0 -1 -41 0 -41 -4 0 -3 0 0 60 0 61 45 0 45 0 2 -1z m-2 -51 l0 -8 -40 -1 -39 0 0 9 0 9 40 0 39 0 0 -9z m-69 -19 l0 -6 -5 0 -5 0 0 6 c0 7 0 7 5 7 l5 0 0 -7z m68 0 l0 -6 -5 0 -5 0 0 6 c0 7 0 7 5 7 l5 0 0 -7z m1 -16 l0 -6 -40 -1 -39 0 0 7 0 6 39 0 40 0 0 -6z m-69 -17 l0 -6 -5 0 -5 0 0 6 0 6 5 0 5 0 0 -6z m54 0 l0 -6 -25 0 -25 0 0 6 0 6 25 0 25 0 0 -6z m14 0 l0 -6 -5 0 -5 0 0 6 0 6 5 0 5 0 0 -6z m1 -12 c0 0 0 -3 0 -6 l-1 -4 -39 0 -39 0 0 6 0 6 39 0 39 0 1 -2z m-69 -20 l0 -6 -5 0 -5 0 0 6 0 6 5 0 5 0 0 -6z m54 0 l0 -6 -25 0 -25 0 0 6 0 6 25 0 25 0 0 -6z m14 0 l0 -6 -5 0 -5 0 0 6 0 6 5 0 5 0 0 -6z M174 114 l0 -6 2 0 1 0 0 6 0 6 -1 0 -2 0 0 -6z M287 114 l1 -5 1 -1 1 0 1 3 c0 2 0 5 0 6 l-1 3 -2 0 -1 0 0 -6z M174 90 l0 -6 2 0 1 0 0 6 0 5 -1 0 -2 0 0 -5z M287 90 l0 -6 2 0 2 0 -1 5 0 6 -2 0 -1 0 0 -5z M174 63 l0 -6 2 0 1 0 0 6 0 5 -1 0 -2 0 0 -5z M287 63 l0 -6 1 -1 c2 -1 2 0 3 6 l0 6 -2 0 -2 0 0 -5z M174 38 l0 -6 2 0 1 0 0 6 0 6 -1 0 -2 0 0 -6z M287 38 l0 -6 1 0 2 0 0 3 c1 2 1 5 1 6 l0 3 -2 0 -2 0 0 -6z M217 18 l0 -8 2 0 2 0 0 6 -1 6 6 0 6 0 0 -6 0 -6 2 0 1 0 0 6 0 6 6 0 6 0 0 -6 0 -6 1 0 2 0 0 7 c0 4 1 8 0 8 0 1 -8 1 -17 1 l-16 0 0 -8z" />
+    </g>
   </svg>
 );
 
-// 10:00 cluster: square-column tower + striped round-top tower (doc source)
+// 10:30 (and 22:30) — square-column tower beside a pinstriped round-top tower.
+// POTRACED off ref f690 (x9=384, sx=1 — the last frame before the first rising doc), slot 222.
 const ClB: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* left navy building */}
-    <line x1={132} y1={172.5} x2={132} y2={187.5} stroke={NAVY} strokeWidth="3.5" />
-    <rect x={127} y={187.5} width={11} height={12.5} fill="none" stroke={NAVY} strokeWidth="3.5" />
-    <rect x={110} y={200} width={52.5} height={120} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4, 5, 6].map((r) => (
-      <rect key={r} x={124} y={212.5 + r * 9.7} width={18.5} height={4.5} fill={NAVY} />
-    ))}
-    {/* slim white slab behind-left of the column tower */}
-    <rect x={164} y={65} width={25} height={255} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {/* narrow column tower + mast + square column */}
-    <line x1={198} y1={17.5} x2={198} y2={42.5} stroke={C.red} strokeWidth="3.5" />
-    <rect x={189} y={42.5} width={46} height={277.5} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {([[75, 1], [101, 0], [126, 0], [147.5, 1], [172.5, 0]] as const).map(([y, solid], i) => (
-      <rect key={i} x={201.5} y={y} width={20} height={16} fill={solid ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-    ))}
-    {/* step-roof + main striped tower, rounded top-right */}
-    <path d="M 235 65 L 235 53 L 264 53 L 264 65" fill="none" stroke={C.red} strokeWidth="3.5" />
-    <path d="M 235 320 L 235 65 L 305 65 Q 325 65 325 85 L 325 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {/* pinstripes measured f750: five at local x 249.5 + 14.5c (the sixth
-        "stripe" in the old model was the body's own right edge) */}
-    {[0, 1, 2, 3, 4].map((c) => (
-      <line key={c} x1={249.5 + c * 14.5} y1={114} x2={249.5 + c * 14.5} y2={302} stroke={C.red} strokeWidth="3" />
-    ))}
-    <path d="M 195 320 L 195 302.5 L 227.5 302.5 L 227.5 320" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* gen14 ClB RIGHT re-reg (ref f850, probe: fine window/wall scan):
-        (a) the r3 3-row wide navy building was a full white rect that hid
-        the grey slab — ref shows a NARROW window-wall: grey slab (screen
-        675..684) reads THROUGH a 2x2 window box (localY 223..250, right
-        wall localX 355 to band), (b) the far-right L-bridge (localX
-        360..430) + stepped outline building (440..505) do NOT exist — right
-        of the 11:00 tick the ref is empty white but for one small L-notch
-        at localX 403 (screen 749). Removing the phantom stepped tower is
-        the r15 r2c3 win (misplaced ink → white). */}
-    {/* gen20: the slab reads, but 30px SHORT at the top — ref f900 runs y186..317, we
-        ran y216..317 (943 grey px vs our 747). */}
-    <rect x={328.5} y={186} width={10} height={134} fill="#DCDCDC" />
-    <line x1={355} y1={188} x2={355} y2={320} stroke={NAVY} strokeWidth="3.5" />
-    <rect x={330} y={222} width={25} height={29} fill="none" stroke={NAVY} strokeWidth="3.5" />
-    <line x1={330} y1={236} x2={355} y2={236} stroke={NAVY} strokeWidth="3" />
-    <line x1={342} y1={222} x2={342} y2={251} stroke={NAVY} strokeWidth="3" />
-    {/* small L-notch right of the 11:00 tick */}
-    <path d="M 393 260 L 406 260" fill="none" stroke={NAVY} strokeWidth="3.5" />
-    <line x1={403} y1={260} x2={403} y2={320} stroke={NAVY} strokeWidth="3.5" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M190 148 l0 -138 2 0 2 0 0 6 c0 4 0 8 1 8 l0 2 17 0 16 0 0 -8 0 -8 3 0 4 0 -1 137 0 138 -22 0 -22 0 0 -137z m31 99 l0 -10 -9 0 -10 0 0 10 0 9 10 0 9 0 0 -9z m0 -25 l0 -9 -9 0 -9 1 -1 9 0 9 9 0 10 0 0 -10z m0 -23 l0 -10 -9 0 -10 0 0 9 0 9 1 0 c1 1 5 1 10 1 l8 0 0 -9z m0 -26 l0 -9 -9 0 -10 0 0 9 0 9 10 0 9 0 0 -9z m0 -25 l0 -10 -9 0 -10 0 0 10 0 9 10 0 9 0 0 -9z M206 227 c0 -1 0 -4 0 -6 l1 -3 5 0 5 0 -1 1 c0 0 0 3 0 5 l0 4 -5 0 -4 0 -1 -1z M206 198 l0 -5 5 0 5 0 0 3 c0 2 0 4 0 5 l0 2 -5 0 -5 0 0 -5z M206 147 l1 -4 4 -1 4 0 1 1 c1 1 1 3 1 5 l0 4 -6 0 -5 0 0 -5z M239 271 l-1 -2 1 -2 0 -3 15 0 14 0 0 4 0 4 -14 0 -14 0 -1 -1z M168 135 l0 -125 9 0 9 0 0 125 0 125 -9 0 -9 0 0 -125z M238 135 l0 -125 6 0 5 0 0 103 0 104 2 0 c1 0 2 -1 2 -1 0 -1 0 -48 0 -104 l0 -102 5 0 5 0 0 103 0 103 1 0 c1 0 2 -1 2 -2 1 0 1 -47 1 -102 l0 -101 5 -1 6 0 0 103 0 103 2 0 2 -1 0 -102 0 -103 6 0 5 0 0 102 0 103 1 1 1 0 1 -1 1 -1 0 -102 0 -102 6 0 5 0 0 103 0 103 1 0 c1 0 2 -1 2 -2 1 0 1 -47 1 -103 l0 -101 5 0 6 0 0 2 c1 0 1 52 1 114 l0 112 -2 6 -1 5 -3 4 c-2 2 -5 4 -8 5 l-4 2 -34 0 -34 0 0 -125z M328 144 c-1 0 -1 -6 -1 -12 0 -6 0 -11 1 -11 0 1 0 6 0 12 l0 11 5 0 6 0 0 -9 c1 -5 1 -10 0 -11 l0 -2 -5 0 c-2 0 1 -1 8 -1 l13 0 0 12 0 12 -13 0 c-8 0 -14 0 -14 -1z M127 134 l0 -4 14 0 13 0 0 4 0 3 -13 0 -14 0 0 -3z M114 68 l0 -58 25 0 25 0 0 58 0 58 -25 0 -25 0 0 -58z m26 45 l0 -2 -7 0 -8 0 0 2 0 2 8 0 7 0 0 -2z m0 -11 l0 -2 -8 0 -7 0 0 2 0 3 8 0 8 0 -1 -3z m0 -11 l0 -2 -7 0 -8 0 0 2 0 2 8 0 7 0 0 -2z m0 -10 l0 -2 -7 0 -8 0 0 2 0 1 8 0 7 0 0 -1z m0 -12 l0 -2 -7 0 -8 0 0 2 0 2 8 0 7 0 0 -2z m0 -11 l0 -2 -7 0 -8 0 0 2 0 1 8 0 7 0 0 -1z m0 -11 l0 -2 -7 0 -8 0 0 2 0 1 8 0 7 0 0 -1z M327 111 c0 -4 0 -6 1 -5 0 1 1 2 1 2 l1 0 0 5 0 4 -1 0 -2 0 0 -6z m2 0 l-1 -2 0 4 c0 2 0 3 1 2 0 -1 0 -3 0 -4z M334 113 l0 -5 5 0 4 0 0 5 0 4 -4 0 -5 0 0 -4z m5 0 l0 -4 -1 0 -2 0 0 4 0 3 2 0 1 0 0 -3z M347 113 l0 -5 4 0 4 0 0 5 0 4 -4 0 -4 0 0 -4z M327 100 l0 -5 14 0 14 0 0 5 0 4 -8 0 -8 0 0 -1 c0 -1 0 -3 0 -4 l0 -3 -5 0 -6 0 0 4 -1 5 0 -5z M347 87 l0 -5 4 0 4 0 0 4 0 5 -4 0 -4 1 0 -5z M327 86 l0 -4 1 4 1 5 0 -5 1 -4 0 4 0 5 -1 0 -2 0 0 -5z M334 87 l0 -5 1 0 1 0 0 3 c0 1 1 3 2 4 l1 1 0 -4 0 -4 2 0 2 0 0 5 0 4 -4 0 -5 0 0 -4z M327 44 l0 -34 14 0 14 0 0 34 0 34 -14 0 -14 0 0 -34z m12 0 l0 -33 -4 0 -5 0 0 5 0 4 -1 0 -1 0 0 29 0 28 6 0 5 0 0 -33z M198 16 l0 -6 5 0 6 0 0 2 c0 1 0 3 0 6 l0 4 -6 0 -5 0 0 -6z M213 16 l0 -6 6 0 6 0 0 6 0 6 -6 0 -6 0 0 -6z" />
+      <path fill="#DCDCDC" d="M328 132 l0 -11 2 0 c1 1 3 1 5 1 l4 0 0 2 c1 1 1 6 0 11 l0 9 -6 0 -5 0 0 -12z M328 100 l0 -4 5 0 6 0 0 3 c0 1 0 3 0 4 l0 1 -6 0 -5 0 0 -4z M334 77 l-6 0 0 -29 0 -28 1 0 1 0 0 -4 0 -5 5 0 4 0 0 33 0 33 8 0 8 1 -8 0 c-4 0 -10 -1 -13 -1z M109 39 c0 -16 1 -22 1 -14 0 8 0 20 0 28 0 7 -1 1 -1 -14z" />
+      <path fill={NAVY} d="M134 149 l0 -9 -5 0 -6 0 0 -5 0 -6 -6 0 -7 0 0 -59 0 -60 2 0 2 0 0 58 0 58 17 -1 c10 0 21 0 25 0 l8 1 0 2 0 1 -3 0 -3 0 0 6 0 5 -10 0 -10 0 0 9 0 9 -2 0 -2 0 0 -9z m20 -15 l0 -4 -13 0 -14 0 0 4 0 3 14 0 13 0 0 -3z M328 147 l0 -2 14 0 13 0 0 -12 0 -12 -13 0 -14 0 0 -2 c0 -1 0 -2 1 -2 l1 0 0 -4 0 -5 -1 0 c-1 0 -1 -1 -1 -2 l0 -2 14 0 13 0 0 -4 0 -5 -13 0 -14 0 0 -2 c0 -1 0 -2 1 -2 l1 0 0 -4 0 -5 -1 0 c-1 0 -1 -1 -1 -2 l0 -2 14 0 13 0 0 -34 0 -34 2 0 2 0 0 30 1 30 8 0 9 0 0 2 0 1 -9 0 -9 0 0 38 0 37 -15 0 -16 0 0 -1z m15 -34 l0 -5 -4 0 -5 0 0 5 0 4 5 0 4 0 0 -4z m12 0 l0 -5 -4 0 -4 0 0 5 0 4 4 0 4 0 0 -4z m0 -27 l0 -4 -4 0 -4 0 0 5 0 5 4 -1 4 0 0 -5z m-12 1 l0 -5 -4 0 -5 0 0 5 0 4 5 0 4 0 0 -4z M125 113 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M125 102 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M125 91 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M125 81 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M386 72 l0 -2 8 0 9 0 0 -30 0 -30 2 0 1 0 0 32 0 31 -10 0 -10 0 0 -1z M125 69 l0 -2 8 0 7 0 0 2 0 2 -7 0 -8 0 0 -2z M125 58 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M125 47 l0 -2 8 0 7 0 0 2 0 1 -7 0 -8 0 0 -1z M78 4 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M380 4 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z" />
+      <path fill={C.red} d="M197 312 c0 -1 0 -6 0 -12 l0 -11 -6 -1 -5 0 0 -12 0 -12 -11 0 -11 0 0 -127 0 -127 2 0 2 0 0 125 0 125 9 0 9 0 0 -125 0 -125 2 0 2 0 0 138 0 137 22 0 22 0 0 -137 1 -137 1 -1 2 0 0 125 0 125 34 0 35 0 4 -2 c2 -1 5 -3 7 -5 l3 -4 1 -5 2 -6 0 -114 0 -114 1 0 2 0 0 34 c0 19 0 71 0 116 l0 82 -1 3 c-2 8 -9 15 -17 18 l-3 1 -17 0 -17 0 0 5 0 6 -17 0 -16 1 -1 6 0 6 -19 0 -18 0 0 13 0 12 -2 0 c0 0 -1 -1 -2 -1z m71 -44 l0 -4 -14 0 -15 0 0 3 -1 2 1 2 1 1 14 0 14 0 0 -4z M202 247 l0 -10 10 0 9 0 0 10 0 9 -9 0 -10 0 0 -9z M202 223 l1 -9 9 -1 9 0 0 9 0 10 -10 0 -9 0 0 -9z m14 1 c0 -2 0 -5 0 -5 l1 -1 -5 0 -5 0 -1 3 c0 2 0 5 0 6 l1 1 4 0 5 0 0 -4z M249 113 l0 -103 2 0 2 0 0 101 c0 56 0 103 -1 103 0 1 -1 2 -2 2 l-1 0 0 -103z M263 113 l0 -103 2 0 2 0 0 101 c0 56 0 103 -1 103 0 1 -1 2 -2 2 l-1 0 0 -103z M278 113 l0 -103 2 0 2 0 0 103 0 102 -2 1 -2 0 0 -103z M294 215 c-1 0 -1 -46 -1 -103 l0 -102 2 0 2 0 0 101 c0 56 0 103 -1 103 0 2 -1 2 -2 1z M308 113 l0 -103 2 0 2 0 0 101 c0 56 0 103 -1 103 0 1 -1 2 -2 2 l-1 0 0 -103z M203 207 l-1 0 0 -9 0 -9 10 0 9 0 0 10 0 9 -8 0 c-5 0 -9 0 -10 -1z m13 -6 c0 -1 0 -3 0 -5 l0 -3 -5 0 -5 0 0 5 0 5 5 0 5 0 0 -2z M202 173 l0 -9 10 0 9 0 0 9 0 9 -9 0 -10 0 0 -9z M202 148 l0 -10 10 0 9 0 0 10 0 9 -9 0 -10 0 0 -9z m15 0 c0 -2 0 -4 -1 -5 l-1 -1 -4 0 -4 1 -1 4 0 5 5 0 6 0 0 -4z M195 24 c-1 0 -1 -4 -1 -8 l0 -6 2 0 2 0 0 6 0 6 6 0 5 0 0 -4 c0 -3 0 -5 0 -6 l0 -2 2 0 2 0 0 6 0 6 6 0 6 0 0 -6 0 -6 2 0 1 0 0 8 0 8 -16 0 -17 0 0 -2z" />
+    </g>
   </svg>
 );
 
-// 12:00 cluster: twin-column square-window tower
+// 12:30 (and 00:30) — twin-column square-window tower; shelf-glyph block left, dotted block right.
+// POTRACED off ref f690 (x9=384, sx=1 — the last frame before the first rising doc), slot 830.
 const ClC: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* far-left thin outline bridge */}
-    <path d="M 49.5 320 L 49.5 270 Q 49.5 262.5 57 262.5 L 107 262.5 L 107 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {/* left WHITE building w/ shelf glyphs (r7 re-trace, ink runs f860:
-        the r3 navy-block-with-slots read was inverted — ref body is white,
-        4 "⊓" shelves y227+15.7k x110.5 w26, roof bar y214 spanning to 163,
-        ticks ON the roof at 106.5/118.5/134.5/152.5) */}
-    <rect x={100.5} y={216.5} width={47} height={103.5} fill={WHT} />
-    <line x1={102.3} y1={219} x2={102.3} y2={320} stroke={NAVY} strokeWidth="3.5" />
-    <line x1={145.7} y1={219} x2={145.7} y2={320} stroke={NAVY} strokeWidth="3.5" />
-    <rect x={100.5} y={214} width={62.5} height={5} fill={NAVY} />
-    {[106.5, 118.5, 134.5, 152.5].map((x) => (
-      <line key={x} x1={x} y1={204} x2={x} y2={214} stroke={NAVY} strokeWidth="3" />
-    ))}
-    {[0, 1, 2, 3].map((k) => (
-      <React.Fragment key={k}>
-        <rect x={110.5} y={227 + k * 15.7} width={26} height={4.5} fill={NAVY} />
-        <rect x={110.5} y={231.5 + k * 15.7} width={3.5} height={3.5} fill={NAVY} />
-        <rect x={133} y={231.5 + k * 15.7} width={3.5} height={3.5} fill={NAVY} />
-      </React.Fragment>
-    ))}
-    {/* gen20 — the grey slab was drawn BEHIND the dots building's white fill and
-        never rendered a pixel: measured over the whole cluster the ref carries 870 grey
-        px and we carried 136. The slab is not behind the building in the ref, it is IN
-        it. Moved below, painted last, on the ref's own box (local x305..314 y214..317). */}
-    {/* twin red tower: left col w/ 2 masts, right col w/ stepped crown */}
-    <line x1={179.5} y1={42.5} x2={179.5} y2={70} stroke={C.red} strokeWidth="3.5" />
-    <line x1={194.5} y1={57.5} x2={194.5} y2={70} stroke={C.red} strokeWidth="3.5" />
-    <path d="M 239.5 70 L 239.5 55 L 277 55 L 277 70" fill="none" stroke={C.red} strokeWidth="3.5" />
-    <rect x={167} y={70} width={55} height={250} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    <rect x={222} y={70} width={80} height={250} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {([[97.5, 1], [122.5, 0], [147.5, 0], [172.5, 1], [197.5, 0], [222.5, 0], [247.5, 0]] as const).map(([y, solid], i) => (
-      <rect key={i} x={180} y={y} width={17} height={16} fill={solid ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-    ))}
-    {([[97.5, 0, 1], [122.5, 0, 0], [147.5, 0, 0], [172.5, 1, 0], [197.5, 0, 0], [222.5, 0, 1], [247.5, 0, 0]] as const).map(([y, sL, sR], i) => (
-      <React.Fragment key={i}>
-        <rect x={238} y={y} width={17} height={16} fill={sL ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-        <rect x={263} y={y} width={17} height={16} fill={sR ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-      </React.Fragment>
-    ))}
-    <line x1={167} y1={282.5} x2={302} y2={282.5} stroke={C.red} strokeWidth="3.5" />
-    <path d="M 219.5 320 L 219.5 305 L 252 305 L 252 320" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* right navy building w/ dots (r7 re-trace f860: 2 rows x 3 cols at
-        306.5/318.5/332.5 y220/237.5, inner rail y277) + measured L-pipe
-        right furniture (rail y236.5 -> drop pipe x394 -> band; tall thin
-        post x374.5; the r3 "y270 bridge to 452" does not exist in ref) */}
-    <path d="M 302 320 L 302 215 Q 302 208 309.5 208 L 340 208 Q 348.5 208 348.5 215.5 L 348.5 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1].map((r) =>
-      [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={306.5 + c * 13} y={220 + r * 17.5} width={4} height={8.5} fill={NAVY} />),
-    )}
-    <rect x={302} y={277} width={48} height={3} fill={NAVY} />
-    <rect x={348.5} y={236.5} width={50} height={6.5} fill={NAVY} />
-    <rect x={374.5} y={200} width={4.5} height={120} fill={NAVY} />
-    <rect x={394} y={240} width={5} height={80} fill={NAVY} />
-    {/* the slab, painted LAST so it reads (ref f900: grey runs x305..314 y214..317) */}
-    <rect x={305} y={214} width={10} height={104} fill="#DCDCDC" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M243 264 l0 -8 -10 -1 -10 0 0 -105 0 -104 38 0 37 0 0 104 0 105 -11 0 -11 1 -1 8 0 8 -16 0 -16 0 0 -8z m21 -39 l0 -10 -9 0 -9 0 0 10 0 9 9 0 9 0 0 -9z m27 0 l0 -9 -10 -1 -9 0 0 10 0 9 9 0 10 0 0 -9z m-27 -25 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m26 0 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m-26 -24 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m26 0 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m-26 -25 l0 -9 -9 0 -10 0 0 9 0 9 10 0 9 0 0 -9z m26 0 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m-26 -26 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m26 0 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m-26 -24 l0 -9 -9 0 -9 0 0 9 0 10 9 -1 9 0 0 -9z m26 0 l0 -9 -9 0 -9 0 0 9 0 10 9 -1 9 0 0 -9z m-26 -25 l0 -9 -9 0 -8 0 -1 9 0 9 9 0 9 0 0 -9z m26 -1 l0 -9 -9 0 -9 0 0 10 0 9 9 0 9 0 0 -10z M250 229 c-1 0 -1 -3 -1 -5 l0 -5 6 0 5 0 0 6 0 5 -5 0 c-2 0 -5 0 -5 -1z M250 205 c-1 0 -1 -3 -1 -5 l0 -5 5 0 6 0 -1 5 0 6 -4 0 c-3 0 -5 0 -5 -1z M277 205 l-1 0 0 -5 0 -5 5 0 5 0 0 5 0 6 -4 0 c-2 0 -4 0 -5 -1z M250 181 c-1 0 -1 -3 -1 -5 l0 -5 6 0 5 0 0 5 0 6 -5 0 c-3 0 -5 0 -5 -1z M277 181 l-1 0 0 -5 0 -5 5 0 5 0 0 6 0 5 -4 0 c-2 0 -4 0 -5 -1z M276 151 l0 -5 5 0 5 0 0 3 c0 1 0 3 0 5 l0 2 -5 0 -5 0 0 -5z M250 130 c-1 0 -1 -3 -1 -5 l0 -5 5 0 6 0 0 6 0 5 -5 0 c-3 0 -5 0 -5 -1z M276 126 l0 -6 5 0 5 0 0 6 0 5 -5 0 -5 0 0 -5z M249 101 l0 -5 5 0 6 0 0 5 0 5 -6 0 -5 0 0 -5z M249 80 c0 -1 0 -4 0 -6 l1 -3 5 -1 5 0 0 5 0 6 -5 0 -5 0 -1 -1z M276 76 l0 -6 5 0 5 0 0 6 0 5 -5 0 -5 0 0 -5z M170 151 l0 -105 25 0 24 0 0 105 0 104 -24 0 -25 0 0 -104z m28 73 l0 -9 -9 0 -9 1 -1 9 0 9 9 0 10 0 0 -10z m0 -24 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m0 -24 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m0 -25 l0 -9 -9 0 -10 0 0 9 0 10 9 -1 10 0 0 -9z m0 -26 l0 -9 -9 0 -9 0 0 9 0 9 9 0 9 0 0 -9z m0 -24 l0 -9 -9 0 -9 0 0 9 0 10 9 -1 9 0 0 -9z m0 -25 l0 -9 -9 -1 -9 0 0 9 0 10 9 0 9 0 0 -9z M184 205 c-1 0 -1 -3 -1 -5 l0 -5 6 0 5 0 0 5 0 6 -5 0 c-3 0 -5 0 -5 -1z M184 181 l-1 0 0 -5 0 -5 6 0 5 0 0 5 0 6 -4 0 c-3 0 -5 0 -6 -1z M184 130 c-1 0 -1 -3 -1 -5 l0 -5 6 0 5 0 0 6 0 5 -5 0 c-2 0 -5 0 -5 -1z M183 101 l0 -5 6 0 5 0 0 5 0 5 -5 0 -6 0 0 -5z M183 76 l1 -5 5 -1 5 0 0 5 0 6 -6 0 -5 0 0 -5z M117 148 c-1 -1 -4 -3 -4 -4 l-2 -2 0 -14 0 -13 4 -1 4 0 0 9 0 9 2 0 2 0 0 -9 0 -8 6 0 7 0 0 9 0 9 2 -1 1 0 0 -8 c0 -4 0 -8 1 -9 l1 -1 6 0 6 1 0 8 0 9 2 0 1 0 0 -9 1 -8 4 -1 5 0 0 17 0 18 -23 0 -22 0 -4 -1z M302 85 l0 -32 22 0 22 0 0 29 0 30 -2 2 c0 1 -2 2 -2 2 0 -1 -1 -1 -1 0 l0 1 -20 0 -19 1 0 -33z m12 27 l0 -4 -1 1 c-1 1 -3 1 -4 1 l-3 0 0 -4 0 -4 1 -1 c2 -1 5 -1 5 0 0 1 0 1 1 1 l1 0 0 -6 0 -6 -1 0 c-1 0 -1 1 -1 2 l0 2 -2 0 c-3 0 -5 -4 -3 -8 l0 -2 3 0 c1 0 2 0 2 1 0 1 0 1 1 1 l1 0 0 -16 0 -16 -5 0 -5 0 0 31 0 31 5 0 5 0 0 -4z m-3 -6 l0 -4 -1 0 -2 0 0 4 0 3 2 0 1 0 0 -3z m14 0 l0 -4 -2 0 -2 0 0 4 0 3 2 0 2 0 0 -3z m13 -1 l1 -4 -3 1 -2 0 0 4 0 3 2 0 2 0 0 -4z m-13 -17 l0 -3 -2 0 -2 0 0 4 -1 4 3 -1 2 0 0 -4z m13 1 l0 -4 -2 0 -2 0 0 3 0 4 2 0 c1 1 3 1 3 1 0 0 -1 -2 -1 -4z m-27 0 l0 -4 -1 0 -2 0 0 4 0 3 2 0 1 0 0 -3z M104 79 c1 -18 1 -41 1 -51 l0 -18 20 0 20 0 0 51 0 50 -21 0 -20 0 0 -32z m33 21 l0 -4 -1 0 c-1 0 -2 1 -2 2 l-1 2 -9 0 -9 0 0 -2 1 -2 -3 0 -3 0 1 3 0 4 13 0 13 0 0 -3z m0 -16 l0 -4 -2 0 -2 -1 0 2 1 3 -10 0 -9 0 0 -2 0 -2 -2 0 -2 0 1 -1 0 -1 -1 0 -1 1 1 4 0 4 13 0 13 0 0 -3z m0 -16 l0 -4 -2 0 -2 -1 1 2 0 3 -10 0 -9 0 0 -2 1 -2 -3 0 -2 0 0 4 0 4 13 0 13 0 0 -4z m0 -16 l0 -4 -2 0 -2 -1 1 3 0 2 -9 0 -10 0 0 -2 1 -2 -3 0 -3 0 1 3 0 4 13 0 13 0 0 -3z M148 61 l0 -51 9 0 10 0 -1 50 0 51 -9 0 -9 0 0 -50z M350 71 l0 -18 3 0 2 0 0 -1 0 -2 -2 0 -3 0 0 -20 0 -20 13 0 13 0 0 39 0 39 -6 -1 c-4 0 -9 0 -12 0 l-6 -1 0 1 c0 1 0 1 -1 1 l-1 0 0 -17z M58 62 c-3 -1 -9 -7 -10 -10 l-1 -3 0 -20 0 -19 14 0 13 0 0 27 0 27 -6 0 c-4 0 -8 -1 -10 -2z M302 30 l0 -20 22 0 22 0 0 20 0 20 -22 0 -22 0 0 -20z m9 18 l3 0 0 -18 0 -19 -5 0 -5 0 0 19 0 19 2 0 c0 -1 3 -1 5 -1z M170 26 l0 -16 24 0 24 0 0 8 0 7 16 0 16 0 0 -7 0 -8 24 0 24 0 0 16 0 16 -64 0 -64 0 0 -16z M222 16 l0 -6 5 0 5 0 0 6 0 5 -5 0 -5 0 0 -5z M236 16 l0 -6 5 0 5 0 0 6 0 5 -5 0 -5 0 0 -5z" />
+      <path fill="#DCDCDC" d="M304 85 l0 -31 5 0 5 0 0 16 0 16 -1 0 c-1 0 -1 0 -1 -1 0 -1 -1 -1 -2 -1 l-3 0 0 2 c-2 4 0 8 3 8 l2 0 0 -2 c0 -1 0 -2 1 -2 l1 0 0 6 0 6 -1 0 c-1 0 -1 0 -1 -1 0 -1 -3 -1 -5 0 l-1 1 0 4 0 4 3 0 c1 0 3 0 4 -1 l1 -1 0 4 0 4 -5 0 -5 0 0 -31z M304 30 l0 -19 5 0 5 0 0 19 0 18 -3 0 c-2 0 -5 0 -5 1 l-2 0 0 -19z" />
+      <path fill={NAVY} d="M74 179 l0 -111 -7 0 -8 -1 -5 -3 -4 -3 -3 -4 -3 -5 -1 -21 0 -21 2 0 2 0 0 19 0 20 1 3 c2 4 7 9 11 11 l3 1 6 0 6 0 0 -32 0 -32 2 0 2 0 0 4 0 4 -1 0 -1 0 0 141 0 141 -1 0 -1 0 0 -111z M376 191 l0 -99 -13 0 -13 0 0 10 0 10 -2 3 c-1 1 -3 4 -5 4 l-3 2 -19 0 -19 0 0 -1 c0 -3 2 -3 21 -3 l18 0 3 -2 2 -3 0 -29 0 -30 -22 0 -22 0 0 -1 0 -2 22 0 22 0 0 -20 0 -20 2 0 2 0 0 20 0 20 3 0 2 0 0 2 0 1 -2 0 -3 0 0 18 0 17 13 0 13 0 0 -40 c0 -22 0 -41 0 -44 l0 -4 2 0 2 0 0 4 0 4 -1 0 -2 0 0 141 -1 142 0 -100z M114 150 l-3 -3 -2 -3 -2 -3 0 -14 0 -13 -3 0 -3 0 0 -23 0 -23 -8 0 -8 0 0 -2 0 -2 8 0 8 0 0 -27 0 -27 2 0 2 0 0 51 -1 50 20 0 21 0 0 -50 0 -51 2 0 1 0 0 51 0 50 9 0 9 0 0 1 0 2 -5 0 -4 1 -1 8 0 9 -1 0 -2 0 0 -9 0 -8 -6 -1 -6 0 -1 1 c-1 1 -1 5 -1 9 l0 8 -1 0 -2 1 0 -9 0 -9 -7 0 -6 0 0 8 0 9 -2 0 -2 0 0 -9 0 -9 -4 0 -4 1 0 13 0 14 2 2 c0 1 3 3 5 4 l3 1 22 0 23 0 0 2 0 1 -24 0 -25 0 -3 -2z M308 106 l0 -4 2 0 1 0 0 4 0 3 -1 0 -2 0 0 -3z M321 106 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M334 106 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M111 100 l0 -4 2 0 2 0 0 2 0 2 9 0 9 0 1 -2 c0 -1 1 -2 2 -2 l1 0 0 4 0 3 -13 0 -13 0 0 -3z M308 89 l0 -4 2 0 1 0 0 4 0 3 -1 0 -2 0 0 -3z M321 89 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M334 89 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M386 90 c0 -1 2 -3 4 -4 l4 -2 1 -4 2 -3 0 -34 0 -33 2 0 1 0 0 35 0 34 -2 4 c-2 4 -6 7 -9 8 l-3 0 0 -1z M111 84 l0 -4 2 0 2 0 0 2 0 2 9 0 9 0 1 -2 c0 -1 1 -2 2 -2 l1 0 0 4 0 3 -13 0 -13 0 0 -3z M111 68 l0 -4 2 0 2 0 0 2 0 2 10 0 9 0 0 -2 0 -2 2 0 1 0 0 4 0 4 -13 0 -13 0 0 -4z M111 52 l0 -4 2 0 2 0 0 2 0 2 10 0 9 0 0 -2 0 -2 2 0 1 0 0 4 0 3 -13 0 -13 0 0 -3z" />
+      <path fill={C.red} d="M180 274 l0 -14 -7 -1 -6 0 0 -2 c-1 -3 -1 -243 0 -245 0 -1 1 -2 2 -2 l1 0 0 16 0 16 64 0 64 0 0 -16 0 -16 2 0 2 0 0 125 0 124 -11 0 -12 0 0 9 0 8 -20 0 -20 0 0 -8 0 -9 -20 0 -21 0 0 7 0 6 -2 0 -2 0 0 -6 0 -7 -5 0 -6 0 0 15 0 14 -1 0 -2 0 0 -14z m95 -10 l1 -8 11 -1 11 0 0 -105 0 -104 -37 0 -38 0 0 104 0 105 10 0 10 1 0 8 0 8 16 0 16 0 0 -8z m-56 -113 l0 -105 -24 0 -25 0 0 105 0 104 25 0 24 0 0 -104z M246 225 l0 -10 9 0 9 0 0 10 0 9 -9 0 -9 0 0 -9z m14 0 l0 -6 -5 0 -6 0 0 5 c0 2 0 5 1 5 0 1 3 1 5 1 l5 0 0 -5z M272 225 l0 -10 9 0 10 1 0 9 0 9 -10 0 -9 0 0 -9z M246 200 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -6 0 0 5 c0 6 0 6 6 6 l5 0 0 -6z M272 200 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -5 0 0 5 0 5 1 0 c1 1 3 1 5 1 l4 0 0 -6z M246 176 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -6 0 0 5 c0 6 0 6 6 6 l5 0 0 -6z M272 176 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 1 l0 -6 -5 0 -5 0 0 5 0 5 1 0 c1 1 3 1 5 1 l4 0 0 -5z M245 151 l0 -9 10 0 9 0 0 9 0 9 -9 0 -10 0 0 -9z M272 151 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 3 c0 -1 0 -4 0 -5 l0 -3 -5 0 -5 0 0 5 0 5 5 0 5 0 0 -2z M246 125 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 1 l0 -6 -5 0 -6 0 0 5 c0 6 0 6 6 6 l5 0 0 -5z M272 125 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 1 l0 -6 -5 0 -5 0 0 6 0 5 5 0 5 0 0 -5z M246 101 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -6 0 0 5 0 5 6 0 5 0 0 -5z M272 101 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z M246 76 l1 -9 8 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 -1 l0 -5 -5 0 -5 1 -1 3 c0 2 0 5 0 6 l1 1 5 0 5 0 0 -6z M272 76 l0 -10 9 0 9 0 0 9 0 10 -9 0 -9 0 0 -9z m14 0 l0 -6 -5 0 -5 0 0 6 0 5 5 0 5 0 0 -5z M179 225 l1 -9 9 -1 9 0 0 9 0 10 -10 0 -9 0 0 -9z M180 200 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -6 0 0 5 c0 6 0 6 6 6 l5 0 0 -6z M180 176 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -6 0 0 5 0 5 1 0 c1 1 3 1 6 1 l4 0 0 -6z M179 151 l0 -9 10 0 9 0 0 9 0 9 -9 0 -10 0 0 -9z M180 125 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 1 l0 -6 -5 0 -6 0 0 5 c0 6 0 6 6 6 l5 0 0 -5z M180 101 l0 -9 9 0 9 0 0 9 0 9 -9 0 -9 0 0 -9z m14 0 l0 -5 -5 0 -6 0 0 5 0 5 6 0 5 0 0 -5z M180 75 l0 -9 9 0 9 1 0 9 0 9 -9 0 -9 0 0 -10z m14 0 l0 -5 -5 0 -5 1 -1 5 0 5 5 0 6 0 0 -6z M218 18 l0 -8 2 0 2 0 0 6 0 5 5 0 5 0 0 -5 0 -6 2 0 2 0 0 6 0 5 5 0 5 0 0 -5 0 -6 2 0 2 0 0 8 0 7 -16 0 -16 0 0 -7z" />
+    </g>
   </svg>
 );
 
-// 14:00 cluster: capped tower w/ twin window slots + dash-grid base (f900)
+// 14:30 (and 02:30) — capped tower with twin window slots over a dash-grid body.
+// POTRACED off ref f916 (x9=25.5, sx=1 — the last frame before the navy sweep), slot 1427.
 const ClG: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* left low bridge */}
-    <path d="M 56 320 L 56 267.5 L 118 267.5 L 118 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {/* left navy building (r7 re-trace f860: rooftop box x152.5 w21 h8.5
-        no mast; 7 dashes x146 w14 at y201.5+11k — the r3 8-dash stack sat
-        24px low and 10px left) */}
-    <rect x={152.5} y={180.5} width={21} height={8.5} fill={WHT} stroke={NAVY} strokeWidth="3" />
-    <rect x={118} y={190} width={53} height={130} fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4, 5, 6].map((r) => (
-      <rect key={r} x={146} y={201.5 + r * 11} width={14} height={3.5} fill={NAVY} />
-    ))}
-    {/* gen20 — this cluster carries TWO grey slabs and we rendered 226 px of one of
-        them. The slab was drawn here, before the right navy building, whose white fill
-        then swallowed all but a 2px sliver (measured x297..298). Over the whole cluster:
-        ref 1,866 grey px, ours 315. Both slabs now live at the END of this svg, on the
-        ref's own boxes. ClA is the control — where we already paint a slab last, it
-        matches the ref to the pixel (663 vs 823 over the same x356..366 y242..317). */}
-    {/* gen13 ClG RE-REGISTRATION (ref f877/897/907, probe_clg2.py):
-        the red tower sat ~7px LEFT and its broad-body RIGHT wall was hidden
-        under the navy building's white fill (navy started local 285, body
-        wall 290) → att body read w105 vs ref w120, npx 4900 vs 6300. Fix:
-        (a) head shifted right + narrowed about its center (att center 226 →
-        ref 233.5, ×0.94), (b) body walls 170/290 → 175/294 (right wall now
-        VISIBLE), (c) navy building moved right (+15) so the body wall + grey
-        slab show, (d) dash grid re-pitched 186→196 to match ref cols. */}
-    {/* crown + masts */}
-    <line x1={226} y1={57.5} x2={226} y2={70} stroke={C.red} strokeWidth="3.5" />
-    <line x1={235.5} y1={57.5} x2={235.5} y2={70} stroke={C.red} strokeWidth="3.5" />
-    <rect x={190} y={70} width={92} height={22} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    <line x1={195} y1={100} x2={276} y2={100} stroke={C.red} strokeWidth="3.5" />
-    {/* upper shaft + inner panel w/ twin slots (left solid, right pale) */}
-    <rect x={186.5} y={97.5} width={94} height={107.5} fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    <rect x={207.5} y={122.5} width={63.5} height={82.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <rect x={216.5} y={135} width={17} height={25} fill={C.red} />
-    <rect x={238} y={135} width={16} height={25} fill="#F2C7A9" />
-    <rect x={216.5} y={160} width={17} height={45} fill="none" stroke={C.red} strokeWidth="3" />
-    <rect x={238} y={160} width={16} height={45} fill="none" stroke={C.red} strokeWidth="3" />
-    {/* broad body w/ dash windows — walls 175/294 (ref-registered, right
-        wall visible) */}
-    <path d="M 175 320 L 175 215 Q 175 205 185 205 L 284 205 Q 294 205 294 215 L 294 320" fill={WHT} stroke={C.red} strokeWidth="3.5" />
-    {[0, 1, 2, 3].map((r) =>
-      [0, 1, 2, 3, 4].map((c) => (
-        <rect key={`${r}${c}`} x={196 + c * 19.5} y={224 + r * 25} width={4} height={11} fill={C.red} />
-      )),
-    )}
-    <path d="M 218.5 330 L 218.5 307.5 L 250.5 307.5 L 250.5 330" fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* right navy building (r7 re-trace f860 + gen13 +15px shift so the body
-        right wall/grey slab read: window section = 4 horizontal rails
-        y214.5/226.5/240/252 x310.5..363.5 with short dividers at 336.5/350.5
-        between rail pairs; bridge rails right at y263/y302 to the 15:00
-        rounded outline) */}
-    <path d="M 300 320 L 300 195 Q 300 187.5 307.5 187.5 L 355.5 187.5 Q 363.5 187.5 363.5 195 L 363.5 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    {[214.5, 226.5, 240, 252].map((y, i) => (
-      <rect key={i} x={310.5} y={y} width={53} height={i < 2 ? 3.5 : 4} fill={NAVY} />
-    ))}
-    {[336.5, 350.5].map((x) => (
-      <React.Fragment key={x}>
-        <rect x={x} y={218} width={3.5} height={8.5} fill={NAVY} />
-        <rect x={x} y={244} width={3.5} height={8} fill={NAVY} />
-      </React.Fragment>
-    ))}
-    <rect x={363.5} y={263} width={24.5} height={3} fill={NAVY} />
-    <rect x={363.5} y={302} width={24.5} height={4.5} fill={NAVY} />
-    {/* far-right rounded outline w/ L-marks (toward 15:00) */}
-    <path d="M 388 320 L 388 278 Q 388 270 396 270 L 462 270 L 462 320" fill={WHT} stroke={NAVY} strokeWidth="3.5" />
-    <path d="M 408 285 L 408 298 L 420 298" fill="none" stroke={NAVY} strokeWidth="3" />
-    <path d="M 428 292 L 428 305 L 440 305" fill="none" stroke={NAVY} strokeWidth="3" />
-    {/* the two slabs, painted LAST so they read. ref f900 grey runs, this cluster:
-        x299..312 y191..317 (1,347 px) and x354..363 y266..317 (441 px). Both sit where
-        we drew the right navy building's white fill and its two walls — the ref has NO
-        navy at either (its barred building's right wall is at x348, ours at x363). So
-        the grey replaces ink that was wrong AND adds ink that was absent.
-        HONEST RESIDUAL: these are SOLID rects and the ref's slabs are interrupted by the
-        building's own bars, so above-band grey now reads 5,538 against the ref's 4,583
-        (we were at 2,165) — right place, ~20% over. Trimming the rects is not worth a
-        render: every SSIM delta in this window is inside 3e-4. */}
-    <rect x={299} y={191} width={14} height={127} fill="#DCDCDC" />
-    <rect x={354} y={266} width={10} height={52} fill="#DCDCDC" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M191 255 l-1 0 0 -7 0 -6 45 0 45 0 0 6 0 7 -2 0 c-1 1 -85 1 -87 0z M199 235 l0 -3 37 0 36 0 0 3 0 3 -36 0 -37 0 0 -3z M189 177 l0 -51 6 0 6 0 0 2 c1 1 1 19 1 41 l-1 40 34 -1 33 0 0 -4 c1 -3 1 -21 1 -41 l0 -37 5 0 5 0 0 5 c1 6 1 69 0 85 l0 12 -45 0 -45 0 0 -51z M205 165 l0 -39 5 0 4 0 0 36 0 35 9 0 10 0 0 -35 1 -35 2 -1 2 0 -1 18 c0 10 0 26 1 36 l0 17 10 0 9 0 0 -35 0 -36 4 0 4 0 0 39 0 39 -30 0 -30 0 0 -39z M242 170 l0 -24 5 0 6 0 1 2 c0 1 0 12 -1 24 l0 21 -6 0 -5 0 0 -23z M217 173 c0 0 0 -6 0 -14 l0 -13 6 0 6 0 0 13 0 14 -3 0 c-4 1 -8 1 -9 0z M157 144 l0 -3 8 0 7 0 0 3 0 3 -7 0 -8 0 0 -3z M217 134 l0 -8 6 0 6 0 0 8 0 8 -6 0 -6 0 0 -8z M242 134 l0 -8 5 0 6 0 0 2 c1 0 1 3 1 6 0 3 0 6 -1 6 l0 2 -6 0 -5 0 0 -8z M295 134 l0 -7 2 1 1 0 0 2 c0 1 0 2 -1 2 l-1 0 0 3 0 3 1 0 c1 0 1 0 1 1 0 1 -1 1 -1 1 l-2 0 0 -6z M312 129 l0 -11 -7 0 c-3 0 -7 0 -8 -1 l-1 -1 26 0 26 1 0 11 0 12 -18 0 -18 0 0 -11z M128 136 c0 -1 0 -29 0 -64 l1 -62 23 0 23 0 0 53 c-1 29 -1 53 0 53 0 0 0 5 0 11 l0 10 -23 0 -23 0 -1 -1z m34 -8 l0 -2 -8 0 -8 0 0 2 -1 1 9 0 8 0 0 -1z m0 -11 l0 -2 -8 0 -8 0 0 2 0 1 8 0 8 0 0 -1z m0 -11 l0 -2 -8 0 -8 0 0 2 0 1 8 0 8 0 0 -1z m0 -11 l0 -2 -8 0 -8 0 0 2 0 2 8 0 8 0 0 -2z m0 -12 l0 -2 -8 0 -8 0 0 2 0 2 8 0 8 0 0 -2z m0 -11 l0 -2 -2 0 c0 -1 -4 -1 -7 -1 l-7 0 0 2 c-1 3 0 3 8 3 l8 0 0 -2z m0 -11 l0 -2 -8 0 -8 0 0 2 0 2 8 0 8 0 0 -2z M296 122 l0 -4 1 0 1 0 0 4 0 4 -1 0 -1 0 0 -4z M184 121 c-1 0 -2 -2 -3 -3 l-1 -1 -1 -54 0 -53 20 0 20 0 0 6 c0 4 0 8 1 8 l0 2 16 0 15 0 0 -8 0 -8 21 0 20 0 0 56 0 56 -53 0 -52 0 -3 -1z m34 -19 l0 -6 -2 0 -3 -1 0 7 0 6 3 -1 2 0 0 -5z m-20 0 l0 -6 -2 0 -2 0 0 6 0 5 2 0 2 0 0 -5z m39 0 l0 -6 -2 0 -1 -1 0 6 0 6 2 0 1 0 0 -5z m20 0 l0 -6 -1 0 c-2 0 -3 2 -3 6 0 4 1 5 3 5 l1 0 0 -5z m19 0 l0 -6 -1 0 c-1 0 -2 0 -2 1 0 0 0 2 -1 3 0 1 0 4 0 5 l1 2 2 0 1 0 0 -5z m-78 -26 l0 -6 -2 0 -2 0 0 6 0 7 2 0 2 0 0 -7z m78 1 l0 -7 -1 0 -2 0 0 3 c-1 2 -1 4 0 6 l0 3 2 0 c1 1 2 1 2 1 0 0 -1 -3 -1 -6z m-58 -1 l0 -6 -2 0 -3 0 0 4 c0 3 0 5 1 6 l0 2 2 0 2 0 0 -6z m19 0 l0 -6 -1 0 -2 0 0 6 0 6 2 0 1 0 0 -6z m20 0 l0 -6 -1 0 c-2 0 -3 2 -3 6 0 4 1 6 3 6 l1 0 0 -6z m-59 -25 l0 -6 -2 0 -2 0 0 5 0 6 2 0 c1 1 3 1 3 1 0 0 -1 -3 -1 -6z m20 0 l0 -6 -3 0 -2 -1 0 6 1 7 2 -1 2 0 0 -5z m19 -1 l0 -5 -1 0 -2 0 0 6 0 6 1 -1 2 0 0 -6z m19 6 l1 0 0 -6 0 -5 -2 0 -1 1 -1 5 -1 6 2 0 c1 -1 2 -1 2 -1z m20 -5 l0 -6 -2 0 -1 1 -1 5 0 6 2 0 3 0 -1 -6z M296 109 l0 -5 1 0 1 0 0 4 0 4 7 0 7 0 0 -4 0 -4 4 0 5 0 0 5 1 4 -13 0 -13 0 0 -4z M326 109 l0 -5 5 0 4 0 0 5 0 4 -4 0 -5 0 0 -4z M339 108 l0 -5 5 1 4 0 0 5 0 4 -4 0 -5 0 0 -5z M436 109 c0 -1 -8 -1 -17 -1 l-16 0 -3 -3 -2 -2 0 -46 0 -47 20 0 20 0 0 49 0 49 -1 0 c0 1 -1 1 -1 1z m-10 -23 l1 -3 -8 1 -8 0 0 -5 0 -5 -2 0 -1 -1 0 8 0 7 9 0 9 0 0 -2z m0 -27 l0 -2 -7 0 -8 0 0 -5 0 -5 -1 0 -2 0 0 7 0 8 9 -1 9 0 0 -2z M298 99 c2 -1 4 -1 4 0 1 0 3 0 6 0 l4 -1 0 -3 0 -3 -5 0 c-3 0 -7 0 -7 -1 l-2 0 0 3 0 4 -1 0 -1 0 0 -4 0 -4 26 0 26 1 0 4 0 5 -26 0 -26 0 2 -1z M296 83 l0 -5 1 0 1 0 0 4 0 4 7 0 7 0 0 -4 0 -4 5 0 5 1 0 4 0 4 -13 0 -13 0 0 -4z M326 82 l0 -4 5 0 4 0 0 5 0 4 -4 0 -5 0 0 -5z M339 83 l0 -5 5 0 4 0 0 5 0 4 -4 0 -5 0 0 -4z M296 43 l0 -31 1 0 1 0 0 31 0 30 5 0 c2 -1 5 -1 7 -1 l2 0 0 -30 0 -31 -8 0 c-5 0 3 -1 17 -1 l26 0 0 28 c0 16 0 30 1 32 l0 4 -26 0 -26 0 0 -31z M223 16 l0 -6 5 0 5 0 0 6 0 6 -5 0 -5 0 0 -6z M237 16 l0 -6 6 0 5 0 0 6 0 6 -6 0 -5 0 0 -6z" />
+      <path fill="#DCDCDC" d="M310 145 l-19 -1 30 0 c17 0 31 0 31 0 -1 1 -25 2 -42 1z M297 139 c0 -1 -1 -3 -1 -4 l0 -3 1 0 c1 0 1 -4 0 -4 l-1 -1 1 -1 1 0 0 -4 c0 -2 0 -4 -1 -4 0 0 0 -1 1 0 1 0 4 0 8 0 l6 0 0 11 0 11 -7 0 -6 0 -2 -1z M298 108 l0 -4 7 0 7 0 0 4 0 4 -7 0 -7 0 0 -4z M297 98 l1 0 0 -4 0 -3 2 0 c0 1 4 1 7 1 l5 0 0 3 0 3 -4 0 c-6 1 -13 1 -11 0z M298 82 l0 -4 7 0 7 0 0 4 0 4 -7 0 -7 0 0 -4z M298 43 l0 -31 -1 0 c-1 -1 2 -1 7 -1 l8 0 0 31 0 30 -2 0 c-2 0 -5 0 -7 1 l-5 0 0 -30z M354 57 c-1 -3 -1 -11 -2 -16 l0 -10 1 -2 2 -1 4 0 4 0 0 18 0 18 -4 0 -5 0 0 -7z M354 17 l0 -6 5 0 4 0 0 6 0 5 -4 0 -5 0 0 -5z" />
+      <path fill={NAVY} d="M165 156 l0 -5 -6 -1 -6 0 0 -5 0 -5 -14 0 -14 0 0 -39 0 -39 -20 0 -20 0 0 -2 0 -2 20 0 20 0 0 -24 0 -24 2 0 2 1 0 63 0 63 23 0 23 0 0 -10 0 -9 2 2 1 2 0 9 0 9 -1 0 -2 1 0 4 0 5 -3 0 -3 1 0 5 0 6 -2 0 -2 0 0 -6z m7 -12 l0 -3 -7 0 -8 0 0 3 0 3 8 0 7 0 0 -3z M292 135 l0 -9 2 0 2 0 -1 7 0 7 26 0 27 0 0 -12 0 -11 -26 -1 -26 0 0 -2 0 -1 13 0 13 0 0 -4 0 -5 -13 0 -13 0 0 -2 0 -2 26 0 26 0 0 -5 0 -4 -26 -1 -26 0 0 -2 0 -1 13 0 13 0 0 -4 0 -5 -13 0 -13 0 0 -2 0 -2 26 0 26 0 -1 -32 0 -32 2 0 2 0 0 7 1 7 12 0 13 0 0 2 0 1 -13 0 -12 1 0 19 0 19 12 0 13 0 0 2 0 1 -13 0 -13 0 0 38 0 37 -29 0 -30 0 0 -9z m43 -26 l0 -5 -4 0 -5 0 0 5 0 4 5 0 4 0 0 -4z m13 0 l0 -5 -4 0 -5 -1 0 5 0 5 5 0 4 0 0 -4z m-13 -26 l0 -5 -4 0 -5 0 0 5 0 4 5 0 4 0 0 -4z m13 0 l0 -5 -4 0 -5 0 0 5 0 4 5 0 4 0 0 -4z M146 128 l0 -2 8 0 8 0 0 2 0 1 -8 0 -8 0 0 -1z M146 117 l0 -2 8 0 8 0 0 2 0 1 -8 0 -8 0 0 -1z M401 111 c-1 -1 -3 -3 -4 -3 l-1 -2 -1 -18 0 -18 -5 -1 -4 0 0 -2 0 -1 4 0 4 0 0 -19 0 -20 -4 0 -4 0 0 -1 0 -2 4 0 4 0 0 -3 c0 -2 0 -5 1 -7 l0 -4 2 0 1 0 0 27 c0 15 0 36 0 47 l0 19 2 2 2 3 17 0 c10 0 18 0 19 0 0 0 0 -22 0 -49 l0 -49 2 0 1 0 0 51 0 51 -18 0 -18 0 -4 -1z M146 106 l0 -2 8 0 8 0 0 2 0 1 -8 0 -8 0 0 -1z M146 95 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M408 81 l0 -7 2 0 1 0 0 5 0 5 8 0 7 0 0 2 0 2 -9 0 -9 0 0 -7z M146 83 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M146 72 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M146 61 l0 -2 8 0 8 0 0 2 0 2 -8 0 -8 0 0 -2z M74 60 c-1 -1 -3 -2 -4 -4 l-1 -3 0 -21 0 -22 2 0 2 0 0 22 0 22 2 2 c0 1 1 3 1 3 l0 2 -2 -1z M408 54 l0 -7 2 0 1 0 0 5 0 5 8 0 7 0 0 2 0 2 -9 0 -9 0 0 -7z M80 4 l0 -4 3 0 2 0 0 4 0 4 -2 0 -3 0 0 -4z M382 4 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z" />
+      <path fill={C.red} d="M227 265 l0 -5 -21 -1 -20 0 0 -11 0 -10 5 0 4 0 0 -3 0 -3 -5 0 -5 0 0 -53 0 -54 -3 -1 -4 -2 -1 -3 c-1 -1 -2 -3 -2 -3 -1 0 -1 -24 0 -53 l0 -53 2 0 2 1 0 53 1 53 2 2 2 3 54 0 54 0 0 -1 c0 0 0 -25 0 -56 l0 -55 2 0 2 0 0 58 0 58 -6 0 -7 0 0 53 0 53 -3 0 -4 0 0 3 0 3 4 0 4 0 0 11 0 10 -21 0 -22 0 0 6 0 5 -2 0 -2 0 0 -5 0 -5 -3 -1 -3 0 0 5 0 6 -2 0 -2 0 0 -5z m51 -10 l2 0 0 -7 0 -6 -45 0 -45 0 0 6 0 7 1 0 c2 1 86 1 87 0z m-6 -20 l0 -3 -36 0 -37 0 0 3 0 3 37 0 36 0 0 -3z m7 -19 c1 -16 1 -79 0 -85 l0 -5 -5 0 -5 0 0 37 c0 20 0 38 -1 41 l0 4 -33 0 -33 0 0 -39 c0 -22 0 -40 -1 -41 l0 -2 -6 0 -6 0 0 51 0 51 45 0 45 0 0 -12z m-14 -51 l0 -39 -4 0 -4 0 0 36 0 35 -9 0 -10 0 0 -35 0 -36 -2 0 -3 0 0 35 0 36 -10 0 -9 0 0 -35 0 -36 -4 0 -5 0 0 39 0 39 30 0 30 0 0 -39z m-12 7 c1 -12 1 -23 1 -24 l-1 -2 -6 0 -5 0 0 24 0 23 5 0 6 0 0 -21z m-27 1 l3 0 0 -14 0 -13 -6 0 -6 0 0 13 c0 8 0 14 0 14 1 1 5 1 9 0z m3 -39 l0 -8 -6 0 -6 0 0 8 0 8 6 0 6 0 0 -8z m24 6 c1 0 1 -3 1 -6 0 -3 0 -6 -1 -6 l0 -2 -6 0 -5 0 0 8 0 8 5 0 6 0 0 -2z M194 102 l0 -6 2 0 2 0 0 6 0 5 -2 0 -2 0 0 -5z M214 102 l0 -6 2 0 2 0 0 6 0 5 -2 0 -2 0 0 -5z M234 102 l0 -6 2 0 1 0 0 6 0 5 -1 0 -2 0 0 -5z M254 106 c-2 -2 -1 -10 2 -10 l1 0 0 6 0 5 -1 0 c-1 0 -2 0 -2 -1z M272 105 c0 -1 0 -4 0 -5 1 -1 1 -3 1 -3 0 -1 1 -1 2 -1 l1 0 0 6 0 5 -1 0 -2 0 -1 -2z M194 76 l0 -6 2 0 2 0 0 6 0 6 -2 0 -2 0 0 -6z M214 76 l0 -6 2 0 2 0 0 6 0 6 -2 0 -2 0 0 -6z M234 76 l0 -6 2 0 1 0 0 6 0 6 -1 0 -2 0 0 -6z M254 80 c-2 -4 -1 -10 2 -10 l1 0 0 6 0 6 -1 0 c-1 0 -2 -1 -2 -2z M273 79 c-1 -2 -1 -4 0 -6 l0 -3 2 0 1 0 0 6 0 6 -1 0 -2 0 0 -3z M194 51 l0 -6 2 0 2 0 0 6 0 5 -2 0 -2 0 0 -5z M214 51 l0 -6 2 0 2 0 0 6 0 5 -2 0 -2 0 0 -5z M234 51 l0 -6 2 0 1 0 0 6 0 5 -1 0 -2 0 0 -5z M253 51 l1 -5 1 -1 2 0 0 5 0 6 -2 0 -2 0 0 -5z M272 51 l1 -5 1 -1 2 0 0 5 0 6 -2 0 -2 0 0 -5z M220 24 c-1 0 -1 -4 -1 -8 l0 -6 2 0 2 0 0 6 0 6 5 0 5 0 0 -6 0 -6 2 0 2 0 0 6 0 6 5 0 6 0 0 -6 0 -6 2 0 1 0 0 8 0 8 -15 0 -16 0 0 -2z" />
+    </g>
   </svg>
 );
 
-// below 15:00: hanging twin-column square-window tower + white neighbors
+// 09:30 (and 21:30) — hanging twin-column square-window tower between two white blocks.
+// POTRACED off ref f690 (x9=384, sx=1 — the last frame before the first rising doc), slot -88.
 const ClD: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* left white building w/ dot grid (rounded bottom) */}
-    <path d="M 40 0 L 40 157 Q 40 165 48 165 L 147 165 Q 155 165 155 157 L 155 0" fill="none" stroke={WHT} strokeWidth="3.5" />
-    {[0, 1, 2].map((r) =>
-      [0, 1, 2, 3].map((c) => <rect key={`${r}${c}`} x={112 + c * 12} y={90 + r * 15} width={5.5} height={6.5} fill={WHT} />),
-    )}
-    <path d="M 0 47.5 L 40 47.5" fill="none" stroke={WHT} strokeWidth="3.5" />
-    {/* red hanging tower — r10 re-trace (ref f750, per-pixel): outer walls
-        y6..282, roof beam y45, crown box y6..21, base beam y282 + left foot
-        + twin right masts. The r7 body stopped at y250 (32px short → base
-        sat high, tower read compressed) — this was the S5 PERSISTENT worst
-        cluster (crop SSIM .52 vs .70-.75 for every other cluster). Grid
-        re-registered: left cols x167.5/197.5 (w19), right x271.5 (w18);
-        7 rows tops 70..237 (pitch 28, h19); solids per-row unchanged. */}
-    <line x1={156.5} y1={6} x2={156.5} y2={282} stroke={C.red} strokeWidth="4" />
-    <line x1={303} y1={6} x2={303} y2={282} stroke={C.red} strokeWidth="4" />
-    <rect x={211.5} y={6} width={35} height={15} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <line x1={229.5} y1={6} x2={229.5} y2={21} stroke={C.red} strokeWidth="3" />
-    <line x1={155} y1={45} x2={304.5} y2={45} stroke={C.red} strokeWidth="4" />
-    <line x1={244.5} y1={45} x2={244.5} y2={282} stroke={C.red} strokeWidth="3.5" />
-    {([[70, 0, 0, 0], [98, 1, 0, 0], [126, 0, 0, 0], [154, 0, 1, 1], [182, 0, 0, 0], [209, 0, 0, 0], [237, 1, 0, 1]] as const).map(([y, s1, s2, s3], i) => (
-      <React.Fragment key={i}>
-        <rect x={167.5} y={y} width={19} height={19} fill={s1 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-        <rect x={197.5} y={y} width={19} height={19} fill={s2 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-        <rect x={271.5} y={y} width={18} height={19} fill={s3 ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-      </React.Fragment>
-    ))}
-    {/* base beam w/ left foot notch + twin right masts (measured y282..315) */}
-    <path d="M 155 282 L 182.5 282 L 182.5 300 L 222.5 300 L 222.5 282 L 304.5 282" fill="none" stroke={C.red} strokeWidth="4" />
-    <line x1={272.5} y1={282} x2={272.5} y2={297} stroke={C.red} strokeWidth="3" />
-    <line x1={288.5} y1={282} x2={288.5} y2={315} stroke={C.red} strokeWidth="3.5" />
-    {/* right white building w/ comb marks */}
-    <path d="M 305 0 L 305 157 Q 305 165 313 165 L 372 165 Q 380 165 380 157 L 380 0" fill="none" stroke={WHT} strokeWidth="3.5" />
-    {[0, 1, 2, 3].map((r) => (
-      <path key={r} d={`M 365 ${47 + r * 14} L 337 ${47 + r * 14} L 337 ${57 + r * 14} L 365 ${57 + r * 14}`} fill="none" stroke={WHT} strokeWidth="3" />
-    ))}
-    <path d="M 318 125 L 352 125" fill="none" stroke={WHT} strokeWidth="3" />
-    {[0, 1, 2, 3].map((c) => (
-      <line key={c} x1={322 + c * 9} y1={125} x2={322 + c * 9} y2={140} stroke={WHT} strokeWidth="3" />
-    ))}
-    {/* rails toward the next slot */}
-    <path d="M 380 38 L 448 38 Q 468 38 468 58 L 468 88 L 540 88" fill="none" stroke={WHT} strokeWidth="3.5" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M45 284 l0 -37 1 -3 c2 -5 5 -7 9 -10 l4 -2 12 0 13 0 0 2 0 2 -12 0 -12 0 -3 2 -3 2 -3 4 -2 4 0 37 0 36 -2 0 -2 0 0 -37z M101 300 l0 -22 -2 0 -3 0 0 -2 0 -2 3 0 2 0 0 -19 0 -19 -4 0 -4 0 0 -2 0 -2 4 0 4 0 0 -11 0 -10 1 -3 c1 -2 3 -5 4 -6 l3 -2 23 -1 22 0 0 2 0 2 -21 0 -22 1 -3 2 -2 3 -1 33 0 32 24 0 25 0 0 2 0 2 -24 0 -24 1 -1 21 0 21 -2 0 -2 0 0 -21z M325 266 l0 -56 -9 0 -10 0 0 -2 0 -2 5 0 5 0 0 -10 0 -10 2 0 2 0 0 10 0 10 8 0 7 0 0 -10 0 -10 2 0 2 0 0 10 0 10 8 0 7 0 0 -10 0 -10 2 0 2 0 0 10 0 10 5 0 4 0 0 -15 0 -16 -2 -2 c-2 -1 -4 -3 -6 -4 l-3 -1 -25 0 -25 0 0 -2 0 -2 27 0 28 1 3 2 c1 1 3 3 4 4 l3 3 0 16 0 16 4 0 3 0 0 26 1 27 3 0 4 0 0 2 0 2 -4 0 -4 0 0 29 0 29 -2 0 -2 0 0 -56 0 -55 -22 0 -22 1 -1 55 0 55 -2 0 -2 0 0 -55z M438 300 l0 -20 -2 -5 c-2 -4 -7 -9 -12 -11 l-3 -1 -13 0 -13 0 0 -2 0 -2 14 0 14 0 5 2 5 3 2 3 c2 2 4 5 5 8 l2 4 0 21 0 21 -2 0 -2 0 0 -21z M337 276 l0 -4 15 0 15 0 0 4 0 4 -2 0 -2 0 0 -2 0 -2 -11 0 -11 0 0 2 0 2 -2 0 -2 0 0 -4z M337 258 l0 -4 15 0 15 0 0 4 0 4 -2 0 -2 0 0 -2 -1 -2 -10 0 -11 0 0 2 0 2 -2 0 -2 0 0 -4z M337 241 l0 -4 15 0 15 0 0 4 0 4 -2 0 -2 0 0 -2 0 -2 -11 0 -11 0 0 2 0 2 -2 0 -2 0 0 -4z M115 235 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M129 235 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M144 235 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M337 223 l0 -4 15 0 15 0 0 4 0 4 -2 0 -2 0 0 -2 0 -2 -11 0 -11 0 0 2 0 2 -2 0 -2 0 0 -4z M115 216 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M129 216 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z M144 216 l0 -4 2 0 2 0 0 4 0 4 -2 0 -2 0 0 -4z" />
+      <path fill={C.red} d="M154 298 c0 -15 1 -26 1 -26 0 0 0 -65 0 -66 0 -2 0 -8 0 -8 0 0 0 -19 0 -41 0 -23 0 -57 1 -76 l0 -35 12 0 12 0 0 -9 0 -8 1 -2 2 -1 20 0 21 0 0 2 c1 0 1 4 1 8 0 4 0 8 1 8 l0 2 22 0 22 0 0 -7 0 -6 2 -2 c2 -2 2 -1 3 7 l1 7 5 1 5 0 0 -16 0 -16 2 0 3 0 0 16 1 16 7 0 7 0 0 139 0 138 -2 0 -2 0 0 -17 0 -18 -2 0 c0 -1 -32 -1 -71 -1 l-69 0 0 18 0 18 -3 0 -3 0 0 -25z m88 -132 l0 -116 -11 0 -11 0 0 -9 c0 -5 0 -9 -1 -9 l-1 -1 -16 0 -16 1 -1 9 0 9 -13 0 -12 0 0 116 0 116 41 0 41 0 0 -116z m59 65 c0 -28 0 -54 0 -58 0 -4 0 -33 1 -65 l0 -58 -27 0 -28 0 0 116 0 116 28 0 27 0 -1 -51z M168 250 l0 -10 2 0 c0 -1 4 -1 8 -1 4 0 8 0 8 1 l2 0 0 10 0 10 -10 0 -10 0 0 -10z m15 5 c1 0 1 -2 1 -5 l0 -6 -6 0 -6 0 0 5 0 5 2 1 c2 1 5 1 9 0z M198 250 l0 -10 2 0 c0 -1 4 -1 8 -1 4 0 8 0 8 1 l2 0 0 10 0 10 -10 0 -10 0 0 -10z m16 -1 l0 -5 -6 0 -6 0 0 6 0 5 6 0 6 0 0 -6z M168 221 l0 -11 10 0 10 0 0 11 0 11 -10 0 -10 0 0 -11z M198 222 l0 -11 10 0 10 0 0 11 0 10 -10 0 -10 0 0 -10z m13 5 l3 -1 0 -5 0 -5 -6 0 -6 0 0 5 0 6 1 0 c2 1 6 1 8 0z M168 194 l0 -10 10 0 10 0 0 10 0 10 -10 0 -10 0 0 -10z m16 0 l0 -6 -6 0 -6 0 0 6 0 6 6 0 6 0 0 -6z M198 194 l0 -10 10 0 10 0 0 10 0 10 -10 0 -10 0 0 -10z m16 2 c0 -3 0 -6 -1 -6 l0 -2 -6 0 -5 0 0 6 0 6 6 0 6 0 0 -4z M168 166 l0 -10 10 0 10 0 0 10 0 10 -10 0 -10 0 0 -10z m16 0 l0 -6 -6 0 -6 0 0 5 0 6 1 0 c1 1 4 1 6 1 l5 0 0 -6z M198 174 c-1 0 -1 -5 -1 -10 l0 -8 11 0 10 0 0 10 0 10 -10 0 -10 0 0 -2z M168 138 l0 -10 10 0 10 0 0 10 0 10 -10 0 -10 0 0 -10z m16 0 l0 -6 -6 0 -6 0 0 5 c0 3 0 6 1 6 0 1 3 1 6 1 l5 0 0 -6z M198 138 l0 -10 10 0 10 0 0 10 0 10 -10 0 -10 0 0 -10z m16 0 l0 -6 -6 0 -6 0 0 6 0 6 6 0 6 0 0 -6z M169 121 l-1 -1 0 -10 1 -9 9 -1 10 0 0 10 0 11 -9 0 c-5 0 -10 0 -10 0z m15 -10 l0 -5 -2 0 c-2 -1 -6 -1 -8 0 l-2 0 0 5 0 5 6 0 6 0 0 -5z M199 121 l-1 0 0 -11 0 -10 10 0 10 0 0 10 0 11 -9 0 c-5 0 -9 0 -10 0z m15 -10 l0 -5 -2 0 c-2 -1 -6 -1 -8 0 l-2 0 0 5 0 5 6 0 6 0 0 -5z M168 84 l0 -10 11 0 10 0 0 8 c0 5 0 10 -1 10 l0 2 -10 0 -10 0 0 -10z M198 84 l0 -10 10 0 10 0 0 10 0 10 -10 0 -10 0 0 -10z m16 1 l0 -5 -1 -1 -1 -1 -5 0 -5 0 0 6 0 6 6 0 6 0 0 -5z M271 259 c-1 0 -1 -5 -1 -10 l0 -9 2 -1 c1 0 6 0 11 0 l8 1 0 10 0 10 -10 0 c-5 0 -10 0 -10 -1z m12 -4 l3 0 0 -6 0 -5 -5 0 -6 0 0 5 0 6 1 0 c2 1 3 1 7 0z M271 231 l-1 -2 0 -8 0 -9 2 -1 c1 0 6 0 11 0 l8 1 0 10 0 10 -9 0 -9 0 -2 -1z m13 -4 l2 0 0 -6 0 -5 -5 0 -6 0 0 5 0 6 4 0 c2 0 4 1 4 1 0 0 1 0 1 -1z M270 194 l0 -10 11 0 10 0 0 10 0 10 -10 0 -11 0 0 -10z m16 0 l0 -6 -5 0 -6 0 0 5 c0 7 0 7 6 7 l5 0 0 -6z M270 166 l0 -10 11 0 10 0 0 10 0 10 -10 0 -11 0 0 -10z M270 138 l0 -10 11 0 10 0 0 10 0 10 -10 0 -11 0 0 -10z m16 0 l0 -6 -5 0 -6 0 0 5 c0 7 0 7 6 7 l5 0 0 -6z M271 120 l-1 0 0 -9 0 -8 1 -2 2 -1 8 0 9 0 1 2 c0 1 0 6 0 11 l0 8 -9 0 c-5 0 -10 0 -11 -1z m15 -9 l0 -5 -2 -1 c-2 0 -4 0 -6 0 l-2 1 -1 5 0 5 5 0 6 0 0 -5z M270 84 l0 -10 11 0 10 0 0 10 0 10 -10 0 -11 0 0 -10z M212 315 l0 -9 18 0 18 0 0 9 0 8 -2 0 -2 0 0 -6 0 -7 -5 0 -6 0 0 7 0 6 -2 0 -3 0 0 -6 0 -7 -5 0 -6 0 0 2 c-1 0 -1 3 -1 6 l0 5 -2 0 -2 0 0 -8z" />
+    </g>
   </svg>
 );
 
-// below 17:00: symmetric legged structure w/ capsule feet
+// 11:30 (and 23:30) — symmetric legged structure with capsule feet.
+// POTRACED off ref f690 (x9=384, sx=1 — the last frame before the first rising doc), slot 519.
 const ClE: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* rails left */}
-    <path d="M 33 75 L 108 75 Q 120 75 120 87 L 120 110" fill="none" stroke={WHT} strokeWidth="3.5" />
-    <rect x={103} y={77.5} width={7} height={9} fill={C.red} />
-    <rect x={103} y={92.5} width={7} height={9} fill={C.red} />
-    {/* outer wings */}
-    <path d="M 118 0 L 118 92 L 153 92 L 153 0" fill="none" stroke={C.red} strokeWidth="4" />
-    <line x1={140} y1={35} x2={140} y2={92} stroke={C.red} strokeWidth="3" />
-    <path d="M 308 0 L 308 92 L 343 92 L 343 0" fill="none" stroke={C.red} strokeWidth="4" />
-    <line x1={321} y1={35} x2={321} y2={92} stroke={C.red} strokeWidth="3" />
-    {/* legs + capsule feet + dashed interiors */}
-    <path d="M 168 0 L 168 177.5 M 198 0 L 198 177.5" stroke={C.red} strokeWidth="4" fill="none" />
-    <path d="M 168 177.5 L 168 205 Q 168 220 183 220 Q 198 220 198 205 L 198 177.5" fill="none" stroke={C.red} strokeWidth="4" />
-    <line x1={183} y1={20} x2={183} y2={165} stroke={C.red} strokeWidth="3" strokeDasharray="10 12" />
-    <path d="M 258 0 L 258 177.5 M 288 0 L 288 177.5" stroke={C.red} strokeWidth="4" fill="none" />
-    <path d="M 258 177.5 L 258 205 Q 258 220 273 220 Q 288 220 288 205 L 288 177.5" fill="none" stroke={C.red} strokeWidth="4" />
-    <line x1={273} y1={20} x2={273} y2={165} stroke={C.red} strokeWidth="3" strokeDasharray="10 12" />
-    {/* center body: attachment, comb, cross bar */}
-    <rect x={215} y={7.5} width={35} height={17.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    <line x1={232.5} y1={7.5} x2={232.5} y2={25} stroke={C.red} strokeWidth="3" />
-    <line x1={200} y1={75} x2={260} y2={75} stroke={C.red} strokeWidth="3.5" />
-    {[0, 1, 2, 3, 4].map((c) => (
-      <line key={c} x1={207 + c * 12} y1={75} x2={207 + c * 12} y2={155} stroke={C.red} strokeWidth="3.5" />
-    ))}
-    <line x1={198} y1={159} x2={258} y2={159} stroke={C.red} strokeWidth="3.5" />
-    {/* white right building w/ bars + hanging mast */}
-    <path d="M 323 92 L 323 155 Q 323 162.5 330.5 162.5 L 365 162.5 Q 373 162.5 373 155 L 373 92" fill="none" stroke={WHT} strokeWidth="3.5" />
-    {[0, 1, 2].map((r) => (
-      <rect key={r} x={338} y={100 + r * 15} width={20} height={7} fill={WHT} />
-    ))}
-    <path d="M 348 145 L 348 162 M 341 152 L 355 152" stroke={WHT} strokeWidth="3" fill="none" />
-    {/* rails right */}
-    <path d="M 373 100 L 420 100 Q 435 100 435 115 L 435 135 L 500 135" fill="none" stroke={WHT} strokeWidth="3.5" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M11 282 l0 -39 36 0 36 0 0 -101 1 -100 0 140 c0 77 -1 125 -1 108 l0 -32 -34 0 -34 0 0 32 0 31 -2 0 -2 0 0 -39z m72 -31 l0 -3 -34 0 -33 0 -1 3 0 3 34 0 34 0 0 -3z M93 273 l0 -49 2 -3 c2 -2 4 -4 5 -5 l3 -1 16 0 17 0 0 11 0 11 -2 0 -2 0 0 -9 0 -9 -14 0 -14 0 -2 1 -3 1 -1 3 -1 3 0 47 0 47 -2 0 -2 0 0 -48z M368 259 l1 -62 -21 -1 -20 0 0 20 0 21 -2 0 -2 0 0 -22 0 -23 2 0 1 0 0 -4 0 -5 3 0 3 0 0 -5 0 -6 2 0 2 0 0 5 1 6 5 0 5 0 0 5 0 4 13 0 12 0 0 27 0 26 6 0 6 0 0 -102 1 -101 0 140 c0 77 -1 123 -1 103 l0 -36 -6 0 -6 0 0 36 0 36 -3 0 -2 0 0 -62z m-24 -69 l0 -3 -6 0 -7 0 0 3 0 2 7 0 6 0 0 -2z M447 295 l0 -27 -1 -4 c-1 -2 -3 -5 -4 -7 l-2 -3 -5 -3 -5 -2 -18 0 -17 0 0 -2 0 -2 18 0 18 0 4 2 c4 1 11 7 13 13 l3 4 0 28 0 29 -2 0 -2 0 0 -26z M106 246 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M106 230 l0 -4 2 0 2 0 0 4 0 3 -2 0 -2 0 0 -3z M340 226 l0 -2 7 0 7 0 0 2 0 2 -7 0 -7 0 0 -2z M340 215 l0 -2 7 0 7 0 0 2 0 2 -7 0 -7 0 0 -2z M340 205 l0 -2 7 0 7 0 0 2 0 2 -7 0 -7 0 0 -2z" />
+      <path fill={C.red} d="M117 281 l0 -43 18 0 18 0 0 8 0 8 6 0 6 0 1 -1 1 -1 0 -50 0 -50 2 0 2 0 0 -18 0 -19 4 -4 3 -3 6 0 6 0 3 3 4 4 0 18 0 18 2 1 3 0 0 8 1 8 28 0 28 0 0 -8 0 -8 2 0 2 0 0 -17 0 -17 1 0 1 0 0 -3 0 -3 3 -2 c3 -2 7 -3 12 -2 l4 0 3 3 3 3 0 19 1 19 2 0 2 0 0 51 0 51 7 0 7 0 0 -8 0 -8 18 0 17 0 0 43 0 42 -2 0 -3 0 0 -40 0 -41 -5 0 -5 0 0 26 0 26 -2 0 c-1 1 -2 1 -2 0 0 0 -1 -11 -1 -24 0 -13 0 -25 -1 -26 l0 -2 -5 0 -5 0 0 41 0 40 -2 0 -2 0 0 -31 0 -32 -1 -1 -1 -1 -6 0 -6 0 0 33 0 32 -3 0 c-2 0 -3 0 -2 -1 l1 0 0 -83 0 -83 -14 0 -14 0 0 83 0 83 1 0 c1 1 0 1 -2 1 l-3 0 0 -33 0 -32 -28 0 -28 1 0 32 0 32 -3 0 -3 0 0 -83 0 -84 -13 0 -13 0 0 84 0 83 -2 0 -2 0 0 -31 c0 -17 0 -32 -1 -32 l0 -2 -7 0 -6 0 0 33 0 32 -18 0 -18 0 0 -42z m31 39 c1 -2 1 -74 0 -76 l0 -2 -6 0 -5 0 0 25 0 25 -2 0 -2 0 0 -25 0 -25 -6 0 -5 1 -1 39 0 40 13 0 14 0 0 -2z m60 -67 l1 -1 0 -25 c0 -13 0 -24 0 -24 1 0 2 0 2 1 l2 0 0 25 0 25 8 0 8 0 0 -25 0 -25 1 0 c1 0 2 0 2 0 l2 0 0 25 1 25 7 0 7 0 0 -25 0 -25 2 0 c0 -1 2 -1 2 -1 l1 1 -1 18 c0 10 0 21 1 25 l1 7 2 0 2 0 0 -41 0 -41 -28 0 -29 0 0 40 c0 23 0 41 1 41 1 1 3 1 5 0z m-16 -102 l1 -1 0 -17 0 -16 -2 -3 -3 -2 -4 0 -4 0 -3 2 -2 3 0 17 0 17 1 0 c2 1 15 0 16 0z m90 0 l3 0 0 -17 0 -17 -2 -3 -2 -2 -5 0 -4 0 -2 2 -1 2 -1 17 0 16 2 2 c2 1 7 1 12 0z M215 315 l0 -9 17 0 16 0 0 9 1 8 -17 0 -17 0 0 -8z m14 1 l0 -6 -3 0 c-2 0 -5 0 -5 1 l-2 0 0 6 0 5 5 0 5 0 0 -6z m14 0 l0 -6 -4 0 -4 1 -1 5 0 6 4 0 5 0 0 -6z M182 255 l-1 -1 0 -5 0 -5 3 0 2 0 0 6 0 6 -1 0 c-1 0 -2 -1 -3 -1z M275 250 l0 -6 2 0 2 0 0 6 0 6 -2 0 -2 0 0 -6z M182 231 c0 -1 -1 -3 -1 -5 l0 -3 1 -2 c1 0 2 -1 3 -1 l1 0 0 6 0 5 -1 1 c-1 0 -2 -1 -3 -1z M275 226 l0 -6 2 0 2 0 0 6 0 6 -2 0 -2 0 0 -6z M181 199 l0 -5 2 0 c2 -1 3 0 3 5 l0 5 -2 0 -3 0 0 -5z M275 199 l0 -6 2 0 2 0 0 6 0 5 -2 0 -2 0 0 -5z M181 174 l0 -6 3 0 2 0 0 6 0 6 -2 0 -3 0 0 -6z M275 174 l0 -6 2 0 2 0 0 6 0 6 -2 0 -2 0 0 -6z" />
+    </g>
   </svg>
 );
 
-// below 19:00: monolithic block w/ finned shaft + trapezoid cap
+// 13:30 (and 01:30) — monolithic block with a finned shaft and a trapezoid cap.
+// POTRACED off ref f916 (x9=25.5, sx=1 — the last frame before the navy sweep), slot 1115.
 const ClF: React.FC = () => (
   <svg width={604} height={330} viewBox="0 0 604 330">
-    {/* left white building w/ solid bars */}
-    <path d="M 37 0 L 37 160 L 102 160 L 102 0" fill="none" stroke={WHT} strokeWidth="3.5" />
-    <rect x={47} y={85} width={45} height={12.5} fill={WHT} />
-    <rect x={47} y={115} width={45} height={12.5} fill={WHT} />
-    <line x1={69} y1={0} x2={69} y2={85} stroke={WHT} strokeWidth="3" />
-    {/* big red block */}
-    <path d="M 172 7.5 L 172 260 Q 172 270 182 270 L 279 270 Q 289 270 289 260 L 289 7.5" fill={C.navyBg} stroke={C.red} strokeWidth="4.5" />
-    {/* center shaft + squares + fins + footing */}
-    <line x1={212} y1={7.5} x2={212} y2={225} stroke={C.red} strokeWidth="3.5" />
-    <line x1={247} y1={7.5} x2={247} y2={225} stroke={C.red} strokeWidth="3.5" />
-    {([[93, 0], [120, 0], [148, 1], [175, 0], [203, 1]] as const).map(([y, solid], i) => (
-      <rect key={i} x={222} y={y - 8} width={15} height={17} fill={solid ? C.red : "none"} stroke={C.red} strokeWidth="3" />
-    ))}
-    {[155, 172.5, 190].map((y, i) => (
-      <React.Fragment key={i}>
-        <line x1={177} y1={y} x2={212} y2={y} stroke={C.red} strokeWidth="3.5" />
-        <line x1={247} y1={y} x2={284} y2={y} stroke={C.red} strokeWidth="3.5" />
-      </React.Fragment>
-    ))}
-    <rect x={209.5} y={225} width={40} height={12.5} fill="none" stroke={C.red} strokeWidth="3.5" />
-    {/* hanging steps + trapezoid cap */}
-    <path d="M 179.5 270 L 179.5 282.5 L 282 282.5 L 282 270" fill="none" stroke={C.red} strokeWidth="4" />
-    <path d="M 194.5 282.5 L 264.5 282.5 L 252.5 310 L 207 310 Z" fill="none" stroke={C.red} strokeWidth="4" />
-    {/* right white building w/ comb marks + rail */}
-    <path d="M 312 0 L 312 157 Q 312 165 320 165 L 369 165 Q 377 165 377 157 L 377 0" fill="none" stroke={WHT} strokeWidth="3.5" />
-    {[0, 1, 2, 3].map((r) => (
-      <path key={r} d={`M 362 ${47 + r * 14} L 334 ${47 + r * 14} L 334 ${57 + r * 14} L 362 ${57 + r * 14}`} fill="none" stroke={WHT} strokeWidth="3" />
-    ))}
-    <path d="M 320 120 L 354 120" fill="none" stroke={WHT} strokeWidth="3" />
-    {[0, 1, 2, 3].map((c) => (
-      <line key={c} x1={324 + c * 9} y1={120} x2={324 + c * 9} y2={135} stroke={WHT} strokeWidth="3" />
-    ))}
-    {/* small hanging box right of the 20:00 tick (ref f900) */}
-    <rect x={392} y={-4} width={32} height={80} fill="none" stroke={WHT} strokeWidth="3.5" />
+    <g transform="translate(0,330) scale(1,-1)">
+      <path fill={WHT} d="M40 244 l0 -77 22 0 22 0 0 2 0 2 -20 0 -20 0 0 13 0 13 20 0 20 0 0 2 0 2 -3 0 -3 0 0 5 0 5 3 0 3 0 0 2 0 2 -20 0 -19 1 -1 5 0 5 20 0 20 0 0 2 0 2 -3 0 -3 0 0 5 0 5 3 0 3 0 0 2 0 2 -20 0 -19 1 -1 38 0 38 -2 0 -2 0 0 -77z m34 -9 l0 -5 -15 0 -14 1 -1 4 0 5 15 0 15 0 0 -5z m0 -29 l0 -5 -15 0 -14 1 -1 4 0 5 15 0 15 0 0 -5z M93 182 l0 -140 1 0 1 0 0 63 0 62 6 0 5 0 0 42 0 41 31 0 31 0 0 2 0 2 -31 0 -30 1 0 20 0 21 30 0 31 1 0 1 0 2 -31 0 -30 1 -1 10 0 10 -2 0 -2 0 0 -38 0 -39 -3 0 -4 0 0 39 0 38 -1 0 -1 0 0 -139z m9 53 l0 -5 -3 0 -4 0 0 5 0 5 4 0 3 0 0 -5z m0 -14 l0 -6 -3 0 -4 0 0 6 0 5 4 0 3 0 0 -5z m0 -15 l0 -5 -3 0 -4 0 0 5 0 5 4 0 3 0 0 -5z m0 -22 l0 -13 -3 0 -4 0 0 13 0 13 4 0 3 0 0 -13z M310 265 l0 -56 -10 0 -10 0 0 -2 1 -1 5 -1 6 0 0 -10 0 -10 2 0 2 0 0 10 0 10 7 0 7 0 0 -10 0 -10 2 0 2 0 0 10 0 10 8 0 7 0 0 -10 0 -10 2 0 2 0 0 10 0 10 5 0 4 0 0 -15 0 -14 -2 -3 c0 -2 -2 -4 -4 -4 l-3 -2 -26 0 -26 0 0 -2 0 -2 27 0 26 0 4 2 c2 1 4 3 5 4 l3 4 0 16 0 16 4 0 3 0 0 24 0 23 12 0 11 0 0 2 0 2 -11 0 -11 1 -1 32 0 32 -2 0 -2 0 0 -56 0 -56 -22 0 -23 0 0 56 0 56 -2 0 -2 0 0 -56z M395 182 l0 -140 1 0 1 0 0 105 0 105 18 0 17 0 0 35 0 34 -2 0 -2 0 0 -32 0 -32 -16 -1 -15 0 0 32 0 33 -1 0 -1 0 0 -139z M322 275 l0 -5 15 0 15 0 0 5 0 4 -2 0 -2 0 0 -2 0 -2 -11 0 -10 0 -1 2 0 2 -2 0 -2 0 0 -4z M322 257 l0 -5 15 0 15 0 0 5 0 4 -2 0 -2 0 0 -2 0 -2 -11 0 -10 0 -1 2 0 2 -2 0 -2 0 0 -4z M348 241 l0 -2 -11 0 -10 0 -1 2 0 2 -2 0 -2 0 0 -4 0 -4 15 0 15 0 0 4 0 5 -2 0 -2 0 0 -3z M322 222 l0 -5 15 0 15 0 0 5 0 4 -2 0 -2 0 0 -2 0 -2 -11 0 -10 0 -1 2 0 2 -2 0 -2 0 0 -4z" />
+      <path fill={C.red} d="M168 192 l0 -132 5 0 5 0 0 -8 0 -7 1 -2 2 -1 7 1 8 0 1 -1 c1 -1 2 -4 3 -5 0 -2 1 -3 1 -3 1 0 1 -1 1 -2 0 -1 0 -2 1 -2 1 0 1 -1 1 -2 0 -2 0 -3 1 -4 1 0 1 -1 1 -2 l0 -2 23 0 22 1 2 4 c1 2 3 7 4 11 l3 6 9 0 c4 0 9 0 9 1 l2 0 0 9 0 8 5 0 5 0 0 132 0 131 -2 0 -2 0 0 -129 0 -130 -56 0 -57 0 0 72 c0 40 -1 98 -1 130 l1 57 -3 0 -2 0 0 -131z m107 -133 l1 -1 0 -5 0 -5 -46 0 -47 0 0 5 c0 3 0 6 1 6 0 1 20 1 45 1 l45 0 1 -1z m-21 -20 l0 -3 -1 0 c-1 0 -1 -1 -1 -2 0 -1 0 -2 -1 -2 -1 0 -1 -1 -1 -2 0 -1 0 -2 -1 -2 -1 0 -1 -1 -1 -2 l0 -2 -19 0 -19 0 -2 5 c-1 2 -2 5 -2 6 0 0 0 1 -1 1 0 0 -1 2 -1 3 l-1 3 25 0 26 0 0 -3z M210 250 l0 -74 -11 0 -11 0 0 -2 0 -2 11 0 11 0 0 -4 0 -4 -11 0 -11 0 0 -2 0 -2 12 0 11 0 0 -2 c-1 0 -1 -3 -1 -6 l0 -4 -11 0 -11 0 0 -2 0 -2 11 0 11 0 0 -4 0 -4 -11 0 -11 0 0 -2 0 -2 11 0 11 0 0 -13 0 -13 -1 0 c-1 0 -1 -1 -1 -2 0 -1 0 -2 1 -2 l1 0 0 -5 0 -5 19 0 18 0 0 5 0 4 2 1 c0 0 1 1 1 2 0 1 -1 2 -1 2 l-2 1 0 12 0 13 12 0 11 0 0 2 0 2 -11 0 -11 1 -1 3 0 4 11 0 12 0 0 2 0 2 -11 0 -11 1 -1 5 0 6 11 0 12 0 0 2 0 2 -11 0 -11 1 -1 3 0 4 11 0 12 0 0 2 0 2 -11 0 -11 1 -1 73 0 73 -3 0 -2 0 0 -7 0 -7 -5 0 -5 0 0 7 0 7 -3 0 c-2 0 -3 0 -2 -1 l1 0 0 -5 0 -5 -1 -1 -2 -2 -5 0 -4 1 0 6 0 7 -3 0 -3 0 0 -73z m32 -45 l0 -99 -13 0 -13 1 -1 98 0 99 13 0 14 0 0 -99z m0 -106 l0 -3 -13 0 -13 0 -1 2 c0 0 0 2 0 3 l1 1 13 0 13 0 0 -3z M218 236 l0 -10 11 0 10 0 0 10 0 10 -10 0 -11 0 0 -10z m16 0 l0 -6 -5 0 -5 1 -1 4 c0 2 0 5 0 6 l1 1 5 0 5 0 0 -6z M218 209 l0 -11 10 0 11 1 0 10 0 11 -10 0 -11 0 0 -11z m16 1 l0 -6 -5 0 -6 0 0 6 0 5 6 0 5 0 0 -5z M219 192 l-1 0 0 -10 0 -10 11 0 10 0 0 10 0 10 -4 0 c-4 1 -14 1 -16 0z M219 164 l-1 0 0 -10 0 -10 11 0 10 0 0 10 0 10 -2 0 c-3 1 -16 1 -18 0z m15 -9 l0 -6 -5 0 -6 0 0 6 0 5 6 0 5 0 0 -5z M218 126 l0 -10 11 0 10 0 0 10 0 10 -10 0 -11 0 0 -10z" />
+    </g>
   </svg>
 );
 
