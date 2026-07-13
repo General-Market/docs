@@ -579,34 +579,91 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // pill field). `hexOp` was a 9-frame ramp over ink the ref draws at full mass.
   const riseDy = interpolate(f, HS_RISE_F, HS_RISE_DY, clamp);
   const t = interpolate(f, HS_SLIDE_F, HS_SLIDE_T, clamp);
-  const aCx = HS_A.x0 + (HS_A.x1 - HS_A.x0) * t;
-  const aCy = HS_A.y0 + (HS_A.y1 - HS_A.y0) * t + riseDy;
-  const bCx = HS_B.x0 + (HS_B.x1 - HS_B.x0) * t;
-  const bCy = HS_B.y0 + (HS_B.y1 - HS_B.y0) * t + riseDy;
+  // r20 THE UN-HEX IS A MORPH, AND IT DOES NOT START WHEN WE START IT.
+  // Traced frame by frame off the hexagon's own top edge, badge A's disc, and the
+  // temple's ink bbox: at f2475 the reference is STILL THE HANDSHAKE — hexagon at
+  // 74% of its ink, city at its handshake seat, badge at full size. Nothing has
+  // begun. The hexagon then dissolves 2472→2477 (508 · 504 · 533 · 478 · 377 · 245
+  // · 0), and over 2477-2483 the city SLIDES to its payment seat while the badge
+  // shrinks in place. We were crossfading from f2472, so at f2475 we drew a 70%
+  // handshake ghosted over a 30% payment where the ref draws one solid handshake.
+  // Hold solid, then hand over on the ref's own frames.
+  //
+  // (And the morph is the proof of the city scale above: the temple's bbox is
+  // 237x149 at BOTH ends of it — the handshake city IS the payment city, same art,
+  // same size, translated (+66,−75). Two independent measurements, one answer.)
+  // The morph itself, driven by ONE parameter fitted on hexA's temple x — which
+  // then predicts hexB's x AND y to 1px at every frame, so it is one motion:
+  //   hexA's city  (311,290) → (377,215)   translate (+66, −75)
+  //   hexB's city (1410,648) → (1260, 96)  translate (−150, −552)
+  // and both blobs are 237x149 / 138x266 at BOTH ends — the same art, the same
+  // size, moved. The badges ride their own line, 313→193 and shrinking 60→40, on
+  // the SAME t (their x's fit it to a percent). The hexagon dissolves 2472→2477
+  // (top-edge ink 508 · 504 · 533 · 478 · 377 · 245 · 0) and the aperture goes with
+  // it — after f2477 the city is not framed, it is just a city, still travelling.
+  const u = interpolate(
+    f,
+    [2472, 2473, 2474, 2475, 2476, 2477, 2478, 2479, 2480, 2481, 2482, 2483],
+    [0, 0.015, 0.045, 0.076, 0.136, 0.303, 0.697, 0.864, 0.924, 0.97, 0.985, 1],
+    clamp,
+  );
+  const hexOp = lerp(f, [2472, 2477], [1, 0]);
+  // Once the two cities are COINCIDENT the handover is a dissolve of identical
+  // content, so it can be short and late — where before it was a six-frame ghost of
+  // two cities sixty-six and five hundred pixels apart.
+  const out = lerp(f, [2480, 2484], [1, 0]);
+  // hex centres: rise + slide, then the un-hex translate
+  const aCx = HS_A.x0 + (HS_A.x1 - HS_A.x0) * t + 66 * u;
+  const aCy = HS_A.y0 + (HS_A.y1 - HS_A.y0) * t + riseDy - 75 * u;
+  const bCx = HS_B.x0 + (HS_B.x1 - HS_B.x0) * t - 150 * u;
+  const bCy = HS_B.y0 + (HS_B.y1 - HS_B.y0) * t + riseDy - 552 * u;
+  // The badge is RIGID on its hex through the rise and the slide (−114.4,−161.8 and
+  // +107.9,−164.2 — the very offsets the motion track was solved with). Only in the
+  // un-hex does it leave: it runs its own line into the payment scene's own badges at
+  // (188,265) and (1728,265) and shrinks 60→40, on the same clock. So the offset is
+  // the rigid one PLUS the difference between the badge's line and the hex's.
+  //   (a gate caught this: giving the badge an ABSOLUTE seat detached it from its hex
+  //    during the descent, and cost 0.017 at f2376 while looking perfectly fine at rest)
+  const aBadgeDx = -114.4 - 190.6 * u;
+  const aBadgeDy = -161.8 + 129.8 * u;
+  const bBadgeDx = 107.9 + 258.1 * u;
+  const bBadgeDy = -164.2 + 226.2 * u;
+  const badgeR = 60 - 20 * u;
   // the documents hang off their hexes and ride with them (settled offsets, which
   // is what the ref shows: each doc keeps its station on the hex through both phases)
   const aDx = aCx - HS_A.x1;
   const aDy = aCy - HS_A.y1;
   const bDx = bCx - HS_B.x1;
   const bDy = bCy - HS_B.y1;
-  // ref un-hexes A/B into the two cities-on-a-line by ~f2480 (boundary scan
-  // vf 2474/2478/2480): the cities are SOLID at the payment scene's first frame.
-  // Was out=[2470,2484] + payment in=[2482,2496] = a crossfade DIP (ghost hexes
-  // at f2480, cities only 29% at f2486). Now handshake exits over the SAME
-  // window payment enters (2472-2482) so the sum holds ~1 (reads as the un-hex
-  // morph) and the cities are solid by 2482.
-  const out = lerp(f, [2472, 2482], [1, 0]);
   const graphicOp = lerp(f, [2405, 2420], [0, 1]);
   const arrowP = lerp(f, [2424, 2440], [0, 1]);
   return (
     <AbsoluteFill style={{ opacity: out }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: C.white, opacity: bgOp }} />
-      <SmallHex art="cityA" cx={aCx} cy={aCy} w={385} artW={1150} letter="A" />
-      <div style={{ position: "absolute", inset: 0, transform: `translate(${aDx}px, ${aDy}px)` }}>
+      {/* r20 THE CITIES INSIDE THESE HEXES ARE 1.75x TOO SMALL, and the badges are
+          HALF SIZE. This is r19's SmallHex bug — SmallHex derives its art scale as
+          (w*0.92)/artW, so the city is drawn NARROWER than its hexagon and floats in
+          a pool of white; the ref does the opposite, OVERFLOWING the city and letting
+          the hexagon aperture CLIP it, which is what a city seen through a window is
+          supposed to look like. r19 found this on the payment hexes and built PayHex
+          to escape the hard-coded `bottom: h*0.16` seat, and then never looked at the
+          handshake pair — which carries the SAME bug on objects four times the size,
+          for a hundred and ten frames.
+          k measured three ways, all agreeing: hexA's temple blob (k_y 1.741), hexB's
+          temple blob (k_x 1.756, k_y 1.745), and a brute-force interior IoU fit with
+          the badges masked out — hexA 0.1245→0.4865 at k=1.750, hexB 0.1373→0.5906 at
+          k=1.745. The fits also hand back the seat, which SmallHex's anchor misses by
+          (22, 39)px even at the right scale — which is exactly why PayHex exists.
+          The badge: the ref's disc is 122px across, ours 60. It is a call-site prop and
+          nobody had ever measured it. Centres (312.6,210.2) and (1619.9,590.8), i.e.
+          rigid at (-114.4,-161.8) and (+107.9,-164.2) from their hexes — the same
+          offsets the motion track above was solved with, so they cross-check. */}
+      <PayHex art="cityA" cx={aCx} cy={aCy} w={385} artScale={0.539} artLeft={-139.7} artBottom={94.6} hexOp={hexOp} letter="A" badgeDx={aBadgeDx} badgeDy={aBadgeDy} badgeR={badgeR} />
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${aDx}px, ${aDy}px)`, opacity: 1 - u }}>
         <Doc x={255} y={510} w={91} h={110} />
       </div>
-      <SmallHex art="cityB" cx={bCx} cy={bCy} w={396} artW={1190} letter="B" />
-      <div style={{ position: "absolute", inset: 0, transform: `translate(${bDx}px, ${bDy}px)` }}>
+      <PayHex art="cityB" cx={bCx} cy={bCy} w={396} artScale={0.5343} artLeft={-94.6} artBottom={5.9} hexOp={hexOp} letter="B" badgeDx={bBadgeDx} badgeDy={bBadgeDy} badgeR={badgeR} />
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${bDx}px, ${bDy}px)`, opacity: 1 - u }}>
         <Doc x={1611} y={900} w={90} h={110} />
       </div>
       {/* handshake graphic + horizontal arrows form later (~2405-2425) */}
@@ -643,8 +700,19 @@ const PayHex: React.FC<{
   artScale: number;
   artLeft: number; // px relative to the hex clip box's left edge
   artBottom: number; // px above the clip box's bottom edge (negative = hangs below)
-}> = ({ art, cx, cy, w, artScale, artLeft, artBottom }) => {
+  /** the A/B badge, when this hex carries one. dx/dy are px from the hex CENTRE —
+   *  the badge is rigid on its hex and rides every motion with it. */
+  letter?: string;
+  badgeDx?: number;
+  badgeDy?: number;
+  badgeR?: number;
+  /** the hexagon itself — outline AND aperture. At 0 the city is UNCLIPPED and the
+   *  window is gone, which is how the ref un-hexes: the hexagon dissolves and the
+   *  city it was framing simply keeps going. Default 1 = the framed hex. */
+  hexOp?: number;
+}> = ({ art, cx, cy, w, artScale, artLeft, artBottom, letter, badgeDx = 0, badgeDy = 0, badgeR = 30, hexOp = 1 }) => {
   const h = w * 0.906;
+  const framed = hexOp > 0;
   return (
     <div style={{ position: "absolute", left: 0, top: 0 }}>
       <div
@@ -654,15 +722,20 @@ const PayHex: React.FC<{
           top: cy - h / 2,
           width: w,
           height: h,
-          clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
-          backgroundColor: C.white,
+          clipPath: framed ? "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)" : undefined,
         }}
       >
+        {framed && <div style={{ position: "absolute", inset: 0, backgroundColor: C.white }} />}
         <div style={{ position: "absolute", left: artLeft, bottom: artBottom }}>
           <TracedArt name={art} scale={artScale} style={{ position: "relative" }} />
         </div>
       </div>
-      <Hexagon cx={cx} cy={cy} w={w} />
+      {framed && (
+        <div style={{ position: "absolute", inset: 0, opacity: hexOp }}>
+          <Hexagon cx={cx} cy={cy} w={w} />
+        </div>
+      )}
+      {letter && <Badge letter={letter} cx={cx + badgeDx} cy={cy + badgeDy} r={badgeR} />}
     </div>
   );
 };
@@ -761,10 +834,11 @@ const PAY_DOC_H = 90;
 export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
-  // mount 8f early so the cities crossfade in as the handshake hexes un-hex
-  // (kills the f2480 dip — cities solid by 2482 like the ref)
+  // r20: the handover is at 2477-2483, not 2472-2482 — the reference is still a
+  // solid handshake at f2475 (see the un-hex trace in HandshakeScene). Mounting
+  // early is harmless while inOp is 0; entering early is not.
   if (f < SEG.payment[0] - 8 || f >= 2652) return null;
-  const inOp = lerp(f, [2472, 2482], [0, 1]);
+  const inOp = lerp(f, [2476, 2480], [0, 1]);
   // r18: the tableau is whipped off by f2635 and the ref is blank white behind
   // it, so `out` now only governs the horizon line — which does NOT fade, it
   // DESCENDS into Strip2's band. Hand it over at 2640, the frame Strip2 mounts.
