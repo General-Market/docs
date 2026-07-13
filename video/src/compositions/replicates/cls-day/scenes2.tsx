@@ -1623,14 +1623,33 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
       {/* one rigid world exit translation over everything (identity in the body) */}
       <div style={{ position: "absolute", inset: 0, transform: `translate(${worldDX}px, ${worldDY}px)` }}>
         {/* band + milestone ticks + marker — PAN in the body, ride the world at exit */}
-        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={28} tickBelow={18} />
+        {/* r18: labelSize 28 -> 23. The ref's hour glyphs ink a 61x26 bbox (402-410 px of
+            ink); ours inked 79x31 (636-660). The label's LEFT ink edge and its ink TOP
+            (y130) were both already right — only the size was wrong. 14,514px/frame, the
+            largest single error in this window. labelSize is a PROP here: TimelineBand is
+            shared with four other scenes and its default is NOT touched. */}
+        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} />
         <div style={{ opacity: markerP }}>
           <MarkerTriangle x={955} y={27} size={56} />
         </div>
         {milestones.map(({ h, m, below }, i) => (
           <React.Fragment key={i}>
-            {/* red ticks rise ABOVE the band top (measured f3300: y56) and pan with it */}
-            <div style={{ position: "absolute", left: hx(h) - 2.5, top: 56, width: 5, height: below ? 145 : 80, background: C.marker }} />
+            {/* r18 FICTION: the red ticks did NOT rise above the band. gen13 read y56 off a
+                frame where the band sat elsewhere. The ref starts every milestone tick at
+                the band TOP (y92) and runs it DOWN to the foot of its own label block:
+                07:00 and 12:00 -> y190 (h98), 09:00 -> y207 (h115), 06:30 -> y239 (h147).
+                We drew 36px of tick ABOVE the band that does not exist, and stopped 55px
+                short below. Width 5 -> 4. */}
+            <div
+              style={{
+                position: "absolute",
+                left: hx(h) - 2,
+                top: 92,
+                width: 4,
+                height: below ? 147 : h === 9 ? 115 : 98,
+                background: C.marker,
+              }}
+            />
             <div style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 140, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
               {/* gen13: milestone label text ~1.2x oversize vs ref (time h16 vs 19,
                   label h8.5 vs 10.5) — time 22->19, label 17->14 */}
@@ -1648,28 +1667,46 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
           {/* hexes + pill + shield (measured centers) */}
           <HexCity x={561} y={404} w={307} h={226} variant={0} dense />
           <HexCity x={1360} y={404} w={307} h={226} variant={1} dense />
-          {/* trade executed arrow y393 */}
+          {/* r18: "TRADE EXECUTED" — the arrow POINTED THE WRONG WAY. The ref draws a
+              DOUBLE-HEADED arrow pointing OUTWARD (city <- -> city); ours were solid
+              triangles aimed INWARD (the left one carried a rotate(180) that flipped its
+              apex to the right of its own base — the same defect gen20 found on S13's top
+              rail). They are OPEN SWEPT CHEVRONS in the ref, as everywhere else in this
+              film. Line y393 -> 410, right end 1195 -> 1239, text 24 -> 19 (ref ink
+              123x14 = 599px; ours 164x17 = 1023px), text ink at y386..399. */}
           <svg width={1920} height={1080} style={{ position: "absolute" }}>
-            <line x1={710} y1={393} x2={1195} y2={393} stroke={C.skyBlue} strokeWidth={3.5} />
-            <path d="M 725 393 l 18 -10 v 20 z" fill={C.skyBlue} transform="rotate(180 734 393)" />
-            <path d="M 1180 393 l 18 -10 v 20 z" fill={C.skyBlue} />
-            {/* connectors flow OUT of the shield sides and UP into the hexes
-                (measured f3300: legs y814, verticals x512/x1408, arrowheads UP) */}
-            <path d="M 782 814 L 512 814 L 512 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
-            <path d="M 512 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
-            <path d="M 1160 814 L 1408 814 L 1408 545" fill="none" stroke={C.navyDeep} strokeWidth={3} />
-            <path d="M 1408 548 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
-            {/* prior to value date dashed (slate, measured span) */}
-            <line x1={575} y1={786} x2={1370} y2={786} stroke={C.chipGrey} strokeWidth={2.5} strokeDasharray="10 8" />
+            <line x1={710} y1={410} x2={1239} y2={410} stroke={C.skyBlue} strokeWidth={3.5} />
+            <path d="M 728 397 L 710 410 L 728 423" fill="none" stroke={C.skyBlue} strokeWidth={4.5} />
+            <path d="M 1221 397 L 1239 410 L 1221 423" fill="none" stroke={C.skyBlue} strokeWidth={4.5} />
+            {/* r18: the bottom payment lane sat 15px HIGH and had square corners and no
+                chevrons where it enters the shield. Measured: lane y829, verticals x515 /
+                x1414, leg tops y495, corner radius ~20. The chevrons point INTO the shield
+                (whose walls the ref puts at x773.5 / x1155): LEFT apex (772,830) with arms
+                back to x755, RIGHT apex (1156,830) with arms back to x1173. */}
+            <path d="M 773 829 L 535 829 Q 515 829 515 809 L 515 495" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+            <path d="M 515 498 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
+            <path d="M 1155 829 L 1394 829 Q 1414 829 1414 809 L 1414 495" fill="none" stroke={C.navyDeep} strokeWidth={3} />
+            <path d="M 1414 498 l -12 20 h 24 z" fill={C.navyDeep} transform="translate(0 -20)" />
+            <path d="M 755 817 L 772 830 L 755 843" fill="none" stroke={C.navyDeep} strokeWidth={4.5} />
+            <path d="M 1173 817 L 1156 830 L 1173 843" fill="none" stroke={C.navyDeep} strokeWidth={4.5} />
+            {/* r18: "prior to value date" is a BLUE dashed line, not a grey one — the ref's
+                dash core reads rgb(6,117,179), the same family as its label text; we drew
+                C.chipGrey rgb(139,157,175). y786 -> 790.5, right end 1370 -> 1352, dash
+                "10 8" -> "12 9.5", 2.5 -> 2. (The measured core is darker than the palette's
+                skyBlue #2E96D6; the palette colour is used rather than invent a shade — the
+                hue was the error, and the exact value is left on record here.) */}
+            <line x1={575} y1={790.5} x2={1352} y2={790.5} stroke={C.skyBlue} strokeWidth={2} strokeDasharray="12 9.5" />
           </svg>
-          <div style={{ position: "absolute", left: 860, top: 358, width: 200, textAlign: "center", fontFamily: pack.sans, fontSize: 24, color: C.skyBlue }}>
+          <div style={{ position: "absolute", left: 860, top: 381, width: 200, textAlign: "center", fontFamily: pack.sans, fontSize: 19, color: C.skyBlue }}>
             {pack.tradeExecuted}
           </div>
           <div style={{ position: "absolute", left: 592, top: 764, fontFamily: pack.sans, fontSize: 20, color: C.skyBlue }}>
             {pack.priorToValueDate}
           </div>
-          {/* shield (measured f3300: bottom V at y~880 → h305) */}
-          <svg width={384} height={310} viewBox="0 0 384 357" preserveAspectRatio="none" style={{ position: "absolute", left: 777, top: 575 }}>
+          {/* r18: the shield is 13.5px NARROW and 15px SHORT. Ref walls x773.5 / x1155
+              (ours 784.5 / 1152.5), bottom-V tip (960, 894.5) (ours 879.5). Top edge y585
+              was already right. width 384 -> 398, height 310 -> 327, left 777 -> 765.5. */}
+          <svg width={398} height={327} viewBox="0 0 384 357" preserveAspectRatio="none" style={{ position: "absolute", left: 765.5, top: 575 }}>
             <path
               d="M 28 8 Q 8 8 8 30 L 8 250 Q 8 266 23 275 L 180 350 Q 192 356 204 350 L 361 275 Q 376 266 376 250 L 376 30 Q 376 8 356 8 Z"
               fill="#FDFDFD"
@@ -1677,11 +1714,12 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
               strokeWidth={3}
             />
           </svg>
-          {/* doc sheet peeking behind the pill (fold top-right, measured) */}
-          <svg width={264} height={152} viewBox="0 0 264 152" style={{ position: "absolute", left: 835, top: 445 }}>
-            <path d="M 4 148 L 4 4 L 216 4 L 260 48 L 260 148 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
-            <path d="M 216 4 L 216 48 L 260 48" fill="none" stroke={C.navyDeep} strokeWidth="3" />
-          </svg>
+          {/* r18 FICTION, DELETED: a 264x152 folded-corner doc sheet sat behind the pill.
+              The ref has NO sheet there at ANY frame of f3326-3388 — checked at f3330,
+              f3350, f3360, f3370: the pill stands alone. What the ref actually runs through
+              that space is the upper payment lane and its travelling $/EUR documents (see
+              the RESIDUAL note at the foot of S17Summary). 1,350px of invented navy ink;
+              2,460px of frame difference. */}
           {/* gen18: pill re-measured off the ref's solid-navy fill at f3260/3300/3340/
               3370 (identical to the pixel) — 259x117 at (834, 473), not 245x120 at
               (845, 470). The wordmark was the real error: logoScale 0.425 rendered a
@@ -1694,10 +1732,15 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             const y = [618, 692, 756, 822][i];
             return (
               <div key={i} style={{ opacity: rowsP[i] }}>
-                <RowIcon kind={i} x={790} y={y} />
+                {/* r18: the panel column sits 16px LEFT and 5px LOW, and the text is 4.5%
+                    small. Ref line-1 first-ink per row: (889,613) (889,687) (889,751)
+                    (889,816); ours (873,618) (873,692) (873,756) (873,822). Ref icon left
+                    ink 800..807 (ours 790). Text 16 -> 17 ("Payment instructions settled"
+                    inks 210px in the ref against our 201). */}
+                <RowIcon kind={i} x={802} y={y} />
                 {/* gen13: row text fs22->16 (measured ref cap-height ~13.5px vs
                     replica's ~19px; the oversize text also overflowed the panel width) */}
-                <div style={{ position: "absolute", left: 872, top: y - 4, fontFamily: pack.sans, fontSize: 16, color: C.navyInk, lineHeight: 1.3 }}>
+                <div style={{ position: "absolute", left: 889, top: y - 9, fontFamily: pack.sans, fontSize: 17, color: C.navyInk, lineHeight: 1.3 }}>
                   {row.map((l, k) => (
                     <div key={k}>{l}</div>
                   ))}
