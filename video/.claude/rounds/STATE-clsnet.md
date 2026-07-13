@@ -1687,3 +1687,63 @@ INSTRUMENTS.** Two lanes, working different frames independently, ranked `Doc` a
 And the lead's own three errors were all one error: **an inference that was never interrogated.**
 The method file says the judge lies until interrogated. It lies about your neighbours, and it lies
 in the harness you just patched.
+
+### r19 addendum — PROVE OR REVERT: the two commits gated through the broken harness
+
+`Doc` (`a602d7273`) and `Hexagon` (`696492884`) landed while the LEAK-GUARD bug was live, so their
+gates were suspect. **Re-gated through the REPAIRED harness. Both PROVEN. Neither reverted.**
+
+| frame | OLD (ui.tsx @622fb8d33, pre-both) | NEW (HEAD) | delta |
+|---|---|---|---|
+| f1400 (tradeDocs) | 0.933518 | 0.933518 | +0.00000 — **byte-identical**; the primitives do not touch this frame |
+| **f1740 (locks, 4 Docs on screen)** | 0.928761 | **0.932579** | **+0.00382 PASS** |
+
+Three independent proofs, not assertions:
+1. **Not plates.** mean 0.945, sd 0.17. A frame-0 ClsNet plate is solid NAVY — **mean ~0.15, sd ~0**.
+   All **103** r19-U stills audited: **zero flat plates**.
+2. **The render actually saw `ui.tsx`** — OLD and NEW are byte-DIFFERENT at f1740 (md5 84865c74 vs
+   9235644d). A render ignoring the source would have produced identical bytes.
+3. **NEW ≥ OLD** at every gated frame.
+(`ui.tsx` restored to HEAD by `git show`, md5 verified `e8b7aecb…`, tree clean. Never `git checkout`.)
+
+### The md5 cross-frame test — a good test with a FALSE POSITIVE mode, and it found a real bug anyway
+
+The proposed rule — *"two gate stills at DIFFERENT frames with the same md5 are both frame 0, gate
+void"* — fired on `s1.1202_2560` == `s1.1202_2600`. **It was a false positive**: mean 0.95, sd 0.17,
+a real white page, not a navy plate. Byte-identical renders at two frames are **CORRECT** when the
+composition is genuinely static across the hold.
+
+**But interrogating the false positive found a REAL defect.** The ref is **NOT** static there:
+
+| | f2560 vs f2600 |
+|---|---|
+| **ref** | SSIM **0.9805** — it MOVES |
+| **ours** | **byte-identical** — frozen |
+
+> **NEW RESIDUAL: the payment hold is FROZEN where the reference drifts** (f2560–2600). Not measured
+> this round. r20.
+
+**The correct form of the test** (the plate signature is unambiguous, so use it):
+`a frame-0 ClsNet still is SOLID NAVY — mean ~0.15, sd ~0.` Screen on **mean/sd**, not on md5 equality.
+md5-across-frames is a useful *screen*, but it must then be **opened** — which is the round's own rule
+turned on its own instruments.
+
+### The laws of r19, in order of value
+1. **A BROKEN INSTRUMENT DOES NOT FAIL LOUDLY — IT FLATTERS YOU.** A frame-0-vs-frame-0 A/B is a
+   PERFECT TIE and reads as *"no regression, ship it."* The most dangerous bug class in this project.
+2. **Do not diagnose a neighbour from artifacts. Read what is RUNNING** (`ps`, not `.sh` files on disk).
+3. **A correct harness an agent declines to invoke is not protection — it is documentation.** The lock
+   was never broken; our builders were calling `npx` directly and walking around it.
+4. **A watchdog wraps AROUND a command, never through it.** The `\ &` splice severed the args.
+5. **"No PNG + exit 0" is not always OOM** — a sibling's syntax error breaks the shared esbuild bundle
+   for every lane and looks identical.
+6. **COUNT THE FILES BEFORE YOU READ THE NUMBERS** (from cls-day). An OOM-killed batch drops frames
+   silently; the missing ones score as blank columns, not as errors.
+7. **When a constant reads differently at three sites, suspect the DATUM before you abandon the constant.**
+8. **A positive A/B can be an artifact of TWO ERRORS CANCELLING.** Re-test confirmed fixes, not just
+   refuted ones.
+9. **Correct sizing can MAGNIFY a fiction.** Fix the geometry and false ink gets bigger, not smaller.
+
+**The official `verify-replication.sh` renders the whole composition itself and never invokes
+`still.sh` — it is IMMUNE to the frame-0 bug, and it arbitrates this round independently of every
+gate above.**
