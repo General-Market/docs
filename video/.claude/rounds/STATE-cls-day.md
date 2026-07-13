@@ -1980,3 +1980,60 @@ Gate: f2055 +.0165 · f2060 +.0437 · f2064 +.0620 · **f2068 .9141→.9821** ·
   Worth a pass, but it is a fifth of the settled window's frames.
 - S13's falling content also drifts left ~38px and widens ~6% by f2722 (the same rig
   scaleX as the docs). Left alone; 9 frames.
+
+## gen18 PILL round — 2026-07-13 (scenes2, from the round lead's S4 finding)
+
+The scenes1 builder found S4's CLS pill drawn at under a third of its true area. Both
+of scenes2's `ClsPillSlot` mounts carried the same defect. I did NOT copy S4's numbers —
+I measured each pill in its own ref frames, and they differ.
+
+**Both pills, measured off the ref's SOLID-NAVY fill (four frames each, identical to
+the pixel):**
+
+| | ref | we drew |
+|---|---|---|
+| S10 | **433 x 196 @ (742, 718)** | 250 x 107 @ (826, 759) — **26.7k px against 84.9k** |
+| S17 | **259 x 117 @ (834, 473)** | 245 x 120 @ (845, 470) — geometry nearly right |
+
+**The wordmark law.** The ref's logo-height / pill-height is **0.342 in BOTH pills**
+(S10 logo 318x67, S17 logo 169x40). `ClsWordmark` renders a glyph 0.935x its `height`
+prop, so **logoScale = 0.366 is a property of the rig, not a per-scene number.** S10 had
+no logoScale at all (default 0.5) and its wordmark, sized off the small h, spilled past
+the pill's right edge and was clipped by ClsPill's own `overflow: hidden`. S17 ran 0.425
+and rendered a 48px glyph against the ref's 40.
+
+Gate — every frame wins:
+- S10 (bfa558296): f1900 +.0224 · f1950 +.0223 · f2000 +.0215 · f2040 +.0223 · f2055 +.0211
+- S17 (7d81cb278): f3240 +.0028 · f3260 +.0046 · f3300 +.0045 · f3340 +.0044 · f3370 +.0046
+
+**Then the pill broke the chips (f913193c6).** At its true size the pill swallows the
+chips' endpoints, and chips drawn AFTER it sat on top of the wordmark — CrxSettlementDay
+read "CR^", a chip covering the X. The ref slides them BEHIND (f2015: a grey chip reads
+39px wide against its true 130, the rest hidden by the pill's right edge). Drawing them
+before the pill makes the occlusion free: f1975 +.0007 · f2000 +.0009 · f2020 +.0002,
+nothing regresses.
+
+**NEGATIVE A/B — chip SIZE (reverted).** The ref's chips are **127x57**, not 86x34. I
+resized them and LOST at three of five frames (f1950 −.0011, f2020 −.0014, f2045 −.0013).
+Our chip PATHS are invented: they fly diagonally out of the hex bottoms, where the ref
+runs them flat along the **y≈813 connector lane** and parks them at the pill's edges
+(measured: f1995 warm x578..701 y785..840; f1955 cool x1184..1313 y785..843). A bigger
+chip in the wrong place is more misplaced ink, not less (lesson 4). **Re-measure the
+paths and the schedule first, then the size** — done in that order it should be worth
+several thousand px.
+
+### Residual — belongs to whoever owns scenes1/lib
+
+`ClsPill` (lib.tsx) hardcodes a uniform `borderRadius: h * 0.28`. The ref pill carries
+the **brand CHIP radius — rounded TL + BR (r≈42), SQUARE TR + BL** (probed at ref f2000:
+navy present at TR and BL corners, absent at TL and BR; top row cut back to x786 from
+742, right column cut to y873 from 913). ~1.5k px. Not reachable from scenes2 — the
+S4 builder already shaped their pill this way, so the fix is to give `ClsPill` the same
+chip radius and let both my mounts inherit it.
+
+### Also, since the ref's S10 sits open in front of me
+
+S10's connectors END IN CHIPS in the ref, not arrowheads — a peach chip on the pill's
+left edge, a grey one on its right, with thin plain lines running back to the hexes. We
+draw thick lines with solid triangular arrowheads (now harmlessly hidden under the
+enlarged pill). Fold this into the chip-path pass.
