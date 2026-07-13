@@ -221,6 +221,21 @@ export const S9ZoomTimes: React.FC<{ frame: number; pack: Pack }> = ({ frame }) 
 };
 
 // ─── S10: settlement flows A/CLS/B + central banks (f1837..2075) ───
+// gen18 — S10 HAD NO EXIT. The scene held its whole diagram at full opacity until
+// S11's opaque white background covered it at f2075. The ref does what S13 does:
+// it SLIDES the diagram (hexes, pill, bank, connectors, chips) straight DOWN and
+// off-frame while the band, the marker and the 07:00 milestone stay put. Tracked
+// the CLS pill body per frame — the fall starts at f2049 and grows ~1.35x/frame;
+// the ref is blank below the band by f2069 (below-band ink 172k@f2058 -> 13k@f2068
+// -> the milestone label alone from f2070). We were drawing the entire diagram over
+// white for 26 frames.
+const S10_EXIT: Lut = [
+  [2048, 0], [2049, 0], [2050, 1], [2051, 3], [2052, 6], [2053, 12], [2054, 18],
+  [2055, 28], [2056, 40], [2057, 56], [2058, 76], [2059, 102], [2060, 135],
+  [2061, 180], [2062, 242], [2063, 325], [2064, 440], [2065, 590], [2066, 790],
+  [2067, 1060], [2069, 1600],
+];
+
 export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<{ h: number }> }> = ({
   frame,
   pack,
@@ -228,6 +243,7 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
 }) => {
   if (frame < 1837 || frame >= 2090) return null;
   const outP = interpolate(frame, [2075, 2090], [0, 1], clamp);
+  const exitDy = lut(frame, S10_EXIT);
   const hexP = interpolate(frame, [1845, 1868], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [1872, 1890], [0, 1], clamp);
   const bankP = interpolate(frame, [1900, 1916], [0, 1], clamp);
@@ -255,25 +271,28 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
       <TimelineBand originX={958} originHour={7} pxPerHour={141.6} labelSize={21} />
       <MarkerTriangle x={958} y={27} size={60} />
       <Milestone x={958} lineTop={84} lineBottom={148} time={pack.milestones.m0700.time} label={pack.milestones.m0700.label} textY={160} timeSize={28} labelSize={18} />
-      <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" variant={0} opacity={hexP} />
-      <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" variant={1} opacity={hexP} />
-      {bankP > 0 && <BankHex x={1370} y={648} size={100} opacity={bankP} />}
-      {connP > 0 && (
-        <svg width={1920} height={1080} style={{ position: "absolute", opacity: connP }}>
-          <path d={`M ${ax + 10} ${hexBot} L ${ax + 10} 782 Q ${ax + 10} 812 ${ax + 40} 812 L 796 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-          <path d="M 796 812 l -22 -12 v 24 z" fill={C.navyDeep} transform="translate(22 0)" />
-          <path d={`M 1370 698 L 1370 782 Q 1370 812 1340 812 L 1124 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-          <path d={`M 1124 812 l 22 -12 v 24 z`} fill={C.navyDeep} transform="translate(-22 0)" />
-          <path d={`M ${bx - 10} ${hexBot} L ${bx - 10} 598`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
-        </svg>
-      )}
-      {pillP > 0 && <ClsPillSlot x={826} y={759} w={250} h={107} p={pillP} PillLogo={PillLogo} />}
-      {chips.map((c, i) => {
-        if (c.p <= 0 || c.p >= 1) return null;
-        const x = c.from[0] + (c.to[0] - c.from[0]) * c.p;
-        const y = c.from[1] + (c.to[1] - c.from[1]) * c.p;
-        return <Chip key={i} x={x - 43} y={y - 17} w={86} h={34} color={c.color} />;
-      })}
+      {/* the diagram — it, and only it, slides down and off at the exit */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${exitDy}px)` }}>
+        <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" variant={0} opacity={hexP} />
+        <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" variant={1} opacity={hexP} />
+        {bankP > 0 && <BankHex x={1370} y={648} size={100} opacity={bankP} />}
+        {connP > 0 && (
+          <svg width={1920} height={1080} style={{ position: "absolute", opacity: connP }}>
+            <path d={`M ${ax + 10} ${hexBot} L ${ax + 10} 782 Q ${ax + 10} 812 ${ax + 40} 812 L 796 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+            <path d="M 796 812 l -22 -12 v 24 z" fill={C.navyDeep} transform="translate(22 0)" />
+            <path d={`M 1370 698 L 1370 782 Q 1370 812 1340 812 L 1124 812`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+            <path d={`M 1124 812 l 22 -12 v 24 z`} fill={C.navyDeep} transform="translate(-22 0)" />
+            <path d={`M ${bx - 10} ${hexBot} L ${bx - 10} 598`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
+          </svg>
+        )}
+        {pillP > 0 && <ClsPillSlot x={826} y={759} w={250} h={107} p={pillP} PillLogo={PillLogo} />}
+        {chips.map((c, i) => {
+          if (c.p <= 0 || c.p >= 1) return null;
+          const x = c.from[0] + (c.to[0] - c.from[0]) * c.p;
+          const y = c.from[1] + (c.to[1] - c.from[1]) * c.p;
+          return <Chip key={i} x={x - 43} y={y - 17} w={86} h={34} color={c.color} />;
+        })}
+      </div>
     </div>
   );
 };
