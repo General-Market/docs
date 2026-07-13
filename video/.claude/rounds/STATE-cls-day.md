@@ -2753,3 +2753,43 @@ agent should.** It is outside my lane and outside lib's.
 - A whole-repo `tsc` gate can be red from a SIBLING's file. During this round
   `scenes2.tsx:866` was mid-edit and failing; `scenes1.tsx` had 0 errors. Grep your own
   filename out of the tsc output before you revert anything.
+
+### gen19 FINAL — measured, NOT landed: `MarkerTriangle` is 2.26x the ref's ink, on 14 MOUNTS
+
+Stood down from `ClsLetters` on the lead's correction (it lives in `cls-shared/logo.tsx`,
+outside this lane, shared with clsnet — **0 files modified, 0 commits from me there**;
+verified). Writing up the one thing I measured this round and never reported.
+
+**`MarkerTriangle` (lib.tsx:213) is the most-mounted primitive in the comp — 14 mounts**
+(scenes1 x4, scenes2 x10) — and it is drawn far too heavy. Measured at S10 f1900
+(mount `x958 y27 size60`), rust-hue mask, with the Milestone rule's columns excluded
+(they inflate the height by 13px if you don't — I nearly filed that as the finding):
+
+| | ink | w | h | stroke (ink / perimeter) |
+|---|---|---|---|---|
+| **ref** | **438px** | 50 | 42 | **≈3.0px** |
+| **ours** | **989px** | 60 | 48 | **≈5.7px** |
+
+**We draw 2.26x the ref's ink — 551 excess px per marker, per frame, at 14 mounts.**
+Two independent errors, and they belong to different owners:
+
+- **`strokeWidth="4"` (lib.tsx, viewBox 30 units) is ~2x too fat — MINE.** At `size=60` the
+  viewBox scales x2, so 4 units renders an **8px** stroke against the ref's ~3px. The ref
+  wants **≈1.8 viewBox units**. This is the dominant term: even after correcting the size,
+  the stroke alone leaves us ~90% over.
+- **`size={60}` is ~20% too big — CALL SITE.** Ref triangle is 50 wide, not 60.
+  (Ten of the fourteen mounts pass 60; others pass 40/56/62/90 and are unmeasured.)
+
+The **aspect is fine** — ref h/w = 0.84, ours 0.80 (`size * 0.82`). Do NOT touch it.
+
+**Caveat, stated plainly: fitted at ONE mount (S10, size 60).** The stroke scales with
+`size`, so the *relative* error should hold everywhere, but the other four sizes are
+unverified. **Gate all 14 mounts + CrxSettlementDay before shipping this** — a `strokeWidth`
+change touches every one of them, and this round has already shown twice what a shared
+default does when it is fitted in the wrong place (`lineW` 5→4, `PILL_R`).
+
+Not landed: the round lead called stand-down on new edits, and a 14-mount shared default is
+not something to push through a thrashing box in the last minutes of a round. **It is the
+biggest un-collected lever I know of in lib.tsx, and it is cheap.**
+
+*Excess ink is fiction too. We have spent the round deleting what the ref does not draw; this is 551px of it, fourteen times over.*
