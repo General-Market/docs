@@ -1945,3 +1945,98 @@ LARGE-AREA lever left and the correct main bet for r23.**
 - `3ca8c0498` strip: three data-only fixes to the worst 2s window (data.ts)
 - `94fc4b0f0` globe: hold the scroll, drift the continents down (scenesA)
 - `214d63081` scenesC W2: hexes carry real reports, box stands full, arrows land bold (scenesC)
+
+## r23 — the last two large-area geometric defects, found by RE-MEASUREMENT. SCORE 96.0 → 96.2. (round lead inheritor + predecessor's 3 commits, 5 commits total)
+
+**Official verify: 96.2 (video_ssim 0.952983→0.955213 = +0.00223; keyframe 0.9414684→0.9442087;
+color 0.994394; duration 0.999748).** A real +0.2 round after r21's +0.1 and r22's +0.0. The gross
+movers were all the SAME kind of error — a large trace element mis-SEATED or mis-SIZED, invisible to
+the metric as a "bad element", found only by opening the file and re-measuring against the ref's own
+pixels. The gap to 96.5 is now +0.3, and this round measured exactly where it does and does not live.
+
+### r22→r23 per-window truth (from the r23 framessim, the codec-honest mp4-vs-mp4 record)
+
+| window | r22 | r23 | Δ | owner |
+|---|---|---|---|---|
+| mapHex 608-658 | 0.9285 | 0.9790 | **+0.0505** | predecessor seat 1d264b32b |
+| mapHex 673-723 | 0.9249 | 0.9750 | **+0.0502** | predecessor seat |
+| mapHex 723-773 | 0.9192 | 0.9508 | **+0.0316** | predecessor seat |
+| outro-rise 3890-3940 | 0.9293 | 0.9370 | **+0.0077** | cityA + rise (mine) |
+| outro-settled 3798-3889 | 0.9326 | 0.9393 | **+0.0068** | cityA (mine) |
+| pay-tail 2583-2633 | 0.9226 | 0.9274 | +0.0048 | predecessor docs 60c23f768 |
+| strip 2085-2135 (WORST) | 0.9181 | 0.9183 | +0.0001 | FLOOR |
+| globe 469-519 / 523-573 | 0.931/0.922 | =same | +0.00004 | FLOOR (law 8) |
+| pairs 1295 / locks 1875 | 0.923/0.929 | =same | ~0 | FLOOR |
+| GLOBAL | 0.9530 | 0.9552 | **+0.00223** | |
+
+**The mapHexes seat was the round's biggest mover, NOT a regression.** r22 handed it over as a −0.0019
+"hex-seat regression" to re-check. The predecessor's seat (the 7 map hexes were 2px right + 2px low)
+RECOVERED all three windows by +0.03 to +0.05 — a huge, correct win the r22 fear had mis-labelled. Law
+24, from the other side: a handed-down "regression" is a hypothesis too. Re-measure before you trust it.
+
+### cityA re-scale (214dd1446) — a FAITHFUL trace, ~14% too small. Law 21 paid.
+The r22 handoff walled the outro behind "mis-proportioned city traces, temple aspect 1.59 vs ref 1.96."
+The re-measurement REFUTED that: cityA's aspect is the ref's own (our orange temple 1.60 vs 1.58); it
+was uniformly UNDERSIZED (w195 vs ref w227). Not law 39 (unfaithful trace) — law 21 (a faithful trace
+scaled wrong). scale 0.44→0.512, re-seated so the temple lands on the ref's x500-727, base y555. cityB
+already matched (1.98 vs 1.96) and was left. **Crop gate NEW≥OLD by +0.10 (cluster) / +0.19 (temple)
+at f3815/3850/3880; composite window +0.0068 over 92 settled frames.** CrxNetting eyecheck clean. The
+r22 "mis-proportioned" residual was a handed-down measurement enshrined as a law — a hypothesis, not a
+fact. Opening the file killed it in one measurement.
+
+### THE OUTRO RISE (4f7b9101b) — WON, but small. The verdict r22 could not reach.
+r22 reverted the rise because the undersized cityA misregistered the risen skyline at f3940/42 (law 39).
+With cityA now the ref's own size, the rise registers, and the re-measurement settles the old dispute:
+**at ref f3942 the ENTIRE skyline sits in the top ~110px above the waterline — risen skyline, not the
+"white sky" r21 claimed.** The whole ledge (band + both stacks + cities) lifts by dyRise; only the navy
+half-plane is pinned under the sea. dyRise is fitted to the MEASURED ref temple base (555−base), NOT
+locked to the sea curve — the city sits a WIDENING 40→47px above the waterline, so a dedicated curve
+lands the temple base to **1px at f3935/38/40/42** (was 9px low when locked to the sea).
+
+**Result: net-positive but bounded.** Still gate (codec-honest NEW−OLD delta) over f3926-3948:
+wins the large-area early frames (+0.019/+0.014/+0.004 at f3932/35/38), LOSES the thin near-navy late
+frames (−0.007/−0.008 at f3940/42). The late loss is a **law-8 FLOOR that survives perfect
+registration**: once the sea covers past half, the skyline is a thin band, and blank-white (the old
+drowned frame) matches the ref's white sky better on SSIM than a correct but codec-soft skyline. Net
+≈ +0.052 integrated over the window; composite window moved +0.0077 (with cityA). The eye clearly
+prefers it (OLD drowns the cities where the ref lifts them). A documented perceptual-spend that is also
+metric-non-regressive. The settled window (f≤3926) is byte-untouched (dyRise clamps to 0).
+
+### Fresh worst windows — OPENED (law 22), classified FLOOR
+- **strip 2085-2135 (0.918, the single worst window):** ref-vs-ours A/B — structure is correct
+  (timeline, mirror city, labels, marker, F-logo). Two residuals: two navy pills fade in at 22:00 the
+  ref does not show at f2110 (early-entry, the r22 "day-A entered too early" class), and faint
+  orange/tan shading on a few buildings where the ref is grey. Both small-area (∝ +0.0002),
+  frame-limited. r22's 3 data fixes + r23 left the window flat. A dense many-small-residual FLOOR.
+- **globe 469-519 / 523-573 (0.931/0.922):** continents misregistered + globe seated slightly low, but
+  white lines on a blue disc = law-8 SSIM-muted; r22 measured the fix as flat/negative off full pose.
+  Held flat (+0.00004). FLOOR.
+- **pairs 1295-1345 / locks 1875-1925:** near-floor, unmoved.
+- mapHexes (608/673/723): re-checked — the predecessor's seat did NOT net-regress them; it was the
+  round's biggest gain.
+
+### THE CEILING VERDICT — 96.5 is NOT reachable by more window-fiction-hunting. Measured ceiling ~96.2-96.4.
+This round found and fixed the LAST TWO large-area geometric defects: the 2px mapHexes seat and the 14%
+cityA undersize. Both were the cityA-class error — a big trace mis-placed or mis-sized, metric-invisible
+as a "bad element", found only by re-measuring against the ref's pixels. **They are now spent.** What
+remains in the top-12 is, measured this round:
+- **law-8 SSIM-muted content** (globe: thin white continent lines on a disc) — the metric structurally
+  cannot reward a fix.
+- **dense many-small-residual windows** (the strip timeline) — every element roughly correct; each
+  remaining fix is small-area (∝ +0.0002) and frame-count-limited, so it cannot move the composite.
+- **faithful-trace floors** (law 19) throughout.
+To reach 96.5 (+0.3 composite ≈ +0.003 more video_ssim) would need EITHER a pervasive whole-video
+improvement touching most of the 4168 frames (no such lever is visible), OR one more cityA-class
+large-area mis-size. The two obvious ones are fixed. **The one remaining LEAD:** re-measure every OTHER
+cityA/cityB mount (payment band line 954 scale 0.5334, intro cityASmall/cityBSmall) for the same
+undersize the ledge one hid — but those were re-measured in r19-r20 (a0c630b73 measured the payment
+city to 1.213x) and are probably already correct, which is why the ledge mount was the outlier. Honest
+call: **clsnet is at its measured ceiling of ~96.2-96.4; 96.5 is at the edge and not obviously
+reachable without a systematic re-measure of the remaining city mounts that will most likely come back
+empty.** The gross fiction is gone; the video is a tight, faithful band, and the metric's own blindness
+(law 8) now guards the last third of a point.
+
+### Commits (2 mine, path-scoped, tsc clean, no foreign files staged; + predecessor's 3)
+- `214dd1446` cityA outro skyline: a faithful trace ~14% too small — native re-scale 0.44→0.512 (scenesC)
+- `4f7b9101b` the outro rise: the whole ledge lifts with the sea, curve fitted to the ref temple base (scenesC)
+- (predecessor, banked before this session: `1d264b32b` mapHexes seat, `60c23f768` payment docs, `24e8738f0` deadline trade)
