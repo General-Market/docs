@@ -991,9 +991,24 @@ export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
 };
 
 // ─── S15: brackets + 8.0+ USD trillion (f2837..3040) ───
+// gen19 — S15's EXIT was 30 frames late, and it owns the ranked f2999-3049 window.
+// The ref DISINTEGRATES this scene the way it does S12's doc, then cuts. Ink below the
+// band, per frame (settled = 302k): 303k @f2990 · 297k @f3000 · 256k @f3005 · 49k @f3010 ·
+// 9k @f3015 · then S16 arrives (66k @f3020 -> 127k @f3025 -> settled 132k @f3030).
+// We held S15 fully settled to f3040 and faded it to f3055 — so at f3010, where the ref
+// has 16% of its ink left, we were drawing 100% of it. The ramp below is the measured
+// ink-decay curve, not an easing.
+// (The decay's FIRST frames are a spend we decline: a uniform 84%-opacity scene at f3005
+// scored .0032 BELOW the untouched settled scene, because the ref's remaining 84% of ink
+// is fully dark and broken, not uniformly pale. So the ramp holds at 0 until f3006 and
+// then falls fast — all the gain is in f3008-3017, where the ref is nearly empty.)
+const S15_OUT: Lut = [
+  [3006, 0], [3008, 0.4], [3010, 0.84], [3013, 0.94], [3015, 0.97], [3017, 1],
+];
+
 export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 2837 || frame >= 3055) return null;
-  const outP = interpolate(frame, [3040, 3055], [0, 1], clamp);
+  if (frame < 2837 || frame >= 3020) return null;
+  const outP = lut(frame, S15_OUT);
   const hourAt = 8.4;
   const x7 = 960 + (7 - hourAt) * 248;
   const x9 = 960 + (9 - hourAt) * 248;
@@ -1109,8 +1124,11 @@ const S16_STACKS: string[][] = [
   [C.navyBg, C.chipGrey, C.chipGrey, C.navyBg], // H
 ];
 export const S16Payouts: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
-  if (frame < 3040 || frame >= 3215) return null;
-  const inP = interpolate(frame, [3040, 3055], [0, 1], clamp);
+  // gen19: S16 arrived 23 frames late. The ref cuts to it as S15 finishes dissolving —
+  // ink 66k @f3020, 127k @f3025, settled 132k from f3030. Its pan and exit are keyed on
+  // absolute frames (f3100/f3150), so only the mount and the entrance move.
+  if (frame < 3016 || frame >= 3215) return null;
+  const inP = interpolate(frame, [3017, 3029], [0, 1], clamp);
   const outP = interpolate(frame, [3200, 3215], [0, 1], clamp);
   // measured fast pan: hourAt(960) 11.2 @f3100 → 12.1 @f3150
   const hourAt = 11.2 + (frame - 3100) * 0.018;
