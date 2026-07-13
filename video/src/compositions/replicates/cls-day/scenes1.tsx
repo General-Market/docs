@@ -910,13 +910,6 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
     [936, 32], [938, 4], [940, 0],
   ])(frame);
   const frontLocal = 960 + (front5 - 960) / sx - x9;
-  // instruction docs pop from tower tops (measured: emerge hidden behind the
-  // tower, rise 33.75px/f, world-fixed x; B@f747, C@f799, G@f851)
-  const docPops = [
-    { wx: 427, top0: 276, t0: 747 }, // B tower (doc top y276@t0, tower top 235)
-    { wx: 1090, top0: 297, t0: 799 }, // C tower (fold clears y240 ~f801)
-    { wx: 1612, top0: 219, t0: 851 }, // G tower (screen 1725..1815 @f860)
-  ];
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white }}>
       <div
@@ -971,12 +964,16 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
             })}
           </div>
           <div style={{ opacity: inkP }}>
-            {/* rising instruction docs (BEHIND the towers) */}
-            {docPops.map(({ wx, top0, t0 }, i) => {
-              if (frame < t0 || frame > t0 + 14) return null;
-              const top = top0 - 33.75 * (frame - t0);
-              return <DocPop key={i} x={wx} y={top} />;
-            })}
+            {/* rising instruction docs (BEHIND the towers — the white-filled
+                tower bodies do the occluding for free). gen17 re-registered
+                the whole set off the ref's ring track: the 09:00 doc was
+                MISSING, the 12:00 doc carried the wrong glyph AND sat 60px
+                right, and all of them rose 2.65px/f too slow. */}
+            {ABOVE_DOCS.map((d, i) =>
+              frame >= d.from && frame <= d.to ? (
+                <SettleDoc key={`ad${i}`} cx={d.cx} cy={532.5 + (d.cy(frame) - 532.5) / sy} glyph={d.glyph} />
+              ) : null,
+            )}
             {/* gen17 — the MIRRORED world's docs. This region rendered BLANK:
                 the ref drops four instruction docs OUT of the hanging towers
                 (white-on-navy twins of the rising ones, $ € € $) and we had
@@ -1089,21 +1086,6 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// rising settlement-instruction doc (traced f754: 95x120, navy outline,
-// two text lines, top-right fold, red $ ring at (47,66) r24)
-const DocPop: React.FC<{ x: number; y: number }> = ({ x, y }) => (
-  <svg width={95} height={120} viewBox="0 0 95 120" style={{ position: "absolute", left: x, top: y }}>
-    <path d="M 4 116 L 4 4 L 68 4 L 91 27 L 91 116 Z" fill="#FDFDFD" stroke={C.navyDeep} strokeWidth="4.5" strokeLinejoin="round" />
-    <path d="M 68 4 L 68 27 L 91 27" fill="none" stroke={C.navyDeep} strokeWidth="4.5" />
-    <line x1={16} y1={20} x2={52} y2={20} stroke={C.navyDeep} strokeWidth="4.5" />
-    <line x1={16} y1={32} x2={40} y2={32} stroke={C.navyDeep} strokeWidth="4.5" />
-    <circle cx="47" cy="70" r="24" fill="none" stroke={C.red} strokeWidth="4" />
-    <text x="47" y="80" textAnchor="middle" fontFamily="Georgia, serif" fontSize="30" fill={C.red}>
-      $
-    </text>
-  </svg>
-);
-
 // gen17 settlement doc, traced 1:1 off ref f829 (outer ink box 83x108, so the
 // svg is 84x109 and its origin IS the doc's outer top-left): rounded
 // bottom-left (r14), square bottom-right, top-right fold at x58/y25, two rule
@@ -1131,6 +1113,23 @@ const SettleDoc: React.FC<{ cx: number; cy: number; glyph: string; below?: boole
     </svg>
   );
 };
+
+// The four ABOVE-band docs, re-registered off the ref's ring track (screen y;
+// the caller unprojects). One doc per cluster, 52 frames apart. The old table
+// had three docs, all "$", rising 33.75px/f from a hand-set top:
+//   · the 09:00 doc (ClA's) was MISSING outright;
+//   · the 12:00 doc is a €, not a $, and its ring sat at world 1137 vs the
+//     ref's 1076.5 — 60px right, half a doc width;
+//   · the true rise is a FLAT 36.4px/f (18 intervals across B/C/G, no drift),
+//     so the old 33.75 fell 18px behind by the time the doc left frame.
+// The 09:00 doc is the odd one: it rises at 27.7px/f, just as flat. Measured
+// is measured — the ref is hand-animated and owes us no consistency.
+const ABOVE_DOCS: { cx: number; glyph: string; from: number; to: number; cy: (f: number) => number }[] = [
+  { cx: -155.3, glyph: "€", from: 692, to: 706, cy: (f) => 195.6 - 27.7 * (f - 697) },
+  { cx: 472.1, glyph: "$", from: 748, to: 758, cy: (f) => 170.0 - 36.4 * (f - 752) },
+  { cx: 1076.5, glyph: "€", from: 799, to: 809, cy: (f) => 170.1 - 36.4 * (f - 803) },
+  { cx: 1661.6, glyph: "$", from: 851, to: 861, cy: (f) => 172.1 - 36.4 * (f - 855) },
+];
 
 // The four BELOW-band docs. cy = the ref's red-ring centroid, world y (at the
 // cruise sy=1 so world y == screen y). Frames before the reveal edge are
