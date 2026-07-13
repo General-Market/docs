@@ -600,7 +600,21 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
       {belowOp > 0 && (
         <div style={{ position: "absolute", inset: 0, opacity: belowOp }}>
           <svg width={1920} height={1080} style={{ position: "absolute" }}>
-            <path d="M510,372 V520 H590 M1413,372 V520 H1360" stroke={C.navy} strokeWidth={2.5} fill="none" />
+            {/* r18. The plumbing does NOT spring from the horizon line, and it does
+                not turn a square corner. Traced from the ref (f2560/2580/2600, all
+                identical): it starts at y384 — a deliberate SIXTEEN-pixel gap below
+                the line's y364-367 — drops to y560 at x509 (mirrored at x1413, the
+                pair is symmetric about x961), then turns through a ~19px ROUNDED
+                corner into a horizontal at y579 that runs into the document's left
+                edge. We drew it 372→520 with a hard right angle, so the whole
+                horizontal leg — 80px of ink — sat 59px above the ref's and the
+                vertical stopped 59px short. */}
+            <path
+              d="M509.5,384 V560 Q509.5,579 528.5,579 H565 M1412.5,384 V560 Q1412.5,579 1393.5,579 H1357"
+              stroke={C.navy}
+              strokeWidth={2.5}
+              fill="none"
+            />
             <path d="M895,660 V800 M895,800 l-9,-15 M895,800 l9,-15 M1035,660 V800 M1035,800 l-9,-15 M1035,800 l9,-15" stroke={C.navy} strokeWidth={2.5} fill="none" />
           </svg>
           <SmallHex art="mHexCity2" cx={785} cy={590} w={240} artW={215} />
