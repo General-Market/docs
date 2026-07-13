@@ -543,6 +543,34 @@ const FLOW_FIELD2: FlowPill[] = [
   [1250, 846, 72, 29, "#F0C8AF"], [1252, 880, 71, 30, "#F0C8AF"], [1252, 918, 71, 30, "#F0C8AF"], [1252, 952, 71, 30, "#F0C8AF"],
 ];
 
+// Pill ENTRY (r18). Each pill flies in toward the band and they land one per
+// frame, innermost first — so a pill's only parameter is its RANK outward from
+// the band within its own stack-half. Measured dy curve (identical for every
+// pill of every stack, both pages, up and down): 179 → 98 → 48 → 19 → 4 → 0.
+// Ref check, unfitted: the last-ranked pill of page 1 starts f370 and settles
+// f375; of page 2 starts f423 and settles f428 — exactly where the ref settles.
+const pillDy = (t: number) =>
+  interpolate(t, [0, 1, 2, 3, 4, 5], [179, 98, 48, 19, 4, 0], clamp);
+const rankField = (field: FlowPill[]): number[] => {
+  const groups = new Map<string, FlowPill[]>();
+  for (const p of field) {
+    const k = `${Math.round(p[0] / 100)}|${p[1] < 819 ? "a" : "b"}`;
+    const g = groups.get(k);
+    if (g) g.push(p);
+    else groups.set(k, [p]);
+  }
+  const rank = new Map<FlowPill, number>();
+  groups.forEach((ps) => {
+    const above = ps[0][1] < 819;
+    [...ps]
+      .sort((a, b) => (above ? b[1] - a[1] : a[1] - b[1]))
+      .forEach((p, i) => rank.set(p, i));
+  });
+  return field.map((p) => rank.get(p) ?? 0);
+};
+const RANK1 = rankField(FLOW_FIELD1);
+const RANK2 = rankField(FLOW_FIELD2);
+
 export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.hexRow[0] || f >= 468) return null;
@@ -674,33 +702,45 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
         ))}
         {/* CLSNet box */}
         <ClsNetBox x={HEXROW.box.x} y={HEXROW.box.y} opacity={boxOp} />
-        {/* pill fields (r5: TWO static pages CC-scanned at f395/f430; the whole
-            field collapses into the ruler 406-412 and the second pops out of
-            it 419-428 — page flip, not continuous growth) */}
+        {/* pill fields — the ENTRY was backwards. We squashed the whole page
+            INWARD toward the band (scaleY 0.15→1) and let it expand out. The ref
+            does the opposite and does it per pill: every pill FLIES IN from far
+            outside, converging on the band, and the pills arrive one per frame,
+            innermost first. Decoded by tracking each stack's pill spans frame by
+            frame (v_365..v_377 stacks 1 and 4): pill heights never change — only
+            their POSITIONS converge — and every pill rides ONE curve, offset by
+            its rank outward from the band. Page 2 is the same curve +53f, exactly
+            like the labels. Both settle where the ref settles (page1 f375,
+            page2 f428) with no fitting.
+            The collapse (page 1, f406-412) is left as the existing scaleY: the
+            ref compresses positions there too and keeps heights, but it is 5
+            frames and the squash already reads right. */}
         {[FLOW_FIELD1, FLOW_FIELD2].map((field, fi) => {
-          const sIn = fi === 0 ? lerp(f, [364, 372], [0.15, 1]) : lerp(f, [419, 428], [0.15, 1]);
+          const base = fi === 0 ? 366 : 419;
+          const ranks = fi === 0 ? RANK1 : RANK2;
           const sOut = fi === 0 ? 1 - Math.pow(lerp(f, [406, 412], [0, 1]), 2) : 1;
-          const sc = sIn * sOut;
-          // gen11: field0 sIn floors at 0.15 (r5), so the page leaked in at 15%
-          // from f320 through the hexify — the ref has NO pills there. Gate it
-          // to the flows phase (f>=363); r5's f364+ growth is untouched.
-          if (sc <= 0 || (fi === 0 && (f < 363 || f >= 413)) || (fi === 1 && f < 419)) return null;
+          if (sOut <= 0 || f < base || (fi === 0 && f >= 413)) return null;
           return (
-            <div key={fi} style={{ position: "absolute", inset: 0, transform: `scaleY(${sc})`, transformOrigin: "960px 830px" }}>
-              {field.map(([x, y, w, h, color], i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    left: x,
-                    top: y,
-                    width: w,
-                    height: h,
-                    backgroundColor: color,
-                    borderRadius: y < 819 ? "2px 13px 2px 13px" : "13px 2px 13px 2px",
-                  }}
-                />
-              ))}
+            <div key={fi} style={{ position: "absolute", inset: 0, transform: `scaleY(${sOut})`, transformOrigin: "960px 830px" }}>
+              {field.map(([x, y, w, h, color], i) => {
+                const t = f - base - ranks[i];
+                if (t < 0) return null;
+                const dy = (y < 819 ? -1 : 1) * pillDy(t);
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      left: x,
+                      top: y + dy,
+                      width: w,
+                      height: h,
+                      backgroundColor: color,
+                      borderRadius: y < 819 ? "2px 13px 2px 13px" : "13px 2px 13px 2px",
+                    }}
+                  />
+                );
+              })}
             </div>
           );
         })}
