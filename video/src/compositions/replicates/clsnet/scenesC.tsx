@@ -183,6 +183,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           // have none, so it never showed; the CRX brand's hyphenated RFQ ids
           // shattered into four lines).
           <div key={i} style={{ position: "absolute", left: 0, top: 0, width: 1920, opacity: rowOp }}>
+            <Pill x={r.x - 4} y={y - 4} w={r.w + 8} h={G_PILL_H + 8} color={C.white} />
             <Pill x={r.x} y={y} w={r.w} h={G_PILL_H} color={PILL_COL[r.color]} />
             <SansText text={COPY.ganttIds[i]} x={r.lx} y={y + G_LABEL_DY} fs={G_LABEL_FS} color={C.white} />
           </div>
