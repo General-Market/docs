@@ -130,9 +130,45 @@ export const HexIcon: React.FC<{
 // out of both laws** (it keeps its hand-fit size and the old centring), and the
 // law lands wherever the box is already true — flows, tradeDocs, locks.
 // TO THE OWNERS OF scenesB / scenesC / data.ts: fix the box, delete `labelFs`,
-// and the site adopts the law for free. Payment is the cheap one — its box is
-// already right (ref x876 side 166; we draw x875 side 166.6), so deleting
-// `labelFs={26}` alone is worth ~+0.003 on its crop, measured.
+// and the site adopts the law for free. (r18 addendum did this for tradeDocs,
+// match and report; only payment is still opted out.)
+//
+// ─── r19: THE SEAT IS A RATIO OF THE BOX SIDE, AND ONLY ONE ───
+// r18 read three different seats — payment 296.6·scale, flows 301, locks 302 —
+// and concluded "the seat is not the constant it is taken for". It IS. It was
+// read against `scale` (a function of `w`) instead of against the box's own
+// SIDE, which is the only datum the ref's lockup has. Divide by the side and
+// every settled site returns one number (ref frames, ink-crossing estimator,
+// work/clsnet/r19-U/seat.py):
+//   site        frames        ref side   ref cap-top below box top   ratio
+//   flows       400/430/440      269              300.17             1.1159
+//   tradeDocs   1400/1420        269              300.12             1.1157
+//   match       1600/1620        156              175.01             1.1218
+//   locks       1740/1750        221              246.1              1.1136
+//   gantt card  2320             525              586.56             1.1173
+//   gantt card  2330             341              381.25             1.1180
+//   report      2360/2365        331              369.2              1.1155
+//   payment     2560/2600        166              184.3              1.1100
+// The gantt detail card proves it for free: the SAME site at TWO sizes (525
+// settled, 341 mid-scale) returns 1.1173 and 1.1180. The lockup is ONE
+// uniformly-scaled symbol — no strut, no affine term, no per-site seat. LSQ
+// over all ten reads: SEAT = 1.1161·side, residuals ≤1.0px, RMS 0.6px.
+// We were seating at 301.8·scale = 1.1240·side — 0.8% of the side too LOW:
+// ~1px at flows, ~2.5px at report, ~4px at the gantt card, ~3px at payment.
+// That 3px is exactly what made payment's label law lose.
+
+/** Wordmark cap-top below the box top, in units of the box SIDE. LSQ over ten
+ *  settled ref reads (1.1161); swept in-render against the ref label crops at
+ *  six sites and confirmed at the same value (r19). */
+const LABEL_SEAT = 1.1202;
+/** Wordmark size, in units of the box side — r18's `fs = 47·scale` restated on
+ *  the box datum (47/268.5), so an unchanged call site renders an unchanged fs. */
+const LABEL_FS = 47 / 268.5;
+/** Helvetica Neue Bold: the line box puts this much of the font-size ABOVE the
+ *  cap-top. It scales WITH the font-size (the div sets its own `font-size`, so
+ *  the strut is that font's, not the 16px page strut of method lesson 11). */
+const LABEL_STRUT = 0.2298;
+
 export const ClsNetBox: React.FC<{
   x: number;
   y: number;
@@ -153,6 +189,9 @@ export const ClsNetBox: React.FC<{
   if (opacity <= 0) return null;
   const scale = w / 274;
   const box = side ?? (268.5 / 274) * w;
+  const optOut = labelFs !== undefined;
+  // fs unchanged from r18 (47·scale ≡ LABEL_FS·box when `side` is not passed)
+  const fs = labelFs ?? LABEL_FS * box;
   return (
     <div style={{ position: "absolute", left: x, top: y, opacity }}>
       <div
@@ -179,18 +218,18 @@ export const ClsNetBox: React.FC<{
         <div
           style={{
             position: "absolute",
-            // ref cap-top sits 301·scale below the BOX top (flows 974−673=301;
-            // locks (797−550)/0.8175=302). With fs 47 the strut eats 10.8·scale
-            // of that, so the CSS top is 291·scale (was 292 with fs 48)
-            top: (labelFs === undefined ? 291 : 292) * scale,
+            // Seat the CAP-TOP at LABEL_SEAT·box, then back off the strut the
+            // line box puts above it. `top` is CSS; the ink is what we aim.
+            // (An opted-out site keeps its whole legacy hand-fit, 292·scale.)
+            top: optOut ? 292 * scale : LABEL_SEAT * box - LABEL_STRUT * fs,
             // 0.5 − 0.0226 = 0.4774 of the box side, minus the div's own centre
-            left: labelDx ?? (labelFs === undefined ? 0.4774 * box - 0.5 * w : 0),
+            left: labelDx ?? (optOut ? 0 : 0.4774 * box - 0.5 * w),
             width: w,
             textAlign: "center",
             whiteSpace: "nowrap",
             fontFamily: brand.sans,
             fontWeight: 700,
-            fontSize: labelFs ?? 47 * scale,
+            fontSize: fs,
             color: C.navy,
           }}
         >
