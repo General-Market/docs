@@ -532,18 +532,63 @@ export const ReportOutScene: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 // ═══ Scene 18: handshake (f2372-2480) ═══
+// r20 THE HEXES ARE ON THE WRONG PATH — the largest misplaced ink in the file.
+// Tracked per frame on the one landmark that cannot be argued with: the A and B
+// badge discs, found by eroding the solid-navy mask (the badge merges with the
+// hex outline, so an un-eroded label finds one blob and nothing else). The badge
+// is rigid on its hex, so hexCentre = badge + offset, and the offsets are
+// SELF-VALIDATING: both hexes land on exactly (427,372) and (1512,755), the two
+// settled positions this file already had. The path between is what was invented.
+//
+// The reference does a TWO-PHASE motion, and we drew neither phase:
+//
+//   DESCEND (f2371→2389). The two hexes come DOWN from above the frame, ADJACENT,
+//   near the centre, at FIXED x = 803.0 and 1122.0. They decelerate into
+//   (803.0, 451.8) and (1122.0, 625.1). One curve: hexA's dy and hexB's dy agree
+//   to 0.3px at every frame. WE RAISED THEM FROM BELOW — the direction was
+//   inverted — and we raised them at their FINAL x, 376px and 390px away from
+//   where the ref puts them.
+//
+//   HOLD (f2389-2398). Nothing moves. The ref stops and lets the pair sit.
+//
+//   SLIDE APART (f2399→2413). Two straight lines driven by ONE parameter: hexA
+//   runs (803.0,451.8)→(427,372), hexB runs (1122.0,625.1)→(1512,755). Fitting
+//   t on hexA's x alone predicts hexB's x AND both y's to 0.3px at every frame.
+//
+// So from f2372 to f2413 our two 385x350 hexes — a tenth of the frame — sat up to
+// 376px from the reference's, while the metric read it as a mediocre window.
+// Nothing here is a re-draw: the art, the sizes and the destinations were right.
+// The replica was on the wrong clock and the wrong road.
+const HS_RISE_F = [2371, 2372, 2373, 2374, 2375, 2376, 2377, 2378, 2379, 2380, 2381, 2382, 2383, 2384, 2385, 2386, 2387, 2388, 2389];
+const HS_RISE_DY = [-342, -273.7, -221.4, -179.8, -146, -118.3, -95.4, -76, -59.8, -46.3, -35, -25.9, -18.3, -12.3, -7.6, -4.1, -1.7, -0.3, 0];
+const HS_SLIDE_F = [2398, 2399, 2400, 2401, 2402, 2403, 2404, 2405, 2406, 2407, 2408, 2409, 2410, 2411, 2412, 2413];
+const HS_SLIDE_T = [0, 0.0021, 0.0096, 0.0245, 0.0495, 0.091, 0.163, 0.3194, 0.6798, 0.8362, 0.9085, 0.9508, 0.9753, 0.9902, 0.9976, 1];
+// hold position → settled position. The hexes' art, size and destination were all
+// already correct; only the road was missing.
+const HS_A = { x0: 803.0, y0: 451.8, x1: 427, y1: 372 };
+const HS_B = { x0: 1122.0, y0: 625.1, x1: 1512, y1: 755 };
+
 export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
-  if (f < SEG.handshake[0] || f >= SEG.payment[0] + 16) return null;
-  // gen10: the ref exits the report docs ~f2362-2372, then the A/B hexes RISE
-  // from below and settle 2372-2392 (measured montage_hsrise: hexes solid, not
-  // fading; near-final by ~f2385); the handshake graphic + horizontal arrows
-  // form LATER ~2405-2425. Was inOp=lerp[2404,2420] for the WHOLE scene = the
-  // report 3-doc layout held f2372-2404 while the ref showed rising hexes (r11
-  // worst window #4 f2352-2402). ReportOut's white bg backs us until f2412.
+  // the ref already has hexB on screen at f2371 — one frame before this scene used
+  // to mount. ReportOut is a bare white fill by then, so nothing is overpainted.
+  if (f < 2371 || f >= SEG.payment[0] + 16) return null;
   const bgOp = lerp(f, [2372, 2384], [0, 1]);
-  const hexOp = lerp(f, [2370, 2379], [0, 1]);
-  const hexRise = lerp(f, [2372, 2392], [210, 0]);
+  // r20: no fade. The hexes are solid ink from the first frame they are visible —
+  // the same grammar as every other entry in this film (r19's skyline, gantt rows,
+  // pill field). `hexOp` was a 9-frame ramp over ink the ref draws at full mass.
+  const riseDy = interpolate(f, HS_RISE_F, HS_RISE_DY, clamp);
+  const t = interpolate(f, HS_SLIDE_F, HS_SLIDE_T, clamp);
+  const aCx = HS_A.x0 + (HS_A.x1 - HS_A.x0) * t;
+  const aCy = HS_A.y0 + (HS_A.y1 - HS_A.y0) * t + riseDy;
+  const bCx = HS_B.x0 + (HS_B.x1 - HS_B.x0) * t;
+  const bCy = HS_B.y0 + (HS_B.y1 - HS_B.y0) * t + riseDy;
+  // the documents hang off their hexes and ride with them (settled offsets, which
+  // is what the ref shows: each doc keeps its station on the hex through both phases)
+  const aDx = aCx - HS_A.x1;
+  const aDy = aCy - HS_A.y1;
+  const bDx = bCx - HS_B.x1;
+  const bDy = bCy - HS_B.y1;
   // ref un-hexes A/B into the two cities-on-a-line by ~f2480 (boundary scan
   // vf 2474/2478/2480): the cities are SOLID at the payment scene's first frame.
   // Was out=[2470,2484] + payment in=[2482,2496] = a crossfade DIP (ghost hexes
@@ -556,10 +601,12 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <AbsoluteFill style={{ opacity: out }}>
       <div style={{ position: "absolute", inset: 0, backgroundColor: C.white, opacity: bgOp }} />
-      <div style={{ position: "absolute", inset: 0, opacity: hexOp, transform: `translateY(${hexRise}px)` }}>
-        <SmallHex art="cityA" cx={427} cy={372} w={385} artW={1150} letter="A" />
-        <SmallHex art="cityB" cx={1512} cy={755} w={396} artW={1190} letter="B" />
+      <SmallHex art="cityA" cx={aCx} cy={aCy} w={385} artW={1150} letter="A" />
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${aDx}px, ${aDy}px)` }}>
         <Doc x={255} y={510} w={91} h={110} />
+      </div>
+      <SmallHex art="cityB" cx={bCx} cy={bCy} w={396} artW={1190} letter="B" />
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${bDx}px, ${bDy}px)` }}>
         <Doc x={1611} y={900} w={90} h={110} />
       </div>
       {/* handshake graphic + horizontal arrows form later (~2405-2425) */}
