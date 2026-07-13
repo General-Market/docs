@@ -196,10 +196,50 @@ const ICON_S = lutS([[36, 564], [58, 778], [64, 821]]);
 const ICON_P = lutS([[38, 851], [58, 1065], [64, 1109]]);
 const ICON_D = lutS([[40, 1147], [60, 1361], [66, 1405]]);
 
-// ─── S1: intro (f0..123) — draw-on reveal, then rise + icon draw ───
-// Exit f108..122: a white slash splits the card in two; both pieces are
-// STATIC content clipped by the moving slash edges (measured bar extents),
-// while the S2 ruler wipe levels in underneath.
+// ─── S1 EXIT — ONE RIG: the card ROTATES AND ZOOMS about the FRAME CENTRE while
+// a strip opens down its own centre line (gen19) ───
+// Tracked per frame off the eight red icon clusters, rejecting any cluster the
+// strip has begun to eat (a shrunken cluster's centroid slides): the transform
+// fits as a SIMILARITY with 0.2-0.6px RMS, and its fixed point is (960, 540) —
+// the frame centre — at every frame. Not a translation, not an affine, not a
+// perspective. A roll and a zoom about the middle of the screen.
+//   f  100    102    104    106    108    110    112    113
+//   s  1.000  1.000  1.009  1.024  1.048  1.092  1.169  1.254
+//   deg 0.00   0.33   1.32   3.55   7.37  14.10  24.73  38.27
+// Unproject the white split into card space and it is a VERTICAL band centred on
+// card x=959 (dead centre, constant to 0.5px) that opens SYMMETRICALLY. So the
+// split is ONE card-space clip, and the slash's lean IS the card's rotation —
+// there is no separate slash geometry to fit.
+//
+// The old model had NO rotation and NO zoom: it drew the card dead still and cut it
+// with an asymmetric video-space slit leaning a fixed 14 deg, starting at f107. The
+// ref starts the split at f102 and by f110 the card is 14 deg over and 9% zoomed —
+// at that frame every pixel of card ink we drew was in the wrong place.
+const S1_ROT = lutS([[100, 0], [101, 0.05], [102, 0.33], [103, 0.77], [104, 1.32], [105, 2.27], [106, 3.55], [107, 5.19], [108, 7.37], [109, 10.26], [110, 14.1], [111, 18.6], [112, 24.7], [113, 37], [114, 51.5], [115, 62.8], [116, 69], [117, 74.5], [118, 79], [120, 85]]);
+const S1_SCL = lutS([[100, 1], [101, 1.0003], [102, 1.0004], [103, 1.0033], [104, 1.0094], [105, 1.0145], [106, 1.0236], [107, 1.0346], [108, 1.0483], [109, 1.0668], [110, 1.0918], [111, 1.1233], [112, 1.1692], [113, 1.2543], [114, 1.39], [115, 1.58], [116, 1.83], [117, 2.15], [118, 2.5]]);
+// strip FULL width in CARD px (per-column navy-fraction of the unprojected frame)
+const S1_GAP = lutS([[101, 0], [102, 0], [103, 4], [104, 10], [105, 20], [106, 32], [107, 48], [108, 70], [109, 101], [110, 143], [111, 194], [112, 305], [113, 530], [114, 660], [115, 700], [116, 720], [118, 760]]);
+const S1_CX = 959; // strip centre line, CARD x
+
+// The strip in VIDEO space — S2's world lives INSIDE it until the card is gone.
+// Card rect (S1_CX±g, ±far) through v = P + s·R·(c − P).
+export const s1StripPoly = (frame: number): string | undefined => {
+  if (frame < 96 || frame > 117) return undefined;
+  const g = S1_GAP(frame) / 2;
+  const th = (S1_ROT(frame) * Math.PI) / 180;
+  const s = S1_SCL(frame);
+  const co = Math.cos(th) * s;
+  const si = Math.sin(th) * s;
+  const F = 4200;
+  const pt = (cx: number, cy: number) => {
+    const dx = cx - 960;
+    const dy = cy - 540;
+    return `${(960 + co * dx - si * dy).toFixed(1)}px ${(540 + si * dx + co * dy).toFixed(1)}px`;
+  };
+  return `polygon(${pt(S1_CX - g, -F)}, ${pt(S1_CX + g, -F)}, ${pt(S1_CX + g, F)}, ${pt(S1_CX - g, F)})`;
+};
+
+// ─── S1: intro (f0..123) — draw-on reveal, then rise + icon draw, then the roll ───
 export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC<{ markP: number; lettersP: number }> }> = ({
   frame,
   pack,
@@ -223,29 +263,46 @@ export const S1Intro: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC
       scale={CARD_SCALE}
     />
   );
-  if (frame < 107) return card;
-  // slash edge tables at y540 (probed white runs f107..117); the slit opens
-  // at x~975 and both edges accelerate apart while the ruler plane rises
-  const slashL = lutS([[107, 896], [109, 888], [110, 878], [111, 856], [112, 792], [113, 660], [114, 488], [115, 230], [116, -60], [117, -420]])(frame);
-  const slashR = lutS([[107, 975], [108, 986], [109, 1000], [110, 1040], [111, 1110], [112, 1240], [113, 1510], [114, 1859], [115, 2400]])(frame);
-  // edges lean ~14° from vertical (top toward the right)
-  const dx = 0.25;
+  if (frame < 102) return card;
+  const g = S1_GAP(frame) / 2;
+  const L = S1_CX - g;
+  const R = S1_CX + g;
+  // LogoCard's own navy is exactly 1920x1080 — under the roll its corners swing off
+  // the frame and the white world leaks through. Each half carries an oversized navy.
+  const half = (side: "l" | "r") => (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        clipPath:
+          side === "l"
+            ? `polygon(-3200px -3200px, ${L}px -3200px, ${L}px 4300px, -3200px 4300px)`
+            : `polygon(${R}px -3200px, 5100px -3200px, 5100px 4300px, ${R}px 4300px)`,
+      }}
+    >
+      <div style={{ position: "absolute", left: -1700, top: -1700, width: 5320, height: 4480, background: C.navyBg }} />
+      {card}
+    </div>
+  );
   return (
-    <>
-      <div style={{ position: "absolute", inset: 0, clipPath: `polygon(-300px -200px, ${slashL + 740 * dx}px -200px, ${slashL - 760 * dx}px 1300px, -300px 1300px)` }}>
-        {card}
-      </div>
-      <div style={{ position: "absolute", inset: 0, clipPath: `polygon(${slashR + 740 * dx}px -200px, 2300px -200px, 2300px 1300px, ${slashR - 760 * dx}px 1300px)` }}>
-        {card}
-      </div>
-    </>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        transform: `rotate(${S1_ROT(frame)}deg) scale(${S1_SCL(frame)})`,
+        transformOrigin: "960px 540px",
+      }}
+    >
+      {half("l")}
+      {half("r")}
+    </div>
   );
 };
 
-// The intro wipe is the S2 ruler itself sweeping up from the bottom-right
-// with the white world glued below it (measured: line at -17°, y960
-// 1300@f100 → 725@f110 → 534@f124); WipeIn stays exported as a no-op for
-// mount-order stability.
+// The S2 world arrives INSIDE the S1 strip, not as a plane sweeping up from the
+// bottom-right: at ref f106-113 the ONLY white in the frame is the strip, and the
+// ruler hairline sits inside it, leaning with the card. WipeIn stays exported as a
+// no-op for mount-order stability.
 export const WipeIn: React.FC<{ frame: number }> = () => null;
 
 // ─── S2: currency carousel (f100..300) — r5 measured rebuild ───
@@ -378,8 +435,13 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
     if (side < 0 && y250 < 545) return null;
     return <Chip key={`f${col}${side}${k}`} x={col === "L" ? xL : xR} y={y} w={129} h={58} color={CHIP_C[cc]} opacity={1} />;
   };
+  // gen19: S2 is BORN INSIDE THE S1 STRIP. Through f117 the ref shows white ONLY
+  // between the two halves of the splitting card — the "ruler sweeping up from the
+  // bottom-right with a white world glued below it" was our own invention, and it
+  // painted the bottom-right of the frame white from f106 while the ref held it navy.
+  // Everything S2 draws is clipped to the strip until the card has flown apart.
   return (
-    <div style={{ position: "absolute", inset: 0, opacity: 1 }}>
+    <div style={{ position: "absolute", inset: 0, opacity: 1, clipPath: s1StripPoly(frame) }}>
       <div style={{ position: "absolute", inset: 0, background: C.white, opacity: bgP }} />
       {/* white world below the sweeping line (the wipe) — under the pairs/chips */}
       {frame < 126 && (
