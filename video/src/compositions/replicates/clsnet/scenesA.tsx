@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate } from "remotion";
 import { C, TITLE, HEXROW, FLOWS, GLOBE, MAP, SEG, H } from "./data";
-import { useBrand, useCopy } from "./brand";
+import { useBrand } from "./brand";
 import { TracedArt } from "./TracedArt";
 import { ClsNetBox, Hexagon, HexIcon, SansText, SerifLabel, clamp, lerp } from "./ui";
 import { ClsMark } from "../cls-shared/logo";
@@ -1156,13 +1156,60 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
 
 // ═══ Scenes 6-7: full-bleed map, hexes, 120 currencies (f568-745) ═══
 export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
-  const COPY = useCopy();
+  // (the label copy is no longer one string — see the label block below)
   const f = frame;
   // Picks up exactly where the GlobeScene zoom ends (f568): full-bleed blue +
   // the full worldMap at scale 1.0 / MAP origin — identical to the disc's
   // final state, so the handoff is a seamless continuation, not a cross-fade.
   if (f < 568 || f >= 766) return null;
-  const labelOp = lerp(f, [672, 684], [0, 1]) * lerp(f, [756, 764], [1, 0]);
+  // ═══ r20: "120 currencies" — three errors, one of them a returning ghost ═══
+  // Ref, settled (f730) and ink-counted per frame f660-746:
+  //   digits "120"   x 764-872 (w 108) · ink-top 951 · h 52
+  //   word "currencies" x 895-1217 (w 322) · ink-top 951 · h 52
+  //   Both 52px tall from the same top: the ref's figures are LINING.
+  // Ours (fs64 SerifLabel from x760): ink 764-1168 — w 405, **11% narrow** — and
+  // ink-top 969, **18px LOW**. Worse: Georgia's figures are OLDSTYLE, so our "120"
+  // rendered ink-top 982 / height 36 — 16px short and 31px BELOW the word's cap,
+  // where the ref's digits are flush with it. `PrincipleCard` already hit this exact
+  // trap and moved its numerals to Didot; the lesson never reached this label.
+  // (Law 27, one level up: the same defect twice, because the knowledge lived in a
+  // comment at one call site instead of in the primitive.)
+  //
+  // SCHEDULE — the fiction. The ref draws NO "currencies" AT ALL before f688: ink is
+  // exactly 0 from f660 to f688, first appears f690 (50px), and settles f704. We
+  // faded the whole label in over f672-684 — ~3,580px of word ink, ~18 frames early,
+  // held against a flat blue ground. Ink-count the reference per element per frame
+  // BEFORE fitting any curve (law 26); the count is unambiguous here.
+  //
+  // The digits are an ODOMETER. Their ink oscillates while the glyphs visibly roll
+  // (263 · 1093 · 325 · 1081 · 1377 · 1656), gaining a third digit ~f688 and settling
+  // on 120 at f702. NOT MODELLED — reproducing the roll needs per-slot scroll tables
+  // I did not measure. A static "120" in the ref's own box is still far closer than an
+  // oldstyle "120" 31px below it. Named residual; do not read this as "the digits are
+  // done".
+  const labelOut = lerp(f, [756, 764], [1, 0]);
+  const digitsOp = lerp(f, [668, 702], [0, 1]) * labelOut;
+  const wordOp =
+    interpolate(f, [688, 690, 692, 694, 696, 704], [0, 0.02, 0.47, 0.72, 0.95, 1], clamp) * labelOut;
+  // Didot for the digits: LINING figures. fs from the ref's 52px digit height
+  // (Didot cap/fs 0.786, measured off PrincipleCard's '35': 173px ink at fs220).
+  // Fitted on a probe render (not guessed): at digFs 66 / digX 760 / digTop 942 the
+  // Didot "120" rendered x 765-861 (w 97) ink-top 947 h 50, so its left side-bearing
+  // and its top gap are BOTH 0.0758·fs. Ref wants w 108, ink-top 951.
+  // Width says fs 73.5, height says fs 68.6 — Didot's digit proportions are not the
+  // ref face's, so they cannot both land. WIDTH WINS (lesson 4: the advances set every
+  // glyph's x; a height overshoot only thickens the row). fs 72 splits it: w 105.8
+  // (ref 108) and h 54.5 (ref 52). Residual: the digit row runs ~3px deep.
+  // The word landed on the probe at x 894-1216 (ref 895-1217) with ink-top 951 EXACT
+  // — +1 on wordX closes it.
+  const LBL = {
+    digX: 758,
+    digTop: 945,
+    digFs: 72,
+    wordX: 893,
+    wordCap: 954,
+    wordFs: 71.3,
+  };
   // r6 measured map-out (ref f746 full / f758 mid / f766 gone): the map is
   // ERASED edges-inward 750-764 (not faded); non-morphing minis pop out
   // 750-762; the 4 network hexes persist and morph (NetworkScene owns them
@@ -1211,13 +1258,33 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
             </div>
           );
         })}
+        {/* digits — own element, own clock, Didot for LINING figures */}
+        {digitsOp > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: LBL.digX,
+              top: LBL.digTop,
+              fontFamily: "Didot, 'Times New Roman', serif",
+              fontWeight: 400,
+              fontSize: LBL.digFs,
+              lineHeight: 1,
+              color: C.serifNavy,
+              opacity: digitsOp,
+              whiteSpace: "pre",
+            }}
+          >
+            120
+          </div>
+        )}
+        {/* word — does not exist in the ref before f688 */}
         <SerifLabel
-          text={COPY.currencies120}
-          x={MAP.label.x}
-          capTop={MAP.label.capTop}
-          fs={MAP.label.fs}
+          text="currencies"
+          x={LBL.wordX}
+          capTop={LBL.wordCap}
+          fs={LBL.wordFs}
           color={C.serifNavy}
-          opacity={labelOp}
+          opacity={wordOp}
         />
       </div>
     </AbsoluteFill>
