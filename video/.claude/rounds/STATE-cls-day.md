@@ -4531,3 +4531,110 @@ r19's series, so mean + rankings are comparable; absolute is not a PNG-gate numb
 fly-in (ranks 2,3)** — evidence already captured in `work/cls-day/r19-scenes2/refs/`. It is a
 schedule error (a fade where the ref runs a right-to-left conveyor), large-area, and a full
 round's own work. Same shape as every largest win of this campaign: the clock, not the curve.
+
+---
+
+# r20 — ROUND LEAD CONSOLIDATION — a fourth round of the same lesson: the fade the ref never draws — 2026-07-13
+
+Three lanes dispatched, one file each — **scenes2** (S11 doc row, PRIMARY), **scenes1**
+(fresh worst windows), **lib** (S4 HexCity interior). **2 commits** (`d5f5c41f0` scenes2,
+`9c77e7fca` scenes1) and **one honest null** (lib). Every landing gated ref-vs-OLD-vs-NEW at
+≥3 in-window frames, NEW≥OLD on every frame, CrxSettlementDay eyechecked, law-34 ship-proofed.
+Lane tree at HEAD, cls-day tsc 0, lock free, zero cls-day orphan renders or shells (the honest
+law-30 test found the only lingering harness shells belong to a SIBLING lane, clsnet r22 —
+untouched, law 32). No composite verify run here — the round lead's dispatcher owns it.
+
+## The pattern held a fourth round running: every fiction this round was a fade
+
+The brief pointed each lane at its worst window and told it to ask the two questions BEFORE
+fitting anything. Three of the four windows worked were the SAME error wearing three masks: a
+**crossfade or opacity ramp standing in for motion the reference actually draws**. The metric
+cannot see a fade that should be a slide — it can only compare, never ask whether the fade
+belongs at all.
+
+| lane | window | the fiction / structural error found | gain |
+|---|---|---|---|
+| **scenes2** | **S11 f2098-2148 (rank 2)** | **The docs FADE in; the ref SLIDES SEVEN IN FROM THE RIGHT, staggered.** Killed the `inP` opacity ramp + 0.92→1 scale; drove all seven off one measured ease-out decay `D(τ)` scaled by a signed per-doc amplitude + settle frame (three red docs stream in and settle, two navy docs whip past and spring back from the left, the focus doc crosses its own target on its own LUT). Size was already right (gen18 re-trace) — schedule only, law 26. Hold f2130-2200 confirmed static in the ref (0.99998), so untouched. | **f2100 .837→.908 (+.071)**, f2098 +.055, f2105 +.056, f2108 +.032 |
+| **scenes1** | **S2 f131-181 (rank 12)** | **The second pair CROSSFADES in at the settled straddle; the ref CONVERGES the two codes vertically, fully opaque** — DKK descends from off the top, GBP rises from off the bottom, meeting on the ruler (measured cap-tops, magnitude 240→0 over f170-181). The invented opacity ramp put them at ~50% in the WRONG place; the grid caught it as a 0.337 cell. | **f170 .868→.899 (+.031)**, f172 +.031, f175 +.026 |
+| **scenes1** | **S5 f927-940 (rank 6)** | **The exit keys were right; the LINEAR interp between them undershot, and S6's `riseC6`/`syDup` TWIN was clamped where S5 interpolated → an S6 band sliver 51px too high on the right, a step the ref never has.** Re-measured riseC off the grey band's own edges in the ink-free navy columns (the instrument that reaches where the tick probe dies <900px). Collapsed the twin onto S5 (law 27). r19's `[916,532.5]` pin re-tested byte-identical (law 24). | **f927 .853→.878 (+.025)** — band step removed — f929 +.024 |
+
+## The lib null — the honest floor, and the diagnosis it bought
+
+lib returned NULL and shipped nothing — the correct outcome, not a failure (law 22 / 19). The
+S4 HexCity **interior is faithful**, sitting at the soft-vs-hard ceiling; re-drawing it loses
+(law 19), re-scaling the outline loses (law 21, twice-confirmed). The red car is real (ref
+f1900 confirms it — deleting it would regress S10/S17, law 27). **A clean null is what a
+faithful trace looks like; the discipline is to prove it and walk away, not to force a losing
+change to look busy.** But the round paid for the diagnosis: lib handed two measured S4 levers
+that are NOT lib's to pull (below).
+
+## The laws this round earned / confirmed
+
+- **The fade is the campaign's signature fiction, and it wears every costume.** Four rounds in,
+  the largest untouched windows keep resolving to the same shape: an opacity ramp the replica
+  invented where the reference draws MOTION — a slide, a converge, a rise. A fade is cheap to
+  write and invisible to the metric, so it is where invented content hides. **When a window
+  won't lift, ask first whether anything in it is fading; the reference almost never is.**
+- **"Fix the size, then re-read the clock" held again — inverted.** r19 earned it where a big
+  size error masked a schedule error. This round scenes2 confirmed the converse discipline: it
+  checked the settled doc SIZE first (already correct, gen18), found nothing to fix there, and
+  so KNEW the whole residual was schedule. Confirming size is right is how you earn the
+  certainty that the clock is the only thing left.
+- **A twin clamped where its sibling runs is a step the ref never has (law 27, sharpened).**
+  scenes1's S6 band sliver rendered 51px high purely because `syDup` was frozen while S5
+  interpolated across the same frames. The fix was not new geometry — it was collapsing the
+  hand-copied twin onto the primitive so both move together. Two primitives that agree until
+  one is corrected are one primitive waiting to be found.
+
+## RESIDUAL — ranked for r21 (whole track)
+
+1. **S4 hex ~6px whole-hex Y REGISTRATION offset (scenes1 AX/AY), f470-553 (ranks 1-tail + 7,
+   ~83 frames).** lib measured the whole HexCity sitting 6px low (ref top430/bot731 vs 436/738,
+   height identical — a pure TRANSLATION, not a scale). This is a law-4 position fix on a
+   *different mechanism* than the law-21 scale that lost twice — UNTESTED and legitimate. ~83
+   frames of dense line-art that a pose error lights up (law 8). **The best-value r21 lever.**
+   A scenes1-solo change; frame the agent hard: translate only, NEVER re-scale, null-result OK.
+2. **S4 f453 excess ink (law 17) — our hex draws a full navy city where the ref draws the red
+   central tower ALONE, then wipes center→right→left over ~15f.** Our `contentsP` hits 1.0 by
+   f454 (scenes1's `contentsOf`/`kA` compressed into ~3f vs the ref's ~15). A real defect but a
+   COORDINATED scenes1(ramp)+lib(spatial-split Buildings) fix worth only ~+0.002 on a 15-frame
+   window — disproportionate globally (law 18). One lane owns BOTH files for one landing, or skip.
+3. **S6 hour-chain 2-hour offset — reads 01:00/02:00/03:00 where the ref reads 23:00/00:00/01:00**
+   (scenes1's S6 `x006`/`originHour`). Band geometry now correct after the S5 fix; only the
+   chain origin is wrong. A clean digit-label fix, out of the r20 sy/riseC scope.
+4. **S11 f2163-2213 (rank 3) — a static-pose SSIM CEILING (~0.89), NOT a clock error.** The ref
+   hold is static and our pose matches; the residual is that RefDoc/FocusDoc interiors are
+   hand-drawn approximations at the soft-vs-hard floor. The only lever is a per-pixel trace of
+   the real doc interiors — law-19 risk (re-drawing a faithful trace loses). Likely at ceiling.
+5. **S2 f230-280 (rank 10) EUR/GBP per-pair face-width — pair i=5 renders ~45px narrow** (EUR
+   606 vs ref 648) at the same `SER_SX=0.9` where pair i=4 matches exactly. A per-glyph
+   substitute-serif proportion mismatch (law 9 texture). A global `SER_SX` change regresses the
+   matching pairs; needs a per-pair plunge-width table across all 7 pairs. Documented near-floor.
+6. **Carried from r19:** S13 exit SPREAD (LUT off the two capsule apexes); S17 conveyors (two
+   plates where the ref runs); global `tickAbove` default flip (4→0), still blocked by two
+   default-taking bands in scenes1.
+
+## INFRA / hazards handed to the next lead
+
+- **The shared git index STILL carries the foreign half-merge** (`../.gitignore`, `../data-node`,
+  `../frontend`, `../jarvis`, `../yc-pitch/YCPitchComposition.tsx` — ~12 tsc reds NOT ours).
+  Both r20 builders committed via `git commit --only -F <msg> -- <path>` and verified
+  `git show --stat` held only their file. Whoever owns that index should clean it; do NOT
+  `git reset` blindly. The lane tsc filtered to cls-day is 0.
+- **A SIBLING lane (clsnet r22) shares the one render lock.** Its still.sh shells appear in a
+  naive `pgrep -f still.sh` and inflate the count; the honest `ps` test (law 30) separates them.
+  Never break a lock or kill a shell you did not create (law 32). Renders across lanes serialize
+  through `/tmp/replica-render.lock` — "slow" is the design, not a stall.
+- **The official composite verify remains the dispatcher's to run** (it needs the lane-scoped
+  tsc filter to clear the yc-pitch guard on verify-replication.sh's whole-repo line). The PNG
+  per-frame gates ARE the r20 record. Estimated composite move: the two entrance wins are
+  narrow (S11 ~15f, S2 ~11f, S5 ~13f = ~1% of the video, law 18) so the global-mean Δ is
+  modest, but every gated frame improved +.025..+.071 and the eye gain (a fade replaced by the
+  motion the ref draws) far exceeds the ruler's number. A round where structure out-runs the metric.
+
+## r20 headline for r21
+
+The end card, the S11 fly-in, and the S2 converge are all off the board. The best-value
+UNTOUCHED lever is now **residual #1 — the S4 hex ~6px registration translation** — the rank-1
+window's real defect, already measured by lib, a law-4 move on a mechanism law-21 never
+refuted. Position first, and only translate; the interior is faithful and must not be redrawn.
