@@ -1912,8 +1912,12 @@ const SHIELD_X: Lut = [
 // (~f3516..3528). Per-chip start below is keyed on the settled screen-x (net
 // world rotation is ~identity here, so layout-x == screen-x): right columns
 // crisp by ~f3500, left columns by ~f3517.
-// exit rise into the end-card cut (band centerline 575→426)
-const RISE: Lut = [[3552, -1], [3553, -3], [3554, -7], [3555, -14], [3556, -24], [3557, -37], [3558, -58], [3559, -91], [3560, -149]];
+// exit rise into the end-card cut — the band+chips keep lifting OFF the top through
+// f3564 (ref navyTop 450@3560 → 279 → 107 → 49 → gone by 3565: band bottom = 598+rise
+// at the clamped 180° flip, so rise = navyTop − 598). r19: the ref does not slit-cut to
+// the end card here; the whole world rises off and the logo rises up in the navy behind
+// it (S19 renders that lockup rise-in).
+const RISE: Lut = [[3552, -1], [3553, -3], [3554, -7], [3555, -14], [3556, -24], [3557, -37], [3558, -58], [3559, -91], [3560, -149], [3561, -319], [3562, -491], [3563, -549], [3564, -588]];
 
 // settled chip layout, flip-frame screen rects at f3550 (x, y, colorKey)
 const CHIP_LAYOUT: [number, number, "g" | "n" | "c" | "r"][] = [
@@ -1926,7 +1930,7 @@ const CHIP_LAYOUT: [number, number, "g" | "n" | "c" | "r"][] = [
 const GAUGE_GREY = "#CFD9DD"; // annulus is a touch blue vs the band grey (probed)
 
 export const S18Outro: React.FC<{ frame: number }> = ({ frame }) => {
-  if (frame < 3394 || frame >= 3561) return null;
+  if (frame < 3394 || frame >= 3565) return null;
   const theta = lut(frame, THETA);
   const bandC = lut(frame, BANDC);
   const pitch = lut(frame, PITCH);
@@ -2101,12 +2105,59 @@ const OutroShield: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// ─── S19: end card (f3561..3750) ───
+// ─── S19: end card (f3556..3750) — a RISE-IN, not a hard cut ───
+// The ref does NOT slit-cut to a settled lockup. It mirrors the S1 intro draw-on: the
+// whole world (band + chips + navy floor + the logo planted ~400px below the band) lifts
+// rigidly — band and mark measured rising at the SAME rate (f3560→3561 both −171/−176 px,
+// f3561→3562 −172/−174) — the band+chips exit off the top (S18, extended to f3564), the
+// navy fills the frame, and the lockup rises from the floor. Then a two-phase settle:
+//   • fast rise into a PLATEAU (markTop 354, f3571..3585) while the letters wipe on L-to-R
+//     (lettR 954→1496 f3561..3575) and the tagline fades in (bbox bottom 580→707 f3575..78);
+//   • a second rise to the settled top (markTop 162, f3611) while the three pillar icons
+//     draw on L-to-R (ref f3595 shows them just breaking as dots) and the labels fade in.
+// Measured off ref ink (refs/ref35xx.png + rise.py). riseY = markTop − 162 (settled ink
+// top); FLOOR = ref navyTop (= S18's own navy-floor top, so the two navies coincide);
+// LOGOFRONT / ICON_* are card-space reveal fronts (S19 has scale 1, so card x == video x).
+const OUTRO_FLOOR: Lut = [[3556, 576], [3558, 541], [3560, 450], [3561, 279], [3562, 107], [3563, 49], [3564, 15], [3565, 0]];
+const OUTRO_RISE: Lut = [
+  [3556, 928], [3558, 810], [3560, 699], [3561, 523], [3562, 349], [3563, 289],
+  [3565, 232], [3568, 200], [3571, 192], [3585, 191], [3590, 176], [3593, 120],
+  [3595, 74], [3598, 30], [3600, 12], [3603, 3], [3605, 1], [3611, 0],
+];
+const OUTRO_LOGOFRONT: Lut = [[3556, 700], [3558, 1000], [3563, 1000], [3565, 1060], [3568, 1070], [3571, 1210], [3575, 1543]];
+const OUTRO_ICON_S: Lut = [[3592, 560], [3606, 821]];
+const OUTRO_ICON_P: Lut = [[3594, 851], [3608, 1109]];
+const OUTRO_ICON_D: Lut = [[3596, 1147], [3610, 1405]];
+
 export const S19EndCard: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC<{ markP: number; lettersP: number }> }> = ({
   frame,
   pack,
   BrandLogo,
 }) => {
-  if (frame < 3561) return null;
-  return <LogoCard pack={pack} BrandLogo={BrandLogo} />;
+  if (frame < 3556) return null;
+  const floor = lut(frame, OUTRO_FLOOR);
+  const riseY = lut(frame, OUTRO_RISE);
+  const logoFront = frame < 3576 ? lut(frame, OUTRO_LOGOFRONT) : undefined;
+  const taglineOpacity = interpolate(frame, [3575, 3580], [0, 1], clamp);
+  const labelOpacity = interpolate(frame, [3599, 3610], [0, 1], clamp);
+  const iconFronts: [number, number, number] = [lut(frame, OUTRO_ICON_S), lut(frame, OUTRO_ICON_P), lut(frame, OUTRO_ICON_D)];
+  const card = (
+    <LogoCard
+      pack={pack}
+      BrandLogo={BrandLogo}
+      riseY={riseY}
+      logoFront={logoFront}
+      taglineOpacity={taglineOpacity}
+      labelOpacity={labelOpacity}
+      iconFronts={iconFronts}
+    />
+  );
+  // Until the navy floor has filled the frame, clip the card to below the rising floor so
+  // S18's band+chips+white still read above it (both navies coincide at the seam).
+  if (floor <= 0) return card;
+  return (
+    <div style={{ position: "absolute", left: 0, top: floor, right: 0, bottom: 0, overflow: "hidden" }}>
+      <div style={{ position: "absolute", left: 0, top: -floor, width: 1920, height: 1080 }}>{card}</div>
+    </div>
+  );
 };
