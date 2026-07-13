@@ -583,14 +583,22 @@ export const S12Checks: React.FC<{ frame: number }> = ({ frame }) => {
 // 1428,622), an S-rail from the pill (top: left-arrow at x415 y290; bottom:
 // right-arrow at x1465 y770), chips spawn at the pill arcs and travel
 // OUTWARD at ~7.2px/f (red/cream leftward on top, slate rightward below).
+// content descent, measured off the ref pill's top edge (probe_s13.py)
+const S13_EXIT: Lut = [
+  [2712, 0], [2713, 0], [2714, 3], [2715, 9], [2716, 21], [2717, 43], [2718, 75],
+  [2719, 125], [2720, 207], [2721, 352], [2722, 568], [2723, 926], [2725, 2400],
+];
+
 export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame < 2362 || frame >= 2726) return null;
-  // gen13: exit RE-TIMED to the ref. The old outP faded the whole scene f2737-2750
-  // (~18f too late) — the ref instead SLIDES the content (cities/rails/pill/chips)
-  // straight DOWN off-frame FAST while the top band stays, blank below the band by
-  // f2725 (measured ink below band: 175k@f2719 -> 30k@f2722 -> 0@f2725). S14 then
-  // takes the band descent + content fade-in from f2726 (see S14Target).
-  const exitDy = interpolate(frame, [2717, 2721, 2725], [0, 350, 1150], { ...clamp, easing: Easing.in(Easing.quad) });
+  // gen13: exit RE-TIMED to the ref — the content (cities/rails/pill/chips) SLIDES
+  // straight DOWN off-frame while the top band stays; blank below the band by f2725.
+  // gen18: the CURVE was still wrong. Tracked the navy pill's top edge per ref frame
+  // (probe_s13.py): the fall STARTS at f2713, four frames before our f2717, and it is
+  // a ~1.65x/frame exponential, not a quadratic — by f2719 the ref is 125px down and
+  // we were only 88. That one frame scored .787 against a .874 steady state. Measured
+  // table, no easing (lesson 14).
+  const exitDy = lut(frame, S13_EXIT);
   const cityP = interpolate(frame, [2380, 2405], [0, 1], { ...clamp, easing: EASE });
   const pillP = interpolate(frame, [2370, 2390], [0, 1], clamp);
   const pathP = interpolate(frame, [2410, 2440], [0, 1], { ...clamp, easing: EASE });
