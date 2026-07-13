@@ -2223,3 +2223,141 @@ the CRX twin was born in the first place.
 
 **A cell I ranked and did not open is a defect I found and did not report.** Six of them
 sat in my own grid output for a whole round.
+
+## gen19 SCHEDULE-AND-FICTION round — 2026-07-13 (scenes2)
+
+Five commits, each gated on its own against a freshly-rendered HEAD baseline. Instruments in
+`work/cls-day/r17-scenes2/` (`probe_city.py` palette-class connected components, `prof.py`
+row/col ink-run profiles, `reg.py` rigid+scale registration search, `diffmass.py` / `dm2.py`
+ink-difference mass per grid cell; refs `refs/`, attempts `att*/`, HEAD baselines `head*/`,
+montages `mont/`). Build-only still gates + eye montages; NOT a full verify.
+
+### The finding that organised the round
+
+**Four of this file's scenes were on the wrong CLOCK.** S10's connector faded where the ref
+SNAPS it on dark; S10's bank hex was drawn 50 frames before the ref has one; S12 held a
+document 15 frames after the ref had cut away; S15 held a whole settled scene 30 frames past
+its dissolve. Every one was drawing large art on white that the ref does not draw. Schedule,
+not geometry, was the biggest lever in the file — and it was invisible to the eye, because
+each frame *looked* fine in isolation.
+
+### 1 — S13 PvP cities: six fictions and a rebuilt cluster (8ebfdf463)
+
+Probed per colour class with row+column ink runs at f2450/f2600/f2690. **Fiction the ref does
+not draw:** a 20x285 grey slab at x1635 (ref has 105 grey px in that box against our 5,700);
+the navy door grill (col x=1760 is blank y806..824); the right building's 259px left wall at
+x1857 (x1860 reads only the y565 rule); a 6th red tick at x1801 (the ref draws five); the
+closed BOTTOM BAR of all four front-building windows — they are **⊓, open-bottomed** (col
+x=1520 has ink only at y618..624; row y=632 reads a solid 1491..1550 in ours against two 7px
+stubs in the ref); and a 3rd dash-window row in the left city (the ref has two).
+
+**Re-placed on measurement:** the right grey slab is a two-block staircase (1826,570,22x70 +
+1856,621,22x205), not one slab. The right building is roof rules only (y565 full width, step
+at x1876 to y541) plus 7 edge dashes at x>=1912, not 9 at x1908. And the **left
+right-of-tower cluster was rebuilt**: our single white box at x330..430 y350..660 stood where
+the ref draws building A (x246..325, top y348, floor rules y408/436/465/490, GREY left column
+x249..270) plus a low block behind it (x325..428, rules y512/y603, grey fills at x330..357).
+Drawn before the red tower so it occludes, as the ref does.
+
+Gate: f2400 .8760→.8882 · f2450 .8742→.8859 · f2500 .8738→.8854 · f2520 .8686→.8798 ·
+f2600 .8749→.8870 · f2690 .8768→.8889 · f2700 .8752→.8873. **+.011..+.012 across all of S13.**
+
+### 2 — S10 connector lane: mis-scheduled, mis-placed, arrowheads INSIDE the pill (34e89401b)
+
+The round lead's grid put S10's two worst cells on the connector elbows (.077 and .041 against
+a frame mean of .762). Three separate errors:
+- **Schedule.** Ref navy px in the left connector by segment: vert 160 / elbow 165 are FULL
+  DARK from f1892 — the line snaps on in two frames. We ran a 22-frame OPACITY fade, so at
+  f1900 our line is 45% grey where the ref's is solid navy. That is why the lead measured
+  ~1000 ref dark-px against zero of ours.
+- **Geometry.** Lane at y815 (x650 and x1300 both read 815..816); we had 812. Left leg x484,
+  not 489. **Elbow radius 55, not 30** — the arc now reproduces the ref to 1px at every probed
+  y. Right leg drops from x1429.5, not 1370.
+- **The arrowheads were invisible.** The ref ends each lane in a big swept chevron whose apex
+  sits ON the pill's edge (743 / 1176), arms 33 out and 24 up/down, stroke 9 — ~530px each.
+  Our solid triangles sat at x796 and x1124, both INSIDE the pill's 742..1175 span.
+
+**Bank hex, same cells:** it SNAPS IN at f1951-1957 (ref box ink f1950 0 → f1955 2556 → steady
+2861); we faded it in from f1900. Geometry also wrong: measured 164x123 centred (1430,686)
+against our 100x92 at (1370,648). **Fixing the geometry ALONE lost f1950 by .0015** — a bigger
+hex in a frame that should hold none is more misplaced ink. The schedule is what made it pay.
+
+Gate: f1900 .9182→.9225 · f1950 .9108→.9165 · f2000 .9074→.9109 · f2040 .9096→.9157.
+
+### 3 — S12 drew the wrong document, at a fifth of the area, and never left (8154e4266)
+
+The ref's S12 is the SAME 2-page focus doc S11 grows, held and never touched (flat 52,140 px,
+bbox x692..1203 y247..846, identical at f2230/f2260/f2300). We drew a generic 260x330 MiniDoc
+at (840,720) — deleted, no other caller. The **checks** were wrong in size, place and
+schedule: ref discs (red mask, eroded off their leaders) are **d=160 at (456,428), (1360,312),
+(1550,714)**; we drew d=74 at (640,620)/(1275,590)/(1320,830). Arrival f2243/f2263/f2283, not
+2255/2290/2320. And S12 **never left**: the ref drops the checks (58.1k red px → 0 by f2342),
+disintegrates the doc, and **has cut to S13 by f2348** — at f2350 it is already showing S13's
+band at y0, the pill and the cities. We held to f2362.
+
+Gate: f2260 .9255→.9356 · f2280 .9166→.9285 · f2300 .9078→.9241 · f2320 .9076→.9241 ·
+f2340 .9122→.9134 · f2345 .9097→.9429 · f2350 .9038→.9397.
+**SPEND: f2342 .9100→.9051 (−.0049)** — the one frame where the ref's doc is still 92% intact
+and ours is half-dissolved. Solid ink over the ref's BROKEN ink scores worse than white over
+it, so every timing that drew the doc further into the dissolve lost more (f2345 cost −.0138
+twice before this). One frame against +.010..+.036 over the ~110 around it.
+
+### 4 — S15's exit was thirty frames late; S16 arrived twenty-three late (9c1e492bf)
+
+The rank-7 window f2999-3049 was pure schedule. Ref ink below the band (settled 302k):
+303k @f2990 · 297k @f3000 · 256k @f3005 · **49k @f3010** · 9k @f3015 · then S16 arrives, 66k
+@f3020 → 127k @f3025 → settled 132k @f3030. We held S15 fully settled to f3040, faded it to
+f3055, and started S16 at f3040 — so at f3010, where the ref has 16% of its ink left, we drew
+100% of it, and f3017-3040 was a dead scene over the ref's next one. S15's outP is now the
+measured ink-decay LUT; S16 mounts at f3016 (its pan/exit stay keyed on f3100/f3150).
+
+Gate: f3005 .8883→.8883 (unchanged by construction) · **f3010 .8723→.9320 (+.060)** ·
+**f3015 .8749→.9675 (+.093)** · **f3020 .8531→.9329 (+.080)** · **f3025 .8414→.9144 (+.073)** ·
+**f3030 .8360→.9239 (+.088)**. The largest single landing of the round.
+
+### 5 — S13's capsule vertex, the worst-ranked cell in the scene (023399327)
+
+Grid rank 1 across S13 was r3c5 (240x180+1200+540) at ssim .060 — a near-flat white cell where
+one misplaced curve owns all the variance, which is why it reads catastrophic and had been
+filed as noise twice. Opened it: ref min-navy-x per row (f2600) y540 1459 · y612 1421 · y630
+1419 · y708 1455 — a SHARP point at **(1422, 630)** on a −0.567 diagonal. Ours bottomed at 1437
+on a −0.50 diagonal: 16px right, 8px high, blunt. Gate +.0012 at every S13 frame.
+
+### NEGATIVE A/Bs — both recorded in-code, do not re-lose them
+
+- **Widening the city strokes to the ref's measured weight LOST at all 8 frames (−.0031..
+  −.0035).** We draw only **62-71% of the ref's ink** in the two PvP capsules (ref 34.5k/36.9k
+  px vs ours 22.2k/26.1k) and EVERY line in the ref is 6.5-7px where ours are 3-4. But our line
+  CENTRES sit 1-4px off (a whole-city translate recovers only 5-15% of the SSD, and the red
+  tower's internal rules disagree in BOTH directions), so a wider stroke just doubles the error
+  band. **The ink is there to be collected, but only after each element's centre is
+  re-registered per-edge.** Misplaced ink loses to absent ink (lesson 4), again.
+- **The S10 hex-width refit LOST** (f1900 +.00004 · f1950 −.00047 · f2000 +.0002 · f2040
+  −.0002). The scale error is REAL and I measured it independently — outer vertex-to-vertex
+  span at the mid row is 368.5 in the ref against our 350, 5.3% narrow, centres agreeing to
+  0.75px and the height already right. But `HexCity` scales its INTERIOR with `w`, and our
+  interior is not the ref's (probe col x=380: the ref has a solid 18px run at y553..570 and a
+  rule at y506; we have three 2px ticks at y537/549/557 and nothing at 506). Widening puts the
+  outline right and drags the invented interior further off; the two cancel exactly. **The
+  clsnet "refit the hex row to native scale, win +0.100" analogy does not carry to a component
+  whose interior is invented.** The 6.6k-px deficit is ABSENT CONTENT, not stroke weight — so
+  law 3 says it pays, but the interior must be TRACED first. Scale after the trace, not before.
+
+### Residual (honest, classified)
+
+- **S13's cities are now a CONTENT problem, not a registration one — and the next move is the
+  interior trace, not a re-scale.** 25k px of ink is genuinely missing across the two capsules.
+  It is real, it is large, and law 3 says it pays — but it is gated behind a per-edge centre
+  re-registration (see the negative A/B). *Fixable, expensive.*
+- **S13 STARTS ~14 FRAMES LATE.** The ref is already showing S13's band at y0, the handshake
+  pill and the city capsules at f2350; our S13 mounts at f2362. I did not touch it because
+  retiming the entrance moves its band, pill, cities and rails together — but it is a ranked,
+  measured, large-area defect and it is the next thing I would take. *Fixable, medium.*
+- **The S10 hex interiors are wrong** (probe col x=380 above). Trace them, THEN re-scale to
+  HW 398. *Fixable.*
+- The remaining S13 grid cells (r4c7, r2c2, r4c6, r4c3) are all inside the two capsules and all
+  resolve to the same distributed 1-4px edge error across dense line art. Opened, adjudicated:
+  *hand-drawn texture at the current registration* — they become fixable only after the
+  per-edge re-registration above.
+- S12's f2342 dissolve frame (the recorded spend) is *reference-self-contradiction* for our rig:
+  the ref fragments its ink and we can only fade it. A real fragmenting exit would collect it.

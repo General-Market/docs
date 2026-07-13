@@ -1,0 +1,3 @@
+.claude/rounds/work/cls-day/r17-scenes2/refs/f2450.png .claude/rounds/work/cls-day/r17-scenes2/att/f2450.png
+.claude/rounds/work/cls-day/r17-scenes2/refs/f2600.png .claude/rounds/work/cls-day/r17-scenes2/att/f2600.png
+.claude/rounds/work/cls-day/r17-scenes2/refs/f2690.png .claude/rounds/work/cls-day/r17-scenes2/att/f2690.png
