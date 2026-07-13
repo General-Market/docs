@@ -457,6 +457,24 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// Full-width hairline with sub-pixel edges: the integer core is one solid box,
+// each boundary row is its own 1px div at its measured coverage (Chrome snaps
+// painted boxes, so a fractional top/height would otherwise render solid).
+const HLine: React.FC<{ top: number; h: number }> = ({ top, h }) => {
+  const bot = top + h;
+  const c0 = Math.ceil(top);
+  const c1 = Math.floor(bot);
+  const edge = (y: number, cov: number) =>
+    cov > 0.004 ? <div style={{ position: "absolute", left: 0, top: y, width: 1920, height: 1, backgroundColor: C.navy, opacity: cov }} /> : null;
+  return (
+    <>
+      {edge(c0 - 1, c0 - top)}
+      {c1 > c0 && <div style={{ position: "absolute", left: 0, top: c0, width: 1920, height: c1 - c0, backgroundColor: C.navy }} />}
+      {edge(c1, bot - c1)}
+    </>
+  );
+};
+
 // ═══ Scene 19: payment complete (f2480-2612) ═══
 export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
@@ -480,7 +498,10 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   // is why this window sat flat at ~0.888 with no timing spike anywhere in it.
   // It then descends into Strip2, transcribed frame by frame from the ref's own
   // dark rows: 365@2633 · 366@2634 · 367@2635 · 369@2636 · 374@2638 · 381@2640.
-  const lineY = interpolate(f, [2632, 2633, 2634, 2635, 2636, 2638, 2640], [364, 365, 366, 367, 369, 374, 381], clamp);
+  // Sub-pixel: Chrome SNAPS a painted box to whole device pixels, so the ref's
+  // partial edge rows (coverage 0.77/0.98/0.96/0.75) are painted as their own
+  // 1px divs at the measured alpha — line = top 364.23, height 3.52.
+  const lineY = interpolate(f, [2632, 2633, 2634, 2635, 2636, 2638, 2640], [364.2, 365.2, 366.2, 367.2, 369.0, 374.2, 381.15], clamp);
   // r15: the ref does NOT hold this layout static — it whip-scrolls the whole
   // payment tableau LEFT and off-screen, then Strip2 grows from the bare line.
   // Measured rigidly (badge/box/text move as one): 0 until f2615, then an
@@ -491,7 +512,7 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const scrollX = interpolate(f, [2615, 2620, 2625, 2630, 2635], [0, -11, -104, -468, -1730], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
-      <div style={{ position: "absolute", left: 0, top: lineY, width: 1920, height: 4, backgroundColor: C.navy }} />
+      <HLine top={lineY} h={3.52} />
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${scrollX}px)` }}>
       <div style={{ position: "absolute", left: 215, top: 368 - 295 * 0.47, opacity: 1 }}>
         <TracedArt name="cityA" scale={0.47} />
