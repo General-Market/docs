@@ -266,6 +266,17 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
   const ax = 479;
   const bx = 1434;
   const hy = 451;
+  // NEGATIVE A/B — gen19. The hexes ARE 5.3% narrow: measured on ref f2000/f2040
+  // (identical), the outer vertex-to-vertex span at the mid row (y451) is x295..663.5 =
+  // 368.5 against our 350; centres agree to 0.75px and the HEIGHT already matches (ref top
+  // edge y315 at x479, ours y313.5). So HW 378 -> 398 is the correct outline. It LOST:
+  // against true HEAD, f1900 +.00004 · f1950 -.00047 · f2000 +.0002 · f2040 -.0002 — flat,
+  // regressing at half the gated frames. Cause: HexCity scales its INTERIOR with w, and our
+  // interior is not the ref's (probe col x=380: the ref has a solid 18px run at y553..570
+  // and a rule at y506, we have three 2px ticks at y537/549/557 and nothing at 506). Widening
+  // fixes the outline and drags the invented interior further off, and the two cancel.
+  // The ink deficit is real (ref 29.9k vs our 23.3k) and it is ABSENT CONTENT, not stroke
+  // weight — but it must be TRACED first. Re-scaling before the trace is refuted.
   const HW = 378;
   const HH = 282;
   const hexBot = hy + HH / 2; // 592 — hex bottom (≈ old 590, connectors unmoved)
