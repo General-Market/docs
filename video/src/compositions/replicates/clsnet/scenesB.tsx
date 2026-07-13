@@ -992,8 +992,16 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
               before they fall (settled y555 -> 524 at f1750 -> 731 at f1762). */}
           {docP > 0 && (
             <>
-              <Doc x={docLX} y={docLY} w={docW} h={docH} opacity={boxOut} />
-              <Doc x={docRX} y={docRY} w={docW} h={docH} opacity={boxOut} />
+              {/* r19: these two are the ONLY Docs that draw the ref's real document
+                  (`variant="full"`, transcribed in ui.tsx from THIS pair at f1740).
+                  The ref draws at least two documents — payment's is a different one
+                  (orange square badge, two-cell strip, peach band) and tradeDocs'
+                  loses under "full" too — so `variant` defaults to "plain" and only
+                  these opt in. The inner pill of the lower panel is ORANGE in the
+                  left document and NAVY in the right; that is the only difference
+                  between them. */}
+              <Doc x={docLX} y={docLY} w={docW} h={docH} opacity={boxOut} variant="full" />
+              <Doc x={docRX} y={docRY} w={docW} h={docH} opacity={boxOut} variant="full" innerPill={C.pillNavy} />
             </>
           )}
         </>
