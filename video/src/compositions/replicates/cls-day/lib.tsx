@@ -221,6 +221,26 @@ export const MarkerTriangle: React.FC<{ x: number; y: number; size?: number }> =
     viewBox="0 0 30 24.6"
     style={{ position: "absolute", left: x - size / 2, top: y }}
   >
+    {/* NEGATIVE A/B (r17) — strokeWidth 4 -> 2 REFUTED AS A STANDALONE CHANGE.
+        The stroke really IS ~2x too fat. Measured at the horizontal TOP BAR (integrate
+        rust coverage down a column, then RATIO against our own render so the
+        instrument's ~20% overshoot divides out — the ink/perimeter estimator is
+        unusable, it recovers our own known 4.0 as 4.97):
+          S4  f600  ref 4.99px @ w62 vs ours 9.95px @ w62 -> 4.0 x .5015 x 1.000 = 2.01
+          S10 f1900 ref 4.42px @ w52 vs ours 9.95px @ w60 -> 4.0 x .4442 x 1.154 = 2.05
+        Two mounts, 2% apart. The NUMBER is right and the CHANGE still loses, because
+        STROKE AND PATH ARE COUPLED HERE: strokeLinejoin="miter" makes the corner spikes
+        scale WITH the stroke, so halving it SHRINKS the outer extent. The fat stroke was
+        propping up a path that is too small.
+          S4 f600, ref = 885px ink @ 62x54:
+            t=4 (kept): 1256px @ 62x51 — extent right, ink +42%
+            t=2       :  653px @ 59x48 — ink -26% AND the outline collapsed
+        Gate: f600 -.00007 and f2900 -.00009 REGRESSED (9 of 11 frames won). Reverted.
+        THE REAL TARGET for whoever co-fits this: the ref has a THINNER stroke on a
+        LARGER path (ref h/w = .871 at S4 vs our .82). Solve path geometry and
+        strokeWidth TOGETHER, per-mount k, or one gives back exactly what the other gains.
+        And do NOT touch `size`: ref w62 at S4 (ours 62, CORRECT) but w52 at S10 (ours 60).
+        Size is a property of the CALL; stroke is a property of the RIG. */}
     <path d="M 2.5 2 L 27.5 2 L 15 22.6 Z" fill="none" stroke={C.marker} strokeWidth="4" strokeLinejoin="miter" />
   </svg>
 );
