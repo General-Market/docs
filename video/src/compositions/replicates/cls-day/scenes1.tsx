@@ -995,7 +995,26 @@ export const S4Trade: React.FC<{ frame: number; pack: Pack; PillLogo?: React.FC<
 const S4X_TOP: [number, number][] = [[656, 96], [660, 96], [661, 97], [662, 98], [663, 100], [664, 104], [665, 109], [666, 115], [667, 124], [668, 136], [669, 153], [670, 176], [671, 210], [672, 261], [673, 325]];
 const S4X_PITCH: [number, number][] = [[656, 142.3], [662, 142.7], [664, 145.5], [666, 150], [667, 153.7], [668, 158.4], [669, 165], [670, 174.4], [671, 188.5], [672, 208.8], [673, 235]];
 const S4X_PHASE: [number, number][] = [[656, 111], [660, 108], [662, 90], [664, 26], [666, 42], [667, 89], [668, 104], [669, 68], [670, 122], [671, 45], [672, 134], [673, 60]];
-const S4X_H0: [number, number][] = [[656, 18], [662, 18], [664, 19], [666, 20], [667, 21], [668, 22], [669, 23], [670, 24], [671, 25], [672, 26], [673, 27]];
+// gen20 — THE EXIT CARRIES TWO CLOCKS, AND WE WERE DRIVING BOTH OFF ONE.
+// The S4 hour axis (labels BELOW the strip, left of the front) and the incoming S5 world
+// (labels ABOVE it, right of the front) are DIFFERENT clocks in the ref: the S5 world's
+// above-band chain runs SIX HOURS EARLIER than the S4 axis, because it is the S5 world,
+// whose below-band mirror is the one that reads +6. We fed the incoming chain the S4 `h`,
+// so at f673 every one of its eight labels was six hours wrong; at f670-672 it was worse,
+// because h0 itself was drifting behind the ref.
+//
+// Both clocks re-read off the ref's own label glyphs at the ticks (mont/s4below.png,
+// mont/s5lab2.png), tick x from the strip-tick detector:
+//   S4 axis, hour at k=0:  f668 22 ✓ · f669 23 ✓ · f670 01:00@122 -> 25 · f671 03:00@45
+//                          -> 27 · f672 07:00@134 -> 31   (we had 24 / 25 / 26)
+//   S5 chain, hour at k=0: f670 19:00@1518 -> 11 · f671 19:00@1175 -> 13 · f672
+//                          21:00@969 -> 17 · f673 01:00@1000 -> 21
+// h0 was RIGHT through f669 and drifts from f670 — exactly where the whip accelerates.
+// f673's S4 labels are fully clipped (front = 0), so its h0 is cosmetic; f666-669's S5
+// labels sit ABOVE the frame (tick top = btop - 314·syp < 0) and are invisible — those
+// keys are back-extrapolated and unverifiable, and marked so.
+const S4X_H0: [number, number][] = [[656, 18], [662, 18], [664, 19], [666, 20], [667, 21], [668, 22], [669, 23], [670, 25], [671, 27], [672, 31], [673, 35]];
+const S4X_H5: [number, number][] = [[666, 8], [667, 9], [668, 9], [669, 10], [670, 11], [671, 13], [672, 17], [673, 21]];
 const S4X_MARKX: [number, number][] = [[656, 961], [664, 961], [666, 900], [668, 835], [669, 745], [670, 640], [671, 480], [672, 270], [673, 40]];
 const S4X_FRONT: [number, number][] = [[666, 1980], [667, 1858], [668, 1770], [669, 1640], [670, 1434], [671, 1084], [672, 451], [673, 0]];
 
@@ -1004,11 +1023,14 @@ const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
   const pitch = lutS(S4X_PITCH)(frame);
   const phase = lutS(S4X_PHASE)(frame);
   const h0 = Math.round(lutS(S4X_H0)(frame));
+  const h5 = Math.round(lutS(S4X_H5)(frame)); // the INCOMING S5 world's own clock
   const markX = lutS(S4X_MARKX)(frame);
   const front = frame >= 666 ? lutS(S4X_FRONT)(frame) : 1980;
   const bh = (40 * pitch) / 142.3;
   const syp = pitch / 301.5; // S5-world scale implied by the shared pitch
-  const ticks = Array.from({ length: 15 }, (_, k) => ({ x: phase + k * pitch, h: h0 + k }));
+  // one tick lattice, two hour readings: `h` is the S4 axis (below, left of the front),
+  // `hs` the S5 world (above, right of it — and its own +6 mirror below).
+  const ticks = Array.from({ length: 15 }, (_, k) => ({ x: phase + k * pitch, h: h0 + k, hs: h5 + k }));
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       {/* S5 world wiping in behind the front: white above, navy below */}
@@ -1018,15 +1040,15 @@ const S4ExitBand: React.FC<{ frame: number }> = ({ frame }) => {
           <div style={{ position: "absolute", left: front, top: btop + bh, width: 1980 - front, height: 1080 - btop - bh, background: C.navyBg }} />
           {/* incoming S5 tick chains (above navy-on-white, below mirrored white) */}
           <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, clipPath: `inset(0 0 0 ${front}px)` }}>
-            {ticks.map(({ x, h }) => (
+            {ticks.map(({ x, h, hs }) => (
               <React.Fragment key={h}>
                 <div style={{ position: "absolute", left: x, top: btop - 310 * syp, width: 3, height: 310 * syp, background: C.navyDeep }} />
                 <div style={{ position: "absolute", left: x + 16 * syp, top: btop - 314 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: C.navyDeep }}>
-                  {String(((h % 24) + 24) % 24).padStart(2, "0")}:00
+                  {String(((hs % 24) + 24) % 24).padStart(2, "0")}:00
                 </div>
                 <div style={{ position: "absolute", left: x, top: btop + bh, width: 3, height: 308 * syp, background: "#FDFDFD" }} />
                 <div style={{ position: "absolute", left: x + 19 * syp, top: btop + bh + 292 * syp, fontFamily: "Helvetica", fontSize: 21 * syp, color: "#FDFDFD" }}>
-                  {String(((h + 6) % 24 + 24) % 24).padStart(2, "0")}:00
+                  {String(((hs + 6) % 24 + 24) % 24).padStart(2, "0")}:00
                 </div>
               </React.Fragment>
             ))}
