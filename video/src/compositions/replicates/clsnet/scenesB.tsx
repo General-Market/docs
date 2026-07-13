@@ -859,6 +859,36 @@ export const EdgeRulers: React.FC<{ f: number }> = ({ f }) => {
   );
 };
 
+// ═══ The hub: a fixed elbow pair, and two documents that slide across it ═════
+// Per-frame tables, tracked off the ref's navy doc outline (r19). DOC_* is the
+// document's own bbox — grown from a point at the box, slid out, then dropped.
+const DOC_F = [1696, 1699, 1700, 1701, 1702, 1703, 1704, 1705, 1706, 1707, 1708, 1709, 1710, 1711, 1712, 1713, 1714, 1715, 1716, 1717, 1718, 1719, 1720, 1721, 1722, 1723, 1724, 1725, 1726, 1727, 1728, 1729, 1730, 1731, 1732, 1733, 1734, 1735, 1736, 1737, 1738, 1739, 1740, 1741, 1742, 1743, 1744, 1745, 1746, 1747, 1748, 1749, 1750, 1751, 1752, 1753, 1754, 1755, 1756, 1757, 1758, 1759, 1760, 1761, 1762];
+const DOC_LX = [748, 720, 709, 698, 688, 682, 676, 671, 666, 662, 659, 655, 651, 647, 643, 639, 635, 630, 625, 619, 612, 605, 597, 588, 578, 567, 554, 540, 524, 507, 489, 471, 454, 438, 424, 412, 400, 390, 382, 374, 366, 360, 355, 350, 346, 344, 342, 340, 339, 338, 337, 337, 337, 336, 336, 336, 336, 336, 336, 337, 338, 339, 341, 345, 347];
+const DOC_LY = [653, 618, 605, 591, 581, 574, 569, 566, 563, 561, 559, 558, 557, 556, 556, 555, 555, 555, 555, 555, 555, 555, 555, 555, 555, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 555, 555, 555, 555, 554, 553, 551, 549, 546, 542, 539, 536, 532, 530, 527, 525, 524, 525, 527, 531, 537, 545, 556, 569, 586, 608, 637, 674, 731];
+const DOC_RX = [1172, 1145, 1136, 1128, 1121, 1118, 1116, 1115, 1115, 1116, 1117, 1119, 1121, 1124, 1128, 1132, 1136, 1141, 1147, 1153, 1159, 1166, 1175, 1184, 1194, 1206, 1220, 1234, 1250, 1268, 1287, 1305, 1323, 1340, 1354, 1368, 1379, 1390, 1399, 1407, 1414, 1420, 1425, 1429, 1432, 1434, 1436, 1437, 1438, 1439, 1439, 1440, 1440, 1440, 1440, 1441, 1441, 1441, 1441, 1440, 1439, 1438, 1434, 1432, 1427];
+const DOC_RY = [653, 618, 605, 591, 581, 574, 569, 566, 563, 561, 560, 558, 557, 556, 556, 555, 555, 555, 555, 555, 555, 555, 555, 555, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 555, 555, 554, 553, 550, 546, 542, 538, 534, 530, 528, 524, 520, 518, 516, 514, 516, 518, 522, 528, 536, 547, 560, 578, 599, 628, 664, 722];
+// size is a pure grow — constant 151x199 from f1713 on
+const GROW_F = [1696, 1699, 1700, 1701, 1702, 1703, 1704, 1705, 1706, 1707, 1708, 1709, 1710, 1711, 1712, 1713];
+const GROW_W = [5, 56, 76, 95, 111, 121, 129, 135, 140, 142, 145, 147, 149, 150, 151, 151];
+const GROW_H = [5, 73, 99, 127, 147, 161, 171, 177, 183, 188, 191, 194, 196, 197, 198, 199];
+
+const HubElbow: React.FC<{ dy: number; opacity: number }> = ({ dy, opacity }) => {
+  if (opacity <= 0) return null;
+  return (
+    <svg
+      width={1920}
+      height={1080}
+      viewBox="0 0 1920 1080"
+      style={{ position: "absolute", left: 0, top: dy, opacity, pointerEvents: "none" }}
+    >
+      <path d="M412.5,415 V636 Q412.5,661 437.5,661 H777" fill="none" stroke={C.orange} strokeWidth={3} />
+      <path d="M398.5,435 L412.5,415 L426.5,435" fill="none" stroke={C.orange} strokeWidth={3} strokeLinejoin="round" />
+      <path d="M1519.5,414 V636 Q1519.5,661 1494.5,661 H1158" fill="none" stroke={C.orange} strokeWidth={3} />
+      <path d="M1505.5,434 L1519.5,414 L1533.5,434" fill="none" stroke={C.orange} strokeWidth={3} strokeLinejoin="round" />
+    </svg>
+  );
+};
+
 // ═══ Scenes 13-14: reports up + doc locks (f1662-1930) ═══
 export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
@@ -881,10 +911,14 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   // locks-settled cx612/1306 w385 cy413 (=239 top-anchor + 385*0.453). r8 had
   // phase-1 pinned to the locks top-anchor (cy 343) — 60px too low, the biggest
   // ink-mass miss in the f1720-1770 window (whole layout sat ~75px low).
-  const hexW = 215 + (385 - 215) * growP;
+  // r19: the phase-1 hex was 7px HIGH and 2px narrow — the ref's widest row is
+  // y288 spanning x305-521 (cx 413, w 217) at f1718; we rendered y281, w215. The
+  // corrected cy 290 is MATCH.hexA.cy, which the matching scene already used.
+  // growP endpoints untouched: 0 for f<=1752, 1 by f1780.
+  const hexW = 217 + (385 - 217) * growP;
   const hexAx = 413 + (612 - 413) * growP;
-  const hexBx = 1512 + (1306 - 1512) * growP;
-  const hexY = 283 + (413 - 283) * growP;
+  const hexBx = 1513 + (1306 - 1513) * growP;
+  const hexY = 290 + (413 - 290) * growP;
   // gen14: the phase-1 hub (CLSNet box + docs + connectors) does NOT fade in
   // place — it DROPS DOWN and out as the parties take focus (measured EXACT
   // video, box-top navy blob + doc-outline bbox): box top 550(rest to f1748)→
@@ -896,7 +930,13 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
   // only at the END (box stays full through the drop, gone by 1766).
   const boxOut = lerp(f, [1760, 1766], [1, 0]);
   const boxDy = interpolate(f, [1748, 1752, 1756, 1760, 1764], [0, 9, 45, 138, 235], clamp);
-  const docDy = interpolate(f, [1748, 1752, 1756, 1760, 1764], [0, 7, 33, 101, 172], clamp);
+  const docP = f >= DOC_F[0] && f <= 1763 ? 1 : 0;
+  const docLX = interpolate(f, DOC_F, DOC_LX, clamp);
+  const docLY = interpolate(f, DOC_F, DOC_LY, clamp);
+  const docRX = interpolate(f, DOC_F, DOC_RX, clamp);
+  const docRY = interpolate(f, DOC_F, DOC_RY, clamp);
+  const docW = interpolate(f, GROW_F, GROW_W, clamp);
+  const docH = interpolate(f, GROW_F, GROW_H, clamp);
   const docOp = lerp(f, [1800, 1815], [0, 1]);
   // gen13: the A/B badge GROWS with the hex (measured EXACT video: r≈0.14·w —
   // phase1 w215→r29, settled w385→r54; the old fixed r36 was too big at phase1
@@ -918,18 +958,44 @@ export const LocksScene: React.FC<{ frame: number }> = ({ frame }) => {
       <EdgeRulers f={f} />
       {phase1 && (
         <>
-          {/* r9 measured (regular_0137-0139): navy box (850,550) side 219=>w224;
-              up-arrow risers on each hex-cx (413/1512) from y636 into the hex
-              bottom (y418). gen14: docs measured at cx414/1506 (x340/1432, not
-              the old x439/1340 which sat 99px too far inboard); box+docs+
-              connectors ride the measured DROP (boxDy/docDy) as they exit. */}
-          <ClsNetBox x={850} y={550 + boxDy} w={224} opacity={lerp(f, [1662, 1672], [0, 1]) * boxOut} />
-          <Doc x={340} y={556 + docDy} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
-          <Doc x={1432} y={556 + docDy} w={149} h={198} opacity={lerp(f, [1668, 1680], [0, 1]) * boxOut} />
-          <Elbow points={[[489, 666 + docDy], [850, 666 + docDy]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
-          <Elbow points={[[1069, 666 + docDy], [1432, 666 + docDy]]} opacity={lerp(f, [1685, 1700], [0, 1]) * boxOut} />
-          <Elbow points={[[413, 636], [413, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
-          <Elbow points={[[1512, 636], [1512, 418]]} arrow="end" opacity={lerp(f, [1690, 1705], [0, 1]) * boxOut} />
+          {/* r19: THE HUB ELBOWS ARE ONE FIXED PAIR, AND THE DOCS SLIDE ACROSS THEM.
+              They are also the SAME elbows the matching scene draws — probed at
+              (412,500) and (1519,500), the ink is unbroken orange at f1656, 1660,
+              1670, 1680, 1690, 1700. We were fading a second pair in at f1685-1705
+              and leaving a 32-frame hole where the ref has them solid. The old
+              connectors also RODE docDy and were drawn AFTER the docs, painting an
+              80px orange bar straight across each document's face — the ref has
+              none: its riser stops dead at the doc's top edge (y551 at f1735)
+              because the doc is simply on top of it. Draw the elbow, then the doc.
+              Path scanned at f1718: shaft x412.5 / 1519.5 (2px), horizontal y661
+              (we drew 666), ends x777 / x1158 — 73px and 89px SHORT of the box,
+              not touching it. Arrowhead apex y415, barbs +-14 x +20 (ours was half
+              that). The whole path rides boxDy on the exit (elbow apex +9 at f1752,
+              +43 at f1756 — boxDy is 9 and 45) and is gone by f1759. */}
+          <HubElbow dy={boxDy} opacity={f >= 1759 ? 0 : 1} />
+          {/* r19: the box was 1px narrow and 1px right — sub-pixel coverage scan of
+              the ref's navy fill at f1718/1730/1740 (stable to 0.03px): left 849.22,
+              right 1069.94, top 549.98, bottom 770.93 => side 220.84. We drew x850
+              w224, which Chrome paints as side 220 at x850. That error had been
+              CANCELLING the old wordmark seat's 0.8%-too-low error; the r19 ui.tsx
+              seat law exposed it. side 220.84 => w = 220.84 * 274/268.5 = 225.4. */}
+          <ClsNetBox x={849.2} y={550 + boxDy} w={225.4} opacity={lerp(f, [1662, 1672], [0, 1]) * boxOut} />
+          {/* r19: THE DOCS ARE NOT WHERE WE PUT THEM AT ANY FRAME BEFORE f1748. They
+              GROW OUT OF THE BOX — born as a 5px point at (748,653) on f1696, full
+              size by f1713 — and then SLIDE outward across the fixed elbow, reaching
+              their settled x337 / x1439 only at f1748. We drew them parked at their
+              settled position from f1668, so through the whole f1713-1748 slide our
+              left doc sat up to 275px away from the ref's (f1718: ref x612, we drew
+              340). Two 150x199 documents in the wrong place for 35 frames — the
+              whole of this window's defect. Tracked per frame off the navy outline
+              bbox; the table IS the animation (lesson 14). They also rise ~30px
+              before they fall (settled y555 -> 524 at f1750 -> 731 at f1762). */}
+          {docP > 0 && (
+            <>
+              <Doc x={docLX} y={docLY} w={docW} h={docH} opacity={boxOut} />
+              <Doc x={docRX} y={docRY} w={docW} h={docH} opacity={boxOut} />
+            </>
+          )}
         </>
       )}
       <SmallHex art="lockCityA" cx={hexAx} cy={hexY} w={hexW} artW={385} letter="A" badge={badge} fillHex />
