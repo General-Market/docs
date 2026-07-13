@@ -404,6 +404,16 @@ const USD_XIN = lutS([[119, 1548], [122, 1316], [124, 1084], [126, 786], [128, 5
 // (top-code cap-top 283→414 over f162..169, bottom pinned at the line; ref
 // measured). Was f154..168 — started the sink ~7f early.
 const USD_SINK = lutS([[160, 0], [162, 6], [164, 20], [166, 58], [168, 135], [169, 200], [171, 320], [173, 430]]);
+// DKK/GBP entry — r20: the ref does NOT crossfade the pair in at the settled
+// straddle (the old model's opacity ramp). It CONVERGES the two codes VERTICALLY
+// from the frame extremes, FULLY OPAQUE: the top code (DKK) descends from off the
+// top, the bottom code (GBP) rises from off the bottom, both easing onto the ruler.
+// Measured per-frame off the ref ink extents (DKK cap-top ymin, GBP cap-top ymin;
+// left code region x200..1080): DKK cap-top 48@170→286@181 (settle), GBP cap-top
+// 802@170→560@181 — a symmetric converge about the ruler, mag 240→0 over f170..181.
+// DKG_IN is the TOP-code offset (negative = up); the bottom code rides −DKG_IN.
+// Relative to the model's settled position, so it is exactly 0 (a no-op) at f181+.
+const DKG_IN = lutS([[168, -540], [169, -380], [170, -240], [171, -147], [172, -101], [173, -71], [174, -50], [175, -34], [176, -24], [177, -14], [178, -8], [179, -4], [180, -2], [181, 0]]);
 
 export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 96 || frame >= 308) return null;
@@ -470,7 +480,7 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
               <SettledCode pack={pack} i={0} top xIn={USD_XIN(frame)} x={325} sink={USD_SINK(frame)} />
             )}
             {frame >= 168 && frame <= 232 && (
-              <SettledCode pack={pack} i={1} top xIn={0} opacity={interpolate(frame, [167, 173], [0, 1], clamp)} x={234 - 1.55 * (frame - 190)} sink={lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
+              <SettledCode pack={pack} i={1} top xIn={0} x={234 - 1.55 * (frame - 190)} sink={DKG_IN(frame) + lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
             )}
             {/* plunging top codes */}
             {PLUNGES.map((P) => {
@@ -497,7 +507,7 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
               <SettledCode pack={pack} i={0} xIn={USD_XIN(frame)} x={419} sink={-USD_SINK(frame)} />
             )}
             {frame >= 168 && frame <= 232 && (
-              <SettledCode pack={pack} i={1} xIn={0} opacity={interpolate(frame, [167, 173], [0, 1], clamp)} x={287 - 1.55 * (frame - 190)} sink={-lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
+              <SettledCode pack={pack} i={1} xIn={0} x={287 - 1.55 * (frame - 190)} sink={-DKG_IN(frame) - lutS([[224, 0], [225, 26], [226, 49], [227, 81], [228, 125], [229, 180], [230, 238], [231, 280]])(frame)} />
             )}
             {/* plunging bottom codes — mirror the top about y1081 */}
             {PLUNGES.map((P) => {
@@ -1246,7 +1256,7 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   const sy = lutS([
     [674, 0.8475], [675, 0.8936], [676, 0.9254], [677, 0.9473], [678, 0.9642], [679, 0.9761],
     [680, 0.9847], [681, 0.9911], [682, 0.996], [683, 0.994], [684, 1],
-    [916, 1], [918, 0.9945], [920, 0.9882], [922, 0.9743], [924, 0.9477], [926, 0.9023],
+    [916, 1], [918, 0.9945], [920, 0.9882], [922, 0.9743], [924, 0.9477], [926, 0.9023], [927, 0.847],
     [928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635],
   ])(frame);
   // band center (rest 532.5): entry descend + exit rise, both measured.
@@ -1258,8 +1268,12 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
     // r19: PIN the cruise flat at 532.5 through f916. Without this key, lowering the
     // f918 key to 529.1 makes lutS ramp riseC down across the whole f684-918 cruise
     // (−3.4px at f916), silently regressing every settled cruise frame r18 fixed.
-    [916, 532.5], [918, 529.1], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [928, 327],
-    [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179],
+    // r20 — deep-whip interpolation drift fixed off the band-edge probe (grey band
+    // top/bottom crossings in the ink-free navy columns x980..1880, riseC=(top+bot)/2).
+    // The keys were right; the LINEAR interpolation between them undershot the ref's
+    // rise: f927 measured 384 (was 378.75), f929 280.5 (was 288.75), f931 229.5 (232.5).
+    [916, 532.5], [918, 529.1], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [927, 384], [928, 327],
+    [929, 280.5], [930, 250.5], [931, 229.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179],
   ])(frame);
   // inner x of the 09:00 tick (screen tick positions unprojected through
   // the sx scale about x=960; cruise points are direct measurements)
@@ -1845,8 +1859,13 @@ export const S6Schedule: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
     [936, 32], [938, 4], [940, 0],
   ])(frame);
   const sxDup = lutS([[928, 0.803], [930, 0.73], [932, 0.676], [934, 0.664], [936, 0.6615], [940, 0.66]])(frame);
-  const syDup = lutS([[928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635]])(frame);
-  const riseC6 = lutS([[928, 327], [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179]])(frame);
+  // r20 — TWIN of S5Skyline's sy/riseC (law 27): these MUST stay byte-identical to
+  // S5's exit keys or the S5→S6 handoff band tears. Before r20 they were CLAMPED at
+  // f927 (first key 928) while S5 interpolated 926→928, so the S6 band sliver rendered
+  // ~51px too high and ~6px too short on the right — a visible step the ref never has.
+  // The [927] keys collapse the twin onto S5 and land it on the band probe.
+  const syDup = lutS([[927, 0.847], [928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635]])(frame);
+  const riseC6 = lutS([[927, 384], [928, 327], [929, 280.5], [930, 250.5], [931, 229.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179]])(frame);
   const s6x = frame < 941 ? (301.5 * sxDup) / 199 : 1;
   const s6y = frame < 941 ? (85 * syDup) / 54 : 1;
   const bandTop6 = frame < 941 ? riseC6 - 42.5 * syDup : 152;
