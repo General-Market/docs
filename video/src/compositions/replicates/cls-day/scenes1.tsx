@@ -1234,12 +1234,19 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   // with the old sy, ClA@f677 needed a +4px roll (overlap .854) and ClD@f677 a −4px
   // roll (.812), opposite signs, the signature of a scale error, not an offset.
   // With sy = sx: ClA .933 / ClD .957 / ClD@f676 .964 / ClD@f679 .979, every dy = 0.
-  // The entry keys therefore ARE the sx keys. The exit keys (f918+) are NOT — there
-  // the band really does compress faster in x than in y — and are left alone.
+  // The entry keys therefore ARE the sx keys. The exit keys (f918-926) are NOT — the
+  // band there really does compress faster in x than in y (sy > sx) — so they are
+  // re-measured off the same band probe, NOT collapsed onto sx.
+  // r19 — the exit sy keys were themselves LOW (a stale hand fit). The band probe
+  // (band3.py, sy = (h − 1.01)/85) reads f918 .9945 / f920 .9882 / f922 .9743 /
+  // f924 .9477 / f926 .9023 where the old keys held .988/.976/.929/.929/.835 — off by
+  // up to 6.7% at f926 (an 8% squash), 4.5% at f922. Corrected below; sx (the faster
+  // horizontal compression) is left as measured. f928+ is the deep whip (band < 900px
+  // of probe ink), unmeasured and untouched.
   const sy = lutS([
     [674, 0.8475], [675, 0.8936], [676, 0.9254], [677, 0.9473], [678, 0.9642], [679, 0.9761],
     [680, 0.9847], [681, 0.9911], [682, 0.996], [683, 0.994], [684, 1],
-    [916, 1], [918, 0.988], [920, 0.976], [922, 0.929], [924, 0.929], [926, 0.835],
+    [916, 1], [918, 0.9945], [920, 0.9882], [922, 0.9743], [924, 0.9477], [926, 0.9023],
     [928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635],
   ])(frame);
   // band center (rest 532.5): entry descend + exit rise, both measured.
@@ -1248,7 +1255,10 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
   const riseC = lutS([
     [674, 412], [675, 447.5], [676, 472.7], [677, 490], [678, 503], [679, 512.5],
     [680, 520], [681, 525], [682, 529], [683, 530.5], [684, 532.5],
-    [918, 532.5], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [928, 327],
+    // r19: PIN the cruise flat at 532.5 through f916. Without this key, lowering the
+    // f918 key to 529.1 makes lutS ramp riseC down across the whole f684-918 cruise
+    // (−3.4px at f916), silently regressing every settled cruise frame r18 fixed.
+    [916, 532.5], [918, 529.1], [920, 521.5], [922, 506.5], [924, 481.5], [926, 430.5], [928, 327],
     [930, 250.5], [932, 214.5], [934, 195.5], [936, 185.5], [938, 179.5], [940, 179],
   ])(frame);
   // inner x of the 09:00 tick (screen tick positions unprojected through
