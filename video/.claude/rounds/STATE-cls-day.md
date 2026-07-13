@@ -4157,3 +4157,93 @@ all `yc-pitch/YCPitchComposition.tsx`, the foreign half-merge, not mine). Commit
    scenes are the sibling's live file.
 2. `IconHandshake` trace still coarse (lib residual #3, unchanged) — position right, the
    trace itself is the next gain.
+
+---
+
+# r18 — ROUND LEAD CONSOLIDATION — the sign that said STOP was covering the largest lever
+
+Four lanes dispatched, one file each (scenes1, scenes2, lib, and a joint scenes2+lib
+follow-up for the S17 milestone). Every landing gated ref-vs-OLD-vs-NEW at ≥3 in-window
+frames, NEW≥OLD everywhere, `CrxSettlementDay` eyechecked. **15 cls-day commits.** All
+sources match HEAD; cls-day/cls-shared tsc green; lock free; no orphan renders or harness
+shells. The round arc: **94.1 → up, by the largest per-frame movement of the campaign.**
+
+## The two questions answered again, and the pattern held: FICTION and the WRONG CLOCK, not the curve
+
+| lane | defect found | window | gain (flat, per frame) |
+|---|---|---|---|
+| **scenes1** | **The cruise skyline was NEVER at its floor — a hand REDRAW, not a trace.** The r17 brief carried a verdict "at its true floor — do not re-trace it." That verdict was right about *redrawing* and silent about *tracing*. Potraced, +.036..+.069. | f760-928 (**ranks 1,4,5**) | **.875/.885/.891 → ~.91/.93/.94** |
+| **scenes1** | **The S4 exit's empty world filled — once the city was understood as a 12-hour cycle of SIX designs (we modelled four; two were never traced), finite (10 slots/half, not an infinite tiling), with the front at world-local −4366.** The r17 stand-in lost −.034 because two of six buildings had never existed. | f673-723 (**rank 2**) | **.866 → .901..~.94** |
+| **scenes1** | **The S5 entry `sy` LUT was FICTION.** Ten hand-fit keys all 2-5% below the measured `sx` — 9.6px on every tick top and foot for ten frames. The zoom is uniform: sy≡sx to ±0.002. Deleted `sy.py`, the instrument that flattered it. | f673-690 | folded into rank-2 gains |
+| **scenes2** | **The "blunt vertex" (worst cell on the track, .595) DID NOT EXIST — it was a stroke read through its OUTER EDGE.** An 8px stroke's outer edge stands 2px off centre; take the midpoint and both apexes agree to ½px. The real defect was WIDTH: the pen is 7px, ours was 4px. | S13 settled, 350 frames | **+.0173** |
+| **scenes2** | **gen19's "widening city strokes LOSES" was two errors cancelling** (law 24 run backwards) — the mis-registered capsule inside the window. Capsule home → widening wins every frame. **Target 2's "12.2px-left city" also dissolved: post-fix dx=0..+3. No translate to be had — gated, refused.** | S13 | included above |
+| **scenes2** | **S17 held THREE fictions:** milestone ticks rising 36px above a band they never leave; a document behind the pill the ref never draws; a "Trade executed" arrow pointing INWARD from a `rotate(180)` (the identical defect gen20 found on S13's top rail). | f3340-3390 (**rank 6**) | **+.027** |
+| **lib+scenes2** | **The S17 milestone SMEAR was two errors cancelling** — deleting it ALONE lost (.9050→.9049). The ref's bold time IS the hour label bolded; ours drew it 25% small and 5px low, and the band's plain label filled the empty slot beneath → the smear. Joint fix (`skipHours`+fontSize 19→23+top 140→133.5) wins where the delete lost. | f3340-3380 | +.0011..+.0014 |
+| **lib** | `HandshakePill` translateY −8→−2.5, TR/BL radius 8→2 (r17's unspent debt; the −8 outlived the error it corrected). tickAbove 4→0 on the S17 mount (ref ticks start at band top). | S13 settled | +.00095 |
+
+## The laws this round earned (candidates for replicate-method)
+
+- **A verdict of "floor" is scoped to the MECHANISM it was proven on.** "Do not re-trace the
+  S5 cruise" was true for hand-*redrawing* (law 19) and false for *tracing*. The largest
+  single lever of the round — +.069/frame on the campaign's worst window — sat under a sign
+  that said STOP. **When a floor is inherited, ask which mechanism it forbids, and whether
+  yours is that mechanism.** (Extends law 23 from refutations to floor-verdicts.)
+- **You cannot read a stroke's POSITION from its OUTER EDGE.** Three rounds and the worst
+  cell on the track were spent chasing a "blunt vertex" that was the 2px offset of a fat
+  stroke's outer edge from its own centreline. **Read position off the midpoint; read width
+  off a horizontal rule where the run's height IS the stroke.** A wrong instrument invented
+  a defect that did not exist AND hid the one that did (the 7px pen). Law 25's cousin: when
+  a value reads strangely, suspect the datum.
+- **Law 24 runs backwards too: a NEGATIVE A/B can be two errors cancelling.** "Widening the
+  city loses" and "delete the S17 smear" both LOST as standalone changes and both WON once
+  the cancelling error (a mis-registered capsule; a shrunken bold label) was fixed in the
+  same commit. A refutation measured over a broken neighbour is not a refutation — it is a
+  coupled system. **Re-test refuted fixes after fixing what shared their window.**
+- **A fiction can be load-bearing.** The S17 smear was propping up a shrunken label; the
+  band's plain hour label was silently filling the slot the 25%-small bold one left empty.
+  Deleting fiction that another defect leans on charges you for the deletion. **Fix the
+  thing it props before you cut it, and ship them as one change.**
+- **Instrument law 35 (new, paid twice):** an identity gate with an empty-variable bug
+  reads `empty == empty → IDENTICAL` and flatters every pair, INCLUDING the pair that must
+  differ. Both a `set -- $p` split (zsh) and a `git show`-to-empty produced this. **Every
+  byte-identity gate carries a NEGATIVE CONTROL — one pair you KNOW must differ. If it
+  reports identical, the instrument is lying, not the code.** (scenes1 also hit law 28 raw:
+  two post-edit baselines returned "+0.000000, byte-identical" = "ship it" — caught only
+  because moved keys had no business being identical.)
+
+## RESIDUAL — ranked for r19
+
+1. **`S4 f453-503` (rank 3, .8860) — UNTOUCHED.** scenes1 spent the round where the area
+   was (ranks 1,2,4,5). By elimination this is now the best-value window on the track.
+2. **The S5 EXIT whip f918-940 is still on the OLD `sy`/`riseC` and both are measurably
+   wrong** (f922 by 5%, f926 by 8%; riseC(918) −3.4px). Unlike the entry, the exit really
+   IS anisotropic — a re-measure, not a collapse onto sx. These frames sit INSIDE the
+   rank-1 window. Numbers in `work/cls-day/r18-scenes1/band3.py`.
+3. **S13 EXIT is not a pure translateY — it SPREADS** (scenes2 shipped a 200:1 spend that
+   exposed it: cities cross-correlate −7..−12 left / +10..+11 right, scale 1.015 about
+   x=960). The LUT was fitted to the pill's top edge, which sits at frame centre — the one
+   datum a symmetric spread cannot see. Twin of the S5 tick-chain. Needs a LUT off the two
+   capsule apexes.
+4. **S17's two conveyors are STILL PLATES where the ref is RUNNING** — six travelling chips
+   (5,066 px/f) + an upper payment lane with two $/€ documents on a 44-frame cycle (8,900
+   px/f). Full path LUTs transcribed in the scenes2 block. Large area, law 18.
+5. **Global `tickAbove` default flip (4→0)** — open, not refuted; blocked only because two
+   of the six default-taking bands live in scenes1 (the sibling's live file this round).
+   Per-scene probe plan in the s17-joint block.
+6. `IconHandshake` trace still coarse — position right, the trace is the next gain.
+
+## INFRA / hazards handed to the next lead
+
+- **The shared git index carries a FOREIGN half-merge** (`.gitignore`, `data-node/`,
+  `frontend/`, `yc-pitch/YCPitchComposition.tsx` — no MERGE_HEAD, so orphaned unmerged
+  index entries, not an active merge). Every r18 builder committed through a temp index /
+  `git commit --only -- <path>` to avoid sweeping it in; all four verified their commits
+  held only their own files. **The main index is desynced from HEAD** (shows the r18-scenes1
+  work `.py` as staged deletions — the files exist on disk and in HEAD). Whoever owns that
+  index should clean it; do NOT `git reset` blindly — confirm no session is mid-merge first.
+- **The official composite verify is BLOCKED this round** by that same half-merge: the
+  `yc-pitch` tsc red trips verify-replication.sh's line-63 whole-repo guard before it
+  renders. Renders work fine all round (the esbuild bundle is healthy — only stricter tsc
+  trips), so the block is cosmetic to the render but real to the guard. The per-frame PNG
+  gates ARE the record (method: mp4 SSIM is invalid at ±.01). r19 gets its composite once
+  the foreign merge is cleared.
