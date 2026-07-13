@@ -960,10 +960,20 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
     [916, 1], [918, 0.988], [920, 0.988], [922, 0.975], [924, 0.902], [926, 0.81],
     [928, 0.803], [930, 0.73], [932, 0.68], [934, 0.67], [936, 0.663], [940, 0.66],
   ])(frame);
+  // gen18 — sy is 1.0000 for the WHOLE cruise. The old [916, 0.988] key had no
+  // frame under it: lutS interpolated it back to [684, 1] and quietly
+  // compressed the entire world vertically by up to 1.2% for 232 frames (the
+  // above-band tick tops rendered at y184 against the ref's 180, the below-band
+  // tick feet at 878 against 884 — every line of art in the frame sat wrong).
+  // Measured off the above-band tick line (world y180, screen y = 532.5 −
+  // 352.5·sy) at f690/700/720/750/780/800/830/850/880/900/910/914/916: 180 at
+  // EVERY ONE. The exit keys from f918 are untouched.
+  // NB this also retires the gen17 "unprojection trap": with sy = 1 in the
+  // cruise, screen y IS world y, and 532.5 + (y − 532.5)/sy is the identity.
   const sy = lutS([
     [674, 0.824], [675, 0.855], [676, 0.88], [677, 0.918], [678, 0.941], [679, 0.953],
     [680, 0.965], [681, 0.978], [682, 0.988], [683, 0.994], [684, 1],
-    [916, 0.988], [918, 0.988], [920, 0.976], [922, 0.929], [924, 0.929], [926, 0.835],
+    [916, 1], [918, 0.988], [920, 0.976], [922, 0.929], [924, 0.929], [926, 0.835],
     [928, 0.776], [930, 0.718], [932, 0.671], [934, 0.647], [938, 0.647], [940, 0.635],
   ])(frame);
   // band center (rest 532.5): entry descend + exit rise, both measured
@@ -1028,31 +1038,9 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
         {/* navy lower world (tall so the shrink never exposes the floor) */}
         <div style={{ position: "absolute", left: -3200, top: bandY + bandH, width: 8000, height: 2000, background: C.navyBg }} />
         <div style={{ position: "absolute", left: x9, top: 0, width: 5200 }}>
-          {/* hour ticks + labels above and mirrored below (+6h); all 24h —
-              the entry whip shows hours 02..08, the exit whip 10..17 */}
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: 5200,
-              height: bandY,
-              opacity: tickP,
-              clipPath: frame >= 924 ? `inset(0 ${Math.max(0, 5200 - frontLocal)}px 0 0)` : undefined,
-            }}
-          >
-            {Array.from({ length: 24 }, (_, i) => {
-              const x = (i - 9) * px;
-              return (
-                <React.Fragment key={i}>
-                  <div style={{ position: "absolute", left: x, top: 180, width: 3, height: bandY - 180, background: C.navyDeep }} />
-                  <div style={{ position: "absolute", left: x + 16, top: 176, fontFamily: "Helvetica", fontSize: 21, color: C.navyDeep }}>
-                    {String(i).padStart(2, "0")}:00
-                  </div>
-                </React.Fragment>
-              );
-            })}
-          </div>
+          {/* mirrored (below-band) hour ticks + labels (+6h). These sit UNDER
+              the below clusters and always read, because those clusters are
+              outline-only. */}
           <div style={{ opacity: frame >= 934 ? 0 : 1 }}>
             {Array.from({ length: 24 }, (_, i) => {
               const x = (i - 9) * px;
@@ -1140,6 +1128,35 @@ export const S5Skyline: React.FC<{ frame: number }> = ({ frame }) => {
                 <div style={{ position: "absolute", left: -2503, top: bandY + bandH - 5 }}><ClD /></div>
               </>
             )}
+          </div>
+          {/* gen18 — the ABOVE-band hour chain draws OVER the skyline. We had it
+              under: the white-filled tower bodies swallowed whole ticks (probe:
+              at f880 the ref reads 7 full-height ticks above the band, we read
+              5 — the 12:00 and 15:00 lines were painted out by ClC and ClG).
+              The below chain stays under, where the outline-only clusters let
+              it through — that one already matched the ref 7-for-7. */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: 5200,
+              height: bandY,
+              opacity: tickP,
+              clipPath: frame >= 924 ? `inset(0 ${Math.max(0, 5200 - frontLocal)}px 0 0)` : undefined,
+            }}
+          >
+            {Array.from({ length: 24 }, (_, i) => {
+              const x = (i - 9) * px;
+              return (
+                <React.Fragment key={i}>
+                  <div style={{ position: "absolute", left: x, top: 180, width: 3, height: bandY - 180, background: C.navyDeep }} />
+                  <div style={{ position: "absolute", left: x + 16, top: 176, fontFamily: "Helvetica", fontSize: 21, color: C.navyDeep }}>
+                    {String(i).padStart(2, "0")}:00
+                  </div>
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
         {/* grey band on top of buildings */}
