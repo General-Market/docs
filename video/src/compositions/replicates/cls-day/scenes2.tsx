@@ -302,10 +302,14 @@ const travel = (frame: number, t0: number, t1: number) =>
 //     f2260 == f2300 to the pixel).
 // Per-doc dx = dir * EXIT(frame + shift) * gain — one measured base curve, a
 // per-doc time offset and gain (lesson 14: per-event tables, not one easing).
+// Anchored on the ref's LEFT doc borders — the one edge the stretch (below) leaves
+// alone, so it reads dx directly: f2205 −10.5, f2208 −48.5, f2210 −103.5, f2212
+// −215.5, f2214 −448.5 (probe_cols.py, doc3). A clean 1.44×/frame exponential; the
+// tail past f2214 continues it (every doc is off-frame by f2217, as the ref is).
 const S11_EXIT: Lut = [
-  [2200, 0], [2201, 0], [2202, 0], [2203, 1], [2204, 5], [2205, 11], [2206, 19],
-  [2207, 32], [2208, 48], [2209, 71], [2210, 103], [2211, 149], [2212, 215],
-  [2213, 300], [2214, 410], [2215, 560], [2216, 760], [2217, 1030], [2220, 2400],
+  [2200, 0], [2201, 0], [2202, 0], [2203, 1], [2204, 5], [2205, 10.5], [2206, 19],
+  [2207, 32], [2208, 48.5], [2209, 71], [2210, 103.5], [2211, 149], [2212, 215.5],
+  [2213, 310], [2214, 448], [2215, 646], [2216, 930], [2217, 1340], [2219, 2800],
 ];
 // focus-doc scale (measured per frame off the page-1 left/right borders)
 const S11_FOCUS_S: Lut = [
@@ -337,10 +341,25 @@ export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
       <div style={{ opacity: inP, transform: `scale(${0.92 + 0.08 * inP})`, transformOrigin: "960px 500px" }}>
         {S11_DOCS.map((d, i) => {
           // gen13: doc x re-registered from ref f2150 body-left borders.
-          const dx = d.dir * lut(frame + d.sh, S11_EXIT) * d.g;
+          const at = (f: number) => d.dir * lut(f + d.sh, S11_EXIT) * d.g;
+          const dx = at(frame);
           if (d.x + 232 + dx < -40 || d.x + dx > 1960) return null;
+          // The flying docs STRETCH. Measured: every doc's LEFT border lands exactly
+          // on dx, while its RIGHT border runs ahead — width 221 settled, 226 @f2208,
+          // 230 @f2210, 240 @f2212. It scales with speed and anchors on the doc's own
+          // left edge regardless of travel direction (so it is a scaleX in the ref's
+          // rig, not a motion blur — a symmetric two-ghost smear was tried and LOST at
+          // every fly-out frame: f2210 .8756->.8729, f2212 .8773->.8708).
+          const sx = Math.min(1 + 0.0011 * Math.abs(at(frame + 0.5) - at(frame - 0.5)), 1.16);
           return (
-            <div key={i} style={{ position: "absolute", transform: `translateX(${dx}px)` }}>
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                transform: `translateX(${dx}px) scaleX(${sx})`,
+                transformOrigin: `${d.x + 2}px 500px`,
+              }}
+            >
               <RefDoc x={d.x} y={387} seal={d.seal} red={d.red} />
             </div>
           );
@@ -354,7 +373,27 @@ export const S11DocsRow: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-// regular instruction doc, 228x285 (traced f2150)
+// Regular instruction doc — gen18 RE-TRACED per pixel off ref f2130 (probe_doc.py,
+// work/cls-day/gen18-s2). Every doc in the row is the SAME body (verified across
+// doc2/doc3/doc5: feature offsets from the top rule agree to 0.5px; the ref just
+// jitters each doc's y by ~2px). Doc-local svg y = trace y − 3.5.
+//
+// What the old model had wrong — all of it POSITION, none of it texture:
+//   • banner box 62 tall at y105  → ref is 39 tall at y110; inner bar 22 tall → 15
+//   • field row = two loose cells → ref is ONE bordered box (117..208, y69..92)
+//     with a centre divider at x162 and the fill INSET (124..157)
+//   • the three body lines sat at y185/195/203 → the ref's are at y160/167/174,
+//     25px high, and the first runs the FULL doc width (x17..208)
+//   • bottom divider at x36 → x18; fill block at (150,238) → (141,231)
+//   • only 2 header lines, 2.5px → the ref has THREE, 5px thick, from x55
+//   • right border at x230 → 223 (doc is 221 wide, not 228). gen13's NEGATIVE A/B
+//     narrowed the whole svg — which dragged the interior off its registration and
+//     lost. Moving the border alone, with the interior re-registered to the trace,
+//     is a different change.
+//   • square bottom-left corner → the ref rounds it, r22
+//   • fold corner at x190/depth40 → x176/depth 49
+//   • the CIRCLE-seal docs MIRROR their bottom block (fill left, divider+lines
+//     right) — a per-doc variant the old model never had.
 const RefDoc: React.FC<{ x: number; y: number; seal: "lines" | "square" | "circle" | "triangle"; red: boolean }> = ({
   x,
   y,
@@ -363,43 +402,60 @@ const RefDoc: React.FC<{ x: number; y: number; seal: "lines" | "square" | "circl
 }) => {
   const acc = red ? C.red : C.navyBg;
   const fill = red ? C.chipCream : C.chipGrey;
-  // gen13 NEGATIVE A/B (reverted): the outer border is 228px here vs ref's
-  // measured 221px, but narrowing the svg (width 232->225, +doc1 x comp) LOST
-  // -.002..-.005 at every gated frame f2110-2200. The 3% squish drags the dense
-  // interior (banner/field cells/text lines — already registered to ref) left off
-  // its match; the border-width gain is smaller than the content loss (lesson 4).
-  // Kept at 232: the ref content sits at 228-frame positions despite the tighter
-  // border. Border width is a documented residual, not a lever.
+  const ink = C.navyDeep;
   return (
     <svg width={232} height={289} viewBox="0 0 232 289" style={{ position: "absolute", left: x, top: y }}>
-      <path d="M 2 287 L 2 2 L 190 2 L 230 42 L 230 287 Z" fill={C.white} stroke={C.navyDeep} strokeWidth="3" strokeLinejoin="round" />
-      <path d="M 190 2 L 190 42 L 230 42" fill="none" stroke={C.navyDeep} strokeWidth="3" />
-      {seal === "square" && <rect x={24} y={20} width={26} height={26} fill={acc} />}
-      {seal === "circle" && <circle cx={37} cy={33} r={13} fill={acc} />}
-      {seal === "triangle" && <path d="M 37 19 L 51 46 L 23 46 Z" fill={acc} />}
+      <path d="M 176 2 L 223 51 L 223 285 L 24 285 Q 2 285 2 263 L 2 2 Z" fill={C.white} stroke={ink} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M 176 2 L 176 51 L 223 51" fill="none" stroke={ink} strokeWidth="3" />
+      {seal === "square" && <rect x={20} y={16} width={29} height={27} fill={acc} />}
+      {seal === "circle" && <circle cx={33} cy={30} r={13} fill={acc} />}
+      {seal === "triangle" && <path d="M 35 20 L 49 42 L 21 42 Z" fill={acc} />}
       {seal === "lines" && (
         <>
-          <rect x={24} y={22} width={44} height={3} fill={C.navyDeep} />
-          <rect x={24} y={30} width={34} height={3} fill={C.navyDeep} />
+          <rect x={20} y={18} width={44} height={5} fill={ink} />
+          <rect x={20} y={28} width={34} height={5} fill={ink} />
         </>
       )}
-      <rect x={62} y={24} width={40} height={2.5} fill={C.navyDeep} />
-      <rect x={62} y={32} width={28} height={2.5} fill={C.navyDeep} />
-      {/* field row: filled + outline cells */}
-      <rect x={118} y={64} width={44} height={20} fill={fill} />
-      <rect x={162} y={64} width={44} height={20} fill="none" stroke={C.navyDeep} strokeWidth="2.5" />
-      {/* banner with filled inner bar */}
-      <rect x={18} y={105} width={192} height={62} fill="none" stroke={C.navyDeep} strokeWidth="3" />
-      <rect x={24} y={112} width={180} height={22} fill={fill} />
-      {/* text lines */}
-      <rect x={18} y={185} width={150} height={3} fill={C.navyDeep} />
-      <rect x={18} y={195} width={118} height={3} fill={C.navyDeep} />
-      <rect x={18} y={203} width={132} height={3} fill={C.navyDeep} />
-      {/* bottom: divider + lines + block */}
-      <rect x={36} y={240} width={3} height={32} fill={C.navyDeep} />
-      <rect x={46} y={245} width={70} height={2.5} fill={C.navyDeep} />
-      <rect x={46} y={253} width={54} height={2.5} fill={C.navyDeep} />
-      <rect x={150} y={238} width={56} height={36} fill={fill} />
+      {/* three header lines */}
+      <rect x={55} y={21} width={48} height={5} fill={ink} />
+      <rect x={55} y={28} width={25} height={5} fill={ink} />
+      <rect x={55} y={35} width={48} height={5} fill={ink} />
+      {/* field row: one bordered box, centre divider, inset fill in the left cell */}
+      <rect x={117} y={69.5} width={91} height={22} fill="none" stroke={ink} strokeWidth="3.5" />
+      <rect x={160.5} y={69.5} width={3} height={22} fill={ink} />
+      <rect x={124} y={73.5} width={33} height={14} fill={fill} />
+      {/* banner: box + inner filled bar at its top */}
+      <rect x={18} y={110} width={190} height={39} fill="none" stroke={ink} strokeWidth="3.5" />
+      <rect x={25} y={114.5} width={175} height={15} fill={fill} />
+      {/* body lines: one full-width rule, then two short rows */}
+      <rect x={17} y={159.5} width={191} height={5} fill={ink} />
+      <rect x={18} y={166.5} width={46} height={5} fill={ink} />
+      <rect x={67} y={166.5} width={19} height={5} fill={ink} />
+      <rect x={18} y={173.5} width={31} height={5} fill={ink} />
+      {/* bottom block — circle docs mirror it (fill left, divider + lines right) */}
+      {seal === "circle" ? (
+        <>
+          <rect x={18} y={231} width={64} height={18} fill={fill} />
+          <rect x={104} y={229} width={4} height={23} fill={ink} />
+          <rect x={115} y={231} width={29} height={6} fill={ink} />
+          <rect x={149} y={231} width={39} height={6} fill={ink} />
+          <rect x={193} y={231} width={13} height={6} fill={ink} />
+          <rect x={113} y={239} width={54} height={5} fill={ink} />
+          <rect x={174} y={239} width={34} height={5} fill={ink} />
+          <rect x={114} y={245} width={30} height={6} fill={ink} />
+        </>
+      ) : (
+        <>
+          <rect x={18} y={228.5} width={4} height={24} fill={ink} />
+          <rect x={28} y={231.5} width={30} height={5} fill={ink} />
+          <rect x={63} y={231.5} width={40} height={5} fill={ink} />
+          <rect x={105} y={231.5} width={15} height={5} fill={ink} />
+          <rect x={28} y={239.5} width={55} height={4} fill={ink} />
+          <rect x={87} y={239.5} width={33} height={4} fill={ink} />
+          <rect x={28} y={245.5} width={31} height={6} fill={ink} />
+          <rect x={141} y={231.5} width={63} height={35} fill={fill} />
+        </>
+      )}
     </svg>
   );
 };
