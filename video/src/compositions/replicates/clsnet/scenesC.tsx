@@ -659,11 +659,11 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
           nobody had ever measured it. Centres (312.6,210.2) and (1619.9,590.8), i.e.
           rigid at (-114.4,-161.8) and (+107.9,-164.2) from their hexes — the same
           offsets the motion track above was solved with, so they cross-check. */}
-      <PayHex art="cityA" cx={aCx} cy={aCy} w={385} artScale={0.539} artLeft={-139.7} artBottom={94.6} hexOp={hexOp} letter="A" badgeDx={aBadgeDx} badgeDy={aBadgeDy} badgeR={badgeR} />
+      <PayHex art="cityA" cx={aCx} cy={aCy} w={385} artScale={0.539} artLeft={-139.7} artBottom={86.9} hexOp={hexOp} letter="A" badgeDx={aBadgeDx} badgeDy={aBadgeDy} badgeR={badgeR} />
       <div style={{ position: "absolute", inset: 0, transform: `translate(${aDx}px, ${aDy}px)`, opacity: 1 - u }}>
         <Doc x={255} y={510} w={91} h={110} />
       </div>
-      <PayHex art="cityB" cx={bCx} cy={bCy} w={396} artScale={0.5343} artLeft={-94.6} artBottom={5.9} hexOp={hexOp} letter="B" badgeDx={bBadgeDx} badgeDy={bBadgeDy} badgeR={badgeR} />
+      <PayHex art="cityB" cx={bCx} cy={bCy} w={396} artScale={0.5343} artLeft={-94.6} artBottom={-2.0} hexOp={hexOp} letter="B" badgeDx={bBadgeDx} badgeDy={bBadgeDy} badgeR={badgeR} />
       <div style={{ position: "absolute", inset: 0, transform: `translate(${bDx}px, ${bDy}px)`, opacity: 1 - u }}>
         <Doc x={1611} y={900} w={90} h={110} />
       </div>
@@ -732,7 +732,9 @@ const PayHex: React.FC<{
    *  city it was framing simply keeps going. Default 1 = the framed hex. */
   hexOp?: number;
 }> = ({ art, cx, cy, w, artScale, artLeft, artBottom, letter, badgeDx = 0, badgeDy = 0, badgeR = 30, hexOp = 1 }) => {
-  const h = w * 0.906;
+  const h = w * 0.866; // r22 hex-shape: was 0.906 (slope 1.812) → 0.866 (ref 1.731).
+  // The art is bottom-anchored to this box; each caller's artBottom was lowered by
+  // 0.02·w so the pixel-fit city holds its absolute seat while the box shrinks.
   const framed = hexOp > 0;
   return (
     <div style={{ position: "absolute", left: 0, top: 0 }}>
@@ -1002,10 +1004,10 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           {hexS > 0 && (
             <>
               <div style={{ position: "absolute", inset: 0, transform: hexS < 1 ? `scale(${hexS})` : undefined, transformOrigin: "785px 589px" }}>
-                <PayHex art="mHexCity2" cx={785} cy={590} w={240} artScale={1.05} artLeft={4} artBottom={5} />
+                <PayHex art="mHexCity2" cx={785} cy={590} w={240} artScale={1.05} artLeft={4} artBottom={0.2} />
               </div>
               <div style={{ position: "absolute", inset: 0, transform: hexS < 1 ? `scale(${hexS})` : undefined, transformOrigin: "1148px 592px" }}>
-                <PayHex art="mHexHeli" cx={1148} cy={592} w={240} artScale={1.246} artLeft={0.2} artBottom={-7.7} />
+                <PayHex art="mHexHeli" cx={1148} cy={592} w={240} artScale={1.246} artLeft={0.2} artBottom={-12.5} />
               </div>
             </>
           )}

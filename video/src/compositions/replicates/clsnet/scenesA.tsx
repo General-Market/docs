@@ -1194,7 +1194,9 @@ const HEX_POP: Record<string, [number, number]> = {
 // (its default h=0.906w renders 4px too tall, so h is passed). Centres are the
 // ref navy-border centres. The backing rides the same pop scale s and returns
 // null with the hex; NetworkScene already backs these two from f756+, so this
-// only fills the MapScene gap. NOT a hex-slope edit (that is the reserved lane).
+// only fills the MapScene gap. r22 (the reserved slope lane): h 177 → 172, i.e.
+// 199·0.866. The f723 bbox ratio 0.889 was a rounded-corner artifact; the sharp
+// polygon wants the straight-edge slope 1.731 → h/w 0.866 (see ui.tsx r22).
 const HEX_BG: Record<string, { cx: number; cy: number }> = {
   mHexHeli: { cx: 378, cy: 405 },
   mHexCity2: { cx: 1463, cy: 709 },
@@ -1295,7 +1297,7 @@ export const MapScene: React.FC<{ frame: number }> = ({ frame }) => {
                   cx={bg.cx}
                   cy={bg.cy}
                   w={199 * s}
-                  h={177 * s}
+                  h={172 * s}
                   fill={C.white}
                   stroke={C.navy}
                   strokeWidth={3 * s}

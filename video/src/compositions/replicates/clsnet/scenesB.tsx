@@ -455,7 +455,7 @@ const HexCity: React.FC<{
   dxFrac?: number;
   dyFrac?: number;
 }> = ({ art, cx, cy, w, drawP, artW, artH, dxFrac = 0, dyFrac = 0 }) => {
-  const h = w * 0.906;
+  const h = w * 0.866; // r22 hex-shape: was 0.906 (slope 1.812) → 0.866 (ref 1.731)
   // The city fills the hex the way the ref does — measured: cityA orange
   // building ~62% of hex width, vertically centred (orange cy == hex cy). K
   // lands cityA orange at w295 inside the w479 draw hex (was ~0.34 fill,
@@ -538,8 +538,8 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
         {/* gen13: matching badge measured EXACT video: A (344,210) B (1442,210)
             r30 — the SmallHex default (dx-0.38/dy-0.40) sat 11px left + 6px high.
             dx-0.327/dy-0.374 lands both on the ref; r stays 0.14*w=30. */}
-        <SmallHex art="lockCityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={385} letter="A" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex />
-        <SmallHex art="lockCityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={385} letter="B" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex />
+        <SmallHex art="lockCityA" cx={MATCH.hexA.cx} cy={MATCH.hexA.cy} w={MATCH.hexA.w} artW={385} letter="A" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex fillDyFrac={0} />
+        <SmallHex art="lockCityB" cx={MATCH.hexB.cx} cy={MATCH.hexB.cy} w={MATCH.hexB.w} artW={385} letter="B" badge={{ dx: -0.327, dy: -0.374, r: 30 }} fillHex fillDyFrac={0} />
         {/* elbows — the SAME path the locks scene uses: shafts at x412.5 / 1519.5
             (we had the right one on the hex centre, 6.5px in), horizontal at
             y661 (we drew 648), arrow tips x653 / x1296. */}
@@ -737,9 +737,15 @@ export const SmallHex: React.FC<{
   // width) so it fills the hex 1:1 — used by the locks hexes, whose interiors
   // are re-traced native-scale (gen-8) instead of clipping a downscaled city.
   fillHex?: boolean;
-}> = ({ art, cx, cy, w, artW, letter, opacity = 1, badge, artScale, fillHex }) => {
+  // r22: vertical seat of the fillHex trace as a fraction of w. Default -0.02
+  // HOLDS the gen8-fit trace at its old absolute seat while the box shrank
+  // 0.906→0.866 (locks: the temple was already ref-true, holding it gained).
+  // Matching's OLD temple sat ~3px HIGH, so it passes 0 and rides down into the
+  // corrected hex (+0.141 hex-crop) — the ref seats these two cities differently.
+  fillDyFrac?: number;
+}> = ({ art, cx, cy, w, artW, letter, opacity = 1, badge, artScale, fillHex, fillDyFrac = -0.02 }) => {
   if (opacity <= 0) return null;
-  const h = w * 0.906;
+  const h = w * 0.866; // r22 hex-shape: was 0.906 (slope 1.812) → 0.866 (ref 1.731)
   const scale = artScale ?? (w * 0.92) / artW;
   return (
     <div style={{ position: "absolute", left: 0, top: 0, opacity }}>
@@ -755,7 +761,8 @@ export const SmallHex: React.FC<{
         }}
       >
         {fillHex ? (
-          <TracedArt name={art} scale={w / artW} style={{ position: "absolute", left: 0, top: 0 }} />
+          // r22: fillDyFrac seats the TOP-anchored trace (see prop comment).
+          <TracedArt name={art} scale={w / artW} style={{ position: "absolute", left: 0, top: w * fillDyFrac }} />
         ) : (
           <div style={{ position: "absolute", left: w / 2 - (artW * scale) / 2, bottom: h * 0.16 }}>
             <TracedArt name={art} scale={scale} style={{ position: "relative" }} />

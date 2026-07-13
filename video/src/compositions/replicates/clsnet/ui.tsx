@@ -37,15 +37,28 @@ export const hexPoints = (w: number, h: number) =>
 // It LOSES at f2560 and is noise at f1400. Reverted. Do not re-chase it — and note
 // WHY it cannot pay: those corner crops score .66/.74 because the hexagon disagrees
 // with the ref for a much larger reason.
-// THE REAL DEFECT, measured at BOTH sites: the right-diagonal SLOPE.
-//   ref 1.693 (f1400) · 1.731 (f2560)      ours 1.826 · 1.830
-// Our `hexPoints` insets the left/right points at 0.25·w with h = 0.906·w, giving
-// slope (h/2)/(0.25w) = 1.812. The ref's is ~1.71 → its points are inset ≈0.265·w
-// (or its h/w is ≈0.855). A ~6% shape error, at every hexagon, every frame.
-// Fixing it moves the hexagon's own edges AND the city art clipped inside it
-// (scenesB `HexCity` / `SmallHex`), so it is a coupled change, not a one-liner —
-// it needs its own round with the art alignment re-gated. Position and shape first;
-// THEN the corner radius, which is worth ~0.0001 on its own. (Method lesson 4.)
+// ─── r22 RESOLVED: the defect is HEIGHT, not inset. h 0.906 → 0.866. ───
+// The right-diagonal SLOPE was the tell. Fitted the straight diagonal EDGES
+// (rightmost-navy-per-row, line-fit, r≈0.3px — immune to stroke width AND corner
+// rounding) at 12 hexes across hexify/payment/map/matching/locks. They ALL agree:
+//   ref slope 1.731 ± 0.003   (ours was 1.812)
+// The inset, fitted the same clean way (four badge-free map hexes at f680), is
+// 0.248 ± 0.002 — i.e. UNCHANGED at 0.25. The r19 "inset ≈ 0.265" guess is dead.
+// (The scenesA-1193 read of h/w≈0.889 was a ROUNDED-BBOX artifact: the sharp
+// left/right points get rounded, pulling W in more than H, inflating the aspect.
+// The straight-edge slope does not lie — law 25.)
+//   slope = (h/w)/(2·inset).  Holding inset at 0.25, slope 1.731 ⟹ h/w = 0.866.
+// So the whole fix is `h = w*0.906 → w*0.866` at every SVG-polygon site. The inset
+// (0.25) and the clipPaths (25%/75% width, 0%/50%/100% height, box-relative) are
+// UNTOUCHED — a shorter box auto-corrects its own clip.
+// SCOPE, proven by measuring the OLD render's slope per family:
+//   TRACE families already render 1.72–1.73 (the ref hexagon is baked INTO the
+//   potrace) — HexIcon hexRow, the map-hex art divs, the network white backing.
+//   Their 0.906 is an art-POSITION offset, NOT the shape; touching it MISPLACES a
+//   correct trace (and breaks r18's within-1px fit). LEAVE THEM.
+//   POLYGON families render the defective ~1.83 — HexCity, SmallHex (matching+
+//   locks), PayHex (payment+mapBadges), the two map bg Hexagons. Those are fixed.
+// Corner rounding is still worth ~0.0001 and is still not chased (r19). Lesson 4.
 
 export const Hexagon: React.FC<{
   cx: number;
@@ -62,7 +75,7 @@ export const Hexagon: React.FC<{
   cx,
   cy,
   w,
-  h = w * 0.906,
+  h = w * 0.866, // r22: was 0.906 (slope 1.812); 0.866 gives the ref's 1.731
   stroke = C.navy,
   strokeWidth = 3,
   fill = "none",
@@ -109,6 +122,10 @@ export const HexIcon: React.FC<{
       <TracedArt
         name={art}
         x={cx - w / 2}
+        // r22: STAYS 0.906. This is an art-POSITION offset for a full trace that
+        // bakes the ref hexagon at its own (correct) shape — the OLD hexRow render
+        // measures slope 1.723, already right. r18 fit cy/hexW against THIS offset;
+        // moving it to 0.866 shifts the trace ~7px and re-loses r18's within-1px.
         y={cy - (w * 0.906) / 2}
         scale={artScale ?? w / 340}
       />
