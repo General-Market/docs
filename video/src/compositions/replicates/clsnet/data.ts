@@ -240,7 +240,10 @@ export const MATCH = {
   hexA: { cx: 413, cy: 290, w: 214 },
   hexB: { cx: 1513, cy: 290, w: 214 },
   panel: { x: 776, y: 420, w: 405, h: 330 },
-  box: { x: 768, y: 350, w: 155, h: 170, r: 24 },
+  // r18: solid-run bbox at f1600, ref x768.8 y341.4 side 156.3 (our x768 y350
+  // side 151.9 read x767.5 y349.5 w153.9 on the same instrument — so the box sat
+  // 8.6px LOW and 4.4px NARROW). w is the ART-crop width; side = 0.98·w.
+  box: { x: 769, y: 341, w: 159.5, h: 170, r: 24 },
   rows: [
     { swatch: "swatchBlue", label: "Unmatched" },
     { swatch: "orangeDeep", label: "Matched" },
@@ -388,7 +391,10 @@ export const STRIP2 = {
 export const REPORT = {
   docL: { x: 300, y: 315, w: 270, h: 345 },
   docR: { x: 1390, y: 315, w: 265, h: 345 },
-  box: { x: 795, y: 357, w: 329 }, // gen10: settled box cx959/cy521/w329 (measured f2334-2340; was 805/350/345 = cx977/w345, ~18px right)
+  // r18: solid-run bbox at f2360 (post-drift, the settled tableau), ref x794.1
+  // y474.8 side 331.6 vs ours x795 y475.0 side 322.4 — x and y are RIGHT, the box
+  // is 9.2px NARROW. Only w moves; y stays pre-drift (the scene adds driftY).
+  box: { x: 794, y: 357, w: 338.4 },
   panel: { x: 340, y: 470, w: 205, h: 120 }, // mini gantt inside docL
   vertLx: 355,
   vertRx: 1528,

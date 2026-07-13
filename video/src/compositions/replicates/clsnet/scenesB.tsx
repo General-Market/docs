@@ -413,7 +413,10 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
         </>
       )}
       {/* CLSNet box + docs flying in */}
-      <ClsNetBox x={823} y={675} opacity={boxOp} />
+      {/* r18: the ref's box here is PIXEL-IDENTICAL across f1400-1450 — x823.5
+          y660.5 side 270.8, frame after frame. Transcribed, not fitted. We sat
+          14px low and 1px left (the size was already right). */}
+      <ClsNetBox x={824} y={661} opacity={boxOp} />
       {docsP > 0 && docsP < 1 && (
         <>
           <Doc x={lerp(docsP, [0, 1], [430, 760])} y={lerp(docsP, [0, 1], [640, 760])} opacity={1} />
@@ -510,7 +513,7 @@ export const MatchingScene: React.FC<{ frame: number }> = ({ frame }) => {
             opacity: panelOp,
           }}
         />
-        <ClsNetBox x={MATCH.box.x} y={MATCH.box.y} w={MATCH.box.w} opacity={panelOp} labelFs={22} />
+        <ClsNetBox x={MATCH.box.x} y={MATCH.box.y} w={MATCH.box.w} opacity={panelOp} />
         {panelOp > 0 && (
           <>
             <LegendRow y={588} swatch={C.swatchBlue} label={COPY.unmatched} value={un} />
