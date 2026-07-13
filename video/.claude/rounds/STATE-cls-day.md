@@ -2608,3 +2608,72 @@ do not draw (16px sliver). Below the area threshold.
 - `git show HEAD:src/...` fails from `video/` — the repo root is one level up. Use
   `git show HEAD:./src/...`. The redirect still truncates the file to zero on failure,
   which will hand you a Minified React error #130 on the next render.
+
+### gen19 — ClsLetters ADJUDICATED: it is FACE, not weight. And it is NOT in lib.tsx.
+
+**BLOCKER FIRST. `ClsLetters` does not live in lib.tsx.** lib.tsx:11 is a re-export:
+`export { ClsMark, ClsLetters, ClsWordmark } from "../cls-shared/logo"`. It lives in
+**`cls-shared/logo.tsx`**, which is (a) forbidden to this lane by standing brief and
+(b) **imported by `clsnet/scenesA.tsx`** — editing it changes the **ClsNet-Replicate**
+track, a different lane with a parallel session. **I did not touch it.** The round lead
+must decide whether cls-shared is opened cross-track, and coordinate with clsnet.
+
+**THE ADJUDICATION (read-only, ref f80, S1 lockup — white ink on navy):**
+Ink: ref **71,548** vs ours **58,641** — deficit **12,907px (18.0%)**, at extents that
+match to 1-2px (ref bbox x660..1465 y187..400; ours x660..1463 y188..400).
+Same at f96; f110 deficit 11,918.
+
+**The tagline's negative A/B (29b4c5e40) DOES NOT TRANSFER, and I nearly assumed it did.**
+That refutation was that Helvetica's *advances widen at weight 400/500 and walk the ink
+off registration*. **`ClsLetters` is not a font — it is hand-traced SVG paths.** An SVG
+path has no advances; the viewBox pins the extents. So the tagline result says nothing
+about this element, and "it must be weight, stop" would have been the wrong verdict for
+the right-sounding reason.
+
+**Two tests, and they disagree with the weight hypothesis decisively:**
+
+| test | result | reads |
+|---|---|---|
+| dilate our strokes 1px | covers **8.7%** of the missing ink, overshoots 1,841px into ref-EMPTY area | not a rind |
+| dilate 3px | covers **20.7%**, overshoots **6,530px** | not a rind, at any width |
+| cluster the missing ink | **40 components; top 5 = 94.4%; largest single blob = 40.3%** (7,662px); ≥200px blobs = 97.4% | **concentrated — FACE** |
+
+We also draw **6,110px of EXTRA ink the ref does not have.** Thin strokes cannot do that.
+**The letterforms are wrong, not the weight.** Law 3, not law 1 — and it pays across ~250 frames.
+
+**The blob map — hand this straight to whoever redraws the paths:**
+
+| px | glyph | box | what it is |
+|---|---|---|---|
+| **7,662** | **S** | x1196..1456 y187..314 | the S's **entire upper arm** — the ref's broad sweep; ours is a different letterform |
+| 3,603 | C | x739..969 y329..378 | the C's **lower bar** |
+| 3,024 | S | x1212..1421 y352..378 | the S's **lower bar** |
+| 2,886 | L | x1020..1198 y337..378 | the L's **foot bar** |
+| 773 | L | x973..1014 y187..343 | the L's **stem** |
+
+EXTRA (ours-only): 2,224px in the S's middle (x1261..1437 y225..274), 1,562px inside the
+C (x736..973 y188..313). **All three glyphs' bottom bars are short, and the S's face is
+simply the wrong shape.** Montage: `work/cls-day/r17-lib/crops/LETTERS_ref_vs_ours.png`.
+
+*A refutation transfers only to elements that share its mechanism. Fonts have advances; traced paths do not.*
+
+### gen19 — HexCity: outline and interior are now separable (commit b6ff6853a)
+
+`contentsP` reveals the interior INDEPENDENTLY of the outline — the ref draws the hex
+outline around an EMPTY interior through f442..452, and one `opacity` on the group fades
+both together. Additive and **inert by default**: at `contentsP=1` the opacity style is
+**not emitted at all** (an `opacity:1` layer still forces a stacking context and can shift
+antialiasing).
+
+Gate: **S10 f1900 + f2000 — which mount HexCity twice — are BYTE-IDENTICAL**, proving the
+default path inert; S4/S17 take the same default. CrxSettlementDay f1900 differs ONLY
+inside the pill box x742..1174 y718..913 — that is the scenes1 sibling's `9625bcd57`
+(the ClsPillSlot twin collapse, riding the `Logo` prop I shipped) landing between my
+baseline and my gate. **Zero differing px outside the pill.** Not mine.
+
+**I did NOT add `contentsScale`.** The lead wants geometry separation to unlock the S10 hex
+refit, but the predecessor's negative A/B says the interior is *invented content* — scaling
+a wrong interior independently just moves wrong ink somewhere else. **Fix the interior's
+content first (it is 0.67-0.76x the ref's ink at correct centroids), then decide whether
+geometry needs separating.** I will not ship speculative API into a shared primitive; that
+is how the CRX twin was born.
