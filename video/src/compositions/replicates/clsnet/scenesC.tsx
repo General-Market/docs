@@ -715,20 +715,45 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
 // band, and the measured EXIT — the band expands into the full-navy report
 // card 2814-2827 (no fade; the old fade-out was invented). Box fades
 // 2826-2832 (orange mass 4500@2820 → 3445@2824 → 2264@2828 → 0@2832).
+
+// r19: the line's descent and the band's grow, read off the ref's dark rows at
+// x55-65, one frame at a time. The line falls f2640→2659 (382 → 521), rests one
+// frame, and the band opens f2660→2671 about a seat near y525 — not y455.
+const S2_BAND_F = [
+  2640, 2641, 2642, 2643, 2644, 2645, 2646, 2647, 2648, 2649, 2650, 2651, 2652, 2653, 2654, 2655,
+  2656, 2657, 2658, 2659, 2660, 2661, 2662, 2663, 2664, 2665, 2666, 2667, 2668, 2669, 2670, 2671,
+];
+const S2_BAND_TOP = [
+  382, 386, 392, 398, 404, 412, 420, 428, 437, 447, 456, 465, 474, 483, 491, 498,
+  505, 511, 516, 521, 523, 523, 521, 513, 494, 446, 426, 416, 411, 407, 405, 404,
+];
+const S2_BAND_BOT = [
+  385, 390, 395, 401, 408, 415, 423, 432, 441, 450, 459, 469, 478, 486, 494, 502,
+  508, 514, 520, 524, 530, 537, 545, 557, 580, 631, 653, 663, 669, 673, 675, 676,
+];
 export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < 2640 || f >= 2833) return null;
-  // entry (fr_2650 → fr_2680): the payment line descends to y455, then grows
-  // into the band while clusters + box fade in. r18: the descent is measured off
-  // the ref's own line (dark rows at x60) — 381@2640 · 412@2645 · 456@2650 — and
-  // continues PaymentScene's, which now hands over at exactly f2640. It was
-  // 368@2640 → 455@2654: seven frames late at the top, four at the bottom.
-  const lineY = interpolate(f, [2640, 2645, 2650], [381, 412, 455], clamp);
-  const growP = lerp(f, [2656, 2678], [0, 1]);
   const grownTop = interpolate(f, STRIP2.expandF as unknown as number[], STRIP2.expandTop as unknown as number[], clamp);
   const grownBot = interpolate(f, STRIP2.expandF as unknown as number[], STRIP2.expandBot as unknown as number[], clamp);
-  const bandTop = lineY + (grownTop - 455) * growP;
-  const bandBottom = lineY + 3 + (grownBot - 458) * growP;
+  // r19 THE BAND. Transcribed row by row from the ref's own dark rows at x55-65
+  // (the one column no art ever crosses in this window). Two errors, both large,
+  // both full-width:
+  //   • the line does NOT stop at y455. It keeps falling — 456@2650 · 491@2654 ·
+  //     516@2658 · 521@2659 — and the band grows about y≈525, not y455. We clamped
+  //     lineY at 455 from f2650, so for nine frames a 1920px line sat up to 66px
+  //     high, and then the whole band grew from the wrong seat.
+  //   • the grow is ELEVEN frames (2660→2671), not the twenty-two we drew
+  //     (2656→2678). At f2663 the ref band is 513-556 (44px); ours was 439-527
+  //     (88px, starting 74px high) — ~200,000px of misplaced navy on one frame.
+  //     That single error IS the 0.8665 at f2663.
+  // Per-frame measured table beats every analytic curve (lesson 14). BOT is the
+  // exclusive edge (last dark row + 1); it meets STRIP2.expandTop/Bot exactly at
+  // f2671 (404/676), so the handoff to the reportCard expansion is continuous.
+  const entryTop = interpolate(f, S2_BAND_F, S2_BAND_TOP, clamp);
+  const entryBot = interpolate(f, S2_BAND_F, S2_BAND_BOT, clamp);
+  const bandTop = f < 2672 ? entryTop : grownTop;
+  const bandBottom = f < 2672 ? entryBot : grownBot;
   const contentOp = lerp(f, [2660, 2680], [0, 1]);
   const sx = (x0: number) => x0 - (f - STRIP2.anchorF) * STRIP2.rate;
   return (
