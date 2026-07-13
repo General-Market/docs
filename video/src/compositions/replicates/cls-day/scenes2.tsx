@@ -712,10 +712,11 @@ const PvpLeftCity: React.FC = () => (
         <line x1={396} y1={408 + r * 42} x2={396} y2={432 + r * 42} stroke={C.navyDeep} strokeWidth={3} />
       </React.Fragment>
     ))}
-    {/* street: car, shed, bollards, posts */}
-    <path d="M 55 655 Q 55 640 70 640 L 78 640 L 88 622 L 112 622 L 120 640 Q 132 641 132 652 L 132 655" fill="none" stroke={C.red} strokeWidth={3.5} />
-    <circle cx={75} cy={653} r={7} fill="none" stroke={C.red} strokeWidth={3} />
-    <circle cx={113} cy={653} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    {/* street: shed, bollards, posts. gen18: the red CAR that stood here was
+        INVENTED — the ref's street at (50..140, 615..665) carries only the red
+        building's own bottom wall (probe: 246 red px, all of it the wall) and the
+        blue/navy ticks. Its twin in PvpRightCity was even clearer: ZERO red pixels
+        in the ref where we drew a truck. Both deleted (law: kill fiction). */}
     <rect x={148} y={628} width={52} height={32} fill="none" stroke={C.red} strokeWidth={3.5} />
     <line x1={165} y1={628} x2={165} y2={660} stroke={C.red} strokeWidth={3} />
     <line x1={182} y1={628} x2={182} y2={660} stroke={C.red} strokeWidth={3} />
@@ -795,11 +796,8 @@ const PvpRightCity: React.FC = () => (
     {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((r) => (
       <rect key={r} x={1908} y={590 + r * 25} width={12} height={5} fill={C.navyDeep} />
     ))}
-    {/* street: truck (measured 25px right of the r3 guess), post + shed, posts */}
-    <path d="M 1497 820 Q 1497 800 1515 800 L 1520 800 L 1520 775 Q 1520 765 1530 765 L 1585 765 Q 1597 765 1597 777 L 1597 820" fill="none" stroke={C.red} strokeWidth={3.5} />
-    <line x1={1520} y1={790} x2={1597} y2={790} stroke={C.red} strokeWidth={3} />
-    <circle cx={1517} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
-    <circle cx={1577} cy={818} r={7} fill="none" stroke={C.red} strokeWidth={3} />
+    {/* street: post + shed, posts. gen18: the red TRUCK here was INVENTED — the ref
+        has ZERO red pixels in (1490..1600, 780..830). Deleted; see PvpLeftCity. */}
     <rect x={1589} y={804} width={5} height={21} fill={C.navyDeep} />
     <rect x={1605} y={804} width={13} height={22} fill={C.navyDeep} />
     <rect x={1710} y={800} width={5} height={25} fill={C.blue} />
