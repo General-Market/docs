@@ -2793,3 +2793,44 @@ not something to push through a thrashing box in the last minutes of a round. **
 biggest un-collected lever I know of in lib.tsx, and it is cheap.**
 
 *Excess ink is fiction too. We have spent the round deleting what the ref does not draw; this is 551px of it, fourteen times over.*
+
+## gen19 addendum 2 — MarkerTriangle cross-checked (scenes1, 4c588f7f8)
+
+The lib lane measured `MarkerTriangle` at S10 f1900 and handed over two terms. **I checked
+both at MY mount (S4, ref f600, rust-masked). One transfers. One does not.**
+
+  ref : 696px ink, 62w x 53h, ink top y35
+  ours: 1123px ink, 60w x 49h, ink top y27
+
+- **SIZE — DOES NOT TRANSFER.** At S10 the ref's triangle is 50 wide and our `size={60}`
+  is ~20% too big. **At S4 the ref's is 62 wide — BIGGER than ours.** Different mounts,
+  genuinely different markers. That is what a per-mount `size` prop is FOR. Taking their
+  number on trust would have shrunk a marker that was already too small. They asked to be
+  cross-checked before a shared default shipped; this is the check firing. Their caveat
+  ("fitted at ONE mount") was the right one to write down.
+- **STROKE — TRANSFERS, and is now corroborated from a second, independent scene.** The
+  ref's S4 marker carries MORE extent (62x53 vs our 60x49) and **38% LESS ink** (696 vs
+  1123). Our stroke is fat. That is `strokeWidth="4"` in lib.tsx (viewBox 30 units → ~8px
+  at size 60 against the ref's ~3px) and it is **lib's to land, on all 14 mounts + CRX.**
+  This is the two-mount confirmation they wanted, and the S4 read is independent of the
+  Milestone-column contamination they had to exclude at S10.
+- **The real call-site error at S4 was Y, not size: our marker sat 8px HIGH** (ink top 27
+  against the ref's 35).
+
+Landed: `y 27 → 35, size 60 → 62` at the S4 mount ONLY. Gate: f560 .9087→.9098 ·
+f600 .9040→.9051 · f640 .9046→.9057. The y move carries all of it; the size change is
++.00003 — a bigger outline drawn with a too-fat stroke gives back the ink the extent
+gains. It will pay properly once the stroke lands.
+
+**My other three MarkerTriangle mounts (scenes1:656 size62, :1043 size60, :2126 size40)
+are UNMEASURED and UNTOUCHED.** The S5 marker is off-frame at f900 and I ran out of round.
+Whoever takes the stroke fix should measure each of the 14 mounts at a frame where its
+marker is on screen — the S4/S10 disagreement proves the sizes are genuinely per-mount and
+a single shared number will be wrong somewhere.
+
+**Standing lesson, third confirmation this round:** a fit transfers only to elements that
+share its mechanism *and* its mount. The tagline's weight refutation did not transfer to
+`ClsLetters` (fonts have advances; traced paths do not). The Milestone's lineW fit did not
+transfer out of its own tail. The marker's SIZE does not transfer between scenes. The
+marker's STROKE does — because a stroke is a property of the rig, and a size is a property
+of the call.
