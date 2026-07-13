@@ -547,19 +547,44 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.hexRow[0] || f >= 468) return null;
   const inOp = lerp(f, [322, 334], [0, 1]);
-  // Currency-label geometry corrected to the ref (disp-A 2026-07-12). Tight,
-  // de-contaminated ink bbox of the navy labels (high-contrast on the white
-  // flows bg) — USD f400 / EUR f430: ref cap ~117, ink-top y703, ink-left
-  // x1551; the FLOWS values (fs112, capTop712, x1554) rendered cap ~108,
-  // ink-top y712, ink-left x1558 — ~8% small, 9px low, 7px right. That is the
-  // eye-visible label doubling the diff composite shows; the SSIM grid ranked
-  // the hex-edge texture floor worst and masked it (lesson 8). fs120 lands
-  // cap ~116; capTop703 / x1547 land ink-top/left within ~1px. The same deltas
-  // (fs120, capTop −9, x −7) carry to the orange labelBot pair (CNH/CZK,
-  // symmetric — orange is too soft on white to bbox, eyechecked instead).
-  // Inline override; data.ts (FLOWS.label*) untouched.
-  const LT = { x: 1547, capTop: 703, fs: 120 };
-  const LB = { x: 1553, capTop: 847, fs: 120 };
+  // CURRENCY LABELS — r18 re-measure. A prior pass fitted fs from a cap height of
+  // ~117; the real ref cap is 101-102 (USD f400 y[702,803], EUR f440 y[704,803],
+  // CNH/CZK y[846,946]). fs120 renders cap 87 — 15% SHORT. fs139 lands cap 101.
+  // They are also CENTRE-anchored, not left: ref ink centres are USD 1688.0 /
+  // CNH 1688.5 / EUR 1690.0 / CZK 1690.5 — one axis at x≈1689, which the old
+  // left-x pair (1547/1553) could not hold (CNH is 35px wider than CZK, so a
+  // shared left edge throws it off-axis). align=center about 1689 fixes all four.
+  // FILL — probed as the MODE of the deepest glyph pixels (v_400 + v_440, so the
+  // AA fringe cannot drag the reading): the ref's top label is plain brand navy
+  // (0,39,83), not C.serifNavy (18,54,91); the bottom is (231,81,38), far brighter
+  // and more saturated than C.orangeDeep (199,77,51). ~30k px of solid glyph each.
+  // Passed inline — data.ts's serifNavy/orangeDeep keep serving their other sites.
+  const LAB = { cx: 1689, boxW: 500, fs: 139, topCap: 703, botCap: 844 };
+  const LAB_TOP_COLOR = C.navy;
+  const LAB_BOT_COLOR = "#E75126";
+  const labX = LAB.cx - LAB.boxW / 2;
+  // ENTRY — the pair FLIES IN, converging on the band; we faded it up in place.
+  // Ref ink-top tracked per frame (navy y500-802 / orange y800-1079, v_365..v_377
+  // and v_418..v_430): the two pages ride ONE curve, offset by exactly 53f (page1
+  // opens f365, page2 f418), symmetric top-vs-bottom to ±1px, and there is NO
+  // opacity ramp — the glyphs pop on at full colour (darkest-decile value is flat
+  // 30-35 navy / 110-113 orange from the first frame). Tables ARE the measurement;
+  // both are anchored in the SAME predicate family as topCap/botCap (mixing a
+  // generic-ink anchor with an orange-ink table put the bottom label 5px high and
+  // that alone turned the f420 gate NEGATIVE — lesson 4, again).
+  const dyTop = (t: number) =>
+    interpolate(t, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      [-157, -157, -113, -80, -54, -35, -21, -11, -5, -1, 0], clamp);
+  const dyBot = (t: number) =>
+    interpolate(t, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [226, 162, 116, 82, 56, 36, 22, 12, 5, 0], clamp);
+  // EXIT — page 1 does NOT fade out: it COLLAPSES into the band, the same gesture
+  // the pill field makes. Measured heights (USD 102 → 86/54/31/14/3 over f406-410,
+  // CNH 101 → 82/45/17/gone) = a scaleY about the band, s below.
+  const aScale = interpolate(f, [405, 406, 407, 408, 409, 410, 411],
+    [1, 0.85, 0.5, 0.24, 0.1, 0.02, 0], clamp);
+  const pageAOn = f >= 365 && f < 411;
+  const pageBOn = f >= 418;
   // box draws with the hexes (ref video: box bar starts ~f324, near-full by
   // f332); the old 330-344 left it a faint grey ghost through the hexify
   const boxOp = lerp(f, [324, 336], [0, 1]);
@@ -591,11 +616,6 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
      1663, 1713, 1751, 1783, 1811, 1835, 1855, 1871, 1883, 1897, 1907, 1913, 1920],
     clamp
   );
-  // pair labels flip with the pill pages (r5 ink-timeline: page1 out 406-412,
-  // page2 in 419-428)
-  const pairAOp = lerp(f, [364, 372], [0, 1]) * lerp(f, [406, 412], [1, 0]);
-  const pairBOp = lerp(f, [420, 428], [0, 1]);
-
   return (
     <AbsoluteFill>
       {/* ruler band: STATIC — content slides off over it (r6 probed: band
@@ -677,11 +697,27 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
             </div>
           );
         })}
-        {/* currency pair labels (flip with the pill pages) */}
-        <SerifLabel text="USD" x={LT.x} capTop={LT.capTop} fs={LT.fs} color={C.serifNavy} opacity={pairAOp} />
-        <SerifLabel text="CNH" x={LB.x} capTop={LB.capTop} fs={LB.fs} color={C.orangeDeep} opacity={pairAOp} />
-        <SerifLabel text="EUR" x={LT.x} capTop={LT.capTop} fs={LT.fs} color={C.serifNavy} opacity={pairBOp} />
-        <SerifLabel text="CZK" x={LB.x} capTop={LB.capTop} fs={LB.fs} color={C.orangeDeep} opacity={pairBOp} />
+        {/* currency pair labels — fly in converging on the band, page 1 collapses
+            back into it (f406-410), page 2 rides the scene off on `shift` */}
+        {pageAOn && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              transform: `scaleY(${aScale})`,
+              transformOrigin: "960px 828px",
+            }}
+          >
+            <SerifLabel text="USD" x={labX} width={LAB.boxW} align="center" capTop={LAB.topCap + dyTop(f - 365)} fs={LAB.fs} color={LAB_TOP_COLOR} />
+            <SerifLabel text="CNH" x={labX} width={LAB.boxW} align="center" capTop={LAB.botCap + dyBot(f - 365)} fs={LAB.fs} color={LAB_BOT_COLOR} />
+          </div>
+        )}
+        {pageBOn && (
+          <>
+            <SerifLabel text="EUR" x={labX} width={LAB.boxW} align="center" capTop={LAB.topCap + dyTop(f - 418)} fs={LAB.fs} color={LAB_TOP_COLOR} />
+            <SerifLabel text="CZK" x={labX} width={LAB.boxW} align="center" capTop={LAB.botCap + dyBot(f - 418)} fs={LAB.fs} color={LAB_BOT_COLOR} />
+          </>
+        )}
       </div>
     </AbsoluteFill>
   );
