@@ -2011,12 +2011,27 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // has filled the frame. The old fade greyed the cities the rising navy is meant
   // to cover cleanly.
   const out = 1;
-  // r21 (window #4): the endcard's rising navy sea submerges the cities where they
-  // stand (EndCardScene owns the measured rise). An A/B that ALSO floated the whole
-  // ledge group up with the waterline (dyRise=595−seaTop) helped f3935 (+0.008) but
-  // LOST f3940/f3942 (−0.014 each): the ref does NOT lift the cities off the top —
-  // above the waterline it is white sky, not risen skyline. So the group stays put
-  // and the sea covers it. (Refuted rise A/B kept as a note, not code — law 4/23.)
+  // r23 (window #3, THE OUTRO RISE — re-tested after cityA was correctly sized).
+  // The ref pans the WHOLE ledge — grey band + stacks + cities — UP with the rising
+  // sea: at f3942 the entire skyline sits in the top ~110px above the waterline, not
+  // white sky (re-measured directly, refuting r21's "white sky above the waterline").
+  // r22 built exactly this (content + band rise, navy plane pinned) but reverted
+  // because the undersized cityA misregistered the risen skyline at f3940/42 (law 39).
+  // cityA is now the ref's own size, so the rise registers — re-applied. dyRise rides
+  // the SAME curve EndCardScene raises the sea; only the navy half-plane is pinned
+  // (risen, it would paint navy above the waterline and fight the sea — the r21 loss).
+  // dyRise is fitted to the MEASURED ref temple base (dyRise = 555 - base) across the
+  // rise window — NOT locked to the EndCardScene sea curve. The ledge rises ~8px MORE
+  // than the sea near the end: the city base sits a WIDENING 40->47px above the
+  // waterline (measured f3928..3942), so a dedicated curve registers the top-pan
+  // frames (f3940/42) where locking to the sea left the skyline 8px low and it lost to
+  // blank. Clamped to 0 for f<=3926, so the whole settled window is byte-untouched.
+  const dyRise = interpolate(
+    f,
+    [3926, 3928, 3930, 3933, 3935, 3938, 3940, 3942, 3944, 3946, 3948],
+    [0, 2, 7, 26, 51, 134, 314, 494, 555, 585, 595],
+    clamp,
+  );
   const S = LEDGE.stacks;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
@@ -2029,18 +2044,19 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
           width: 5000,
           height: LEDGE.bandH,
           backgroundColor: C.band,
-          transform: `rotate(${-theta}deg)`,
+          transform: `translate(0px, ${-dyRise}px) rotate(${-theta}deg)`,
           transformOrigin: "50% 50%",
         }}
       >
         {Array.from({ length: 40 }, (_, i) => (
           <div key={i} style={{ position: "absolute", left: i * LEDGE.tickEvery, top: 0, width: 2, height: LEDGE.bandH, backgroundColor: C.navy, opacity: 0.75 }} />
         ))}
-        {/* navy half-plane hanging off the band's lower side */}
-        <div style={{ position: "absolute", left: -1000, top: LEDGE.bandH, width: 7000, height: 4000, backgroundColor: C.navy }} />
+        {/* navy half-plane — PINNED (top += dyRise cancels the band's rise) so it stays
+            under the waterline; the EndCard sea owns the navy above nothing here. */}
+        <div style={{ position: "absolute", left: -1000, top: LEDGE.bandH + dyRise, width: 7000, height: 4000, backgroundColor: C.navy }} />
       </div>
       {/* stack groups (axis-aligned; drop in, settle, then shrink+slide) */}
-      <div style={{ position: "absolute", inset: 0, transform: `translate(${-170 * slideP}px, 0) scale(${1 - 0.48 * slideP})`, transformOrigin: `${S.leftX}px ${S.baseline + 62}px` }}>
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${-170 * slideP}px, ${-dyRise}px) scale(${1 - 0.48 * slideP})`, transformOrigin: `${S.leftX}px ${S.baseline + 62}px` }}>
         <StackCols
           x={S.leftX}
           cols={[[C.pillNavy, C.pillNavy, C.steel, C.steel, C.steel], [C.steel, C.steel, C.steel]]}
@@ -2049,7 +2065,7 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
           dy={settleDy}
         />
       </div>
-      <div style={{ position: "absolute", inset: 0, transform: `translate(${-325 * slideP}px, 0) scale(${1 - 0.48 * slideP})`, transformOrigin: `${S.rightX}px ${S.baseline + 62}px` }}>
+      <div style={{ position: "absolute", inset: 0, transform: `translate(${-325 * slideP}px, ${-dyRise}px) scale(${1 - 0.48 * slideP})`, transformOrigin: `${S.rightX}px ${S.baseline + 62}px` }}>
         <StackCols
           x={S.rightX}
           cols={[[C.tan, C.tan, C.tan], [C.orangeDeep, C.orangeDeep, C.tan, C.tan, C.tan]]}
@@ -2070,10 +2086,10 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
               (aspect 1.98 vs 1.96, w426 vs 424) and is left untouched. This is the
               real defect behind r22's "undersized skyline"; the trace never needed
               re-proportioning. */}
-          <div style={{ position: "absolute", left: 296.3 + cityDx, top: 409.8, opacity: citiesOp }}>
+          <div style={{ position: "absolute", left: 296.3 + cityDx, top: 409.8 - dyRise, opacity: citiesOp }}>
             <TracedArt name="cityA" scale={0.512} />
           </div>
-          <div style={{ position: "absolute", left: 1210 + cityDx, top: 557 - 545 * 0.42, opacity: citiesOp }}>
+          <div style={{ position: "absolute", left: 1210 + cityDx, top: 557 - 545 * 0.42 - dyRise, opacity: citiesOp }}>
             <TracedArt name="cityB" scale={0.42} />
           </div>
         </>
