@@ -21,7 +21,7 @@ export const CRX_PACK: Pack = {
     m1200: { time: "12:00", label: ["All legs delivered,", "custody released"] },
   },
   brackets: { settlement: "Atomic settlement", funding: "Margin and delivery" },
-  trillion: { figure: "24", sup: "/7", unit: "no banking hours" },
+  trillion: { figure: "24", sup: "/7", unit: "never closes" },
   summaryRows: [
     ["Forward terms bound", "on-chain, both signatures"],
     ["Margin pushed to the core"],
