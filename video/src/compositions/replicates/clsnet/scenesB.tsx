@@ -7,6 +7,33 @@ import { TracedArt } from "./TracedArt";
 import { interpolate } from "remotion";
 import { Badge, ClsNetBox, Doc, Elbow, Hexagon, Pill, SansText, SerifLabel, clamp, lerp } from "./ui";
 
+// r18 — the collapse is ONE measured progress curve. Tracked per frame off the
+// ref video (work/clsnet/r18/fitp.py): the orange-building bboxes of BOTH cities,
+// both horizon-line row spans, and the two badge discs all ride the SAME p, to
+// ≤1px. It runs f1051→f1080 on a hard S-curve (p=0.5 exactly at f1065), not the
+// old linear [1062,1075] — which was 10f late, 5f short, and at f1065 sat at
+// p=0.23 while the ref was HALF collapsed. Every large element in the window
+// (two cities, two badges, two full-width lines) was therefore misplaced across
+// the whole 1052-1080 motion; lesson 4, at scene scale.
+const COLLAPSE_F = [1051, 1052, 1053, 1054, 1055, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080];
+const COLLAPSE_P = [0, 0.001, 0.006, 0.009, 0.016, 0.024, 0.035, 0.050, 0.068, 0.091, 0.122, 0.162, 0.223, 0.320, 0.500, 0.679, 0.776, 0.837, 0.878, 0.910, 0.934, 0.950, 0.966, 0.976, 0.986, 0.995, 0.996, 0.997, 0.999, 1];
+// settled origins of the BIG traces, solved from the ref's settled orange bbox
+// (A x404-701 y190-377, B x1136-1307 y592-933) through each trace's own local
+// orange box — so the scaled path lands EXACTLY on the native cityASmall /
+// cityBSmall traces the scene swaps to at f1076 (the old path landed cityA 11px
+// right + 12px low and cityB ~100px left, then SNAPPED at the swap).
+const CITY_A_END = { x: 138.5, y: 186.7 };
+const CITY_B_END = { x: 897.9, y: 578.0 };
+// horizon lines: ref rows 391-397 (h7) → 378-382 (h5); we drew 3px lines 7px low.
+const LINE1_TOP = [391, 378];
+const LINE2_TOP = [991, 935];
+// badges do not fade in — they GROW from a point, solid from the first pixel
+// (disc radius probed every frame: A from f1007, B from f1024, same 18f curve).
+const BADGE_GROW_D = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const BADGE_GROW_R = [0, 2, 4, 5.8, 8, 11.8, 16.8, 24, 35, 45, 53, 58, 61, 64, 65.8, 67, 68, 68.8, 69.2];
+const badgeGrow = (f: number, f0: number) =>
+  interpolate(f - f0, BADGE_GROW_D, BADGE_GROW_R, clamp);
+
 // ═══ Scenes 9-10: two cities + currency pairs (f913-1302) ═══
 export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
@@ -14,19 +41,20 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
   if (f < SEG.citiesIntro[0] || f >= SEG.hexify[0] + 30) return null;
   const aOp = lerp(f, [915, 925], [0, 1]);
   const bOp = lerp(f, [950, 960], [0, 1]);
-  const badgeOp = lerp(f, [1000, 1012], [0, 1]);
-  // r5: the ref HOLDS the intro state to f1062, then shrinks 1062-1075
-  // (cityA y-extent tracked per frame); the badges appear BIG at (410,182)/
-  // (1578,745) r69 and travel+shrink with the collapse to (190,238)/(1670,770)
-  // r46 (disc-probed at f1045/f1150) — they are moving elements, not statics.
-  const SHRINK: [number, number] = [1062, 1075];
-  const s = lerp(f, SHRINK, [1, CITIES.smallScale]);
-  const line1 = lerp(f, SHRINK, [CITIES.line1, 380]);
-  const line2 = lerp(f, SHRINK, [CITIES.line2, 938]);
-  const badgeA = { cx: lerp(f, SHRINK, [410, 190]), cy: lerp(f, SHRINK, [182, 238]), r: lerp(f, SHRINK, [69, 46]) };
-  const badgeB = { cx: lerp(f, SHRINK, [1578, 1670]), cy: lerp(f, SHRINK, [745, 770]), r: lerp(f, SHRINK, [69, 45]) };
-  const aX = lerp(f, SHRINK, [CITIES.cityA.x, 525 - (CITIES.cityA.w * CITIES.smallScale) / 2]);
-  const bX = lerp(f, SHRINK, [CITIES.cityB.x, CITIES.bSmallCx - (CITIES.cityB.w * CITIES.smallScale) / 2]);
+  const cp = interpolate(f, COLLAPSE_F, COLLAPSE_P, clamp);
+  const at = (a: number, b: number) => a + (b - a) * cp;
+  const s = at(1, CITIES.smallScale);
+  // line1/line2 stay the CITY + pair-label anchors (unchanged at both ends); the
+  // drawn horizon line has its own measured top/height (they are not the same y).
+  const line1 = at(CITIES.line1, 380);
+  const line2 = at(CITIES.line2, 938);
+  const lineH = at(7, 5);
+  const badgeA = { cx: at(409, 189), cy: at(181.5, 237.5), r: badgeGrow(f, 1007) * at(1, 45.8 / 69.2) };
+  const badgeB = { cx: at(1577.5, 1669.5), cy: at(744.5, 770.5), r: badgeGrow(f, 1024) * at(1, 46 / 69.2) };
+  const aX = at(CITIES.cityA.x, CITY_A_END.x);
+  const aY = at(CITIES.line1 - CITIES.cityA.h + 2, CITY_A_END.y);
+  const bX = at(CITIES.cityB.x, CITY_B_END.x);
+  const bY = at(CITIES.line2 - CITIES.cityB.h + 2, CITY_B_END.y);
   // hexify handoff: the ref fades the horizon LINES + pill stacks + currency
   // labels out (f1290-1304) while the CITIES stay put; then HexifyScene draws
   // hexagons around the stationary cities (its opaque bg takes the frame at
@@ -65,18 +93,19 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: C.white }}>
-      {/* horizon lines */}
-      <div style={{ position: "absolute", left: 0, top: line1, width: 1920, height: 3, backgroundColor: C.navy, opacity: aOp * linesOut }} />
-      <div style={{ position: "absolute", left: 0, top: line2, width: 1920, height: 3, backgroundColor: C.navy, opacity: bOp * linesOut }} />
-      {/* cities (anchor to their ground lines while scaling); once settled the
-          scaled big traces swap to cityASmall/cityBSmall traced AT final scale
+      {/* horizon lines — measured 7px thick at 391/991, thinning to 5px at
+          378/935 as the scene collapses (we drew 3px lines 7px too low) */}
+      <div style={{ position: "absolute", left: 0, top: at(LINE1_TOP[0], LINE1_TOP[1]), width: 1920, height: lineH, backgroundColor: C.navy, opacity: aOp * linesOut }} />
+      <div style={{ position: "absolute", left: 0, top: at(LINE2_TOP[0], LINE2_TOP[1]), width: 1920, height: lineH, backgroundColor: C.navy, opacity: bOp * linesOut }} />
+      {/* cities ride the collapse curve to the solved settled origins; once there
+          the scaled big traces swap to cityASmall/cityBSmall traced AT final scale
           from fr_1150 (downscaling the big traces blurs the ~1.5px strokes) */}
       {f < 1076 ? (
         <>
-          <div style={{ position: "absolute", left: aX, top: line1 - CITIES.cityA.h * s + 2, opacity: aOp }}>
+          <div style={{ position: "absolute", left: aX, top: aY, opacity: aOp }}>
             <TracedArt name="cityA" scale={s} />
           </div>
-          <div style={{ position: "absolute", left: bX, top: line2 - CITIES.cityB.h * s + 2, opacity: bOp }}>
+          <div style={{ position: "absolute", left: bX, top: bY, opacity: bOp }}>
             <TracedArt name="cityB" scale={s} />
           </div>
         </>
@@ -86,8 +115,8 @@ export const CitiesScene: React.FC<{ frame: number }> = ({ frame }) => {
           <TracedArt name="cityBSmall" x={760} y={575} />
         </>
       )}
-      <Badge letter="A" cx={badgeA.cx} cy={badgeA.cy} r={badgeA.r} opacity={badgeOp} />
-      <Badge letter="B" cx={badgeB.cx} cy={badgeB.cy} r={badgeB.r} opacity={badgeOp} />
+      <Badge letter="A" cx={badgeA.cx} cy={badgeA.cy} r={badgeA.r} />
+      <Badge letter="B" cx={badgeB.cx} cy={badgeB.cy} r={badgeB.r} />
       {/* pair labels converge on the lines (fr_1150: cap −64 above, +5 below);
           above-line words descend (−drop), below-line words rise (+rise) */}
       {activePairs.map((p, i) => (

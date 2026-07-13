@@ -218,7 +218,11 @@ export const CITIES = {
   line2: 998,
   cityA: { x: 335, y: 105, w: 1150, h: 295 },
   cityB: { x: 420, y: 455, w: 1190, h: 545 },
-  smallScale: 0.62,
+  // r18: measured off the ref's orange-building bboxes at both ends of the
+  // collapse (A 445→297px wide, B 514→341px tall) — one shared scale, 0.667.
+  // The old 0.62 was 7% small, so the animation never landed on the native
+  // cityASmall/cityBSmall traces it swaps to at f1076.
+  smallScale: 0.667,
   aSmallCx: 560,
   bSmallCx: 1230,
   badgeA: { cx: 190, cy: 235, r: 42 },
