@@ -1133,13 +1133,44 @@ const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
   </svg>
 );
 
-// right PvP city capsule (traced from ref f2550 crop, absolute coords)
-// gen19: the capsule's VERTEX is the worst-ranked cell in all of S13 (grid r3c5, ssim
-// .060 — a near-flat cell where one misplaced curve owns all the variance). Ref
-// min-navy-x per row (f2600): y540 1459 · y576 1439 · y612 1421 · y630 1419 · y660 1428 ·
-// y708 1455 — a SHARP point at (1422, 630). Ours bottomed out at 1437, 16px right and 8px
-// high, on a shallower incoming diagonal.
-const R_CAPSULE = "M 2000 390 L 1595 390 Q 1560 390 1540 423 L 1432 588 Q 1412 630 1432 672 L 1520 822 Q 1540 855 1575 855 L 2000 855";
+// right PvP city capsule.
+//
+// ══ r18: THE "BLUNT VERTEX" WAS NEVER A VERTEX PROBLEM. IT WAS A STROKE PROBLEM. ══
+//
+// Three rounds have chased grid cell r3c5 (.595) by reading the ref's OUTER navy edge
+// per row and comparing it to ours. That instrument cannot work here, and it produced a
+// fiction: "the ref's point is BLUNT — it holds x1420 across a 24px flat; ours holds it
+// over 8px." It does not. **The outer edge of a 4px stroke hugs its own centreline; the
+// outer edge of an 8px stroke stands 2px off it.** Measure the RUN and take its MIDPOINT
+// and the two capsules' apexes agree to half a pixel: ref 1422.0, ours 1421.5.
+//
+// The instrument that finds the real error is the same run, read for its WIDTH:
+//   ref stroke h-extent @y520 / y580 / y700:  8 / 8 / 7 px      (perpendicular ~7)
+//   ours                                   :  4 / 4 / 5 px      (strokeWidth 4)
+// The whole outline is drawn at HALF the reference's weight — and (law 23) gen19's
+// "widening city strokes LOSES" does NOT transfer here: it lost because the INTERIOR's
+// line centres sit 1-4px off, so a wider stroke doubles the error band. The outline's
+// centres are fitted below to <1px RMS over 50+ rows. Different mechanism, own gate.
+//
+// Centreline fits, ref f2600 (identical at f2450 — the capsule is a static hold):
+//                       ref                          ours (old)              error
+//   top edge  yc        393.0                        389.5                   3.5px HIGH
+//   bottom edge yc      862.0                        854.5                   7.5px HIGH
+//   upper diagonal      xc = -0.5770y + 1774.46      -0.6524y + 1814.95      SLOPE
+//   lower diagonal      xc = +0.5942y + 1038.46      +0.5810y + 1041.70      6px LEFT @y700
+//   sharp vertex        (1411.8, 628.4)              (1405.9, 626.9)
+//   apex centre         1422.0  (y622..634)          1421.5  (y624..636)     — already right
+// The ref's capsule is SYMMETRIC about y=627.5 ((393+862)/2), and its vertex sits on that
+// axis. Ours was centred on 622.5. **The capsule is 5px high and 4px short**, its upper
+// diagonal leans too steep, and its lower diagonal runs 6px inside the ref's.
+//
+// Rebuilt from those fits: corners are Q fillets with tangent length 35 (our old value —
+// the ref's corner rows are stroke-merged and cannot be read), anchored on the ref's own
+// sharp corners (1547.7,393) and (1550.6,862). The vertex is a Q whose control IS the
+// sharp intersection, with endpoints solved so t=0.5 lands on the measured apex (1422.0,
+// 628.0): it reproduces the ref's apex centre to <=1px at every probed row (y604 1426.9
+// vs 1426 · y612 1424.1 vs 1424 · y648 1425.2 vs 1425).
+const R_CAPSULE = "M 2000 393 L 1582.7 393 Q 1547.7 393 1530.2 423.3 L 1432.4 592.9 Q 1411.8 628.4 1431.9 662.3 L 1532.7 831.9 Q 1550.6 862 1585.6 862 L 2000 862";
 const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
   k = 1,
   tx = 0,
