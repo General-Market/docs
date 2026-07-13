@@ -4,7 +4,7 @@ import { C, CIRCLE, LEDGE, MAP, MOS, REPORT, SEG, STRIP2, ENDCARD } from "./data
 import { clamp } from "./ui";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
-import { Badge, ClsNetBox, Doc, Elbow, Pill, SansText, SerifLabel, lerp } from "./ui";
+import { Badge, ClsNetBox, Doc, Elbow, Hexagon, Pill, SansText, SerifLabel, lerp } from "./ui";
 import { TitleCard } from "./scenesA";
 import { GANTT_PAGE_DY, SmallHex, stripPushY } from "./scenesB";
 
@@ -572,6 +572,54 @@ export const HandshakeScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
+// r19 THE PAYMENT HEXES. The city inside each is 1.213x too small and sits ~43px too
+// high. Measured on the one landmark neither trace can fake — the orange tower's ink
+// bbox — at f2600, and the two hexes agree to a tenth of a percent:
+//   mHexCity2  ref orange w136 (x726-861), bottom y655   ours w112 (x730-841), bottom 621
+//   mHexHeli   ref orange w 91 (x1116-1206), bottom 660  ours w 75 (x1110-1184), bottom 626
+// Both want k = 1.213. SmallHex derives its art scale as (w*0.92)/artW — the art is
+// drawn NARROWER than its hexagon. The ref does the opposite: the true relation is
+// (w*1.116)/artW, so the city OVERFLOWS the hex window and is clipped by it. That is
+// what a city seen through a hexagonal aperture is supposed to look like, and it is
+// why the ref's hexes are full where ours have a pool of white under the skyline.
+// The scale alone is not enough: SmallHex also hard-anchors the art at `bottom:
+// h*0.16`, which no call-site parameter can move, and scaling about that anchor lifts
+// the tower 43px further from where the ref puts it. The seat IS the bug and it is not
+// exposed — so compose the same three parts here (white hex clip, trace, outline) and
+// place the art on its measured screen transform instead. The art is untouched: this
+// re-SIZES and re-SEATS a faithful trace, it does not re-draw it (law 1).
+const PayHex: React.FC<{
+  art: string;
+  cx: number;
+  cy: number;
+  w: number;
+  artScale: number;
+  artLeft: number; // px relative to the hex clip box's left edge
+  artBottom: number; // px above the clip box's bottom edge (negative = hangs below)
+}> = ({ art, cx, cy, w, artScale, artLeft, artBottom }) => {
+  const h = w * 0.906;
+  return (
+    <div style={{ position: "absolute", left: 0, top: 0 }}>
+      <div
+        style={{
+          position: "absolute",
+          left: cx - w / 2,
+          top: cy - h / 2,
+          width: w,
+          height: h,
+          clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
+          backgroundColor: C.white,
+        }}
+      >
+        <div style={{ position: "absolute", left: artLeft, bottom: artBottom }}>
+          <TracedArt name={art} scale={artScale} style={{ position: "relative" }} />
+        </div>
+      </div>
+      <Hexagon cx={cx} cy={cy} w={w} />
+    </div>
+  );
+};
+
 // Full-width hairline with sub-pixel edges: the integer core is one solid box,
 // each boundary row is its own 1px div at its measured coverage (Chrome snaps
 // painted boxes, so a fractional top/height would otherwise render solid).
@@ -668,8 +716,18 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
             />
             <path d="M895,660 V800 M895,800 l-9,-15 M895,800 l9,-15 M1035,660 V800 M1035,800 l-9,-15 M1035,800 l9,-15" stroke={C.navy} strokeWidth={2.5} fill="none" />
           </svg>
+          {/* mHexCity2 stays on SmallHex, and the reason is a REFUTATION worth keeping.
+              Its city is 1.213x too small and 43px too high exactly as mHexHeli's is, and
+              PayHex lands its orange tower on the ref's to the pixel (x726-861 w136, ref
+              x726-861 w136) — and it STILL LOSES 0.017 on the hex crop, because the TRACE
+              carries a navy BUCKET and a row of grass tufts under the skyline that the ref
+              does not draw at all. Sizing the city correctly magnifies that fiction by the
+              same 1.213. Misplaced ink loses to absent ink (law 4), and the fiction must be
+              cut before the resize can land (law 2). mHexHeli's bucket is small enough that
+              its resize wins outright. Re-trace mHexCity2 without the bucket and this call
+              becomes `<PayHex ... artScale={1.246} artLeft={-6.2} artBottom={-8.4} />`. */}
           <SmallHex art="mHexCity2" cx={785} cy={590} w={240} artW={215} />
-          <SmallHex art="mHexHeli" cx={1148} cy={592} w={240} artW={215} />
+          <PayHex art="mHexHeli" cx={1148} cy={592} w={240} artScale={1.246} artLeft={0.2} artBottom={-7.7} />
           <Doc x={565} y={548} w={72} h={90} />
           <Doc x={1292} y={548} w={72} h={90} />
           {/* r19. This was the last `labelFs` opt-out, and BOTH of the things that
