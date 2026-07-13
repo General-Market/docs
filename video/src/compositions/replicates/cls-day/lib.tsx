@@ -315,7 +315,18 @@ export const Chip: React.FC<{
   />
 );
 
-// ─── CLS pill (navy rounded rect + wordmark) ───
+// ─── CLS pill (navy chip-radius rect + wordmark) ───
+// The pill carries the brand CHIP radius — rounded TL + BR, SQUARE TR + BL —
+// the same corner grammar `Chip` above already had. It is a RATIO of the
+// pill's height, not an absolute; fitted per-frame to the ref's solid-navy
+// fill at BOTH pill sizes (r17), and the two agree, so it is a rig constant:
+//   S10  433x196 @(742,718), f1900/f1950:  TL r=53.0 (.270h) · BR r=51.1 (.261h) · TR/BL SQUARE
+//   S17  259x117 @(834,473), f3240..f3340: TL r=31.7 (.271h) · BR r=30.6 (.262h) · TR/BL SQUARE
+// (S4 hand-shapes its own pill inline and independently landed 52 on h=197 =
+// .264 — three sizes, one number.) We drew a UNIFORM h*0.28 on all four: the
+// two square corners were rounded away, ~1.2k px of navy missing per pill.
+export const PILL_R = 0.265; // corner radius / pill height
+
 export const ClsPill: React.FC<{
   x: number;
   y: number;
@@ -323,7 +334,7 @@ export const ClsPill: React.FC<{
   h: number;
   logoP?: number; // wordmark reveal 0..1
   opacity?: number;
-  logoScale?: number; // wordmark height / pill height (ref S17: 0.425)
+  logoScale?: number; // wordmark height / pill height (rig constant: 0.366)
 }> = ({ x, y, w, h, logoP = 1, opacity = 1, logoScale = 0.5 }) => (
   <div
     style={{
@@ -333,7 +344,7 @@ export const ClsPill: React.FC<{
       width: w,
       height: h,
       background: C.navyBg,
-      borderRadius: h * 0.28,
+      borderRadius: `${h * PILL_R}px 0 ${h * PILL_R}px 0`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
