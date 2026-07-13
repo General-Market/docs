@@ -285,7 +285,16 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
             <path d={`M ${bx - 10} ${hexBot} L ${bx - 10} 598`} fill="none" stroke={C.navyDeep} strokeWidth={3.5} />
           </svg>
         )}
-        {pillP > 0 && <ClsPillSlot x={826} y={759} w={250} h={107} p={pillP} PillLogo={PillLogo} />}
+        {/* gen18 — the CLS pill was under a THIRD of its true area. Measured off the
+            ref's solid-navy bbox at f1950/f2000/f2040 (identical to the pixel): the
+            pill is 433x196 at (742, 718). We drew 250x107 at (826, 759) — 26.7k px
+            against the ref's 84.9k — and the wordmark, sized off that small h, spilled
+            past the pill's right edge and got clipped by its overflow:hidden.
+            The ref's wordmark is 318x67, so ClsWordmark height = 67/0.935 = 71.7 and
+            logoScale = 71.7/196 = 0.366 (the default 0.5 would render it half again
+            too tall). The scenes1 builder found the same undersize in S4 — same pill,
+            same rig. */}
+        {pillP > 0 && <ClsPillSlot x={742} y={718} w={433} h={196} p={pillP} PillLogo={PillLogo} logoScale={0.366} />}
         {chips.map((c, i) => {
           if (c.p <= 0 || c.p >= 1) return null;
           const x = c.from[0] + (c.to[0] - c.from[0]) * c.p;
