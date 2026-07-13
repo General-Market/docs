@@ -1632,3 +1632,103 @@ fist. `<rect rx>` capsule outlines like the red knuckles.
   toward the fist. Cosmetic; the flagged "busier fingers" is resolved.
 
 tsc clean in-lane for both. NOT full-verified (orchestrator owns verify + eye-gate).
+
+## gen17 MISSING/WRONG-CONTENT round — 2026-07-12 (S5 docs + ClA)
+
+Two levers, both in `scenes1.tsx`, serialized and committed one at a time.
+Instruments + artifacts in `work/cls-day/gen17/` (probe_ring.py, probe_docs2.py,
+probe_cla.py, still.sh, ssim.sh; ref frames `refall/`, montages `mont/`).
+Build-only gates (still A/B + eye montage + CrxSettlementDay); NOT a full verify.
+
+### The unprojection trap — read this before touching anything in S5's world
+
+S5's world div rides `scaleY(sy)` about y=532.5, and **sy is NOT 1 during the
+cruise** — the measured LUT drifts 1 @f684 → 0.988 @f916. Every table you read
+off the ref is in SCREEN y; the world container wants WORLD y. Placed raw, the
+last below-doc sat 4px high and LOST SSIM (f880 .8482 → .8479). The conversion is
+`worldY = 532.5 + (screenY - 532.5) / sy`, applied at the call site so the tables
+stay in the space the tracker measures. sx stays 1 in the cruise, so x needs no
+correction — which is exactly why this hid so well.
+
+### Lever 1 — the mirrored world's docs (commit b9e908bd6)
+
+CONFIRMED BLANK: the ref drops four instruction docs OUT of the hanging towers
+($ € € $, white-on-navy twins of the rising ones) and we drew none. Tracked per
+frame off the red ring's centroid; world x from screen x minus the tracked 09:00
+tick.
+
+| doc | world ring cx | glyph | window | reveal edge |
+|---|---|---|---|---|
+| 1 | 141.6 | $ | f717–735 | D 855 (+ foot notch to 873) |
+| 2 | 143.9 | € | f766–782 | D 855 |
+| 3 | 750.1 | € | f817–835 | E 731 (+ capsule legs to 792) |
+| 4 | 1341.6 | $ | f869–885 | F 861 |
+
+Docs 1 and 2 share the 15:00 emitter. The below docs ACCELERATE (~27 → 39 px/f);
+the above ones rise flat. Per-event tables, not one curve (lesson 14). The below
+towers are outline-only, so the opaque navy tower body lives in an occluder drawn
+between the docs and the clusters — the clusters repaint their own ink over it.
+Doc art traced 1:1 off f829: outer ink box 83×108, rounded bottom-left, fold at
+x58/y25, ring r22.75 at (41.5, 61). Placed by RING CENTRE.
+
+Gate — 2 frames per window, all 8 win:
+f728 .8607→.8621 · f731 .8609→.8632 · f777 .8548→.8569 · f780 .8579→.8593 ·
+f826 .8576→.8595 · f828 .8570→.8594 · f880 .8482→.8499 · f883 .8550→.8566
+
+**HONEST SCALE — recalibrate the expectation.** Filling a genuinely blank region
+was briefed as "a large per-frame SSIM jump". It is not. An 83×108 element is
+0.4% of a 1920×1080 frame, and it buys ~+.002. Blank-region fills are worth
+what their AREA is worth. Size the element before promising the jump.
+
+### Lever 1b — the four RISING docs, re-registered (commit 62e47e24d)
+
+Measuring the below docs exposed the above ones. The old table had three "$"
+docs on a hand-set rise; the ref has four, and every axis was off:
+- the **09:00 doc (a €) was MISSING** — the fourth emitter, ClA's;
+- the **12:00 doc is a €, not a $**, and its ring sat at world 1137 vs the ref's
+  1076.5 — 60px right, half a doc width;
+- the rise is a **flat 36.4px/f** (18 intervals across B/C/G, no drift), not
+  33.75 — the old rate fell 18px behind before the doc left frame;
+- the doc art was **10% oversized** (91.5×116.5 outer vs 83×108).
+The 09:00 doc rises at **27.7px/f**, also flat. Measured is measured; the ref is
+hand-animated and owes us no consistency. DocPop retired; one `SettleDoc` now
+serves both worlds (`below` flips it white-on-navy).
+
+Gate: f698 .8584→.8607 · f700 .8574→.8594 · f754 .8594→.8630 ·
+**f805 .8553→.8613 (+.0060, the biggest single win — the 60px + glyph fix)** ·
+f857 .8560→.8601.
+
+### Lever 2 — ClA (09:00), the last never-registered cluster (commit 6b9b003ed)
+
+Re-read per-pixel off **ref f690**, where the world is settled and x9 = 384
+exactly, so `ClA-local = (screen_x - 2, screen_y - 170)`. That frame is the
+cleanest register in the whole cruise for this slot — use it for any future ClA
+work. Four structural errors, all POSITION first (lesson 4):
+- red tower **105 wide vs the ref's 149** (x158..307); shell top y66 vs y74,
+  crown y42 vs y44 — it read tall and thin. That 8px shell-top error also
+  mistimed the 09:00 doc's reveal, which rides the shell's white fill; at y74 the
+  doc now clears at world 244, exactly where the ref reveals it;
+- the tower's **LEGS are separate boxes** under a shell that STOPS at y199 — the
+  old model ran one shell to the band with wings bolted on;
+- the left bridge **CURVES** into the band (r≈20 at x28.5), not a square step off
+  the frame edge at x-60;
+- the right side is a dotted building (open on its left, so the grey slab reads
+  through) + a **two-rail gantry that STOPS at x435**. The old model stepped on
+  toward the 10:00 slot at x519 — ink the ref does not have.
+Panel re-read: 7 rungs at a 16.3 pitch (first gap wider — it holds the solid band
+x204..260, y141..152), short ticks in the 4th and 6th gaps, ONE dashed riser per
+leg. Grey slabs are #D7D7D7 (the band grey), not #DCDCDC.
+
+Gate: f690 .8615→.8738 · f710 .8613→.8726 · f760 .8641→.8750 · f820 .8634→.8713.
+**+.008 .. +.012 — 5x what the doc fills were worth.** A whole cluster is a whole
+cluster; the area is the prize.
+
+### Residual (honest)
+
+- The entry whip (f674..692) still shows the ref's real per-slot tower identity
+  as generic cycled tiles (pre-existing; position+mass carry at 100-300px/f).
+- The ref's below docs have a soft 2-frame ease at launch that my leading LUT
+  keys only approximate — invisible, since those frames sit behind the tower.
+- ClA's dashed risers are `strokeDasharray "11 15"` fitted to a 4-dash read; the
+  ref's phase may be 1-2px off at the bottom of each leg.
+- No full verify run — the orchestrator owns it.
