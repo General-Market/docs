@@ -672,21 +672,14 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
           <SmallHex art="mHexHeli" cx={1148} cy={592} w={240} artW={215} />
           <Doc x={565} y={548} w={72} h={90} />
           <Doc x={1292} y={548} w={72} h={90} />
-          {/* r18 REFUTATION — this site's `labelFs` must STAY, and the reason is
-              NOT its box. The box is right (moving it to the sub-pixel bbox read,
-              876/832, LOSES 0.014 on the crop — the read was biased by the corner
-              radius; 875/835 is the true seat). Adopting the label law makes the
-              ink exact in every dimension the law governs — centre 954.5 vs ref
-              954.5, cap-height 22 vs 22, ink mass 1150 vs 1156, against the old
-              hand-fit's +5.0px centre / −3px cap / −20% mass — and it still LOSES
-              0.0006 on the crop, because it lands 3px LOW. ui.tsx seats the cap-top
-              at 301.8·scale below the box top; the ref seats it at 296.6·scale HERE
-              (flows 301, locks 302 — the seat is not the constant it is taken for).
-              The bigger, correctly-placed glyph makes that 3px error MORE visible,
-              so the metric prefers the small wrong one. Fix the seat in ui.tsx —
-              per-site, or scale-corrected — and this `labelFs` deletes for a clean
-              win. Blocked here only because ui.tsx is another lane. */}
-          <ClsNetBox x={875} y={835} w={170} labelFs={26} />
+          {/* The box is true (875/835 — moving it to the sub-pixel bbox read 876/832
+              LOSES 0.014 on the crop; that read was biased by the corner radius), so
+              this site takes the ClsNetBox label laws whole. It was the last site
+              still opted out, and it was opted out for a reason that no longer
+              exists: r18 found the correctly-sized label landing 3px low here and
+              blamed the seat for being "not the constant it is taken for". It IS a
+              constant — of the box SIDE, not of `scale` (ui.tsx, r19). */}
+          <ClsNetBox x={875} y={835} w={170} />
         </div>
       )}
       {/* orange return paths */}
