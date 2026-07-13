@@ -4247,3 +4247,287 @@ shells. The round arc: **94.1 → up, by the largest per-frame movement of the c
   trips), so the block is cosmetic to the render but real to the guard. The per-frame PNG
   gates ARE the record (method: mp4 SSIM is invalid at ±.01). r19 gets its composite once
   the foreign merge is cleared.
+
+---
+
+# r19 / scenes1 — 2026-07-13 (three commits: `2d2c342c0`, `23e2f06d1`, `b9f1c7000`)
+
+Instruments in `work/cls-day/r19-scenes1/` (`entrance.py` band-slide path, `bandprobe.py`,
+`ink.py`, `hexmeas.py`, `lblsize.py`/`caph.py`/`clean.py`/`width.py`, reused r18 `band3.py`
+for the S5 exit; `still.sh`/`stillcrx.sh`, refs/ old/ new/ new2/ new3/ olds5/ news5/ news5b/
+ship/ crx/). Stills only, every render through the one lock; no orphan shells at exit; lock
+free at close; tsc clean for scenes1 (the 12 reds are yc-pitch, foreign).
+
+## The organising finding: THE PRIMARY WINDOW'S WORST DEFECT WAS THE BAND, NOT THE HEXES
+
+The brief named `S4 f453-503` (rank 1, .8861) as the untouched worst window and pointed at
+the hex draw-in. Asked the two questions of it. **The hexes were NOT the lever — the timeline
+BAND was, three ways, and all three were clock/motion errors (law 26), not geometry.**
+
+| # | defect | kind | gain |
+|---|---|---|---|
+| 1 | the S4 band ENTERS by sliding from the lower-right; we faded it in place | motion/law-26 | +.009..+.017 × f448-460 |
+| 2 | the S4 clock ran EXACTLY 1 HOUR BEHIND (ref 00:00 on marker @f550, we drew 23:00) | clock/law-26 | folded into #3 |
+| 3 | the S4 hour LABELS were 40% OVERSIZED (labelSize 30 → ref cap-height ~15px = ~18) | size | +.0055..+.0073 whole band |
+| 4 | the S5 EXIT sy was a stale-low hand fit — an 8% over-squash @f926, 4.5% @f922 | re-measure | +.010..+.045 × f918-926 |
+
+### 1 — THE BAND SLIDES IN; IT DOES NOT FADE (`2d2c342c0`)
+Measured off the grey-band top edge + orange marker centroid (`entrance.py`): the whole
+band-unit translates rigidly on a straight diagonal (dx/dy ≈ 3.5 const) from (+579,+165)@f444
+to (0,0)@f464, FULL opacity throughout (ref band is full grey the instant it exists, just 31px
+low @f453). Added `S4_BAND_DX/DY` LUTs + `translate` on the band div; `bandIn` now a 3-frame
+appear ramp. Gate zero-reg: f448 +.0165 · f453 +.0169 · f456 +.0154 · f460 +.0094; f470/f486
+BYTE-IDENTICAL (offset→0 at f464, hexes untouched).
+
+### 2+3 — CLOCK 1h BEHIND + LABELS 40% TOO BIG (`23e2f06d1`)
+Zoomed the label on the fixed x=960 marker (`zoom_cmp_550.png`, `lbl_cmp.png`): ref reads 00:00
+@f550 (we drew 23:00), and 23:14/23:30/00:35 @f470/503/620 vs our 22:16/22:34/23:38 — a constant
++1h, pan rate 0.00917 already right. base hour 23→24 (fractional unchanged ⇒ tick GRID
+byte-identical, only digits move). The clock ALONE was SSIM-neutral (−.00006) because the
+oversized glyphs swamped it; the labels are ~26px cap-height where the ref's is ~15px
+(labelSize 30 → **18**). Together: f453 +.0073 · f470 +.0060 · f503 +.0057 · f550 +.0055,
+flat across the whole S4 band f453-655.
+
+### 4 — S5 EXIT sy RE-MEASURE + CONFINE (`b9f1c7000`)
+r18 residual #2. band3.py truth: sy f918 .988→.9945 / f920 .976→.9882 / f922 .929→.9743 /
+f924 .929→.9477 / f926 .835→.9023 (sx left — anisotropic, faster in x); riseC f918 532.5→529.1.
+**Near-miss caught by the gate:** lowering riseC f918 with no intermediate key made lutS ramp
+the WHOLE f684-918 cruise down (−.052 @f916 — regressing every r18-fixed cruise frame). Added
+a `[916, 532.5]` pin ⇒ f916 renders BYTE-IDENTICAL to OLD (proves f684-916 all intact). Gate:
+f916 IDENTICAL · f918 +.0263 · f920 +.0286 · f922 +.0446 · f924 +.0102 · f926 +.0099. Eye
+`mont_s5_922.png`: OLD over-squashed, NEW restores band/building height onto the ref.
+
+## WINDOW (ref vs pre-round vs now)
+f453 .8733→.8975 (+.024) · f470 .8611→.8671 (+.006) · f503 .8937→.8993 (+.006). The band no
+longer ranks anywhere in the residual grid (`pairs2.txt`, top cells all r2-r4 = hex interiors).
+
+## EVERY RANKED RESIDUAL CELL, ADJUDICATED (f470/f503, ref vs fixed)
+Top 6 are all HEX INTERIOR cells (r3c2 .260, r3c6 .308, r3c1 .317, r4c6 .320, r2c1 .349,
+r2c2 .373). Opened r3c2 + r3c6 (`cells_resid.png`): the interior detail sits ~10-15px off — the
+`HexCity` ~2%-small outline (hexmeas: outlines 8-11px narrow, centres ±4-6px). **This is the
+law-21 floor** (HexCity's interior is hand-invented; a refit LOST twice in r18) AND HexCity
+lives in **lib.tsx** — off-limits to this lane. Not fixable from scenes1.
+
+## CRX inheritance: CLEAN
+`CrxSettlementDay` f486 + f922 rendered (`crx/`, mean/sd real content): small labels, correct
+band position + clock, corrected S5 exit height — all inherit.
+
+## RESIDUAL — ranked, for r20
+1. **HexCity interior registration** (primary-window residual, ~10-15px interior offset). Floor
+   for THIS lane — HexCity is in lib.tsx (not scenes1) and its interior is hand-invented
+   (law 21, refit LOST twice). A lib-lane owner with a badge-disc re-registration could try it;
+   scenes1 cannot.
+2. **S4 hex CONTENTS fill-rate** UNRESOLVED: navy in the hex region runs +47% @f453 → +36%
+   @f460 → ~0 by f470 (`ink.py`) — old fills the city too early OR the overlapped-hex geometry
+   differs. Entangled with the 2%-small outline; murky and risky (law 21). Left unmeasured-clean.
+3. **S4 band label labelDy / weight** — new labelSize=18 glyphs sit ~6px higher than the ref's
+   (ref top y144, ours y138) and the ref may be slightly lighter weight. A small refinement
+   (~+.001) if a labelDy nudge on the S4 mount gates clean; not chased this round.
+4. **S5 exit f927-940** deep whip left on the old sy/riseC keys (band3 probe dies <900px ink
+   past f926). If a finer instrument reaches it, those keys are the next re-measure.
+5. **Floor (do not spend):** the tick/label emptiness cells; ClG pale-peach slot (r18 #5).
+
+## INFRA
+- The shared index still carries the FOREIGN half-merge (`.gitignore`, `data-node/`, `frontend/`,
+  `jarvis/`, `yc-pitch/…`). All three r19 commits made with `git commit --only -F msg -- <path>`;
+  each verified `git show --stat` holds ONLY scenes1.tsx. **`-m` must come BEFORE `--`** or git
+  parses the message as a pathspec (my first attempt failed harmlessly this way — use `-F msgfile`).
+- Law-29 hit once: an S5 render batch died at exit 144 after 3/6 frames (transient), lock released
+  clean, re-ran the missing 3. Law-34 ship proof: f453 + f922 re-rendered from committed HEAD are
+  BYTE-IDENTICAL to the gated stills; negative control differs. Measured == shipped.
+
+---
+
+# r19 / scenes2 — the end card is a RISE, not a slit-cut — 2026-07-13 (`97f25d958`)
+
+Owner of `scenes2.tsx`. One commit, path-scoped (`git show --stat` holds ONLY scenes2.tsx).
+Instruments in `work/cls-day/r19-scenes2/` (`rise.py` off ref ink, grid, refs). Every render
+through the lock; no orphan shells; lock free at close; tsc clean for scenes2.tsx.
+
+## PRIMARY — S18/S19 f3561-3611 (rank 2, .8943): the round's decisive lever
+
+**The fiction (law 26 — the replica was on the wrong clock).** The ref does NOT slit-cut to a
+settled end card at f3561. It runs a continuous **RISE-IN**: the whole world (band + chips +
+navy floor + the CLS lockup planted ~400px below the band) lifts rigidly — band-top and
+mark-top rise at the SAME rate (f3560→3561 band −171px, mark −176px; f3561→3562 −172/−174) —
+band+chips exit off the top, navy fills the frame, the lockup rises from the floor. Then a
+two-phase settle: a **plateau** at markTop 354 (f3571-3585) while the letters wipe L-to-R and
+the tagline fades in, then a **second rise** to markTop 162 while the three pillar icons draw
+on. **We hard-cut to the fully-settled card the whole time** (f3561-3611 byte-identical,
+104490 bytes — a frozen plate).
+
+**Fix (all inside the lane):** drove `LogoCard`'s EXISTING reveal props
+(`riseY / logoFront / taglineOpacity / iconFronts / labelOpacity`) from a measured rise LUT,
++ extended `S18Outro` (RISE lut, guard 3561→3565) so band+chips keep exiting through f3564.
+The interior ink (ClsLetters/ClsMark/pillars) was NEVER touched — only the schedule.
+
+| f | OLD | NEW | Δ |
+|---|---|---|---|
+| 3561 | .7356 | **.9381** | **+.2025** |
+| 3565 | .8819 | **.9868** | +.1049 |
+| 3571 | .8809 | **.9941** | +.1132 |
+| 3575 | .8717 | **.9876** | +.1159 |
+| 3585 | .8525 | **.9670** | +.1146 |
+| 3595 | .8572 | **.9667** | +.1095 |
+| 3611 | .9387 | .9387 | converges byte-identically to the untouched settled card |
+
+Negative control live every frame (OLD≠NEW). f3611 IDENTICAL is CORRECT — S19 returns to the
+exact original settled card, zero drift. `CrxSettlementDay` f3561 inherits clean (CRX brand
+logo rises over real content, mean not a plate). Law-34 ship proof: f3561+f3611 re-rendered
+from committed HEAD are byte-identical to the gated stills.
+
+**Documented spend (perceptual ledger):** f3558/f3560 (two PRE-window S18 frames) −.008/−.010.
+Logo position there is exact (markTop 973 vs ref 972) but the reveal-feather renders a slightly
+fuller partial-C than the ref's tiny low glyph. The price of a **pop-free rise the ref actually
+does** — starting S19 clean at f3561 would inject a mid-screen logo pop the ref lacks (fiction,
+law 17). Outside the target window; the eye-faithful choice.
+
+## STRONG — S10/S11 f2098-2213 (ranks 3,4): real lever FOUND, deferred with evidence
+
+Asked the two questions, gridded 8×6 (every cell opened), cross-correlated:
+- **Settled interiors near-floor.** Best horizontal shift ~0 (+1px); the 15.7% "big-diff" is
+  **1px edge misregistration on dense traced line-art** — every doc edge diffs by 255 on a
+  sub-pixel offset. Same floor as the r18 tick/label cells. gen18 already re-traced per-pixel
+  and documented that re-registering/narrowing LOST.
+- **The real error is the FLY-IN (law 17/26): a fade where the ref runs a SLIDE-IN.** Ref
+  f2078-2092 is EMPTY; docs then **stream in from the right edge** (staggered conveyor — focus
+  + right docs first, left docs arrive last, sliding furthest) and assemble by ~f2112. Our
+  `S11DocsRow` fades all 6 side docs + focus in place at their settled positions
+  (f2092-2110, `inP`+scale). Frame evidence in `r19-scenes2/refs/ref20{78,85,92,98},2105,2112`.
+
+**Did NOT implement the slide-in.** Faithfully modelling 7 staggered per-doc entry
+trajectories (it is NOT the reverse of the outward fly-out) is a large, uncertain rework
+against the NEW≥OLD gate — a full round's work, not a bolt-on. Recorded as the top r20
+residual with evidence rather than gamble a regression.
+
+## DO-NOT respected
+Did not flip the global `tickAbove` default (blocked — two default-taking bands live in
+scenes1.tsx, the sibling's live file this round).
+
+## RESIDUAL — ranked, for r20 (scenes2)
+1. **S11 fly-in is a fade; the ref SLIDES docs in from the right** (f2092-2112, ~17 frames,
+   large area — ranks 3,4). Ref empty until ~f2095 → right-to-left conveyor assembly. Needs
+   per-doc entry LUTs (entry time + slide trajectory, ALL entering from the right; left docs
+   travel furthest). NOT the mirror of `S11_EXIT`. The best-value untouched window on the lane.
+2. S10/S11 **settled interiors near-floor** — 1px edge misreg on traced docs; do NOT chase
+   (gen18 refutations stand).
+3. Carried unchanged: **S13 exit SPREAD** (r18 residual #3 — LUT off the two capsule apexes),
+   **S17 conveyors** (r18 residual #4 — two plates where the ref runs). Both complex, untouched.
+
+---
+
+# r19 — ROUND LEAD CONSOLIDATION — the worst window on the track had never been asked the two questions — 2026-07-13
+
+Two lanes dispatched, one file each (scenes1, scenes2). **4 commits** (`2d2c342c0`,
+`23e2f06d1`, `b9f1c7000` scenes1; `97f25d958` scenes2). Every landing gated ref-vs-OLD-vs-NEW
+at ≥3 in-window frames, NEW≥OLD everywhere, CrxSettlementDay eyechecked, law-34 ship-proofed.
+All sources match HEAD; cls-day/cls-shared tsc green; lock free; no orphan renders or shells.
+
+## The pattern held a THIRD round running: the clock, not the curve
+
+The brief pointed both lanes at their worst rolling windows and told them to ask the two
+questions BEFORE fitting anything. Both found a **schedule** error, not a geometry one —
+exactly law 26. The rank-1 window (S4, the worst on the whole track, untouched for a round)
+and the rank-2 window (the end card) were each on the wrong clock.
+
+| lane | window | the fiction / structural error found | gain |
+|---|---|---|---|
+| **scenes2** | **f3561-3611 (rank 2)** | **The end card is a RISE-IN, not a slit-cut.** We hard-cut to a settled card and held it as a frozen plate for 50 frames; the ref lifts the whole world from below and settles it in two phases. Schedule only — interior ink untouched. | **f3561 .7356→.9381 (+.2025)**, +.10..+.12 across the window |
+| **scenes1** | **f453-503 (rank 1)** | **The band SLIDES in (not a fade) AND ran a FULL HOUR behind, with 40%-oversized labels.** The worst window's defect was the timeline band, not the hexes the brief pointed at. The clock error was SSIM-neutral alone — the huge glyphs swamped it — a law-8 pose-blind hide. | **f453 .873→.898 (+.024)**, flat across the S4 band |
+| **scenes1** | **f918-940** | **The S5 exit `sy` was a stale-low hand fit** (8% over-squash @f926). Re-measured off r18's band probe; sx left (genuinely anisotropic). A near-miss the gate caught: lowering riseC bled a downward ramp across r18's fixed cruise (−.052@f916) → pinned `[916,532.5]`, f916 byte-identical. | **f918 +.026 · f922 +.045** |
+
+## The laws this round earned (candidates for replicate-method)
+
+- **The pose-blind hide (law 8) and the wrong clock (law 26) COMPOUND, and one masks the
+  other.** The S4 clock ran a full hour behind — but alone it moved SSIM ~nothing, because
+  the labels were 40% oversized and their ink mass swamped the digit difference. The clock
+  was invisible UNTIL the labels were shrunk to true size. **A schedule error hidden behind
+  an oversized element is found by fixing the SIZE first, then re-reading the clock.** (Law
+  24's cousin: two errors, and the big one hides the subtle one until it is cut down.)
+- **A frozen plate held where the ref moves is the single largest lever in the catalogue.**
+  f3561 gained **+.2025** — the biggest single-frame jump of the whole campaign — because a
+  50-frame hold on a settled card, against a ref that is mid-rise, is 50 frames each ~.10-.20
+  wrong. **md5-identical across a window is a RED FLAG to check against the ref, not a
+  proof of correctness** (the r18 §35 footnote, now paid at scale). Screen every long hold:
+  does the ref hold too, or is the replica asleep while the ref moves?
+- **A schedule fix rides the component's EXISTING reveal props — you do not rebuild the
+  element to re-time it.** The end-card rise drove `LogoCard`'s riseY/logoFront/iconFronts —
+  props already built for the S1 intro — from a new LUT. Zero interior-ink risk, and it
+  proves the settle by CONVERGING byte-identically to the untouched card at f3611. When an
+  element already animates somewhere, its schedule is a LUT swap, not a rewrite.
+
+## RESIDUAL — ranked for r20 (whole track)
+
+1. **S11 fly-in (scenes2, ranks 3,4 f2092-2112)** — a fade where the ref SLIDES 7 docs in
+   from the right, staggered. Large area, evidence captured, NOT the mirror of the exit.
+   The best-value untouched window on the track. A full round's work — dispatch it primary.
+2. **S13 exit SPREAD (scenes2)** — not a pure translateY; LUT off the two capsule apexes
+   (r18 residual, carried).
+3. **S17 conveyors (scenes2)** — two plates where the ref runs (r18 residual, carried).
+4. **S4 hex interior (scenes1)** — HexCity interior registration + contents fill-rate; the
+   law-21 floor, and it lives in **lib.tsx** (off the scenes lanes). A lib-lane owner with a
+   badge-disc re-registration could try it.
+5. **S5 exit f927-940 deep whip (scenes1)** — old sy/riseC keys past where the band probe
+   dies (<900px ink); needs a finer instrument.
+6. **Global `tickAbove` default flip (4→0)** — STILL blocked: two default-taking bands live
+   in scenes1. Unblocks once a round does not touch scenes1's bands, or a single lane owns
+   both files for one landing.
+
+## INFRA / hazards handed to the next lead
+
+- **The shared git index STILL carries the foreign half-merge** (`.gitignore`, `data-node/`,
+  `frontend/`, `jarvis/`, `yc-pitch/YCPitchComposition.tsx` — 12 tsc reds). Both r19 builders
+  committed via `git commit --only -F msg -- <path>` and verified `git show --stat` held only
+  their file. **`-m`/`-F` must come BEFORE the `-- <path>`** or git parses the message as a
+  pathspec (a harmless failed attempt, logged). The main index is desynced from HEAD as in
+  r18. Whoever owns that index should clean it; do NOT `git reset` blindly.
+- **The official composite verify is STILL BLOCKED** by that same yc-pitch tsc red tripping
+  verify-replication.sh's line-61 whole-repo guard before it renders — cosmetic to the render
+  (the esbuild bundle is healthy), real to the guard. The PNG per-frame gates ARE the r19
+  record. A slim-path full framessim was rebuilt directly (render + ffmpeg-ssim, skipping only
+  the foreign-blocked guard) for r20 triage — see the fresh-framessim subsection below.
+
+## FRESH FRAMESSIM (r19) — slim-path rebuild, composite still guard-blocked
+
+Full ClsDay-Replicate re-rendered at HEAD through the locked harness (all 4 r19 commits
+present), scaled + ffmpeg-ssim'd against the ref → `cls-day-framessim-r19.txt` (**3750 lines,
+not truncated** — law 29 passed). The same mp4 double-compression penalty applies to r18's and
+r19's series, so mean + rankings are comparable; absolute is not a PNG-gate number.
+
+- **Global mean SSIM: 0.93603 → 0.93728 (+0.00125).** Confirmed by two independent computations.
+- **The three fixed spans all improved, zero regression:**
+  | span | window | r18 → r19 | Δ |
+  |---|---|---|---|
+  | S18/S19 end card | f3561-3611 | .8943 → **.9630** | **+.0687** (r18 rank 2 → LEFT the top-12) |
+  | S4 band | f453-503 | .8861 → .8926 | +.0065 (still rank 1 — interior residual) |
+  | S5 exit | f911-961 | .9093 → .9123 | +.0030 |
+- **Regression sweep CLEAN:** no 2s window dropped >0.003 anywhere; worst dip on the whole
+  timeline is **−0.0009** (f3511-3561, the neighbour just before the end-card fix — sub-noise).
+  391 windows improved >0.001. Neighbours of all three fixes clean; rest unchanged within noise.
+- **Estimated composite SCORE: 94.7 → ~94.8** (official verify BLOCKED by the yc-pitch guard;
+  estimate applies the measured video-SSIM Δ +.00125 (40%) and the keyframe-frame proxy Δ +.001
+  (35%) to r18's official breakdown). Modest by the ruler because the end-card win is only 50
+  frames = 1.3% of the video (law 18: gain ∝ area) sampled by ~1 of 74 keyframes — but the
+  **eye gain is far larger than +0.08**: a frozen plate held 50 frames now rises with the ref.
+  Perceptual-ledger note: this is a round where the structural correction out-runs the metric.
+
+## r20 FRESH top-12 worst windows (fps25, 2s) — the triage for the next lead
+| rank | frames | t(s) | mean | note |
+|---|---|---|---|---|
+| 1 | 453-503 | 18.1-20.1 | .8926 | S4 band — improved but still #1; residual is HexCity INTERIOR (lib.tsx, law-21 floor) |
+| 2 | 2098-2148 | 83.9-85.9 | .8960 | **S11 doc row — the FLY-IN fiction (fade where ref SLIDES 7 docs in from the right). Best-value untouched window. Dispatch primary.** |
+| 3 | 2163-2213 | 86.5-88.5 | .9054 | S11/S12 continuation of the same fly-in |
+| 4 | 1461-1511 | 58.4-60.4 | .9061 | S7→S8 handoff (S8 pay-in-doc zoom) — untouched |
+| 5 | 2930-2980 | 117.2-119.2 | .9080 | S15/S16 region — never triaged; ask the two questions |
+| 6 | 911-961 | 36.4-38.4 | .9123 | S5 exit — mean UP; rank rose only because the end card vacated |
+| 7 | 503-553 | 20.1-22.1 | .9126 | S4 tail — improved by the band fix |
+| 8 | 3341-3391 | 133.6-135.6 | .9140 | S17 summary — r18 worked it; near floor |
+| 9 | 2835-2885 | 113.4-115.4 | .9147 | S15 brackets |
+| 10 | 230-280 | 9.2-11.2 | .9155 | S2 currency carousel |
+| 11 | 2673-2723 | 106.9-108.9 | .9164 | S14 target |
+| 12 | 131-181 | 5.2-7.2 | .9173 | NEW entrant — surfaced as the end card left; NOT a regression |
+
+**r20 headline:** the end card is off the board; the new best-value target is the **S11 doc
+fly-in (ranks 2,3)** — evidence already captured in `work/cls-day/r19-scenes2/refs/`. It is a
+schedule error (a fade where the ref runs a right-to-left conveyor), large-area, and a full
+round's own work. Same shape as every largest win of this campaign: the clock, not the curve.
