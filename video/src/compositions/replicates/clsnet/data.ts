@@ -305,14 +305,19 @@ export const STRIP_ENTRY = {
 export type StripPill = {
   x: number; y: number; w: number; h: number; c: string;
   in?: readonly [number, number]; out?: readonly [number, number];
-  fallKeys?: readonly [number, number]; fallY?: readonly [number, number];
+  fallKeys?: readonly number[]; fallY?: readonly number[]; // dense ref-measured fall tables (StripScene casts to number[])
 };
 export const STRIP_PILLS: StripPill[] = [
   // day A at h5.2-6.0 (fr_2000); lavender drops in from off-top (y76@1970,
   // y300@1974); whole group pops out 2004-2010
   { x: 731, y: 298, w: 94, h: 36, c: "#B4BCD3", out: [2004, 2010], fallKeys: [1967, 1974], fallY: [-92, 300] },
-  { x: 730, y: 344, w: 224, h: 42, c: "#1A3E66", out: [2004, 2010] },
-  { x: 728, y: 404, w: 150, h: 40, c: "#D1542F", out: [2004, 2010] },
+  // r22 D3: navy+orange dropped in too early (rendered from f1950; ref empty at
+  // f1964, drops in). Ref-measured falls (rowscan tops): navy 134@f1968·308@f1970;
+  // orange 42@f1965·196@f1966·370@f1968. Fall ends at existing static (344/404) to
+  // isolate the entry fix — ref settled ~362/424 is a separate, pre-existing 18px
+  // high error left for a future round.
+  { x: 730, y: 344, w: 224, h: 42, c: "#1A3E66", out: [2004, 2010], fallKeys: [1967, 1968, 1970, 1972], fallY: [-50, 134, 308, 344] },
+  { x: 728, y: 404, w: 150, h: 40, c: "#D1542F", out: [2004, 2010], fallKeys: [1964, 1966, 1968, 1969], fallY: [-112, 196, 370, 404] },
   // day B at h7.8 (ref_2030), alive 2016-2070
   { x: 1440, y: 383, w: 97, h: 39, c: "#CB3F17", in: [2016, 2022], out: [2064, 2070] },
   { x: 1443, y: 432, w: 94, h: 37, c: "#ABB3CB", in: [2016, 2022], out: [2064, 2070] },
@@ -325,12 +330,19 @@ export const STRIP_PILLS: StripPill[] = [
   { x: 1008, y: 772, w: 82, h: 35, c: "#CB3F17", in: [1990, 1998], out: [2042, 2046] },
   // night 19:00 trio (ref_2030), alive 2024-2070
   { x: 1282, y: 614, w: 84, h: 36, c: "#CB3F17", in: [2024, 2032], out: [2066, 2070] },
-  { x: 1281, y: 684, w: 231, h: 36, c: "#ABB3CB", in: [2024, 2032], out: [2066, 2070] },
-  { x: 1280, y: 862, w: 116, h: 37, c: "#CB3F17", in: [2024, 2032], out: [2066, 2070] },
-  // night 21:00-ish trio (ref_2110), pops in 2088-2098, stays
-  { x: 1948, y: 596, w: 82, h: 35, c: "#CB3F17", in: [2088, 2098] },
-  { x: 1948, y: 641, w: 116, h: 35, c: "#FDFDFD", in: [2088, 2098] },
-  { x: 1944, y: 688, w: 84, h: 36, c: "#CB3F17", in: [2088, 2098] },
+  // r22 D1: mid was 26px low (684→658), bottom was 154px low (862→708). Ref stack
+  // tops at f2050 (rowscan): 616 orange / 658 lavender / 708 orange. Top (614) kept.
+  { x: 1281, y: 658, w: 231, h: 36, c: "#ABB3CB", in: [2024, 2032], out: [2066, 2070] },
+  { x: 1280, y: 708, w: 116, h: 37, c: "#CB3F17", in: [2024, 2032], out: [2066, 2070] },
+  // night 21:00-ish trio (ref_2110), pops in 2088-2098. r22 D2: ref FADES this trio
+  // to ~34% during the strip push (f2127-2141) while it slides up behind the gantt;
+  // ours kept it full-bright. out:[2127,2136] → op 0.33 @f2133 = measured 0.34
+  // (ref dim-maroon (68,47,61) vs orange (203,63,23) over navy (0,39,83) → α≈0.34).
+  // Residual seam: pushY still lifts the trio ~197px (y399) where ref keeps it ~y564
+  // — that's the scenesB pushY-exemption (defect 2b), out of the data.ts lane.
+  { x: 1948, y: 596, w: 82, h: 35, c: "#CB3F17", in: [2088, 2098], out: [2127, 2136] },
+  { x: 1948, y: 641, w: 116, h: 35, c: "#FDFDFD", in: [2088, 2098], out: [2127, 2136] },
+  { x: 1944, y: 688, w: 84, h: 36, c: "#CB3F17", in: [2088, 2098], out: [2127, 2136] },
   // night 22:00 lavender pair (ref_2125), pops in 2108-2118
   { x: 2139, y: 596, w: 231, h: 36, c: "#ABB3CB", in: [2108, 2118] },
   { x: 2140, y: 644, w: 116, h: 35, c: "#FDFDFD", in: [2108, 2118] },
