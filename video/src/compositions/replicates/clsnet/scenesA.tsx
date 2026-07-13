@@ -722,8 +722,17 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
             opacity={inOp}
           />
         ))}
-        {/* CLSNet box */}
-        <ClsNetBox x={HEXROW.box.x} y={HEXROW.box.y} opacity={boxOp} />
+        {/* CLSNet box. The ref's navy RECT is x824-1092 / y673-941 (pixel-identical
+            at f400 and f430); HEXROW.box draws it at 823/675 — 1px left, 2px low.
+            But the MARK inside it is already pixel-exact at 823/675 (moving the box
+            alone took the mark crop from .936 to .736), so the ref offsets the mark
+            from the rect by (−1,+2) — the same human-layout slip artDx/artDy were
+            added for at strip2. Move the rect, hold the mark. The label follows the
+            rect, which is what the ref does.
+            Nudged HERE, not in data.ts: scenesB's tradeDocs box reuses these numbers
+            and the ref puts THAT one 12px higher (y661 at f1450) — one constant, two
+            different truths. */}
+        <ClsNetBox x={HEXROW.box.x + 1} y={HEXROW.box.y - 2} artDx={-1} artDy={2} opacity={boxOp} />
         {/* pill fields — the ENTRY was backwards. We squashed the whole page
             INWARD toward the band (scaleY 0.15→1) and let it expand out. The ref
             does the opposite and does it per pill: every pill FLIES IN from far
