@@ -47,6 +47,15 @@ export const S8Revised: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   if (frame < 1466 || frame >= 1712) return null;
   const outP = interpolate(frame, [1700, 1712], [0, 1], clamp);
   // phase A (1466..1535): standard band zooms into the pay-in doc (unchanged).
+  // NOTE (gen21): phase-A geometry is measurably wrong vs the ref (measure_s8.py) —
+  // band pitch is 205 not 141.6, the doc is ~w820 h577 at y330 and should PAN with the
+  // band tied to the 00:00 tick (not sit fixed at x140 y560 w500 h480), and a red 00:00
+  // playhead runs the doc's left edge. Rebuilding those three lifts f1478-1500 by
+  // ~+0.025 each. BUT the f1511-1535 zoom-out transition goes near-BLANK in the ref, and
+  // OLD's small-doc-zoomed-off already matches that blankness (SSIM 0.94-0.99); a
+  // correct, larger doc cannot be evicted as cleanly and REGRESSES those near-white
+  // frames (law 8). A faithful fix must re-measure the ref zoom-CENTRE trajectory to
+  // evict the larger doc by ~f1518 — a dedicated round, not a tail-end swap. Left as-is.
   const zoom = interpolate(frame, [1500, 1522], [1, 3.58], { ...clamp, easing: EASE });
   const phaseB = interpolate(frame, [1535, 1550], [0, 1], clamp);
   const hourAt = interpolate(frame, [1466, 1535], [3.2, 4.4], clamp);
