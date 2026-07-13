@@ -709,13 +709,47 @@ const PvpLeftCity: React.FC = () => (
       stroke={C.navyDeep}
       strokeWidth={4}
     />
-    {/* far-left navy building w/ dash windows */}
+    {/* far-left navy building w/ dash windows. gen19: probed col x=27 — the ref has
+        TWO dash rows (y429..447, y466..484), not three; the third row we drew at y497
+        is fiction. Dashes are 7 wide on a 29px pitch (ref row y=437: 22..28, 51..57,
+        80..87), not 6 on 26. A horizontal floor rule at y556 that we never drew. */}
     <rect x={0} y={405} width={95} height={255} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[0, 1, 2].map((r) =>
+    <line x1={0} y1={556} x2={95} y2={556} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[0, 1].map((r) =>
       [0, 1, 2].map((c) => (
-        <rect key={`${r}${c}`} x={22 + c * 26} y={425 + r * 36} width={6} height={19} fill={C.navyDeep} />
+        <rect key={`${r}${c}`} x={22 + c * 29} y={429 + r * 37} width={7} height={19} fill={C.navyDeep} />
       )),
     )}
+    {/* ── right-of-tower cluster, RE-TRACED gen19 ──
+        We drew ONE white building at x330..430 y350..660 with two window rows. The ref
+        draws something else entirely (probed rows y=350/430/470/520/630 and cols
+        x=258/285/312/340/420):
+          · building A — x246..325, top rule y348, floor rules y408/436/465/490,
+            two window bands split by verticals at x270 and x299, and its LEFT column
+            (x249..270) GREY-filled from y352 to y488 (plus one grey cell at 273,468).
+            Nothing of ours stood here — we had a bare grey slab.
+          · a low block x325..428 behind it, top rule y512, floor rule y603, grey fills
+            at x330..357. Its right wall (x428) is CLIPPED by the capsule at y583.
+          · a grey slab x268..290, y497..656 under building A.
+        Drawn BEFORE the red tower/dash-block so they occlude it, as the ref does. */}
+    <rect x={246} y={348} width={79} height={312} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
+    <rect x={249} y={352} width={21} height={136} fill="#DCDCDC" />
+    <rect x={273} y={468} width={16} height={22} fill="#DCDCDC" />
+    {[408, 436, 465, 490].map((y) => (
+      <line key={y} x1={246} y1={y} x2={325} y2={y} stroke={C.navyDeep} strokeWidth={3} />
+    ))}
+    {[270, 299].map((x) => (
+      <React.Fragment key={x}>
+        <line x1={x} y1={408} x2={x} y2={436} stroke={C.navyDeep} strokeWidth={3} />
+        <line x1={x} y1={465} x2={x} y2={490} stroke={C.navyDeep} strokeWidth={3} />
+      </React.Fragment>
+    ))}
+    <rect x={268} y={497} width={22} height={159} fill="#DCDCDC" />
+    <rect x={330} y={516} width={27} height={84} fill="#DCDCDC" />
+    <rect x={330} y={608} width={27} height={48} fill="#DCDCDC" />
+    <line x1={428} y1={425} x2={428} y2={583} stroke={C.navyDeep} strokeWidth={3.5} />
+    <line x1={325} y1={512} x2={428} y2={512} stroke={C.navyDeep} strokeWidth={3.5} />
+    <line x1={325} y1={603} x2={420} y2={603} stroke={C.navyDeep} strokeWidth={3.5} />
     {/* red temple tower — r8 re-trace from the f2550 silhouette (min/max red
         per row): body is x102-248 (w146, was 124 too narrow), crown box
         x102-250 y282-310, inner frame x124-228 y358. TWO windows: LEFT has a
@@ -741,16 +775,6 @@ const PvpLeftCity: React.FC = () => (
         <rect key={`${r}${c}`} x={113 + c * 30} y={512 + r * 45} width={6} height={22} fill={C.red} />
       )),
     )}
-    {/* grey slab + right sections building */}
-    <rect x={265} y={430} width={35} height={230} fill="#DCDCDC" />
-    <rect x={330} y={350} width={100} height={310} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[0, 1].map((r) => (
-      <React.Fragment key={r}>
-        <rect x={330} y={408 + r * 42} width={100} height={24} fill="none" stroke={C.navyDeep} strokeWidth={3} />
-        <line x1={363} y1={408 + r * 42} x2={363} y2={432 + r * 42} stroke={C.navyDeep} strokeWidth={3} />
-        <line x1={396} y1={408 + r * 42} x2={396} y2={432 + r * 42} stroke={C.navyDeep} strokeWidth={3} />
-      </React.Fragment>
-    ))}
     {/* street: shed, bollards, posts. gen18: the red CAR that stood here was
         INVENTED — the ref's street at (50..140, 615..665) carries only the red
         building's own bottom wall (probe: 246 red px, all of it the wall) and the
@@ -791,20 +815,35 @@ const PvpRightCity: React.FC = () => (
     {[1509, 1545, 1581].map((x) => (
       <line key={x} x1={x} y1={516} x2={x} y2={592} stroke={C.navyDeep} strokeWidth={3} />
     ))}
-    {/* front building: top rail y592 runs to the red tower; body x1469..1567; 4 wide outlined windows */}
+    {/* front building: top rail y592 runs to the red tower; body x1469..1567.
+        gen19: the 4 windows are ⊓ — an OPEN BOTTOM. Probed col x=1520 (mid-window):
+        the ref has ink ONLY at y618..624; we drew a closed rect and its bottom bar
+        (row y=632 reads a solid 1491..1550 in ours against two 7px stubs in the ref).
+        ~900px of invented ink across the four. Top bar centred y621, legs to y639. */}
     <rect x={1469} y={592} width={192} height={4} fill={C.navyDeep} />
     <rect x={1469} y={592} width={98} height={236} fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[616, 652, 688, 724].map((y) => (
-      <rect key={y} x={1493} y={y} width={56} height={18} fill="none" stroke={C.navyDeep} strokeWidth={3} />
+    {[621, 656, 691, 726].map((y) => (
+      <path
+        key={y}
+        d={`M 1492 ${y + 18} L 1492 ${y} L 1548 ${y} L 1548 ${y + 18}`}
+        fill="none"
+        stroke={C.navyDeep}
+        strokeWidth={3.5}
+      />
     ))}
-    {/* grey slabs */}
-    <rect x={1635} y={540} width={20} height={285} fill="#DCDCDC" />
-    <rect x={1820} y={620} width={35} height={205} fill="#DCDCDC" />
+    {/* grey slabs. gen19: the slab at x1635 was FICTION — the ref has 105 grey px in
+        (1630..1665, 500..830) against our 5,700. Deleted. The real slab is a staircase
+        on the far right (grey y-runs probed every 10px: x1830/1840 → y570..639,
+        x1860 → y621..803, x1870 → y621..825): two blocks, not one. */}
+    <rect x={1826} y={570} width={22} height={70} fill="#DCDCDC" />
+    <rect x={1856} y={621} width={22} height={205} fill="#DCDCDC" />
     {/* central red tower — mast, crown, round-shouldered shaft, 6 ticks */}
     <line x1={1693} y1={410} x2={1693} y2={428} stroke={C.red} strokeWidth={3.5} />
     <rect x={1677} y={428} width={70} height={24} fill={C.white} stroke={C.red} strokeWidth={3.5} />
     <path d="M 1663 640 L 1663 456 L 1799 456 Q 1811 456 1816 466 L 1821 478 L 1821 640" fill={C.white} stroke={C.red} strokeWidth={3.5} />
-    {[1697, 1721, 1741, 1765, 1785, 1801].map((x) => (
+    {/* gen19: the ref draws FIVE ticks, not six (row y=495: 1693/1716/1738/1760/1782).
+        The sixth at x1801 was invented. */}
+    {[1696, 1719, 1741, 1763, 1785].map((x) => (
       <line key={x} x1={x} y1={476} x2={x} y2={508} stroke={C.red} strokeWidth={3} />
     ))}
     {/* inner panel: rails, cream band, gate row w/ right solid block */}
@@ -827,13 +866,20 @@ const PvpRightCity: React.FC = () => (
     <line x1={1855} y1={648} x2={1855} y2={825} stroke={C.red} strokeWidth={3} />
     <line x1={1657} y1={656} x2={1657} y2={810} stroke={C.red} strokeWidth={3} strokeDasharray="11 10" />
     <line x1={1829} y1={656} x2={1829} y2={810} stroke={C.red} strokeWidth={3} strokeDasharray="11 10" />
-    {/* door: red frame + navy grill block */}
-    <path d="M 1725 825 L 1725 802 L 1775 802 L 1775 825" fill="none" stroke={C.red} strokeWidth={3.5} />
-    <rect x={1749} y={806} width={28} height={19} fill={C.navyDeep} />
-    {/* right white building: high roof, step at y560, ONE dash column at the frame edge */}
-    <path d="M 1857 825 L 1857 566 L 1881 566 L 1881 540 L 1920 540" fill={C.white} stroke={C.navyDeep} strokeWidth={3.5} />
-    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((r) => (
-      <rect key={r} x={1908} y={590 + r * 25} width={12} height={5} fill={C.navyDeep} />
+    {/* door: red frame + centre mullion. gen19: the NAVY GRILL BLOCK was fiction —
+        probed col x=1760, the ref is blank from y806 to y824 (we filled 28x19 of navy). */}
+    <path d="M 1722 825 L 1722 802 L 1778 802 L 1778 825" fill="none" stroke={C.red} strokeWidth={3.5} />
+    <line x1={1750} y1={805} x2={1750} y2={825} stroke={C.red} strokeWidth={3} />
+    {/* right white building. gen19, probed by navy y-runs every 8px from x1860:
+        the ref has NO LEFT WALL — x1860/1868 read only the y565 rule and the ground.
+        Our 259px vertical at x1857 was fiction. What is there: a y565 rule running the
+        full 1855..1920, a step up at x1876 to a y541 rule, and SEVEN dash windows that
+        only appear at x>=1912 (x1908 reads clean) — we drew NINE starting at 1908. */}
+    <line x1={1855} y1={565} x2={1920} y2={565} stroke={C.navyDeep} strokeWidth={3.5} />
+    <line x1={1876} y1={565} x2={1876} y2={541} stroke={C.navyDeep} strokeWidth={3.5} />
+    <line x1={1876} y1={541} x2={1920} y2={541} stroke={C.navyDeep} strokeWidth={3.5} />
+    {[594, 618, 643, 665, 691, 715, 740].map((y) => (
+      <rect key={y} x={1912} y={y} width={8} height={6} fill={C.navyDeep} />
     ))}
     {/* street: post + shed, posts. gen18: the red TRUCK here was INVENTED — the ref
         has ZERO red pixels in (1490..1600, 780..830). Deleted; see PvpLeftCity. */}
