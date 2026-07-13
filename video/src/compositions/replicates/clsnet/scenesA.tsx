@@ -572,8 +572,25 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
     clamp
   );
 
-  // ruler + pills phase (f366+)
-  const rulerP = lerp(f, [366, 384], [0, 1]);
+  // RULER BAND — r18. The band was drawn 0→1920 linearly over f366-384. The ref
+  // starts it at f349 and finishes at f374, on a hard ease (slow → ~320px/f at
+  // f356-357 → a long decel tail). Right-edge tracked per frame off the ref
+  // (grey run at row 825, v_346..v_378) — the whole table below IS the measurement.
+  // OLD drew NOTHING at f360 where the ref has 1539px of band, and 427px at f370
+  // where the ref has 1883: ~63k px of flat grey missing, every frame of the entry.
+  // Also probed: band rows y805-845 (h 41) — FLOWS.rulerY/rulerH (806/38) sat 1px
+  // low and 3px short. Inline; data.ts untouched (GlobeScene's f468+ band, which
+  // takes over at 805/h40, is unaffected — HexRowFlows is gone by then).
+  const BAND_Y = 805;
+  const BAND_H = 41;
+  const bandW = interpolate(
+    f,
+    [348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361,
+     362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374],
+    [0, 23, 63, 121, 192, 275, 397, 579, 821, 1143, 1327, 1449, 1539, 1611,
+     1663, 1713, 1751, 1783, 1811, 1835, 1855, 1871, 1883, 1897, 1907, 1913, 1920],
+    clamp
+  );
   // pair labels flip with the pill pages (r5 ink-timeline: page1 out 406-412,
   // page2 in 419-428)
   const pairAOp = lerp(f, [364, 372], [0, 1]) * lerp(f, [406, 412], [1, 0]);
@@ -583,33 +600,40 @@ export const HexRowFlows: React.FC<{ frame: number }> = ({ frame }) => {
     <AbsoluteFill>
       {/* ruler band: STATIC — content slides off over it (r6 probed: band
           y805-843 stays put through the push; ticks ride the slide) */}
-      {rulerP > 0 && (
+      {bandW > 0 && (
         <div
           style={{
             position: "absolute",
             left: 0,
-            top: FLOWS.rulerY,
-            width: 1920 * rulerP,
-            height: FLOWS.rulerH,
+            top: BAND_Y,
+            width: bandW,
+            height: BAND_H,
             backgroundColor: C.band,
           }}
         />
       )}
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${shift}px)` }}>
-        {rulerP >= 1 &&
-          Array.from({ length: 14 }, (_, i) => (
+        {/* ticks ride inside the band as it sweeps right (ref: present from the
+            first frames of the grow, not only at settle). The ref's tick phase
+            drifts a few px/f; not modelled — 13 ticks × 2.5×20px is 650px of ink,
+            below the noise floor, and the settled phase already lands within 2.5px. */}
+        {Array.from({ length: 14 }, (_, i) => {
+          const tx = FLOWS.tickX0 + i * FLOWS.tickEvery;
+          if (tx + 2.5 > bandW) return null;
+          return (
             <div
               key={i}
               style={{
                 position: "absolute",
-                left: FLOWS.tickX0 + i * FLOWS.tickEvery,
-                top: FLOWS.rulerY + 2,
+                left: tx,
+                top: BAND_Y + 2,
                 width: 2.5,
                 height: 20,
                 backgroundColor: C.navy,
               }}
             />
-          ))}
+          );
+        })}
         {/* hexagons */}
         {HEX_ARTS.map((a, i) => (
           <HexIcon
