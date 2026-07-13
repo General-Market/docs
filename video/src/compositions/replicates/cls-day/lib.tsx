@@ -485,18 +485,19 @@ export const Buildings: React.FC<{
   variant?: 0 | 1;
   strokeW?: number;
   dense?: boolean; // legacy prop — the re-traced skyline is always dense
-}> = ({ w, h, ink = C.navyDeep, accent = C.red, variant = 0, strokeW = 2.5 }) => {
+}> = ({ w, h, ink = C.navyDeep, accent = C.red, variant = 0, strokeW = 3 }) => {
   const salmon = "#EEC9AF";
-  const slab = "#DDD7D8";
+  const slab = "#E4E4E8";
   const paper = "#FDFDFD";
   const sw = strokeW;
   return (
     <svg width={w} height={h} viewBox="0 0 378 282" preserveAspectRatio="none">
       {variant === 0 ? (
         <>
-          {/* grey slabs behind the right cluster */}
+          {/* grey slabs behind the right cluster (ref: the right half is packed
+              with slab + building up to the chamfer, not white) */}
           <rect x={232} y={128} width={20} height={130} fill={slab} />
-          <rect x={286} y={158} width={30} height={100} fill={slab} />
+          <rect x={286} y={150} width={50} height={108} fill={slab} />
           {/* far-left slender navy tower + mast, horizontal windows */}
           <line x1={44} y1={56} x2={44} y2={76} stroke={ink} strokeWidth={2} />
           <rect x={26} y={76} width={38} height={182} fill={paper} stroke={ink} strokeWidth={sw} />
@@ -510,13 +511,19 @@ export const Buildings: React.FC<{
           {[0, 1].map((c) =>
             [0, 1, 2, 3].map((r) => <rect key={`${c}${r}`} x={104 + c * 20} y={148 + r * 26} width={4} height={12} fill={ink} />),
           )}
-          {/* right navy building (2 floor bands) */}
+          {/* right navy building: 2-row window-BOX grid (ref f1900 rightcluster
+              5x — rectangular panes, not the old plain floor bands) */}
           <rect x={238} y={80} width={40} height={178} fill={paper} stroke={ink} strokeWidth={sw} />
-          {[0, 1, 2].map((r) => (
-            <line key={r} x1={238} y1={120 + r * 46} x2={278} y2={120 + r * 46} stroke={ink} strokeWidth={sw} />
-          ))}
-          {/* far-right stepped navy structure (under the right chamfer) */}
-          <path d={`M 282 258 L 282 168 L 318 168 L 318 200 L 336 200 L 336 258 Z`} fill={paper} stroke={ink} strokeWidth={sw} />
+          <line x1={238} y1={104} x2={278} y2={104} stroke={ink} strokeWidth={sw} />
+          {[0, 1].map((r) =>
+            [0, 1].map((c) => (
+              <rect key={`rb${r}${c}`} x={244 + c * 16} y={110 + r * 40} width={13} height={26} fill={paper} stroke={ink} strokeWidth={2} />
+            )),
+          )}
+          <line x1={238} y1={196} x2={278} y2={196} stroke={ink} strokeWidth={sw} />
+          {/* far-right stepped navy tower — taller, reaching x354 under the
+              chamfer (ref keeps the right third packed, not white) */}
+          <path d={`M 282 258 L 282 150 L 320 150 L 320 120 L 354 120 L 354 258 Z`} fill={paper} stroke={ink} strokeWidth={sw} />
           {/* center red tower: cap + antennae, body w/ inner windows, wide base grid, door */}
           <line x1={184} y1={26} x2={184} y2={40} stroke={accent} strokeWidth={2} />
           <line x1={196} y1={26} x2={196} y2={40} stroke={accent} strokeWidth={2} />
@@ -539,10 +546,10 @@ export const Buildings: React.FC<{
           <circle cx={92} cy={254} r={6} fill={paper} stroke={accent} strokeWidth={2} />
           {/* ground line + blue/navy ticks */}
           <line x1={20} y1={258} x2={358} y2={258} stroke={ink} strokeWidth={sw} />
-          {[128, 142, 156, 206, 220, 234].map((x, i) => (
+          {[135, 150, 172, 224, 241].map((x, i) => (
             <line key={`bt${i}`} x1={x} y1={244} x2={x} y2={258} stroke={C.blue} strokeWidth={3} />
           ))}
-          {[113, 250, 264].map((x, i) => (
+          {[113, 258, 300, 316].map((x, i) => (
             <line key={`nt${i}`} x1={x} y1={246} x2={x} y2={258} stroke={ink} strokeWidth={2.5} />
           ))}
         </>
@@ -579,7 +586,9 @@ export const Buildings: React.FC<{
           <line x1={158} y1={118} x2={224} y2={118} stroke={accent} strokeWidth={sw} />
           <rect x={160} y={128} width={30} height={12} fill={accent} />
           <line x1={158} y1={144} x2={224} y2={144} stroke={accent} strokeWidth={sw} />
-          <rect x={158} y={156} width={66} height={14} fill={accent} />
+          {/* red lintel band spans the FULL width over both dashed columns
+              (ref B x130-252), not just the head width (was x158-224) */}
+          <rect x={130} y={156} width={122} height={14} fill={accent} />
           <rect x={130} y={150} width={28} height={108} fill={paper} stroke={accent} strokeWidth={sw} />
           <rect x={224} y={150} width={28} height={108} fill={paper} stroke={accent} strokeWidth={sw} />
           {[0, 1, 2, 3, 4].map((i) => (
@@ -609,6 +618,52 @@ export const Buildings: React.FC<{
   );
 };
 
+// Rounded elongated-hexagon outline. Same 6 vertices / bounding box as the old
+// sharp path (top y4, bottom y(h-4), points at x6 / x(w-6)) — rounding only
+// pulls the path INWARD so HW/HH and the flat-edge centres callers attach to
+// (S4 arrows at ±HW/2, S10 connectors at the flat bottom) stay put. Each corner
+// is a quadratic-bezier fillet. Ref (measured s10/s17 f1900/f3300): the flat top
+// & bottom hug their line to near the vertex, then sweep down the diagonal — so
+// the setback is asymmetric (flat ≈0.033w, diagonal ≈0.085w). ONE string drives
+// the outline <path> AND the buildings clip, so nothing bleeds past the edge.
+const hexPath = (w: number, h: number): string => {
+  const inset = w * 0.22;
+  const hh = h / 2;
+  const V: readonly (readonly [number, number])[] = [
+    [inset, 4],
+    [w - inset, 4],
+    [w - 6, hh],
+    [w - inset, h - 4],
+    [inset, h - 4],
+    [6, hh],
+  ];
+  const dFlat = w * 0.033;
+  const dDiag = w * 0.085;
+  const n = V.length;
+  const isFlat = (i: number, j: number) => Math.abs(V[i][1] - V[j][1]) < 1;
+  const back = (i: number, j: number, d: number): [number, number] => {
+    const dx = V[j][0] - V[i][0];
+    const dy = V[j][1] - V[i][1];
+    const len = Math.hypot(dx, dy) || 1;
+    const t = Math.min(d, len * 0.45) / len;
+    return [V[i][0] + dx * t, V[i][1] + dy * t];
+  };
+  const f = (v: number) => v.toFixed(2);
+  const pin: [number, number][] = [];
+  const pout: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = (i + n - 1) % n;
+    const next = (i + 1) % n;
+    pin[i] = back(i, prev, isFlat(i, prev) ? dFlat : dDiag);
+    pout[i] = back(i, next, isFlat(i, next) ? dFlat : dDiag);
+  }
+  let d = `M ${f(pout[n - 1][0])} ${f(pout[n - 1][1])}`;
+  for (let i = 0; i < n; i++) {
+    d += ` L ${f(pin[i][0])} ${f(pin[i][1])} Q ${f(V[i][0])} ${f(V[i][1])} ${f(pout[i][0])} ${f(pout[i][1])}`;
+  }
+  return d + " Z";
+};
+
 // Hexagon city: elongated hex outline + buildings + letter badge.
 export const HexCity: React.FC<{
   x: number; // center
@@ -625,46 +680,41 @@ export const HexCity: React.FC<{
 }> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1, dense }) => {
   const hw = w / 2;
   const hh = h / 2;
-  const inset = w * 0.22;
+  const path = hexPath(w, h);
+  // Badge disc (S4/S10 only — S17/S19 pass no letter). Ref f1900/f640 measured:
+  // diameter ≈94 @ w378/382 (0.249w), centred on the top vertex (≈0.206w from
+  // the near side), sitting ~half above the top edge. Much larger than the old
+  // 56 and shifted onto the corner, matching the ref's heavy corner disc.
+  const bd = Math.round(w * 0.2487);
+  const boff = Math.round(w * 0.082);
+  const btop = Math.round(h * 0.007 - bd / 2);
   return (
     <div style={{ position: "absolute", left: x - hw, top: y - hh, width: w, height: h, opacity }}>
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute" }}>
-        <path
-          d={`M ${inset} 4 L ${w - inset} 4 L ${w - 6} ${hh} L ${w - inset} ${h - 4} L ${inset} ${h - 4} L 6 ${hh} Z`}
-          fill="#FDFDFD"
-          stroke={ink}
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
+        <path d={path} fill="#FDFDFD" stroke={ink} strokeWidth="3" strokeLinejoin="round" />
       </svg>
-      {/* gen12: the re-traced skyline fills the hex interior; clip to the hex so
-          edge buildings under the chamfer read as white (as the ref does). */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          clipPath: "polygon(23% 3%, 77% 3%, 97% 50%, 77% 97%, 23% 97%, 3% 50%)",
-        }}
-      >
+      {/* gen12: the re-traced skyline fills the hex interior; clip to the SAME
+          rounded-hex path so edge buildings under the chamfer read as white. */}
+      <div style={{ position: "absolute", inset: 0, clipPath: `path("${path}")` }}>
         <Buildings w={w} h={h} variant={variant} dense={dense} />
       </div>
       {letter && badgeP > 0 && (
         <div
           style={{
             position: "absolute",
-            left: badge === "tl" ? -8 : undefined,
-            right: badge === "tr" ? -8 : undefined,
-            top: -14,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            left: badge === "tl" ? boff : undefined,
+            right: badge === "tr" ? boff : undefined,
+            top: btop,
+            width: bd,
+            height: bd,
+            borderRadius: bd / 2,
             background: C.navyBg,
             color: "#FCFCFC",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontFamily: SERIF,
-            fontSize: 32,
+            fontSize: Math.round(bd * 0.57),
             transform: `scale(${badgeP})`,
           }}
         >
