@@ -28,22 +28,23 @@ const PILL_COL: Record<string, string> = {
 // data.ts are measurably wrong (rows drift up to 39px left and are 5-20px
 // narrow; ruler 19px right and 11px short; labels 22% small) — left in place
 // because sibling agents hold data.ts this round; the truth lives here.
+// lx/ly = the label's transcribed left and its cap-top offset above the pill top
+// (they are NOT uniform — row 2 sits 8px down, row 8 fifteen).
 const G_ROWS = [
-  { x: 205, y: 175, w: 142, lx: 380, color: "lavender" },
-  { x: 242, y: 274, w: 389, lx: 666, color: "lavender" },
-  { x: 505, y: 377, w: 175, lx: 721, color: "tan" },
-  { x: 606, y: 469, w: 224, lx: 860, color: "orangeDeep" },
-  { x: 739, y: 554, w: 355, lx: 1122, color: "lavender" },
-  { x: 981, y: 634, w: 175, lx: 1185, color: "orangeDeep" },
-  { x: 1008, y: 723, w: 355, lx: 1396, color: "lavender" },
-  { x: 1244, y: 815, w: 184, lx: 1449, color: "tan" },
-  { x: 1352, y: 900, w: 123, lx: 1504, color: "orangeDeep" },
+  { x: 205, y: 175, w: 142, lx: 380, ly: 10, color: "lavender" },
+  { x: 242, y: 274, w: 389, lx: 666, ly: 10, color: "lavender" },
+  { x: 505, y: 377, w: 175, lx: 721, ly: 8, color: "tan" },
+  { x: 606, y: 469, w: 224, lx: 860, ly: 11, color: "orangeDeep" },
+  { x: 739, y: 554, w: 355, lx: 1122, ly: 10, color: "lavender" },
+  { x: 981, y: 634, w: 175, lx: 1185, ly: 9, color: "orangeDeep" },
+  { x: 1008, y: 723, w: 355, lx: 1396, ly: 11, color: "lavender" },
+  { x: 1244, y: 815, w: 184, lx: 1449, ly: 10, color: "tan" },
+  { x: 1352, y: 900, w: 123, lx: 1504, ly: 15, color: "orangeDeep" },
 ] as const;
 const G_PILL_H = 51; // measured fills 48-53, mean 50.6
 const G_LABEL_FS = 36; // ref cap-height 27 (ours was 21 at fs28)
-// SansText(lineHeight 1.15) puts the cap-top fs*0.179 below `y`; ref cap-top =
-// pillY + 10 on every row → y = pillY + 10 - 36*0.179.
-const G_LABEL_DY = 10 - G_LABEL_FS * 0.179;
+// SansText(lineHeight 1.15) puts the cap-top fs*0.179 below its `y`.
+const G_CAP_OFF = G_LABEL_FS * 0.179;
 // ruler: 3px bar y89-91 spanning x191-1679, SEVEN identical drops to y135
 // (pitch 248). We drew it at x210..1710 with unequal 17/25px ticks.
 const G_RULER = { x: 191, w: 1488, barY: 90, dropY: 135 };
@@ -75,13 +76,23 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const rideT = lerp(f, [2129, 2143], [0, 1]);
   const pageY = 1080 * (1 - Math.pow(rideT, 1.4));
   const bracketP = lerp(f, [2131, 2142], [0, 1]);
-  // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88).
-  // r18: the ref does NOT ramp the rows back over 2279-2291 — every non-kept row
-  // is ABSENT until f2291 and full by f2294 (fill-mass scan of rows 2/3/5/7/8:
-  // 0% at 2290, 72% at 2292, 90% at 2294). The old `detailP` reversal painted
-  // twelve frames of rows the ref does not have.
-  const detailP = lerp(f, [2188, 2196], [0, 1]);
-  const rowsBack = lerp(f, [2291, 2294], [0, 1]);
+  // THE WEDGE. The rows below the card are not faded out and back in — the card
+  // SHOVES them down as one rigid block and rows 3-8 simply ride off the bottom
+  // of the screen. Blob-tracked per frame: every one of rows 2..8 carries the
+  // SAME dy to the pixel (e.g. f2190: 42/42/42/42/43/43/42), and row 2 lands at
+  // 377+628 = 1005, which is exactly where the PO1I pill sits under the card.
+  // The return is the same block riding back up. We were fading seven pills in
+  // and out at their settled positions — misplaced ink for ~20 frames at each
+  // end, and the reason f2190 sat at 0.81 and f2288 at 0.79.
+  const wedgeDy = interpolate(
+    f,
+    [2187, 2188, 2189, 2190, 2191, 2192, 2193, 2194, 2195, 2196, 2197, 2283, 2284, 2285, 2286, 2287, 2288, 2289, 2290, 2291, 2292, 2293, 2294],
+    [0, 3, 15, 42, 102, 314, 526, 586, 613, 625, 628, 628, 625, 616, 595, 554, 453, 174, 74, 33, 13, 3, 0],
+    clamp,
+  );
+  // row 1 alone does not ride the wedge: it blinks out at f2181 (before the card
+  // even starts) and back at f2292, in place.
+  const row1Op = Math.min(1, lerp(f, [2179, 2182], [1, 0]) + lerp(f, [2290, 2293], [0, 1]));
   // shrink-into-doc: full gantt → mini panel inside the left doc. Per-frame
   // navy-panel left/top edge from the ref VIDEO — sp = xLeft/340 = yTop/470, the
   // two agree to 3 decimals at every frame, so the proportional model is exact.
@@ -159,23 +170,12 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
         const at = 2145 + i * 3.2;
         const op = lerp(f, [at, at + 5], [0, 1]);
         if (op <= 0) return null;
-        // in the detail phase only row 0 (EM9E) and row 2 (PO1I) remain
-        const keep = i === 0 || i === 2;
-        const rowOp = op * (keep ? 1 : Math.min(1 - detailP + rowsBack, 1));
+        // row 0 is pinned above the card; row 1 blinks; rows 2-8 ride the wedge
+        // (row 2 = PO1I ends up under the card at 1005; 3-8 leave the screen).
+        const rowOp = op * (i === 1 ? row1Op : 1);
         if (rowOp <= 0) return null;
-        // PO1I drops to the card's foot and rides back up. Its x NEVER moves in
-        // the ref (505 at rest, 505 at the foot — we slid it to 605) and its
-        // width never changes (175 — we squeezed it to 130). The rise-back is
-        // transcribed per frame from the tan-blob track: 1005@2282 · 1002@2284 ·
-        // 972@2286 · 830@2288 · 452@2290 · 390@2292 · 377@2294.
-        const y =
-          i === 2
-            ? interpolate(f, [2188, 2196, 2284, 2286, 2288, 2290, 2292, 2294], [r.y, 1005, 1002, 972, 830, 452, 390, r.y], clamp)
-            : r.y;
-        // NOTE (window-1 investigation): the ref gantt bars carry a ~2-3px
-        // white outline the Pill component omits. Adding it as a CSS outline was
-        // EYE-correct but SSIM-adverse when the pill geometry was still wrong;
-        // re-test now that the fills are transcribed.
+        const y = i === 0 || i === 1 ? r.y : r.y + wedgeDy;
+        if (y > 1080) return null;
         return (
           // width:1920 so the absolutely-positioned label has a real containing
           // block — without it the wrapper is shrink-to-fit ZERO and any label
@@ -185,7 +185,7 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           <div key={i} style={{ position: "absolute", left: 0, top: 0, width: 1920, opacity: rowOp }}>
             <Pill x={r.x - 4} y={y - 4} w={r.w + 8} h={G_PILL_H + 8} color={C.white} />
             <Pill x={r.x} y={y} w={r.w} h={G_PILL_H} color={PILL_COL[r.color]} />
-            <SansText text={COPY.ganttIds[i]} x={r.lx} y={y + G_LABEL_DY} fs={G_LABEL_FS} color={C.white} />
+            <SansText text={COPY.ganttIds[i]} x={r.lx} y={y + r.ly - G_CAP_OFF} fs={G_LABEL_FS} color={C.white} />
           </div>
         );
       })}
