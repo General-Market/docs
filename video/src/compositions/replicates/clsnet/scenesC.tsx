@@ -1089,6 +1089,19 @@ const MB_HEXES: { art: string; cx: number; cy: number }[] = [
 const BADGE_POS: [number, number][] = [
   [412, 428], [685, 264], [599, 824], [1116, 448], [933, 750], [1520, 371], [1441, 801],
 ];
+// r19: the implode, frame by frame, from the ref's own map bbox. It holds at 1.000
+// until f3291 and then falls — slowly at first, then off a cliff between 3307 and
+// 3311. No analytic curve fits both ends; the table does.
+const MB_IMPLODE_F = [
+  3291, 3292, 3293, 3294, 3295, 3296, 3297, 3298, 3299, 3300, 3301,
+  3302, 3303, 3304, 3305, 3306, 3307, 3308, 3309, 3310, 3311, 3312,
+  3313, 3314, 3315, 3316, 3317, 3318, 3319,
+];
+const MB_IMPLODE_S = [
+  1.0, 0.999, 0.997, 0.994, 0.991, 0.985, 0.98, 0.972, 0.963, 0.952, 0.938,
+  0.922, 0.902, 0.877, 0.845, 0.802, 0.743, 0.652, 0.5, 0.349, 0.258, 0.198,
+  0.155, 0.124, 0.098, 0.078, 0.062, 0.048, 0.037,
+];
 
 export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { sans: SANS, serif: SERIF } = useBrand();
@@ -1098,12 +1111,17 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
   // dim fade to 3130 — the old ramp left a grey half-lit map through the whole
   // hex cascade. Draw it in fast.
   const mapP = lerp(f, [3104, 3113], [0, 1]);
-  // implode: crisp shrink (no fade). r9 ground truth (measure_implode.py,
-  // white map-content bbox ratio vs settled 0264): scale 0.804 at f3300,
-  // 0.037 at f3312.5, gone by 3318 — a slow lead-in then a fast collapse.
-  // The old montage-eyeballed curve hit 0.70 at f3300 (shrinking too early),
-  // costing the f3300 keyframe (window #1 worst, idx66 0.802).
-  const scale = interpolate(f, [3288, 3300, 3312.5, 3318], [1, 0.804, 0.037, 0], clamp);
+  // implode: crisp shrink (no fade). r19 — the r9 four-key curve was SIX FRAMES
+  // EARLY. Its "0.804 at f3300" is the ref's value at f3306; the ref is still at
+  // 1.000 through f3291 and 0.952 at f3300, where we drew 0.804. At f3305 the ref
+  // sits at 0.845 and we sat at 0.497 — HALF the size, on a 1512x957 object of
+  // thin white line: every stroke tens of pixels from where the ref put it. That
+  // is the .852 at f3305 and the .819 at f3290.
+  // Transcribed per frame from the ref's own non-field bbox (w and h agree to
+  // 0.001 at every frame, so it is a pure uniform scale about a fixed centre —
+  // measured (957.5, 537.0), constant to ±1px through the whole collapse).
+  const scale = interpolate(f, MB_IMPLODE_F, MB_IMPLODE_S, clamp);
+  const implodeCx = interpolate(f, [3300, 3315], [957.5, 959.5], clamp);
   // light-blue field collapses to a dot (fr_3350: r41 at 960,540), holds,
   // then grows back to the settled circle (fr_3396: r≈458)
   const navyBehind = f >= 3318;
@@ -1123,7 +1141,9 @@ export const MapBadgesScene: React.FC<{ frame: number }> = ({ frame }) => {
           position: "absolute",
           inset: 0,
           transform: `scale(${scale})`,
-          transformOrigin: "960px 537px", // r9 measured implode origin (bbox-center solve)
+          // r19: the collapse centre is not quite fixed — the ref's bbox centre
+          // drifts 957.5 -> 959.5 in x as it closes (537 in y throughout).
+          transformOrigin: `${implodeCx}px 537px`,
         }}
       >
         <TracedArt name="worldMap" x={MAP.x} y={MAP.y} opacity={mapP} />
