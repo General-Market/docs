@@ -1976,12 +1976,19 @@ export const LedgeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // their seat by f3810 (temple Δ414 ≡ sail Δ406 — one translate, not two; the
   // temple's own +414 then predicts the skyline's f3792 position to 8px, law 37).
   const cityDx = interpolate(f, [3792, 3798, 3804, 3810], [414, 165, 55, 0], clamp);
-  // hold the ledge fully opaque through f3940 (was [3936,3946], which greyed it
-  // as it faded to the dark behind while the ref stays white through ~f3938).
-  // The endcard navy wipes in over the top from f3938-3940 (EndCardScene enterOp)
-  // and fully covers the ledge by f3940, so this delayed fade is only ever seen
-  // as full white ledge at f3936-3939 — matching the ref's late, fast handoff.
-  const out = lerp(f, [3940, 3946], [1, 0]);
+  // r21 (window #4). The ledge no longer fades out — the endcard hands off by a
+  // navy SEA that rises from the bottom and submerges the cities (see EndCardScene,
+  // where the measured rise lives). The ledge stays fully opaque UNDER that sea so
+  // its cities show above the waterline, and simply unmounts at f3948 once the sea
+  // has filled the frame. The old fade greyed the cities the rising navy is meant
+  // to cover cleanly.
+  const out = 1;
+  // r21 (window #4): the endcard's rising navy sea submerges the cities where they
+  // stand (EndCardScene owns the measured rise). An A/B that ALSO floated the whole
+  // ledge group up with the waterline (dyRise=595−seaTop) helped f3935 (+0.008) but
+  // LOST f3940/f3942 (−0.014 each): the ref does NOT lift the cities off the top —
+  // above the waterline it is white sky, not risen skyline. So the group stays put
+  // and the sea covers it. (Refuted rise A/B kept as a note, not code — law 4/23.)
   const S = LEDGE.stacks;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: out }}>
@@ -2121,14 +2128,25 @@ export const EndCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   // out-window [3936,3946] so 3926-3936 stays transparent (ledge shows) and the
   // handoff reads as the measured ledge fade. Full opacity well before the
   // endcard content assembles (logo/mark from 3957), so nothing downstream moves.
-  // The ref hands off FAST (edge-in wipe, not a uniform crossfade: white through
-  // f3936-3938, ~80% navy by f3940, full navy f3946). Per-frame ref-gated:
-  // ledge-showing beats navy through f3938 (0.82 vs 0.68), navy wins from f3940
-  // (0.79 vs ~0.5). So hold the ledge (enterOp=0) through f3938 then snap to full
-  // navy by f3940 — every transition frame then scores >= the old full-navy cover.
-  const enterOp = lerp(f, [3938, 3940], [0, 1]);
+  // r21 (window #4). The handoff is NOT an opacity crossfade — the ref raises a
+  // navy SEA from the bottom that submerges the ledge cities and becomes the
+  // endcard's navy ground. Top edge measured on the clean left column (x40-120):
+  // y594 static to f3926, then 592·588·576·544·464·288·108·46·14 at
+  // 3928/30/32/35/38/40/42/44/46, reaching the top by ~f3948. The old
+  // enterOp[3938,3940] SNAPPED full navy at f3940 — covering the top ~288px the ref
+  // still shows as white cities (f3942 0.914) — and before that held the ledge dry
+  // where the ref was already 50px under water (f3935 0.871). The endcard is bare
+  // navy until the logo assembles (f3957), so reveal the WHOLE card bottom-up on
+  // the measured curve; LedgeScene stays opaque under it (its cities show above the
+  // waterline). By f3948 the sea has filled and the clip is the whole frame.
+  const seaTop = interpolate(
+    f,
+    [3926, 3928, 3930, 3932, 3935, 3938, 3940, 3942, 3944, 3946, 3948],
+    [594, 592, 588, 576, 544, 464, 288, 108, 46, 14, 0],
+    clamp,
+  );
   return (
-    <AbsoluteFill style={{ opacity: enterOp }}>
+    <AbsoluteFill style={{ clipPath: `inset(${seaTop}px 0px 0px 0px)` }}>
       <TitleCard frame={f} endcard />
       {/* disclaimer: fs 43 and cap-top y879 were already exact; the pitch and the
           colour were not, and the whole entry was invented. ENDCARD lives in
