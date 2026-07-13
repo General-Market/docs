@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate } from "remotion";
-import { C, CIRCLE, GANTT, DETAIL, LEDGE, MAP, MOS, REPORT, SEG, STRIP2, ENDCARD } from "./data";
+import { C, CIRCLE, LEDGE, MAP, MOS, REPORT, SEG, STRIP2, ENDCARD } from "./data";
 import { clamp } from "./ui";
 import { useBrand, useCopy } from "./brand";
 import { TracedArt } from "./TracedArt";
@@ -19,6 +19,54 @@ const PILL_COL: Record<string, string> = {
 // f2133), rows cascade 2145+i*3.2, detail card 2240-2266, dissolves BACK into
 // the gantt 2279-2291, full gantt holds to 2303, then the whole panel shrinks
 // into a document (fr_2312 mid, settled fr_2330) while the CLSNet box slides in.
+//
+// r18 TRANSCRIPTION. The gantt page is pixel-identical in the ref across
+// f2178..f2288 (row0 pill/label byte-stable at every probed frame) — so its
+// geometry is TRANSCRIBED, not fitted. Every number below is a scan of
+// work/clsnet/r18/vf/v_2178.png (full gantt, no card, no shrink) or v_2240.png
+// (settled detail card). The old GANTT.rows / GANTT.ruler / DETAIL values in
+// data.ts are measurably wrong (rows drift up to 39px left and are 5-20px
+// narrow; ruler 19px right and 11px short; labels 22% small) — left in place
+// because sibling agents hold data.ts this round; the truth lives here.
+const G_ROWS = [
+  { x: 205, y: 175, w: 142, lx: 380, color: "lavender" },
+  { x: 242, y: 274, w: 389, lx: 666, color: "lavender" },
+  { x: 505, y: 377, w: 175, lx: 721, color: "tan" },
+  { x: 606, y: 469, w: 224, lx: 860, color: "orangeDeep" },
+  { x: 739, y: 554, w: 355, lx: 1122, color: "lavender" },
+  { x: 981, y: 634, w: 175, lx: 1185, color: "orangeDeep" },
+  { x: 1008, y: 723, w: 355, lx: 1396, color: "lavender" },
+  { x: 1244, y: 815, w: 184, lx: 1449, color: "tan" },
+  { x: 1352, y: 900, w: 123, lx: 1504, color: "orangeDeep" },
+] as const;
+const G_PILL_H = 51; // measured fills 48-53, mean 50.6
+const G_LABEL_FS = 36; // ref cap-height 27 (ours was 21 at fs28)
+// SansText(lineHeight 1.15) puts the cap-top fs*0.179 below `y`; ref cap-top =
+// pillY + 10 on every row → y = pillY + 10 - 36*0.179.
+const G_LABEL_DY = 10 - G_LABEL_FS * 0.179;
+// ruler: 3px bar y89-91 spanning x191-1679, SEVEN identical drops to y135
+// (pitch 248). We drew it at x210..1710 with unequal 17/25px ticks.
+const G_RULER = { x: 191, w: 1488, barY: 90, dropY: 135 };
+// detail card (v_2240 scan): outer 536,270,760,666; 5px WHITE border; corners
+// DIAGONAL — TL+BR r30, TR+BL square (the house motif, cf. the r17 reportCard).
+// Row separators are WHITE 5px bands spanning the FULL card width (we drew them
+// navy, 1.5px, inset 30px each side — a contrast inversion over 24% of the
+// frame, and the whole reason this window sat at 0.87).
+const D_CARD = { x: 536, y: 270, w: 760, h: 666, r: 30, bw: 5 };
+const D_RULES = [131, 251, 376, 498]; // y rel to card top (abs 401/521/646/768)
+const D_VRULE = { x: 324, y: 50, h: 581 }; // abs x860-864, y320-900
+const D_FS = 37; // measured from four strings: 36.9 (we drew 30)
+const D_LABEL_X = 39; // div left rel to card (abs 575)
+const D_VALUE_X = 369; // abs 905 — we drew 885, 20px left of the ref
+// cap-tops abs 337/458/582/705/831; a plain div (line-height normal) puts the
+// cap-top fs*0.2333 below its `top`.
+const D_CAP_TOPS = [67, 188, 312, 435, 561];
+const D_TEXT_DY = -D_FS * 0.2333;
+// the grid draws itself in over 2196-2208 (rules wipe L→R, verticals top→down,
+// horizontals staggered 2f apart) — one shared eased clock, measured to the px.
+const D_DRAW = (f: number, at: number) =>
+  interpolate(f - at, [0, 2, 4, 6, 8, 10, 12], [0, 0.19, 0.66, 0.89, 0.96, 0.99, 1], clamp);
+
 export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
   const f = frame;
@@ -27,19 +75,25 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   const rideT = lerp(f, [2129, 2143], [0, 1]);
   const pageY = 1080 * (1 - Math.pow(rideT, 1.4));
   const bracketP = lerp(f, [2131, 2142], [0, 1]);
-  // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88),
-  // then reversed (ref restores the full gantt by 2291)
-  const detailP = lerp(f, [2188, 2196], [0, 1]) * lerp(f, [2279, 2291], [1, 0]);
-  // shrink-into-doc: full gantt → mini panel inside the left doc. gen10 MEASURED
-  // per-frame from the ref VIDEO (the regular_NNNN plate grid is ~+3f offset and
-  // gave a false ~10f-late read for three rounds). The ref HOLDS the full gantt
-  // to ~f2306 then shrinks FAST 2306-2315 (accelerating). sp maps the measured
-  // navy-panel bbox EXACTLY onto the proportional target REPORT.panel
-  // (340,470,205,120): f2306 (51,72,1660,933)=sp.15 · f2308 (76,108,1531,860)=.225
-  // · f2310 (124,176,1283,722)=.368 · f2312 (216,300,833,471)=.635 · settled 2315.
-  // (was st=lerp[2303,2324] quadOut = the f2306-2318 worst window, panel too
-  // small at f2306 / too late at f2312.)
-  const sp = interpolate(f, [2303, 2306, 2308, 2310, 2312, 2315], [0, 0.15, 0.225, 0.368, 0.635, 1], clamp);
+  // detail phase in (r5 lavender-mass track: card grows 2188-2200 — kf t88).
+  // r18: the ref does NOT ramp the rows back over 2279-2291 — every non-kept row
+  // is ABSENT until f2291 and full by f2294 (fill-mass scan of rows 2/3/5/7/8:
+  // 0% at 2290, 72% at 2292, 90% at 2294). The old `detailP` reversal painted
+  // twelve frames of rows the ref does not have.
+  const detailP = lerp(f, [2188, 2196], [0, 1]);
+  const rowsBack = lerp(f, [2291, 2294], [0, 1]);
+  // shrink-into-doc: full gantt → mini panel inside the left doc. Per-frame
+  // navy-panel left/top edge from the ref VIDEO — sp = xLeft/340 = yTop/470, the
+  // two agree to 3 decimals at every frame, so the proportional model is exact.
+  // The shrink STARTS AT f2289, not f2303: it is already at sp=.048 by f2300
+  // (panel inset 16px/23px, white margin all round) while we still drew a
+  // full-bleed page. Fourteen frames late — the f2289-2303 defect.
+  const sp = interpolate(
+    f,
+    [2289, 2292, 2294, 2296, 2298, 2300, 2302, 2304, 2306, 2308, 2310, 2312, 2315],
+    [0, 0.005, 0.011, 0.018, 0.03, 0.048, 0.071, 0.105, 0.152, 0.227, 0.371, 0.634, 1],
+    clamp,
+  );
   const R = {
     x: REPORT.panel.x * sp,
     y: REPORT.panel.y * sp + pageY,
@@ -86,41 +140,46 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
         }}
       >
         <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080, transform: `scale(${R.w / 1920}, ${R.h / 1080})`, transformOrigin: "0 0" }}>
-      {/* top bracket ruler */}
-      <svg width={1920} height={60} style={{ position: "absolute", top: GANTT.rulerY - 30 }}>
+      {/* top bracket ruler — 3px bar x191-1679 @ y90, seven identical 45px drops */}
+      <svg width={1920} height={150} style={{ position: "absolute", top: 0, left: 0 }}>
         <path
-          d={`M${GANTT.rulerX},40 V15 H${GANTT.rulerX + GANTT.rulerW} V40 ${Array.from({ length: 5 }, (_, i) => `M${GANTT.rulerX + ((i + 1) * GANTT.rulerW) / 6},15 V32`).join(" ")}`}
+          d={`M${G_RULER.x},${G_RULER.dropY} V${G_RULER.barY} H${G_RULER.x + G_RULER.w} V${G_RULER.dropY} ${Array.from(
+            { length: 5 },
+            (_, i) => `M${G_RULER.x + ((i + 1) * G_RULER.w) / 6},${G_RULER.barY} V${G_RULER.dropY}`,
+          ).join(" ")}`}
           fill="none"
           stroke={C.white}
-          strokeWidth={2.5}
+          strokeWidth={3}
           strokeDasharray={4700}
           strokeDashoffset={4700 * (1 - bracketP)}
         />
       </svg>
       {/* rows */}
-      {GANTT.rows.map((r, i) => {
+      {G_ROWS.map((r, i) => {
         const at = 2145 + i * 3.2;
         const op = lerp(f, [at, at + 5], [0, 1]);
         if (op <= 0) return null;
-        // in detail phase only row 0 (EM9E) and row 2 (PO1I) remain
+        // in the detail phase only row 0 (EM9E) and row 2 (PO1I) remain
         const keep = i === 0 || i === 2;
-        const rowOp = op * (keep ? 1 : 1 - detailP);
+        const rowOp = op * (keep ? 1 : Math.min(1 - detailP + rowsBack, 1));
         if (rowOp <= 0) return null;
-        // detail phase: PO1I row drops to bottom
-        const y = i === 2 ? r.y + detailP * (985 - r.y) : r.y;
-        const x = i === 2 ? r.x + detailP * (605 - r.x) : r.x;
+        // PO1I drops to the card's foot and rides back up. Its x NEVER moves in
+        // the ref (505 at rest, 505 at the foot — we slid it to 605) and its
+        // width never changes (175 — we squeezed it to 130). The rise-back is
+        // transcribed per frame from the tan-blob track: 1005@2282 · 1002@2284 ·
+        // 972@2286 · 830@2288 · 452@2290 · 390@2292 · 377@2294.
+        const y =
+          i === 2
+            ? interpolate(f, [2188, 2196, 2284, 2286, 2288, 2290, 2292, 2294], [r.y, 1005, 1002, 972, 830, 452, 390, r.y], clamp)
+            : r.y;
         // NOTE (window-1 investigation): the ref gantt bars carry a ~2-3px
-        // white outline the Pill component omits (probed f2300: fill x212-346 /
-        // outline x207-350). Adding it as a CSS outline is EYE-correct but
-        // SSIM-adverse on well-matched frames (2px A/B: f2300 +0.0044 but
-        // f2195/2280 -0.0018/-0.0012 — it merely shifts ~0.001 from window A to
-        // window B, failing NEW≥OLD). Left out; revisit only under the owner's
-        // eye. A constant pill y-shift was also rejected — the ref pill y drifts
-        // non-uniformly (row0 fill-top 184@2210→190@2300, row4 +2@2300, lesson 2).
+        // white outline the Pill component omits. Adding it as a CSS outline was
+        // EYE-correct but SSIM-adverse when the pill geometry was still wrong;
+        // re-test now that the fills are transcribed.
         return (
           <div key={i} style={{ position: "absolute", left: 0, top: 0, opacity: rowOp }}>
-            <Pill x={x} y={y} w={i === 2 && detailP > 0.5 ? 130 : r.w} h={GANTT.pillH} color={PILL_COL[r.color]} />
-            <SansText text={COPY.ganttIds[i]} x={x + (i === 2 && detailP > 0.5 ? 130 : r.w) + 24} y={y + 11} fs={GANTT.labelFs} color={C.white} />
+            <Pill x={r.x} y={y} w={r.w} h={G_PILL_H} color={PILL_COL[r.color]} />
+            <SansText text={COPY.ganttIds[i]} x={r.lx} y={y + G_LABEL_DY} fs={G_LABEL_FS} color={C.white} />
           </div>
         );
       })}
@@ -133,19 +192,14 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
           the window's worst frame). Fade out with the card grow, stay gone. */}
       <div style={{ position: "absolute", left: 193, top: 971, width: 530, height: 2, backgroundColor: C.white, opacity: lerp(f, [2188, 2196], [1, 0]) * lerp(f, [2166, 2172], [0, 1]) }} />
       <div style={{ position: "absolute", left: 192, top: 1010, width: 395, height: 2, backgroundColor: C.white, opacity: lerp(f, [2188, 2196], [1, 0]) * lerp(f, [2170, 2176], [0, 1]) }} />
-      {/* detail card: ref GROWS it out of the collapsing gantt rows (opaque,
-          full by ~f2196), THEN populates the field text (~2200-2208) — was an
-          opacity crossfade of a fixed full-size card (ghost rows showed through
-          the translucent card; text appeared with the card). Now: fast opaque
-          entrance + scale-grow + delayed content reveal (eye-audit vs vf 2190/
-          2196/2202). Exit unchanged (text fades first, then card). */}
-      {detailP > 0 && (
-        <DetailCard
-          opacity={lerp(f, [2188, 2193], [0, 1]) * lerp(f, [2281, 2290], [1, 0])}
-          growP={lerp(f, [2188, 2196], [0.14, 1])}
-          contentOpacity={lerp(f, [2198, 2207], [0, 1]) * lerp(f, [2279, 2286], [1, 0])}
-        />
-      )}
+      {/* detail card. The ref grows it out of the TOP-LEFT corner (top edge
+          pinned at y270 and left edge at x536 from f2184 on — a center-scale is
+          measurably wrong ink), draws the white grid in over 2196-2208, cascades
+          the field text, then COLLAPSES the card back to that corner over
+          2283-2290 (it does not fade — a fade leaves a translucent full-size
+          ghost for nine frames the ref never shows). Grow/collapse both scanned
+          per frame from the card's own white border. */}
+      {f >= 2184 && f < 2290 && <DetailCard f={f} />}
         </div>
       </div>
       {/* document outline drawing around the shrinking panel */}
@@ -180,79 +234,87 @@ export const GanttScene: React.FC<{ frame: number }> = ({ frame }) => {
   );
 };
 
-const DetailCard: React.FC<{ opacity: number; growP?: number; contentOpacity?: number }> = ({ opacity, growP = 1, contentOpacity = 1 }) => {
+const DetailCard: React.FC<{ f: number }> = ({ f }) => {
   const COPY = useCopy();
   const { sans: SANS } = useBrand();
-  if (opacity <= 0) return null;
-  const { card } = DETAIL;
-  const rowH = (card.h - 60) / COPY.detail.length;
+  // grow (top-left anchored, scanned from the card's own white border):
+  //   width full by 2186 · height 62px@2186 · 103@2190 · 364@2192 · 625@2194 · 666@2198
+  // collapse (same corner): w 760/746/710/617/483 and h 666/-/625/540/373 at
+  //   2283/2284/2285/2286/2287 → gone by 2290, one frame before the rows return.
+  const sx = interpolate(f, [2183, 2184, 2186, 2283, 2285, 2287, 2289, 2290], [0.3, 0.925, 1, 1, 0.934, 0.636, 0.28, 0], clamp);
+  const sy = interpolate(
+    f,
+    [2184, 2186, 2188, 2190, 2192, 2194, 2196, 2198, 2283, 2285, 2287, 2289, 2290],
+    [0.02, 0.093, 0.098, 0.155, 0.547, 0.938, 0.995, 1, 1, 0.938, 0.56, 0.06, 0],
+    clamp,
+  );
+  if (sx <= 0 || sy <= 0) return null;
+  // the grid retracts (bottom rule first) a few frames ahead of the collapse
+  const gridOut = (i: number) => lerp(f, [2280 - i * 1.3, 2288 - i * 1.3], [1, 0]);
   return (
     <div
       style={{
         position: "absolute",
-        left: card.x,
-        top: card.y,
-        width: card.w,
-        height: card.h,
-        borderRadius: `4px 4px ${card.r + 14}px 4px`,
-        backgroundColor: C.lavender,
-        opacity,
-        transform: `scale(${growP})`,
-        transformOrigin: "50% 50%",
+        left: D_CARD.x,
+        top: D_CARD.y,
+        width: D_CARD.w,
+        height: D_CARD.h,
+        borderRadius: `${D_CARD.r}px 0 ${D_CARD.r}px 0`,
+        backgroundColor: C.white,
+        transform: `scale(${sx}, ${sy})`,
+        transformOrigin: "0 0",
       }}
     >
-      <div style={{ position: "absolute", inset: 0, opacity: contentOpacity }}>
-      {COPY.detail.map(([k, v], i) => (
-        <React.Fragment key={k}>
+      <div
+        style={{
+          position: "absolute",
+          inset: D_CARD.bw,
+          borderRadius: `${D_CARD.r - D_CARD.bw}px 0 ${D_CARD.r - D_CARD.bw}px 0`,
+          backgroundColor: C.lavender,
+        }}
+      />
+      {/* white grid: 4 full-width rules + 1 vertical, drawn in 2196-2208 */}
+      {D_RULES.map((ry, i) => {
+        const p = D_DRAW(f, 2196 + i * 2) * gridOut(3 - i);
+        if (p <= 0) return null;
+        return (
           <div
+            key={ry}
             style={{
               position: "absolute",
-              left: DETAIL.labelX - card.x,
-              top: 40 + i * rowH,
-              fontFamily: SANS,
-              fontSize: DETAIL.rowFs,
-              color: C.navy,
-            }}
-          >
-            {k}
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              left: DETAIL.valueX - card.x,
-              top: 40 + i * rowH,
-              fontFamily: SANS,
-              fontSize: DETAIL.rowFs,
-              color: C.orangeDeep,
-            }}
-          >
-            {v}
-          </div>
-          {i < COPY.detail.length - 1 && (
-            <div
-              style={{
-                position: "absolute",
-                left: 30,
-                top: 40 + (i + 1) * rowH - 18,
-                width: card.w - 60,
-                height: 1.5,
-                backgroundColor: C.navy,
-              }}
-            />
-          )}
-          <div
-            style={{
-              position: "absolute",
-              left: DETAIL.valueX - card.x - 25,
-              top: 40 + i * rowH - (i === 0 ? 40 : 18),
-              width: 1.5,
-              height: rowH + (i === 0 ? 22 : 0),
-              backgroundColor: C.navy,
+              left: 0,
+              top: ry,
+              width: D_CARD.w * p,
+              height: D_CARD.bw,
+              backgroundColor: C.white,
             }}
           />
-        </React.Fragment>
-      ))}
-      </div>
+        );
+      })}
+      <div
+        style={{
+          position: "absolute",
+          left: D_VRULE.x,
+          top: D_VRULE.y,
+          width: D_CARD.bw,
+          height: D_VRULE.h * D_DRAW(f, 2196) * lerp(f, [2282, 2288], [1, 0]),
+          backgroundColor: C.white,
+        }}
+      />
+      {COPY.detail.map(([k, v], i) => {
+        // labels land 2201+2i..2206+2i, values 2204+2.6i..2213+2.6i; on the way
+        // out the card empties bottom-up (row4 gone by 2281, row0 by 2289)
+        const out = lerp(f, [2278 + 2 * (4 - i), 2281 + 2 * (4 - i)], [1, 0]);
+        const kOp = lerp(f, [2201 + 2 * i, 2206 + 2 * i], [0, 1]) * out;
+        const vOp = lerp(f, [2204 + 2.6 * i, 2213 + 2.6 * i], [0, 1]) * out;
+        const top = D_CAP_TOPS[i] + D_TEXT_DY;
+        return (
+          <React.Fragment key={k}>
+            <div style={{ position: "absolute", left: D_LABEL_X, top, fontFamily: SANS, fontSize: D_FS, color: C.navy, opacity: kOp }}>{k}</div>
+            <div style={{ position: "absolute", left: D_VALUE_X, top, fontFamily: SANS, fontSize: D_FS, color: C.orangeDeep, opacity: vOp }}>{v}</div>
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
