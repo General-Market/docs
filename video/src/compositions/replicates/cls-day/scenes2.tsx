@@ -861,7 +861,12 @@ const PvpRightCity: React.FC = () => (
   <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute" }}>
     {/* capsule frame (vertex on the left) */}
     <path
-      d="M 2000 390 L 1595 390 Q 1560 390 1540 423 L 1448 582 Q 1428 622 1448 662 L 1520 822 Q 1540 855 1575 855 L 2000 855"
+      // gen19: the capsule's VERTEX is the worst-ranked cell in all of S13 (grid r3c5,
+      // ssim .060 — a near-flat cell where one misplaced curve owns all the variance).
+      // Ref min-navy-x per row (f2600): y540 1459 · y576 1439 · y612 1421 · y630 1419 ·
+      // y660 1428 · y708 1455 — a SHARP point at (1422, 630). Ours bottomed out at 1437,
+      // 16px right and 8px high, on a shallower incoming diagonal.
+      d="M 2000 390 L 1595 390 Q 1560 390 1540 423 L 1432 588 Q 1412 630 1432 672 L 1520 822 Q 1540 855 1575 855 L 2000 855"
       fill="none"
       stroke={C.navyDeep}
       strokeWidth={4}
