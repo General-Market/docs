@@ -638,6 +638,78 @@ const HLine: React.FC<{ top: number; h: number }> = ({ top, h }) => {
   );
 };
 
+// ═══ THE ORANGE RETURN PATH IS A PEN, AND IT CARRIES A DOCUMENT ═══════════════
+// r20. This is the one window in the file where OUR frames are byte-identical
+// while the REFERENCE still moves: ref f2560 vs f2600 scores 0.9805; ours are the
+// same file. We were painting a still plate across forty frames of animation.
+// A whole-frame diff of ref 2560↔2600 finds exactly ONE moving thing (box mean
+// |Δ| = 3, i.e. codec noise; the two documents, mean |Δ| = 120):
+//
+//  1. THE PATH IS DRAWN, NOT FADED. One pen leaves the box's edge at f2522, runs
+//     out along the horizontal, rounds the corner and climbs to the horizon,
+//     arriving f2538. Scanned off the ref's own orange rows — the horizontal's
+//     outer end 806@2523 · 786 · 760 · 726 · 672 · 577 · 410@2529 (full), then the
+//     vertical's top 862@2529 · 627 · 532 · 480 · 446 · 423 · 409 · 400 · 396 ·
+//     394@2538. We ramped the opacity of the finished path over 2532-2546.
+//  2. THE VERTICAL DOES NOT STOP AT THE DOCUMENT. It runs to y394 and ends in an
+//     ARROWHEAD (tip 395.5/1529.5 at y394; wings to ±22 at y423; ~480px of ink,
+//     the two sides identical to a pixel). r18 scanned for arrowheads at y200-240
+//     — ABOVE the horizon — found zero, and correctly deleted the arrows it had
+//     drawn there. The ref's arrowheads are BELOW the line, pointing up at it,
+//     and no round ever drew them. A negative scan only refutes where it looked.
+//  3. THE DOCUMENT RIDES THE PATH. It is born at the pen's start at f2534, grows
+//     to full size by f2544, travels the whole route and parks its top edge on the
+//     arrowhead at f2589. We drew it SETTLED from f2546 — forty-three frames of a
+//     document sitting where the ref shows bare white, while the ref's own document
+//     was up to 490px away, still climbing.
+//
+// The document is CENTRED ON THE ROUTE the whole way (its centre rides y927.6 on
+// the horizontal and x395.5 on the vertical), and that is what let the corner be
+// solved rather than guessed: at f2559 its centre sits 26.1px from (421.5,901.56)
+// — the corner's own radius, to a tenth of a pixel. So the whole motion is ONE
+// arc-length parameter, not two hand-keyed tables.
+const PAY_R = 26; // corner radius, r19-measured
+const PAY_ARC = (Math.PI * PAY_R) / 2;
+// x0 = the pen's start (the box end of the horizontal); cx = corner centre x;
+// vx = the vertical's x; sEnd = the arc length at which the doc parks (its top
+// edge on the arrowhead: left settles at y393, right at y388 — the ref's own 5px).
+const PAY_SIDES = [
+  { x0: 823, cx: 421.5, vx: 395.5, dir: -1, sEnd: 906.4 },
+  { x0: 1100, cx: 1503.4, vx: 1529.4, dir: 1, sEnd: 913.3 },
+] as const;
+type PaySide = (typeof PAY_SIDES)[number];
+const payRoutePt = (s: number, side: PaySide): [number, number] => {
+  const hLen = Math.abs(side.cx - side.x0);
+  if (s <= hLen) return [side.x0 + side.dir * s, 927.56];
+  if (s <= hLen + PAY_ARC) {
+    const th = (s - hLen) / PAY_R;
+    return [side.cx + side.dir * PAY_R * Math.sin(th), 901.56 + PAY_R * Math.cos(th)];
+  }
+  return [side.vx, 901.56 - (s - hLen - PAY_ARC)];
+};
+// the pen, as a fraction of each leg's own path length (SVG pathLength=1000)
+const PAY_PEN_F = [2521, 2522, 2523, 2524, 2525, 2526, 2527, 2528, 2529, 2530, 2531, 2532, 2533, 2534, 2535, 2536, 2537, 2538];
+const PAY_PEN_P = [0, 0.004, 0.018, 0.039, 0.066, 0.102, 0.159, 0.259, 0.507, 0.755, 0.855, 0.909, 0.945, 0.97, 0.984, 0.994, 0.998, 1];
+// the document's progress along the route, tracked frame by frame on its own navy
+// bbox (68x89, rigid — it neither rotates nor scales once it is up)
+const PAY_DOC_F = [
+  2534, 2535, 2536, 2537, 2538, 2539, 2540, 2541, 2542, 2543, 2544, 2545, 2546, 2547,
+  2548, 2549, 2550, 2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558, 2559, 2560, 2561,
+  2562, 2563, 2564, 2565, 2566, 2567, 2568, 2569, 2570, 2571, 2572, 2573, 2574, 2575,
+  2576, 2577, 2578, 2579, 2580, 2581, 2582, 2583, 2584, 2585, 2586, 2587, 2588, 2589,
+];
+const PAY_DOC_P = [
+  0.0154, 0.0177, 0.0199, 0.0287, 0.0325, 0.037, 0.0441, 0.0508, 0.059, 0.0673, 0.0783, 0.0905, 0.1037, 0.1192,
+  0.1346, 0.1533, 0.1743, 0.1964, 0.2217, 0.2504, 0.2824, 0.3166, 0.3552, 0.3961, 0.4402, 0.4779, 0.5245, 0.5708,
+  0.615, 0.6547, 0.6944, 0.7286, 0.7606, 0.7893, 0.8147, 0.8367, 0.8577, 0.8753, 0.8918, 0.9073, 0.9206, 0.9316,
+  0.9426, 0.9514, 0.9592, 0.9669, 0.9735, 0.9791, 0.9834, 0.9878, 0.9911, 0.9934, 0.9956, 0.9978, 0.9989, 1,
+];
+// and it is BORN small at the pen's start — bbox 5px at f2534, full by f2544
+const PAY_DOC_GF = [2533, 2534, 2535, 2536, 2537, 2538, 2539, 2540, 2541, 2542, 2543, 2544];
+const PAY_DOC_GS = [0, 0.06, 0.1, 0.13, 0.37, 0.59, 0.68, 0.83, 0.89, 0.93, 0.98, 1];
+const PAY_DOC_W = 69;
+const PAY_DOC_H = 90;
+
 // ═══ Scene 19: payment complete (f2480-2612) ═══
 export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   const COPY = useCopy();
@@ -650,10 +722,47 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
   // it, so `out` now only governs the horizon line — which does NOT fade, it
   // DESCENDS into Strip2's band. Hand it over at 2640, the frame Strip2 mounts.
   const out = lerp(f, [2639, 2641], [1, 0]);
-  const arrOp = lerp(f, [2505, 2518], [0, 1]);
-  const belowOp = lerp(f, [2520, 2538], [0, 1]);
-  // r5: ref shows the orange return plumbing SOLID by 2560 (was fading in 2556-2580)
-  const orangeP = lerp(f, [2532, 2546], [0, 1]);
+  // r20 THE ENTRY IS FIVE CLOCKS, NOT ONE. Ink-counted per element against the
+  // settled frame (f2600 = 1.00), every second frame from f2480:
+  //   navy plumbing  0.03@2482 → 1.00@2490      (we drew 2520-2538)
+  //   hexes          0.00@2488 → 1.00@2500      (we drew 2520-2538)
+  //   "Payment complete" + its arrow  0.02@2484 → 1.00@2500   (we drew 2505-2518)
+  //   ClsNetBox      0.02@2503 → 1.00@2518      (we drew 2520-2538)
+  //   navy documents 0.00@2506 → 1.00@2516      (we drew 2520-2538)
+  //   down-arrows    0.01@2506 → 1.00@2518      (we drew 2520-2538)
+  // One `belowOp` ramp ran the whole tableau ~25 frames late — the entire scene
+  // arrived after the reference had finished building it. Schedule errors dominate
+  // geometry errors, and this is a 25-frame error on every large object at once.
+  const arrOp = lerp(f, [2484, 2500], [0, 1]);
+  const plumbOp = lerp(f, [2482, 2490], [0, 1]);
+  const docOp = lerp(f, [2506, 2516], [0, 1]);
+  const dnArrowOp = lerp(f, [2506, 2518], [0, 1]);
+  // The hexes do not fade — they SCALE UP from a point about their own centres,
+  // which the ref hands us for free: the hex bbox is 16x12 at f2489 centred
+  // (784.5,587) and 241x220 at rest centred (785.5,589). One centre, one scale.
+  const hexS = interpolate(
+    f,
+    [2488, 2489, 2490, 2491, 2492, 2493, 2494, 2495, 2496, 2497, 2498, 2499, 2500],
+    [0, 0.066, 0.095, 0.141, 0.216, 0.369, 0.651, 0.797, 0.871, 0.921, 0.954, 0.979, 1],
+    clamp,
+  );
+  // The box does not fade either — it UNFURLS UPWARD from its own bottom edge, at
+  // full width from the first frame (x875..1041 at every frame of the entry; only
+  // the top edge moves: 997@2503 · 982 · 955 · 916 · 889 · 874 · 864 · 857 · 850 ·
+  // 847 · 843 · 840@2514 · 833 at rest). Its white mark is NOT squashed with it —
+  // it draws itself in, stroke by stroke, which is what `markP` is for.
+  const boxTop = interpolate(
+    f,
+    [2502, 2503, 2504, 2505, 2506, 2507, 2508, 2509, 2510, 2511, 2512, 2513, 2514, 2518],
+    [1000, 997, 982, 955, 916, 889, 874, 864, 857, 850, 847, 843, 840, 833.8],
+    clamp,
+  );
+  const boxMarkP = lerp(f, [2506, 2520], [0, 1]);
+  // r20: the pen (see above). The path's own length normalises it — SVG pathLength.
+  const penP = interpolate(f, PAY_PEN_F, PAY_PEN_P, clamp);
+  const headOp = lerp(f, [2536, 2539], [0, 1]);
+  const docP = interpolate(f, PAY_DOC_F, PAY_DOC_P, clamp);
+  const docG = interpolate(f, PAY_DOC_GF, PAY_DOC_GS, clamp);
   // r18 HORIZON. The ref's line is y364-367 (4px, full width) at EVERY frame
   // 2480-2632 — we drew it at 368-370 while the traced cities carry their own
   // baseline at 364-366, so the replica showed a SEVEN-pixel double line across
@@ -677,8 +786,20 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
     <AbsoluteFill style={{ backgroundColor: C.white, opacity: inOp * out }}>
       <HLine top={lineY} h={3.52} />
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${scrollX}px)` }}>
-      <div style={{ position: "absolute", left: 215, top: 368 - 295 * 0.47, opacity: 1 }}>
-        <TracedArt name="cityA" scale={0.47} />
+      {/* r20 CITY A IS 13.5% TOO SMALL. It is a TRACE, and the ref's is the same
+          trace — so the whole thing is a scale, and the scale is measurable. Two
+          independent instruments agree to within 0.1%: the orange temple's ink bbox
+          (ref 237x148 at x377-613/y214-361, ours 209x130 — 1.134 wide, 1.138 tall)
+          and a brute-force (k,dx,dy) IoU fit over the whole city with the badge
+          masked out, which lifts the overlap from 0.214 to 0.770 at k=1.135 and
+          lands on the temple's own numbers. The first search I ran said k=1.06 and
+          "the arrangement must differ" — it was pinned at its own dx boundary. When
+          a fit disagrees with a landmark, widen the search before you doubt the
+          landmark. cityBPay (re-traced at native scale in r5) is already exact, and
+          that is the control: the city that was re-fitted is right, the one that
+          never was is 13.5% small — for 130 frames, on 3% of the frame. */}
+      <div style={{ position: "absolute", left: 164.8, top: 212 }}>
+        <TracedArt name="cityA" scale={0.5334} />
       </div>
       {/* r5: the ref payment cityB is a WIDER arrangement than the intro art
           (w873×h277 vs uniform-scale 630) — traced at native scale from
@@ -686,18 +807,24 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
       <TracedArt name="cityBPay" x={1000} y={80} />
       <Badge letter="A" cx={188} cy={265} r={40} />
       <Badge letter="B" cx={1728} cy={265} r={40} />
-      {/* Payment complete double arrow */}
+      {/* Payment complete double arrow.
+          r20: the caption was WRAPPING. "Payment complete" measures 424px at fs36
+          and the box was 400 — so it broke, and the two lines overprinted into an
+          unreadable smear ("Payment com|plete") for the whole 130-frame scene. The
+          ref's caption is one line, ink bbox x744-1173, cap-top y148; ours started
+          at y152. Box widened past the natural width, re-centred on the ref's own
+          centre (958.5), and lifted the 4px. */}
       {arrOp > 0 && (
         <>
-          <SansText text={COPY.paymentComplete} x={760} y={148} fs={36} color={C.serifNavy} opacity={arrOp} width={400} align="center" />
+          <SansText text={COPY.paymentComplete} x={709} y={144} fs={36} color={C.serifNavy} opacity={arrOp} width={500} align="center" />
           <svg width={1920} height={1080} style={{ position: "absolute", opacity: arrOp }}>
             <path d="M735,197 H1180 M735,197 l16,-9 M735,197 l16,9 M1180,197 l-16,-9 M1180,197 l-16,9" stroke={C.serifNavy} strokeWidth={3} fill="none" />
           </svg>
         </>
       )}
-      {/* below-line settlement plumbing */}
-      {belowOp > 0 && (
-        <div style={{ position: "absolute", inset: 0, opacity: belowOp }}>
+      {/* below-line settlement plumbing — five elements, five measured clocks */}
+      {plumbOp > 0 && (
+        <div style={{ position: "absolute", inset: 0 }}>
           <svg width={1920} height={1080} style={{ position: "absolute" }}>
             {/* r18. The plumbing does NOT spring from the horizon line, and it does
                 not turn a square corner. Traced from the ref (f2560/2580/2600, all
@@ -713,8 +840,9 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
               stroke={C.navy}
               strokeWidth={2.5}
               fill="none"
+              opacity={plumbOp}
             />
-            <path d="M895,660 V800 M895,800 l-9,-15 M895,800 l9,-15 M1035,660 V800 M1035,800 l-9,-15 M1035,800 l9,-15" stroke={C.navy} strokeWidth={2.5} fill="none" />
+            <path d="M895,660 V800 M895,800 l-9,-15 M895,800 l9,-15 M1035,660 V800 M1035,800 l-9,-15 M1035,800 l9,-15" stroke={C.navy} strokeWidth={2.5} fill="none" opacity={dnArrowOp} />
           </svg>
           {/* mHexCity2 stays on SmallHex, and the reason is a REFUTATION worth keeping.
               Its city is 1.213x too small and 43px too high exactly as mHexHeli's is, and
@@ -725,11 +853,22 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
               same 1.213. Misplaced ink loses to absent ink (law 4), and the fiction must be
               cut before the resize can land (law 2). mHexHeli's bucket is small enough that
               its resize wins outright. Re-trace mHexCity2 without the bucket and this call
-              becomes `<PayHex ... artScale={1.246} artLeft={-6.2} artBottom={-8.4} />`. */}
-          <SmallHex art="mHexCity2" cx={785} cy={590} w={240} artW={215} />
-          <PayHex art="mHexHeli" cx={1148} cy={592} w={240} artScale={1.246} artLeft={0.2} artBottom={-7.7} />
-          <Doc x={565} y={548} w={72} h={90} />
-          <Doc x={1292} y={548} w={72} h={90} />
+              becomes `<PayHex ... artScale={1.246} artLeft={-6.2} artBottom={-8.4} />`.
+              r20: the hexes SCALE UP from their own centres (785,589) / (1148,592) — the
+              transform is dropped entirely once settled, so every frame past f2500 is
+              byte-identical to what shipped before. */}
+          {hexS > 0 && (
+            <>
+              <div style={{ position: "absolute", inset: 0, transform: hexS < 1 ? `scale(${hexS})` : undefined, transformOrigin: "785px 589px" }}>
+                <SmallHex art="mHexCity2" cx={785} cy={590} w={240} artW={215} />
+              </div>
+              <div style={{ position: "absolute", inset: 0, transform: hexS < 1 ? `scale(${hexS})` : undefined, transformOrigin: "1148px 592px" }}>
+                <PayHex art="mHexHeli" cx={1148} cy={592} w={240} artScale={1.246} artLeft={0.2} artBottom={-7.7} />
+              </div>
+            </>
+          )}
+          <Doc x={565} y={548} w={72} h={90} opacity={docOp} />
+          <Doc x={1292} y={548} w={72} h={90} opacity={docOp} />
           {/* r19. This was the last `labelFs` opt-out, and BOTH of the things that
               justified it were wrong. The seat is a constant — of the box SIDE, not
               of `scale` (ui.tsx r19). And the box was never true: r18's in-code note
@@ -737,8 +876,16 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
               was simply the wrong number. Coverage-integral edges on the ref, with
               the estimator's bias calibrated against our own render (where the truth
               is known exactly): top 833.9, side 165-166 — we drew 835 and 166.6.
-              A bad measurement had been enshrined as a law. */}
-          <ClsNetBox x={875} y={833.8} w={170} side={166} />
+              A bad measurement had been enshrined as a law.
+              r20: it UNFURLS from its bottom edge. Clipped from above rather than
+              scaled, because the ref does not squash the mark — the mark draws
+              itself in, which is what markP is for. Past f2518 the clip is the whole
+              frame and nothing here changes. */}
+          <div style={{ position: "absolute", left: 0, top: boxTop, width: 1920, height: 1080 - boxTop, overflow: "hidden" }}>
+            <div style={{ position: "absolute", left: 0, top: -boxTop, width: 1920, height: 1080 }}>
+              <ClsNetBox x={875} y={833.8} w={170} side={166} markP={boxMarkP} />
+            </div>
+          </div>
         </div>
       )}
       {/* orange return paths.
@@ -753,27 +900,68 @@ export const PaymentScene: React.FC<{ frame: number }> = ({ frame }) => {
             • the horizontal sits at y927.56, not 930; the stroke is 2.35, not 2.5;
               the right leg is at x1529.4, not 1527.5; and both legs run up to the
               doc's own bottom edge, y486, not 490.
-          Symmetric about x962.5 to the tenth of a pixel — the ref's own axis. */}
-      {orangeP > 0 && (
-        <div style={{ position: "absolute", inset: 0, opacity: orangeP }}>
-          <svg width={1920} height={1080} style={{ position: "absolute" }}>
+          Symmetric about x962.5 to the tenth of a pixel — the ref's own axis.
+          r20 — and it does NOT stop at the document, and it is not faded up. It is
+          drawn, it ends in an arrowhead at y394, and a document rides it. See the
+          block above PaymentScene. Each leg gets its own <path> so the two draw
+          TOGETHER; pathLength=1000 normalises each leg's own length, so the dash
+          needs no hand-computed arc length that could drift. */}
+      {penP > 0 && (
+        <svg width={1920} height={1080} style={{ position: "absolute" }}>
+          {PAY_SIDES.map((sd) => (
             <path
-              d="M823,927.56 H421.5 Q395.5,927.56 395.5,901.56 V486 M1100,927.56 H1503.4 Q1529.4,927.56 1529.4,901.56 V486"
+              key={sd.x0}
+              d={`M${sd.x0},927.56 H${sd.cx} Q${sd.vx},927.56 ${sd.vx},901.56 V394`}
               stroke={C.orange}
               strokeWidth={2.35}
               fill="none"
+              pathLength={1000}
+              strokeDasharray={1000}
+              strokeDashoffset={1000 * (1 - penP)}
             />
-          </svg>
-          <Doc x={360} y={392} w={70} h={95} />
-          <Doc x={1495} y={392} w={70} h={95} />
-        </div>
+          ))}
+          {/* the arrowhead. Row-by-row orange scan at f2550, both sides identical:
+              tip (vx, 394); outer edges fall away at dx/dy ≈ ±1.02 to x=±22 by
+              y=416; arms end at y423; ~480px of ink each. A stroked chevron whose
+              miter puts the painted apex back on y394. */}
+          {headOp > 0 &&
+            PAY_SIDES.map((sd) => (
+              <path
+                key={`h${sd.x0}`}
+                d={`M${sd.vx - 21},421.5 L${sd.vx},399 L${sd.vx + 21},421.5`}
+                stroke={C.orange}
+                strokeWidth={7}
+                strokeLinejoin="miter"
+                fill="none"
+                opacity={headOp}
+              />
+            ))}
+        </svg>
       )}
-      {/* r18: the two orange up-arrows (x396/x1415, y205-366, rising off the
-          horizon into the cities) are FICTION — an orange-arrowhead scan of the
-          ref at x384-412 and x1402-1430, y200-240 returns ZERO at every frame
-          2490-2612 while ours carried 163/191px. The ref's return plumbing stops
-          AT the line; nothing is ever drawn above it. Deleted (lesson: deleting
-          fiction is the highest-yield move in this codebase). */}
+      {/* THE DOCUMENTS RIDE THE PATH. Centred on the route, scaled about their own
+          centre while they are born. Drawn AFTER the path, because in the ref the
+          page is simply on top of the line — which is why the line's top 100px and
+          the whole arrowhead vanish the moment the document parks on them, and why
+          a scan of the settled frames alone would have found neither. */}
+      {docG > 0 &&
+        PAY_SIDES.map((sd) => {
+          const [cx, cy] = payRoutePt(docP * sd.sEnd, sd);
+          return (
+            <Doc
+              key={`d${sd.x0}`}
+              x={cx - (PAY_DOC_W * docG) / 2}
+              y={cy - (PAY_DOC_H * docG) / 2}
+              w={PAY_DOC_W * docG}
+              h={PAY_DOC_H * docG}
+            />
+          );
+        })}
+      {/* r18: the two orange up-arrows ABOVE the horizon (x396/x1415, y205-366,
+          rising off the line into the cities) are FICTION — an orange-arrowhead scan
+          of the ref at y200-240 returns ZERO at every frame 2490-2612 while ours
+          carried 163/191px. That deletion still stands. But the scan only refuted
+          where it looked: twenty pixels LOWER, at y394-423, the ref has an arrowhead
+          on each leg, and it had been missing since r1. */}
       </div>
     </AbsoluteFill>
   );
