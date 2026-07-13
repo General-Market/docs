@@ -858,10 +858,11 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
   // the S-rail dash-draw: dasharray only while drawing, so every settled frame is
   // byte-identical to the pre-gen20 render.
   const dash = railP < 1 ? { pathLength: 1, strokeDasharray: 1, strokeDashoffset: 1 - railP } : {};
-  // the chevrons ride the line's tip (top path 657 long, stub+elbow the first 168)
+  // the chevrons ride the line's tip (top path ~655 long, stub+elbow the first 166;
+  // bottom ~658 / 179 — one draw LUT for both, the 2% difference is sub-pixel)
   const arrowP = frame >= 2369 ? 1 : lut(frame, S13_ARROW);
-  const tipT = Math.max(401, 890 - (railP * 657 - 168));
-  const tipB = Math.min(1499, 1010 + (railP * 661 - 172));
+  const tipT = Math.max(401, 890 - (railP * 655 - 166));
+  const tipB = Math.min(1499, 1020 + (railP * 658 - 179));
   // the band morph re-expressed at S13's own origin: originX 959 / hour 7 with
   // pxPerHour 286 puts 04:00 at x101 — identical ticks to the old (101, hour 4).
   return (
@@ -908,7 +909,7 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
           Same family as gen19's S10 connector arrowheads (apex on the edge, big sweep). */}
       {railP > 0 && (
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <path d="M 950 425 L 950 345 Q 950 290 890 290 L 401 290" fill="none" stroke={C.navyDeep} strokeWidth={5} {...dash} />
+        <path d="M 950 425 L 950 370 C 950 325.8 923.1 290 890 290 L 401 290" fill="none" stroke={C.navyDeep} strokeWidth={5} {...dash} />
         {arrowP > 0 && (
           <path
             d={`M ${tipT + 52 * arrowP} ${290 - 32 * arrowP} L ${tipT} 290 L ${tipT + 52 * arrowP} ${290 + 32 * arrowP}`}
@@ -917,7 +918,7 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
             strokeWidth={5 + 3 * arrowP}
           />
         )}
-        <path d="M 950 635 L 950 719 Q 950 774 1010 774 L 1499 774" fill="none" stroke={C.navyDeep} strokeWidth={5} {...dash} />
+        <path d="M 950 635 L 950 704 C 950 742.7 981.3 774 1020 774 L 1499 774" fill="none" stroke={C.navyDeep} strokeWidth={5} {...dash} />
         {arrowP > 0 && (
           <path
             d={`M ${tipB - 52 * arrowP} ${774 - 32 * arrowP} L ${tipB} 774 L ${tipB - 52 * arrowP} ${774 + 32 * arrowP}`}
@@ -962,7 +963,13 @@ export const S13Pvp: React.FC<{ frame: number }> = ({ frame }) => {
 // NOT scaled — see the S13 entrance block); the INTERIOR only arrives once the
 // capsule is open, so it carries its own opacity and no transform. At k=1/tx=0/
 // interior=1 both branches below render exactly the pre-gen20 markup.
-const L_CAPSULE = "M -80 222 L 330 222 Q 365 222 385 255 L 477 415 Q 497 455 477 495 L 405 655 Q 385 690 350 690 L -80 690";
+// gen20: the LEFT capsule's VERTEX is the twin of the right one gen19 fixed — grid cell
+// r2c2 (240x180+480+360), ranked 2nd across f2380/f2400 and near-flat white, so one
+// misplaced curve owns all of its variance. Ref max-navy-x per row (f2400): y430 490 ·
+// y442 494 · y448..466 495 (a rounded point centred y457) · y478 492 · y496 483. Ours
+// bottomed out at 488 over y448..460 — SEVEN pixels short, and the whole approach
+// diagonal ran 2-4px inside the ref's. Vertex point (479,414)→(507,457)→(479,500).
+const L_CAPSULE = "M -80 222 L 330 222 Q 365 222 385 255 L 479 414 Q 507 457 479 500 L 405 655 Q 385 690 350 690 L -80 690";
 const PvpLeftCity: React.FC<{ k?: number; tx?: number; interior?: number }> = ({
   k = 1,
   tx = 0,

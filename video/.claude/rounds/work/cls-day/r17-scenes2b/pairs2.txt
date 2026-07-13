@@ -1,0 +1,2 @@
+/Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/refs/f2380.png /Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/vE/f2380.png
+/Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/refs/f2400.png /Users/maxguillabert/Downloads/index/video/.claude/rounds/work/cls-day/r17-scenes2b/vE/f2400.png
