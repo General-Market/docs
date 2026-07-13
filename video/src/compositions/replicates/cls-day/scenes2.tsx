@@ -1628,7 +1628,7 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             (y130) were both already right — only the size was wrong. 14,514px/frame, the
             largest single error in this window. labelSize is a PROP here: TimelineBand is
             shared with four other scenes and its default is NOT touched. */}
-        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} skipHours={[7, 9, 12]} />
+        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} skipHours={[7, 9, 12]} tickAbove={0} />
         <div style={{ opacity: markerP }}>
           <MarkerTriangle x={955} y={27} size={56} />
         </div>
