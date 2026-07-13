@@ -2677,3 +2677,79 @@ a wrong interior independently just moves wrong ink somewhere else. **Fix the in
 content first (it is 0.67-0.76x the ref's ink at correct centroids), then decide whether
 geometry needs separating.** I will not ship speculative API into a shared primitive; that
 is how the CRX twin was born.
+
+## gen19 addendum — the hex interior, and the cls-shared BLOCKER (scenes1)
+
+### 6 — contentsP taken up: the interior is keyed to the UNFURL, not the clock (7c5e4f69d)
+
+The gen19 fly-in had to approximate — one `opacity` on `HexCity` fades the outline and
+the buildings together, so `min(1, kx/0.55)` bought a correct interior schedule by washing
+out an outline the ref draws FULL-DARK from frame one. lib `b6ff6853a` split them.
+
+Measured the reveal off the **RED ink, which lives only inside a hex and never in its
+outline** — a clean contents signal, immune to the outline it is supposed to be separated
+from. It is **exactly zero until the hex passes kx ≈ 0.51, then full within two frames**,
+and ONE law fits both hexes:
+
+| | kx .511 | kx .739 | kx .841 |
+|---|---|---|---|
+| hexA | 0.000 | 0.854 | 1.000 |
+| hexB | 0.016 | 0.749 | 0.977 |
+
+The interior is not on a clock at all — it is a function of how far open the hex is.
+`contentsP = interpolate(kx, [0.51, 0.81], [0, 1])` reproduces both columns to ~0.1.
+
+Gate: f445 .9484→.9486 · f448 .9355→.9434 · f450 .9209→**.9443 (+.0234)** · f452
+.8820→.8996. f455 / f470 / f500 **byte-identical (md5)** — past kx 0.81 contentsP is 1,
+lib emits no style, and the settled hexes are untouched. `mont/contentsAB.png`.
+
+### BLOCKER — ClsLetters is in cls-shared, and it is a TWO-TRACK change. NOT TAKEN.
+
+The lib lane adjudicated the 12,907px (18.0%) `ClsLetters` deficit as **FACE, not weight**,
+and it was right to refuse to let my tagline refutation decide it: **a refutation transfers
+only to elements that share its mechanism.** 29b4c5e40 refuted weight because Helvetica's
+ADVANCES widen at 400/500 and walk the ink off registration. `ClsLetters` is not a font —
+it is a hand-traced SVG path. A path has no advances; the viewBox pins the extents. The
+tagline result says nothing about it. Their evidence: a 1px dilation covers only 8.7% of
+the missing ink while overshooting 1,841px into ref-EMPTY area (not a rind at any width);
+the missing ink clusters into 5 blobs carrying 94.4% of it; and **we draw 6,110px of EXTRA
+ink the ref does not have** — thin strokes cannot do that.
+
+**Blob map, ready for whoever redraws the paths:**
+
+| px | glyph | box | what |
+|---|---|---|---|
+| 7,662 | S | x1196..1456 y187..314 | the S's ENTIRE UPPER ARM — wrong letterform |
+| 3,603 | C | x739..969 y329..378 | the C's lower bar |
+| 3,024 | S | x1212..1421 y352..378 | the S's lower bar |
+| 2,886 | L | x1020..1198 y337..378 | the L's foot bar |
+| 773 | L | x973..1014 y187..343 | the L's stem |
+| −2,224 | S | (ours-only) | extra ink in the S's middle |
+| −1,562 | C | (ours-only) | extra ink inside the C |
+
+All three glyphs' bottom bars are short and the S's face is the wrong shape.
+
+**It lives in `cls-shared/logo.tsx`, NOT lib.tsx** (lib.tsx:11 is a re-export), and
+`clsnet/scenesA.tsx` imports it. Editing it changes the **ClsNet-Replicate track**, which
+has a live parallel session in this same tree. **I did not touch it, and no single-lane
+agent should.** It is outside my lane and outside lib's.
+
+**Recommendation to the round lead — this is a decision, not a task:**
+1. Both tracks replicate the SAME reference brand, so a correct CLS letterform is correct
+   for BOTH. This is a shared-asset FIX, not track-specific tuning. That argues for opening
+   cls-shared.
+2. But the blob map is a **path redraw**, not a nudge — the S's face is a different
+   letterform. Law 4 hazard: misplaced ink loses to absent ink, and this element is on
+   ~250 frames of cls-day and an unknown count of clsnet.
+3. **Therefore: one agent owns `cls-shared/logo.tsx` and gates on BOTH `ClsDay-Replicate`
+   AND `ClsNet-Replicate`, in a window where neither track has an in-flight logo change.**
+   Not two lanes racing one file. That is how the CRX pill twin was born.
+
+### Process note added by this round
+
+- **An OOM-killed render batch loses frames silently.** My HEAD baseline batch came back
+  with 6 of 10 stills and the missing four scored as blank columns, not as errors. Count
+  the files before you read the numbers.
+- A whole-repo `tsc` gate can be red from a SIBLING's file. During this round
+  `scenes2.tsx:866` was mid-edit and failing; `scenes1.tsx` had 0 errors. Grep your own
+  filename out of the tsc output before you revert anything.
