@@ -1421,6 +1421,12 @@ export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   // to draw there — so line + text fade on separate ramps.
   const lineP = interpolate(frame, [2728, 2737], [0, 1], clamp);
   const inP = interpolate(frame, [2734, 2750], [0, 1], clamp);
+  // r22 EYE-FIX: the ref's "09:00" headline VANISHES fast — full @f2800, ~7% @f2805,
+  // gone by f2808 — as the ref transitions into the S15 drop-lines/brackets. The old
+  // scene held the headline at full opacity to the outP fade at f2837, drawing a phantom
+  // headline for ~30 frames the ref does not (law 17). Fade it out on the ref's own
+  // schedule; f2760/f2800 stay full (headP=1), so the size-fix gate frames are unchanged.
+  const headP = interpolate(frame, [2801, 2807], [1, 0], clamp);
   const outP = interpolate(frame, [2837, 2850], [0, 1], clamp);
   const bandY = interpolate(frame, [2726, 2728, 2731, 2734, 2737, 2745], [4, 72, 158, 194, 210, 221], clamp);
   const markerP = interpolate(frame, [2730, 2737], [0, 1], clamp);
@@ -1444,13 +1450,22 @@ export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
       </div>
       {/* red line at 09:00 from band bottom down */}
       <Milestone x={x9} lineTop={bandY + 69} lineBottom={880} opacity={lineP} />
-      <div style={{ position: "absolute", right: 1920 - x9 + 36, top: 570, textAlign: "right", fontFamily: pack.sans, color: C.navyInk, opacity: inP }}>
-        <div style={{ fontSize: 100, fontWeight: 700, lineHeight: 1 }}>{pack.milestones.m0900.time}</div>
-        <div style={{ fontSize: 36, lineHeight: 1.35, marginTop: 10 }}>
-          {pack.milestones.m0900.label.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
-        </div>
+      {/* r22 EYE-FIX: the "09:00" headline rendered at HALF size (measured f2800: cap-height
+          73 / width 246 vs ref's 133 / 451 — a 1.83x undersize) AND sat 75px LOW (cap-top
+          586 vs ref 511). fontSize 100->183 (cap/em 0.725 -> cap 133, width 451). The block
+          was ONE top-anchored flow div, so a bigger font would only push it lower — split
+          into two right-aligned ABSOLUTE blocks placed on the measured ref bands (headline
+          cap-top 511 -> top 482; Settlement 668 / completion 735 -> top 657, pitch 67). The
+          subtitle was undersized too (width 171 vs 262): fontSize 36->55, lineHeight 1.22.
+          Right edge (1920 - x9 + 36) is unchanged — the replica's right edge already sat on
+          the ref's (x1133 vs 1127). */}
+      <div style={{ position: "absolute", right: 1920 - x9 + 36, top: 482, textAlign: "right", fontFamily: pack.sans, fontWeight: 700, fontSize: 183, lineHeight: 1, color: C.navyInk, opacity: inP * headP }}>
+        {pack.milestones.m0900.time}
+      </div>
+      <div style={{ position: "absolute", right: 1920 - x9 + 36, top: 657, textAlign: "right", fontFamily: pack.sans, fontSize: 55, lineHeight: 1.22, color: C.navyInk, opacity: inP * headP }}>
+        {pack.milestones.m0900.label.map((l, i) => (
+          <div key={i}>{l}</div>
+        ))}
       </div>
     </div>
   );
