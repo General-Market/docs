@@ -1662,7 +1662,12 @@ export const S16Payouts: React.FC<{ frame: number; pack: Pack }> = ({ frame, pac
   // absolute frames (f3100/f3150), so only the mount and the entrance move.
   if (frame < 3016 || frame >= 3215) return null;
   const inP = interpolate(frame, [3017, 3029], [0, 1], clamp);
-  const outP = interpolate(frame, [3200, 3215], [0, 1], clamp);
+  // r22 EYE-FIX (S16→S17 handoff): the S16 band lingered too long. The ref has already
+  // handed the screen to the S17 summary band by ~f3200 (S17's band is descending into
+  // place, milestones building); the old S16 outP held its band to f3215, so at f3205 the
+  // replica still showed S16's 09:00-16:00 band while the ref showed S17's 23:00-11:00 one.
+  // Fade S16 out fast so S17 (below) can take the frame at the cut.
+  const outP = interpolate(frame, [3198, 3204], [0, 1], clamp);
   // measured fast pan: hourAt(960) 11.2 @f3100 → 12.1 @f3150
   const hourAt = 11.2 + (frame - 3100) * 0.018;
   // settled hold, then fast exit (ref stacks gone by ~f3170)
@@ -1766,7 +1771,16 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
   PillLogo,
 }) => {
   if (frame < 3200 || frame >= 3394) return null;
-  const inP = interpolate(frame, [3208, 3228], [0, 1], clamp); // band fade + S16 crossfade
+  // r22 EYE-FIX: the S17 band + milestones came in ~8 frames LATE. The ref's summary band is
+  // already present at f3200 (descending into place, milestones building, settled by f3215 —
+  // measured per frame). The old inP started at f3208, so f3200-3207 showed only the lingering
+  // S16 band (wrong hour range, no milestones). Bring the band+milestones up at the cut (the
+  // diagram still waits on diagP below, as the ref builds it later). Settles by f3208, so the
+  // r21-tuned later summary (f3341-3391) is untouched. bandDrop: the ref band DESCENDS into
+  // place (centre y127@f3200 -> 116@f3205 -> 112 settled); a small measured drop, decaying to
+  // 0 by f3212 so every settled frame is byte-unchanged.
+  const inP = interpolate(frame, [3200, 3206], [0, 1], clamp); // band fade + S16 crossfade (ref band ~84% built by f3205)
+  const bandDrop = interpolate(frame, [3200, 3205, 3208, 3212], [15, 4, 1, 0], clamp);
   // diagram builds AFTER the band (ref: absent f3215, substantially in by f3248)
   const diagP = interpolate(frame, [3216, 3248], [0, 1], clamp);
   const rowsP = [0, 1, 2, 3].map((i) => interpolate(frame, [3224 + i * 4, 3244 + i * 4], [0, 1], clamp));
@@ -1793,9 +1807,9 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
             (y130) were both already right — only the size was wrong. 14,514px/frame, the
             largest single error in this window. labelSize is a PROP here: TimelineBand is
             shared with four other scenes and its default is NOT touched. */}
-        <TimelineBand y={92} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} skipHours={[7, 9, 12]} tickAbove={0} />
+        <TimelineBand y={92 + bandDrop} originX={x07} originHour={7} pxPerHour={144.4} labelSize={23} tickBelow={18} skipHours={[7, 9, 12]} tickAbove={0} />
         <div style={{ opacity: markerP }}>
-          <MarkerTriangle x={955} y={27} size={56} />
+          <MarkerTriangle x={955} y={27 + bandDrop} size={56} />
         </div>
         {milestones.map(({ h, m, below }, i) => (
           <React.Fragment key={i}>
@@ -1809,13 +1823,13 @@ export const S17Summary: React.FC<{ frame: number; pack: Pack; PillLogo?: React.
               style={{
                 position: "absolute",
                 left: hx(h) - 2,
-                top: 92,
+                top: 92 + bandDrop,
                 width: 4,
                 height: below ? 147 : h === 9 ? 115 : 98,
                 background: C.marker,
               }}
             />
-            <div style={{ position: "absolute", left: hx(h) + 8, top: below ? 200 : 133.5, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
+            <div style={{ position: "absolute", left: hx(h) + 8, top: (below ? 200 : 133.5) + bandDrop, fontFamily: pack.sans, color: C.navyInk, lineHeight: 1.25 }}>
               {/* r18 JOINT FIX (with the band's skipHours={[7,9,12]}): the ref's bold
                   milestone TIME is the hour label BOLDED — same slot, same size. Ref ink
                   y140..157 (18 rows, ~34 px/row), top row y140 == the plain 08:00 label's
