@@ -2304,9 +2304,14 @@ const OUTRO_RISE: Lut = [
   [3595, 74], [3598, 30], [3600, 12], [3603, 3], [3605, 1], [3611, 0],
 ];
 const OUTRO_LOGOFRONT: Lut = [[3556, 700], [3558, 1000], [3563, 1000], [3565, 1060], [3568, 1070], [3571, 1210], [3575, 1543]];
-const OUTRO_ICON_S: Lut = [[3592, 560], [3606, 821]];
-const OUTRO_ICON_P: Lut = [[3594, 851], [3608, 1109]];
-const OUTRO_ICON_D: Lut = [[3596, 1147], [3610, 1405]];
+// r22 EYE-FIX: the three pillar icons drew on ~40% too FAST. Same start as the ref
+// (both ~empty at f3595) but the replica reached ~full by f3607 while the ref draws
+// steadily to ~f3615 (ink-counted: ref f3600 1161 / f3605 6530 / f3608 9831 / f3615
+// 12290 vs replica f3600 3855 / f3605 10631). The reveal front swept its icon in ~14f;
+// stretched to ~20f so each icon draws at the ref's rate. Start frames unchanged.
+const OUTRO_ICON_S: Lut = [[3592, 560], [3612, 821]];
+const OUTRO_ICON_P: Lut = [[3594, 851], [3614, 1109]];
+const OUTRO_ICON_D: Lut = [[3596, 1147], [3616, 1405]];
 
 export const S19EndCard: React.FC<{ frame: number; pack: Pack; BrandLogo?: React.FC<{ markP: number; lettersP: number }> }> = ({
   frame,
