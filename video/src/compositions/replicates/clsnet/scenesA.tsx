@@ -972,10 +972,27 @@ export const GlobeScene: React.FC<{ frame: number }> = ({ frame }) => {
   // cleaner. Overrides the r22/r21 mapOx/mapOy notes (overlap-count found a false optimum
   // at 248). The f556+ zoom ramp reads mapOx/mapOy, so the handoff into the full map stays
   // continuous (mox 345→150, moy 175→60, s 0.76→1.0).
+  // r25 (globe ENTRY, f469-484): the r24 table began at f484; for f<484 it clamped
+  // to 565, freezing the continents to the disc through the whole fast pop-in. The ref
+  // globe UNROLLS as it enters — the continents scroll eastward into place. Measured by
+  // the same synthesis instrument r24 used (forward-map the faithful f582 worldMap into a
+  // candidate window, minimise coastline distance), now clipped to the disc's ACTUAL entry
+  // centre — found by an unbiased inside-vs-outside circle fit per frame, validated on the
+  // settled disc (f494 → cx957/cy540/r294 ≈ the r20 bedrock 959/540/298). All entry frames
+  // register to 0.06-0.09px, matching the settled calibration (law 37). Disc-relative scroll
+  // (mox_fit − disc_cx) runs −291(f469)→−394(f484); mapOx = 959 + that. The ~103px f469 error
+  // was the largest residual in the window and dominated the disc's own entry misplacement.
+  //   NOT fixed here (out of continent-registration scope, documented for a disc lane): the
+  //   ref disc rides ~46px HIGHER at f469, descending to seat by f478 (it rolls up the ramp);
+  //   the replica holds cy=540. The crop gate isolates the continents cleanly — the disc-cy
+  //   error is identical in OLD and NEW, so it cancels. Vertical continent registration is
+  //   untouched: disc-relative moy is a flat ~−355 across entry AND settled, and r24's moy=175
+  //   already sits inside that (−365, 10px, within r24's fit noise) — changing it would risk
+  //   the settled window r24 verified.
   const mapOx = interpolate(
     f,
-    [484, 494, 502, 510, 518, 523, 528, 534, 540, 546, 550, 556],
-    [565, 509, 470, 435, 407, 391, 378, 366, 356, 349, 346, 345],
+    [469, 472, 475, 478, 481, 484, 494, 502, 510, 518, 523, 528, 534, 540, 546, 550, 556],
+    [668, 642, 614, 598, 586, 565, 509, 470, 435, 407, 391, 378, 366, 356, 349, 346, 345],
     clamp
   );
   const mapOy = 175;
