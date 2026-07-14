@@ -527,16 +527,22 @@ export const S2Currencies: React.FC<{ frame: number; pack: Pack }> = ({ frame, p
           </div>
         </div>
         {/* the band — hairline + grey strip + tick grid; leads the white
-            wipe in, stretches (about the tick grid) as it descends out */}
-        <div style={{ position: "absolute", inset: 0, transform: rulerXf, transformOrigin: "960px 534px" }}>
-          <div style={{ position: "absolute", left: -200, top: 534 - 3 * sc, width: 2600, height: 3 * sc, background: C.navyDeep }} />
-          <div style={{ position: "absolute", left: -200, top: 534, width: 2600, height: 14 * sc, background: C.bandGrey }} />
-          {Array.from({ length: 46 }, (_, i) => {
-            const x = phi + (i - 3) * pT;
-            if (x < -10 || x > 1930) return null;
-            return <div key={i} style={{ position: "absolute", left: x, top: 534, width: 1.5 * sc, height: 14 * sc, background: C.navyDeep }} />;
-          })}
-        </div>
+            wipe in, stretches (about the tick grid) as it descends out. The ref
+            HARD-CUTS it at f297 (measured: full-width band at y832..872 on f296,
+            absent from f297 on). Our old DESCENT kept accelerating it to the frame
+            bottom and held it there past f300 — a ruler the ref had already cleared.
+            Cut it on the ref's frame. */}
+        {frame < 297 && (
+          <div style={{ position: "absolute", inset: 0, transform: rulerXf, transformOrigin: "960px 534px" }}>
+            <div style={{ position: "absolute", left: -200, top: 534 - 3 * sc, width: 2600, height: 3 * sc, background: C.navyDeep }} />
+            <div style={{ position: "absolute", left: -200, top: 534, width: 2600, height: 14 * sc, background: C.bandGrey }} />
+            {Array.from({ length: 46 }, (_, i) => {
+              const x = phi + (i - 3) * pT;
+              if (x < -10 || x > 1930) return null;
+              return <div key={i} style={{ position: "absolute", left: x, top: 534, width: 1.5 * sc, height: 14 * sc, background: C.navyDeep }} />;
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
