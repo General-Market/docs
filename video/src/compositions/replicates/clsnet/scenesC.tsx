@@ -1300,6 +1300,56 @@ export const Strip2Scene: React.FC<{ frame: number }> = ({ frame }) => {
 // 365-1555 × 137-295), pill shrinks to (365,520,430,95) by ~3003; navy top edge
 // drops 0→390→543 (fr_3009 / fr_3021); cluster rides the edge; tan pill at
 // (210,540) by fr_3060; orange pill bottom-right (1355,940) from ~3018.
+//
+// ── r25 THE DEAL ───────────────────────────────────────────────────────────
+// The pills are DEALT UP FROM THE CARD FLOOR and fan into the three rows,
+// scattered, decelerating into their seats. The old fade-in-place (t0=2906+…)
+// showed an EMPTY navy card f2874..2906 (byte-identical), then snapped neat
+// rows in — the entire scatter→converge was missing, the round's #1 eye defect.
+// Per-color vertical CENTROID measured off the ref (vf 2870..2926, mask by
+// pill hue inside the card interior) pins the rise:
+//   lav (top seat, fill-top 372): centroid 834@2870 → 664@2872 → 385@2876,
+//        i.e. it rises fast from the bottom rule and is at seat by ~f2876;
+//   org (mid seat 520):  650@2876 → 584@2880 → 542 by ~f2888;
+//   tan (low seat 667):  750@2884 → 724 (holds low) → eases to 690 by f2926.
+// All three are fully PRESENT (pixel count saturates) by ~f2884; the vertical
+// SPREAD then tightens to clean lines, fully settled by f2926 — so f≥2926 is
+// byte-identical to the settled hold the collapse phase inherits. Each pill is
+// born low at te, springs up its own column (x fixed = its seat), decelerating
+// into the seat by ts; per-pill jitter in te / start-offset / ts is what makes
+// the scatter the ref has and the old code never did. NOTE (law 4, r24): the
+// naive fix — pills at their FINAL seats but earlier — tanked the crop (neat
+// rows where the ref scatters) because at mid-converge the ref is still spread;
+// the pills must ride the REAL rise, not sit early at their seats.
+const clsHash = (n: number) => {
+  const x = Math.sin(n * 127.1 + 43.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+// r25 — the deal, driven by the MEASURED per-row centroid (law 14, not an
+// analytic curve). Each row's whole mass rides DEAL_OFF_V[ri] (the ref pill-hue
+// centroid minus its seat centre, transcribed from the vf 2868..2926 scan), so
+// the ENVELOPE matches the ref frame-for-frame — the naive rise (v1) let the
+// row sit low in navy at every gate and LOST the crop worse than the empty card
+// (r24 again). On top of that shared rise each pill carries a decaying vertical
+// JITTER — that, not the centroid, is the visible stair-step scatter; it damps
+// to 0 well before f2926. Everything is 0 by f2926, so f≥2926 is byte-identical.
+// Indexed by row: 0=lav (rises furthest, from the bottom rule), 1=org, 2=tan
+// (barely — it holds ~35px low, then micro-settles to the line by f2926).
+const DEAL_OFF_F: Record<number, number[]> = {
+  0: [2869, 2872, 2876, 2880, 2884, 2900, 2908, 2916, 2926],
+  1: [2875, 2878, 2882, 2886, 2900, 2914, 2926],
+  2: [2882, 2886, 2892, 2900, 2908, 2916, 2924, 2926],
+};
+const DEAL_OFF_V: Record<number, number[]> = {
+  0: [450, 270, -9, -24, -22, -24, -16, -4, 0],
+  1: [140, 70, 20, 9, 6, 2, 0],
+  2: [60, 45, 38, 35, 25, 13, 2, 0],
+};
+const DEAL_BIRTH = [2868, 2874, 2879]; // first pill of each row is dealt
+const DEAL_BSTAG = [0.9, 0.9, 0.9]; // per-index birth stagger
+const DEAL_JAMP = [30, 26, 34]; // per-pill vertical scatter amplitude
+// jitter-decay window per row (fully tight before the collapse hold)
+const DEAL_JF: Record<number, number[]> = { 0: [2874, 2902], 1: [2880, 2908], 2: [2886, 2920] };
 export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
   const f = frame;
   if (f < SEG.reportCard[0] - 12 || f >= SEG.mapBadges[0]) return null;
@@ -1483,23 +1533,30 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
           <div style={{ position: "absolute", left: 889, top: 869, width: 89 * ruleBotP, height: 6, backgroundColor: C.white }} />
         </>
       )}
-      {/* netting rows — 8 stroked pills each, at their transcribed positions. They
-          draw in f2906-2926, hold FROZEN, then hard-cut per row (no fade). */}
+      {/* netting rows — 8 stroked pills each. r25: the pills are DEALT UP FROM
+          THE CARD FLOOR (see THE DEAL note above the scene), rising in their own
+          columns, decelerating into their seats, fully settled by f2926; then
+          they hold FROZEN and hard-cut per row (no fade). */}
       {rows.map((r, ri) =>
         f >= r.cut ? null : (
           <React.Fragment key={ri}>
             {r.segs.map(([fx, fw], i) => {
-              // scattered-but-settled stagger: every segment is up by f2926, as in the ref
-              const t0 = 2906 + ri * 1.5 + i * 1.4;
-              const op = lerp(f, [t0, t0 + 8], [0, 1]);
-              if (op <= 0) return null;
+              const te = DEAL_BIRTH[ri] + i * DEAL_BSTAG[ri];
+              if (f < te) return null;
+              // shared measured rise (centroid) + per-pill decaying scatter
+              const rowOff = interpolate(f, DEAL_OFF_F[ri], DEAL_OFF_V[ri], clamp);
+              const j = clsHash(ri * 13 + i * 7 + 1) - 0.5; // -0.5..0.5
+              const jdecay = interpolate(f, DEAL_JF[ri], [1, 0], clamp);
+              const y = r.fy + rowOff + j * 2 * DEAL_JAMP[ri] * jdecay;
+              // the ref DEALS each pill in solid (a card slides up) — no fade,
+              // which would mud the tan/navy blend mid-birth
               return (
                 <div
                   key={`${ri}-${i}`}
                   style={{
                     position: "absolute",
                     left: fx - SEG_STROKE,
-                    top: r.fy - SEG_STROKE,
+                    top: y - SEG_STROKE,
                     width: fw + SEG_STROKE * 2,
                     height: SEG_FILL_H + SEG_STROKE * 2,
                     boxSizing: "border-box",
@@ -1507,7 +1564,6 @@ export const ReportCardScene: React.FC<{ frame: number }> = ({ frame }) => {
                     border: `${SEG_STROKE}px solid ${C.white}`,
                     // leaf, matching the card: TL + BR rounded, TR + BL square
                     borderRadius: `${SEG_FILL_H / 2}px 0px ${SEG_FILL_H / 2}px 0px`,
-                    opacity: op,
                   }}
                 />
               );
