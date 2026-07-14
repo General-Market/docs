@@ -22,7 +22,10 @@ export const CRX_COPY: CopyShape = {
   url: "dev.crxfx.com",
   detail: [
     ["Counterparty", "Desk B"],
-    ["RFQ Identifier", "0x7E2B-C923-EY6"],
+    // Capital X: Helvetica's lowercase "x" sits small on the math-axis among the
+    // full-height lining hex digits and reads as a "×" (0×7E2B). Uppercase X is
+    // full cap-height, unambiguously a letter, and matches the uppercase hex.
+    ["RFQ Identifier", "0X7E2B-C923-EY6"],
     ["Currency", "USDC"],
     ["Value Date", "2026/07/09"],
     ["Netted Position", "-8, 242, 547"],
