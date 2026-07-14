@@ -400,8 +400,37 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
   const by = interpolate(f, TF, [730, 720, 701, 649, 485, 433, 423, 413], clamp);
   const hexW = interpolate(f, TF, [479, 475, 468, 449, 389, 370, 363, 359], clamp);
   const badgeR = hexW * 0.13;
-  const labelOp = lerp(f, [1380, 1392], [0, 1]);
-  const boxOp = lerp(f, [1385, 1398], [0, 1]);
+  // r25 [SCHEDULE FIX — law 26]: the OLD reveal fired ~25-30f LATE, and the two RED
+  // down-arrows were MISSING entirely. Ink-counted the ref per element (vf frames
+  // 1348-1420, work/clsnet/r25/tradeexec): the horizontal double-arrow GROWS first
+  // (f1348→full ~f1356), then "Trade executed" text (full ~f1362), then the empty
+  // navy box (full ~f1364), then the geodesic icon draws in (f1364→f1382) with the
+  // "CLSNet" label (~f1366), then the two red down-arrows draw from each hex DOWN
+  // into the box (f1370→full f1384). OLD had text/box at [1380,1392]/[1385,1398] and
+  // ZERO down-arrows — at ref-f1384 (everything formed) the replica showed 40%-faint
+  // text over an empty forming box. Retimed every reveal onto the measured ref clock.
+  const arrowOp = lerp(f, [1348, 1358], [0, 1]);
+  // The ref's "Trade executed" text ENTERS ~15px high at f1360 and settles down to
+  // the gen14 seat by ~f1366 (diff composite, work/clsnet/r25/tradeexec/diff_text).
+  // We hold the measured settled seat (shared with protected frames), so drawing the
+  // text AT the seat during f1360 lights both edges and scores below blank. Onset held
+  // to f1360 so the (thin, ref-leading) arrow reveals alone there and the text pops as
+  // it reaches its seat — full by f1365, ~30f earlier than OLD's f1392.
+  const labelOp = lerp(f, [1360, 1365], [0, 1]);
+  // boxOp onset held to f1360: the box body is a SOLID square and a partial-opacity
+  // full-size fade is a poor model of the ref's box GROWING in size (law 19 — a
+  // half-opacity solid misregisters worse than absent). Starting at f1360 keeps the
+  // crop floor (NEW≥OLD) at f1360 while the box is still full by f1366 (~2f after the
+  // ref, vs OLD's f1398). The geodesic icon then draws in on markP.
+  const boxOp = lerp(f, [1360, 1366], [0, 1]);
+  const markP = lerp(f, [1364, 1382], [0, 1]);
+  // Red down-arrows: draw hex→box f1370-1384, then FADE to 0 by f1444 so the settled
+  // window f≥1445 (and the f1448 MatchingScene handoff) stays BYTE-IDENTICAL to OLD —
+  // OLD draws no down-arrows there either (MatchingScene's own elbows fire at panelOp
+  // f1482+). The ref keeps them lit; dropping them f1444-1462 is the byte-identity
+  // spend, entirely outside the win window (f1360-1438 goes from empty to formed).
+  const arrowDnP = lerp(f, [1370, 1384], [0, 1]);
+  const arrowDnOut = lerp(f, [1438, 1444], [1, 0]);
   // r24 [defect 5]: two netted-report pages slide INTO the box, one from each side,
   // absorbed BEHIND it (measured x-tracks, work/clsnet/r24/refB). docIn fades them in
   // ~f1426; the box's z-order (drawn after) eats them as they arrive.
@@ -428,8 +457,10 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
           Common offset dx -0.325, dy -0.36, r 0.13·w lands both on the ref. */}
       <Badge letter="A" cx={ax - hexW * 0.325} cy={ay - hexW * 0.36} r={badgeR} />
       <Badge letter="B" cx={bx - hexW * 0.325} cy={by - hexW * 0.36} r={badgeR} />
-      {/* Trade executed arrow */}
-      {labelOp > 0 && (
+      {/* Trade executed arrow — r25: the horizontal double-arrow (arrowOp, ref f1348-
+          1356) reveals BEFORE the text (labelOp, ref ~f1362); OLD tied both to one
+          late ramp. Gate on arrowOp so the arrow can lead the text by ~10f. */}
+      {arrowOp > 0 && (
         <>
           {/* gen14: "Trade executed" callout measured EXACT video (stable across
               f1405-1450): label ink y369-408 (cap-h 39 → fs 56, calibrated off
@@ -440,8 +471,20 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
               y505-512 (~85px low) — that pair drove the negative-SSIM r2c3/r2c4
               cells across the whole window. */}
           <SansText text={COPY.tradeExecuted} x={755} y={356} fs={56} color={C.serifNavy} opacity={labelOp} width={420} align="center" />
-          <Elbow points={[[716, 425], [1221, 425]]} color={C.orange} opacity={labelOp} arrow="end" />
-          <Elbow points={[[1221, 425], [716, 425]]} color={C.orange} opacity={labelOp} arrow="end" />
+          <Elbow points={[[716, 425], [1221, 425]]} color={C.orange} opacity={arrowOp} arrow="end" />
+          <Elbow points={[[1221, 425], [716, 425]]} color={C.orange} opacity={arrowOp} arrow="end" />
+        </>
+      )}
+      {/* r25: the two RED down-arrows the ref draws from each hex bottom DOWN then
+          into the CLSNet box (measured off ref f1384, work/clsnet/r25/tradeexec/
+          arrows_1384: left shaft x500 y588→798 then →x655; right shaft x1416 y588→
+          812 then →x1285; both arrowheads point AT the box at its mid-height, stop
+          ~165px short). draws in f1370-1384 (arrowhead pops at drawP=1); fades to 0
+          by f1444 to hold the settled byte-identity (see arrowDnOut note above). */}
+      {arrowDnP > 0 && arrowDnOut > 0 && (
+        <>
+          <Elbow points={[[500, 588], [500, 798], [655, 798]]} color={C.orange} opacity={arrowDnOut} drawP={arrowDnP} arrow="end" />
+          <Elbow points={[[1416, 588], [1416, 812], [1285, 812]]} color={C.orange} opacity={arrowDnOut} drawP={arrowDnP} arrow="end" />
         </>
       )}
       {/* r24 [defect 5]: the ref draws TWO netted-report pages sliding INTO the
@@ -465,7 +508,10 @@ export const HexifyScene: React.FC<{ frame: number }> = ({ frame }) => {
       {/* r18: the ref's box here is PIXEL-IDENTICAL across f1400-1450 — x823.5
           y660.5 side 270.8, frame after frame. Transcribed, not fitted. We sat
           14px low and 1px left (the size was already right). */}
-      <ClsNetBox x={824} y={661} opacity={boxOp} />
+      {/* r25: box body + "CLSNet" label fade on boxOp (ref full ~f1364); the geodesic
+          icon draws in later on markP (ref f1364-1382). markP·boxOp = 1 by f1382, so
+          f≥1445 is byte-identical to OLD (which left markP at its default 1). */}
+      <ClsNetBox x={824} y={661} opacity={boxOp} markP={markP} />
     </AbsoluteFill>
   );
 };
