@@ -1417,6 +1417,28 @@ const PvpRightCity: React.FC<{ k?: number; tx?: number; interior?: number }> = (
   </svg>
 );
 
+// r23 EYE-FIX (the S14→S15 handoff). The ref BUILDS the handoff during S14's TAIL; the
+// replica drew nothing there and slammed the whole assembly in at the S15 mount (f2837) —
+// a ~30f entrance gap over the largest red-ink area in the scene. Laws 17/26: the metric is
+// blind to a scene with no entrance, and "the replica was on the wrong clock". The OLD
+// stills prove it — f2810/f2814/f2818/f2824/f2830 all render mean 0.9778 sd 0.0695, five
+// frames byte-alike, while the ref grows two drop lines and two brackets across them.
+// Ink-scanned off the ref per frame (25fps, 1:1 clock):
+//   07:00 drop line, bottom y:  290 @f2807 · 309 @f2808 · 401 @f2810 · 584 @f2812 ·
+//                               721 @f2814 · 783 @f2816 · 817 @f2818 · 844 @f2820 (full)
+//   bracket width, % of full:     0 @f2821 ·   3 @f2822 ·   9 @f2824 ·  21 @f2826 ·
+//                                48 @f2828 ·  75 @f2830 ·  88 @f2832 ·  95 @f2834 ·
+//                                97 @f2836 · 100 @f2840
+// Settlement and Funding grow on the SAME clock (funding runs ~2% ahead — inside the scan
+// noise), so ONE table drives both. It lands at 1 by f2836 — the last frame S14 is visible,
+// since S15's opaque background occludes it from f2837 — which is 3% ahead of the ref's
+// f2840 completion. A 3% overshoot on one frame is invisible; a 3% width POP across the cut
+// is not. Therefore: finish the growth on the cut, not on the ref's last frame.
+const S14_BAR: Lut = [
+  [2821, 0], [2822, 0.03], [2824, 0.09], [2826, 0.21], [2828, 0.48],
+  [2830, 0.75], [2832, 0.88], [2834, 0.95], [2836, 1],
+];
+
 // ─── S14: 09:00 settlement completion target (f2737..2837) ───
 export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack }) => {
   if (frame < 2726 || frame >= 2850) return null;
@@ -1450,14 +1472,26 @@ export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   const hourDelta = interpolate(frame, [2726, 2728, 2731, 2737, 2745], [-0.62, -0.56, -0.2175, -0.0325, 0], clamp);
   const hourAt = 8.15 + (frame - 2800) * 0.0025 + hourDelta;
   const x9 = 960 + (9 - hourAt) * pitchDescent;
+  // r23: the handoff build (see S14_BAR). pitchDescent and hourDelta have settled (249 / 0)
+  // long before f2807, so these carry the SAME law as S15's x7/x9/x12: at f2836 S14's band
+  // sits at hour 8.2415 and S15 mounts at 8.241 — the bars line up across the cut to ~0.1px.
+  const x7 = 960 + (7 - hourAt) * pitchDescent;
+  const x12 = 960 + (12 - hourAt) * pitchDescent;
+  const dropBotY = interpolate(frame, [2807, 2808, 2810, 2812, 2814, 2816, 2818, 2820], [290, 309, 401, 584, 721, 783, 817, 844], clamp);
+  const barP = lut(frame, S14_BAR);
   return (
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       <TimelineBand y={bandY} h={69} originX={960} originHour={hourAt} pxPerHour={pitchDescent} tickAbove={4} tickBelow={28} labelSize={34} />
       <div style={{ opacity: markerP }}>
         <MarkerTriangle x={955} y={bandY - 98} size={90} />
       </div>
-      {/* red line at 09:00 from band bottom down */}
-      <Milestone x={x9} lineTop={bandY + 69} lineBottom={880} opacity={lineP} />
+      {/* red line at 09:00 from band bottom down. r23: lineBottom 880 -> 844. The ref's
+          09:00 line ends at a CONSTANT y847 for the whole of S14 (scanned f2760/f2790/
+          f2800/f2808/f2810/f2814/f2818 — all 847), so the old 880 drew a 33px tail the ref
+          never has (law 17). 844 is the funding bar's bottom edge, which is where the ref
+          parks it: the line dies exactly under the bracket, and S15's drop lines now end
+          there too, so the cut at f2837 has nothing left to pop. */}
+      <Milestone x={x9} lineTop={bandY + 69} lineBottom={844} opacity={lineP} />
       {/* r22 EYE-FIX: the "09:00" headline rendered at HALF size (measured f2800: cap-height
           73 / width 246 vs ref's 133 / 451 — a 1.83x undersize) AND sat 75px LOW (cap-top
           586 vs ref 511). fontSize 100->183 (cap/em 0.725 -> cap 133, width 451). The block
@@ -1475,6 +1509,19 @@ export const S14Target: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
           <div key={i}>{l}</div>
         ))}
       </div>
+      {/* r23: the handoff build, on the ref's clock. The 07:00 drop line falls first
+          (f2807-2820, y290->844), then both brackets grow RIGHT out of it (f2821-2836).
+          The drop line runs BEHIND the bars, all the way to the funding bar's bottom — the
+          ref shows it through the 648-692 gap BETWEEN the two bars (scanned: 45/45 rows red
+          at x7, and the same at x9), so the bars must paint OVER the line, not stand in for
+          it. Drawn last, after the Milestone, so both bars cover both lines. */}
+      {frame >= 2807 && (
+        <>
+          <div style={{ position: "absolute", left: x7 - 2.5, top: 290, width: 5, height: dropBotY - 290, background: C.marker }} />
+          <BracketReveal x={x7} w={x9 - x7} y={500} h={148} p={barP} label={pack.brackets.settlement} pack={pack} />
+          <BracketReveal x={x7} w={x12 - x7} y={692} h={152} p={barP} label={pack.brackets.funding} pack={pack} />
+        </>
+      )}
     </div>
   );
 };
@@ -1510,16 +1557,13 @@ export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pa
   const x7 = 960 + (7 - hourAt) * PITCH;
   const x9 = 960 + (9 - hourAt) * PITCH;
   const x12 = 960 + (12 - hourAt) * PITCH;
-  // gen21: the ref draws the drop lines + both brackets in the PRE-2837 transition
-  // (S14's tail: "09:00" text gone by ~f2810, the 07:00/09:00 drop lines grow DOWN
-  // f2810-2818, then both brackets grow RIGHT f2818-2837). By the S15 mount (f2837)
-  // they are already FULL, and stay full+static (only panning) through the scene. The
-  // old grows (dropP 2845-2862, b1 2858-2888, b2 2880-2915) under-drew both big red
-  // bars all the way through f2843-2915, exactly across the rank-9 window, where the
-  // ref is already complete. Full from mount (tiny settle only to soften the cut).
-  const dropP = interpolate(frame, [2837, 2841], [0, 1], clamp);
-  const b1P = interpolate(frame, [2837, 2842], [0, 1], clamp);
-  const b2P = interpolate(frame, [2838, 2843], [0, 1], clamp);
+  // gen21 saw that the ref draws the drop lines + both brackets in the PRE-2837 transition,
+  // and shortened the grows to a 5f settle — but a settle from ZERO is still an entrance,
+  // and it was the LAST one: at f2837 the ref is already ~98% built, so we still opened this
+  // scene on empty ground. r23 finishes the job. S14's tail now performs the whole build on
+  // the ref's clock (see S14_BAR), and S15 mounts FULL — no dropP/b1P/b2P at all. S15's
+  // opaque background occludes S14 from f2837, so this mount IS the cut: S14 hands over a
+  // finished assembly at f2836 and S15 picks it up unchanged. Nothing grows here any more.
   // gen21: the "8.0+ USD trillion" figure DRAWS right→left (measure_fig.py — rule right
   // end x559@f2908, x446@f2911, x214@f2915, full x150@f2925; glyphs in by ~f2918). The
   // old figP faded the whole block in over f2930-2955 — 25f LATE: across the ENTIRE
@@ -1530,11 +1574,16 @@ export const S15Brackets: React.FC<{ frame: number; pack: Pack }> = ({ frame, pa
     <div style={{ position: "absolute", inset: 0, background: C.white, opacity: 1 - outP }}>
       <TimelineBand y={221} h={69} originX={960} originHour={hourAt} pxPerHour={PITCH} tickAbove={4} tickBelow={28} labelSize={34} />
       <MarkerTriangle x={955} y={123} size={90} />
-      {/* red drop lines at 07:00 and 09:00 (band bottom → settlement bar top) */}
-      <div style={{ position: "absolute", left: x7 - 2.5, top: 290, width: 5, height: (500 - 290) * dropP, background: C.marker }} />
-      <div style={{ position: "absolute", left: x9 - 2.5, top: 290, width: 5, height: (500 - 290) * dropP, background: C.marker }} />
-      <BracketBar x={x7} w={(x9 - x7) * b1P} y={500} h={148} label={pack.brackets.settlement} p={b1P} pack={pack} />
-      <BracketBar x={x7} w={(x12 - x7) * b2P} y={692} h={152} label={pack.brackets.funding} p={b2P} pack={pack} />
+      {/* red drop lines at 07:00 and 09:00. r23: they run the FULL drop, band bottom (290)
+          to the funding bar's bottom (844), and the bars paint over them. The old pair
+          stopped at the settlement bar's top (500), which left the 648-692 gap BETWEEN the
+          two bars empty — the ref fills it (scanned f2833: 45/45 rows red at x7 AND at x9).
+          Ending them at 844 also matches S14's 09:00 Milestone exactly, so the f2837 cut
+          carries no change in either line. */}
+      <div style={{ position: "absolute", left: x7 - 2.5, top: 290, width: 5, height: 844 - 290, background: C.marker }} />
+      <div style={{ position: "absolute", left: x9 - 2.5, top: 290, width: 5, height: 844 - 290, background: C.marker }} />
+      <BracketBar x={x7} w={x9 - x7} y={500} h={148} label={pack.brackets.settlement} p={1} pack={pack} />
+      <BracketBar x={x7} w={x12 - x7} y={692} h={152} label={pack.brackets.funding} p={1} pack={pack} />
       {/* 8.0+ USD trillion — measured f2980: red rules y498/y844 h7 w418
           @x120; '8.0' cap y529..698 (cap 170) x124 w305; '+' 58x59
           @(452,547); unit asc→baseline 748..808 x122 w414 (ref underline
@@ -1602,7 +1651,14 @@ const BracketBar: React.FC<{ x: number; w: number; y: number; h?: number; label:
         width: Math.max(w, 10),
         height: h,
         background: C.marker,
-        borderRadius: 2,
+        // r23: ONE corner is round — the TOP-RIGHT, r=24. r22 squared all four after reading
+        // a single corner ("inset 0") and generalising it; a per-row scan of the right edge
+        // settles it. f2830, bar top y498, full edge x1031: y498 -20 · y502 -12 · y506 -7 ·
+        // y510 -4 · y514 -2 · y518 -1 · y522 0 — a circular arc of radius 24 (predicts
+        // -10.7/-6.1/-3.2 at y502/506/510). The bottom-right and BOTH left corners scan dead
+        // square at every row. Settled f2900 carries the same arc, so this is the bar's
+        // shape, not an artifact of the growth.
+        borderRadius: "0 24px 0 0",
         boxSizing: "border-box",
         padding: "0 3px",
         display: "flex",
@@ -1619,6 +1675,46 @@ const BracketBar: React.FC<{ x: number; w: number; y: number; h?: number; label:
       <span>{label}</span>
       <div style={{ flex: 1, height: 4, background: "#FCFCFC", marginLeft: 16, marginRight: 6 }} />
       <BracketChevron dir="r" />
+    </div>
+  );
+};
+
+// r23: a bracket GROWING. The ref does not widen a complete bar — it wipes a finished bar
+// out from the 07:00 anchor, left to right. Read the ref and you can see which it is: at
+// f2830 the bar is three-quarters out and carries its left chevron, its rule, and the word
+// "Settlement", but NO right chevron — the right chevron is still off the end of the reveal.
+// A bar whose WIDTH is animated would squeeze all five of those parts into every frame and
+// slide the label leftward as it grew. So: render the bar at its FINAL width and clip the
+// container to w·p. The label sits still, the chevron arrives last, and at p=1 this is the
+// same element S15 mounts — which is what makes the cut at f2837 free.
+const BracketReveal: React.FC<{
+  x: number;
+  w: number;
+  y: number;
+  h: number;
+  p: number;
+  label: string;
+  pack: Pack;
+}> = ({ x, w, y, h, p, label, pack }) => {
+  if (p <= 0 || w <= 0) return null;
+  // The clip carries the bar's own top-right radius, so the round corner RIDES the leading
+  // edge as it travels — which is what the ref does (the growing cap at f2824 and f2830
+  // scans the same r=24 arc as the settled bar). At p=1 the clip and the bar are the same
+  // width and the same shape, so a finished BracketReveal is a BracketBar to the pixel:
+  // that identity is what lets S15 mount this assembly at f2837 with nothing to pop.
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: Math.max(w * p, 1),
+        height: h,
+        borderRadius: "0 24px 0 0",
+        overflow: "hidden",
+      }}
+    >
+      <BracketBar x={0} w={w} y={0} h={h} label={label} p={1} pack={pack} />
     </div>
   );
 };
