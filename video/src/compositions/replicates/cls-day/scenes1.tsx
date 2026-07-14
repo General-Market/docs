@@ -2158,11 +2158,11 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
       />
       {progress > 0.2 && <MarkerTriangle x={1352} y={cy - 289.5 - 131 / 2 - 55} size={40} />}
       {/* icon circles: one (draws in), then two (split) */}
-      {frame >= 1206 && splitP < 1 && <NetIcon x={511} y={511} r={237} p={1 - splitP} draw={iconDraw} kind="in" />}
+      {frame >= 1206 && splitP < 1 && <NetIcon x={511} y={511} r={237} p={1 - splitP} draw={iconDraw} kind="in" gx={-6} gy={3} />}
       {splitP > 0 && (
         <>
-          <NetIcon x={516} y={313} r={150} p={splitP} kind="in" />
-          <NetIcon x={515} y={721} r={150} p={splitP} kind="out" />
+          <NetIcon x={516} y={313} r={150} p={splitP} kind="in" gx={-9} gy={2} />
+          <NetIcon x={515} y={721} r={150} p={splitP} kind="out" gx={-4} gy={12} />
         </>
       )}
     </div>
@@ -2189,7 +2189,9 @@ const NetConnector: React.FC<{ mode: "single" | "bracket"; wipe: number; opacity
   );
 };
 
-const NetIcon: React.FC<{ x: number; y: number; r: number; p: number; kind: "in" | "out"; draw?: number }> = ({ x, y, r, p, kind, draw = 1 }) => {
+const NetIcon: React.FC<{ x: number; y: number; r: number; p: number; kind: "in" | "out"; draw?: number; gx?: number; gy?: number }> = ({ x, y, r, p, kind, draw = 1, gx = 0, gy = 0 }) => {
+  // gx/gy nudge only the GLYPH (not the ring): the ref seats the staircase HIGH
+  // in its circle — navy-ink bbox centres measured ref vs render per instance.
   const s = r / 110; // glyph scale
   const circ = 2 * Math.PI * r;
   const glyphP = interpolate(draw, [0.4, 1], [0, 1], clamp); // glyph appears once the arc is mostly drawn
@@ -2206,15 +2208,29 @@ const NetIcon: React.FC<{ x: number; y: number; r: number; p: number; kind: "in"
           strokeDasharray={draw >= 1 ? undefined : `${draw * circ} ${circ}`}
           transform={draw >= 1 ? undefined : `rotate(-90 ${x} ${y})`}
         />
-        {/* chip stack glyph */}
-        <g opacity={glyphP} transform={`translate(${x} ${y}) scale(${s}) translate(-56 -40)`}>
-          {[0, 1, 2].map((row) => (
-            <rect key={row} x={0} y={row * 30} width={58} height={21} rx={9} fill="none" stroke="#FDFDFD" strokeWidth={3.5} />
-          ))}
+        {/* netting glyph — re-traced off ref f1300 / f1340. "in" is a 2-column
+            staircase: three NAVY cards down the left, two WHITE cards on the right,
+            and a bold NAVY arrow across the top row. "out" is a 2-card swap: a navy
+            card + bold navy arrow (right) over a white card + white arrow (left).
+            The old single white column of pills was a different icon entirely. */}
+        <g opacity={glyphP} transform={`translate(${x + gx} ${y + gy}) scale(${s}) translate(-56 -40)`}>
           {kind === "in" ? (
-            <path d="M 68 12 L 102 12 M 90 0 L 102 12 L 90 24 M 68 42 L 96 42 M 68 72 L 88 72" stroke="#FDFDFD" strokeWidth={4.5} fill="none" />
+            <>
+              {[0, 1, 2].map((row) => (
+                <rect key={"l" + row} x={0} y={row * 28} width={52} height={25} rx={7} fill="none" stroke={C.navyDeep} strokeWidth={4.5} />
+              ))}
+              {[1, 2].map((row) => (
+                <rect key={"r" + row} x={60} y={row * 28} width={52} height={25} rx={7} fill="none" stroke="#FDFDFD" strokeWidth={4.5} />
+              ))}
+              <path d="M 54 10 L 90 10 L 90 3 L 112 12.5 L 90 22 L 90 15 L 54 15 Z" fill={C.navyDeep} />
+            </>
           ) : (
-            <path d="M 102 12 L 68 12 M 80 0 L 68 12 L 80 24 M 68 42 L 96 42" stroke="#FDFDFD" strokeWidth={4.5} fill="none" />
+            <>
+              <rect x={2} y={2} width={50} height={24} rx={7} fill="none" stroke={C.navyDeep} strokeWidth={4.5} />
+              <path d="M 54 11.5 L 88 11.5 L 88 5 L 108 14 L 88 23 L 88 16.5 L 54 16.5 Z" fill={C.navyDeep} />
+              <rect x={60} y={54} width={50} height={24} rx={7} fill="none" stroke="#FDFDFD" strokeWidth={4.5} />
+              <path d="M 58 62.5 L 24 62.5 L 24 56 L 4 66 L 24 75 L 24 68.5 L 58 68.5 Z" fill="#FDFDFD" />
+            </>
           )}
         </g>
       </svg>
