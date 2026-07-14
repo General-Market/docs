@@ -267,6 +267,34 @@ export const S9ZoomTimes: React.FC<{ frame: number; pack: Pack }> = ({ frame }) 
 // the ref is blank below the band by f2069 (below-band ink 172k@f2058 -> 13k@f2068
 // -> the milestone label alone from f2070). We were drawing the entire diagram over
 // white for 26 frames.
+// r23: the S10 hex interior build, as a MEASURED table (law 14/26 — a per-event table beats
+// any curve here, because the clip's response to ink is nothing like linear).
+//
+// The spec proposed `interpolate(frame, [1830, 1846], [0, 1])` on the reasoning that the
+// side thirds fill in proportion to buildFront. Two measurements refuted it:
+//
+//  1. S10Settle MOUNTS at f1837 (`frame < 1837` returns null), so a ramp starting at f1830
+//     spends its first seven frames off-screen. The hex would appear already at b=0.44.
+//  2. b does NOT track side ink. Probed by ink-counting our own render per third:
+//        b     0.00  0.10  0.20  0.30  0.40  0.44  0.62  0.81  1.00
+//        sides 0.47  0.55  0.65  0.77  0.83  0.85  0.94  1.00  1.00
+//     At b=0 the sides ALREADY read 0.47 — the hex outline is never clipped and the central
+//     temple overhangs the side thirds. And the curve saturates by b≈0.81. So the naive
+//     schedule snapped the sides from nothing to 85% in the single frame the hex appeared.
+//
+// The reference, ink-counted the same way (mean of both hexes' L+R thirds, against its own
+// settled f1848): 0.48 @f1837 · 0.57 @f1838 · 0.74 @f1840 · 0.81 @f1841 · 0.92 @f1843 ·
+// 0.95 @f1844 · 0.99 @f1846. Inverting our clip response against those targets gives the b
+// below — and it lands b≈0 at the mount, which is the whole point: the ref at f1837 is a
+// hex outline with a solid temple and almost nothing either side. That is what b=0 draws.
+//
+// Closes to 1 by f1848, so every settled frame holds buildFront=1 and stays byte-identical
+// (verified: f2040 md5 unchanged).
+const S10_HEX_BUILD: Lut = [
+  [1837, 0.01], [1838, 0.12], [1840, 0.28], [1841, 0.37],
+  [1843, 0.58], [1844, 0.66], [1846, 0.78], [1848, 1],
+];
+
 const S10_EXIT: Lut = [
   [2048, 0], [2049, 0], [2050, 1], [2051, 3], [2052, 6], [2053, 12], [2054, 18],
   [2055, 28], [2056, 40], [2057, 56], [2058, 76], [2059, 102], [2060, 135],
@@ -282,15 +310,21 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
   if (frame < 1837 || frame >= 2090) return null;
   const outP = interpolate(frame, [2075, 2090], [0, 1], clamp);
   const exitDy = lut(frame, S10_EXIT);
-  // r22 EYE-FIX: the ref's city hexes are NOT a fade — they BUILD, solid, left-to-right
-  // (hexagon + central red temple present from the f1837 mount, side towers filling in),
-  // reaching FULL by ~f1848 and already ~53%/71% of settled ink at f1837 (ink-counted per
-  // frame, law 26). The old ramp faded uniform opacity 0@f1845 -> 15%@f1850 -> full only by
-  // f1868 — a translucent GHOST for 30 frames where the ref is a solid cityscape, and BLANK
-  // at f1845 where the ref is 96% in. HexCity lives in lib (no per-building build available
-  // to this lane), so opacity is the only lever: land it near-full fast — present at the
-  // f1837 cut, solid by f1846 as the ref is. Settled frames (>=f1846) are byte-unchanged.
-  const hexP = interpolate(frame, [1837, 1846], [0.5, 1], clamp);
+  // r22 saw that the ref's city hexes BUILD rather than fade, but the only lever this lane
+  // had was `opacity` — so it shipped a 0.5→1 ramp, which fades the OUTLINE and the red
+  // temple in along with the towers. The ref does no such thing. r23: lib.tsx now exposes
+  // `HexCity.buildFront`, a centre-out SOLID clip wipe (outline + badge always present, the
+  // interior opening outward from the central temple band), so the mechanism is available
+  // and the opacity crutch goes.
+  //
+  // Measured (per-third dark-ink count of the ref, f1837-1847, law 26): the CENTRE third is
+  // already FULL at f1837 (hexA C 6775 → 7054 settled) while the SIDES grow (hexA L 2352 →
+  // 7948). A single opacity cannot express "centre solid, sides arriving" — it fades all
+  // three thirds together, which is why the outline ghosted. Modelling sides ≈ buildFront:
+  // ~0.44 built at f1837, full by ~f1847. [1830, 1846] lands 0.44 at f1837 and 1 at f1846,
+  // keeping the old ramp's end frame. No opacity: the ref's outline and temple are SOLID
+  // from the mount. Settled frames (>=f1846) hold buildFront=1 → byte-unchanged.
+  const hexBuild = lut(frame, S10_HEX_BUILD);
   const pillP = interpolate(frame, [1872, 1890], [0, 1], clamp);
   // gen19: the bank hex SNAPS IN at f1951-1957 (ref dark-ink in its box, probed per
   // frame: f1930 84 · f1950 0 · f1955 2556 · f1958 2857 · steady 2861). We faded it in
@@ -342,8 +376,8 @@ export const S10Settle: React.FC<{ frame: number; pack: Pack; PillLogo?: React.F
       <Milestone x={958} lineTop={84} lineBottom={148} time={pack.milestones.m0700.time} label={pack.milestones.m0700.label} textY={160} timeSize={28} labelSize={18} />
       {/* the diagram — it, and only it, slides down and off at the exit */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${exitDy}px)` }}>
-        <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" variant={0} opacity={hexP} />
-        <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" variant={1} opacity={hexP} />
+        <HexCity x={ax} y={hy} w={HW} h={HH} letter="A" variant={0} buildFront={hexBuild} />
+        <HexCity x={bx} y={hy} w={HW} h={HH} letter="B" badge="tr" variant={1} buildFront={hexBuild} />
         {/* gen19: the bank hex was 60px left, 38px high and 40% too small. Measured off
             ref f2040: flat top y624..627 (x1388..1472), flat bottom y744..747, widest at
             y690 spanning x1348..1512 — so 164 wide x 123 tall, centred (1430, 686). We
