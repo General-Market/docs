@@ -4638,3 +4638,228 @@ The end card, the S11 fly-in, and the S2 converge are all off the board. The bes
 UNTOUCHED lever is now **residual #1 — the S4 hex ~6px registration translation** — the rank-1
 window's real defect, already measured by lib, a law-4 move on a mechanism law-21 never
 refuted. Position first, and only translate; the interior is faithful and must not be redrawn.
+
+---
+
+# r21 — ROUND LEAD CONSOLIDATION — a handed-down measurement was wrong, and the metric was guarding a wrong build — 2026-07-13
+
+Two file-scoped lanes dispatched — **scenes1** (S4 hex 6px registration, PRIMARY; then S6
+hour-chain, S2 width) and **scenes2** (S15/S16 never-triaged, PRIMARY; then S14/S13, S8 zoom).
+**3 commits** (`a3bf7ffd5` scenes1 S4 hex; `3d65e96dd` scenes2 S15 clock; `3e8ea4977` scenes2
+S8 blocker note). Every shipped landing gated ref-vs-OLD-vs-NEW at ≥3 in-window frames, NEW≥OLD
+on every frame, settled holds byte-identical, CrxSettlementDay eyechecked, law-34 ship-proofed.
+Both lanes committed path-scoped (`git show --stat` held only their own file); cls-day lane tsc
+0; lock free; zero cls-day orphan renders or shells at round end. Fresh **r20 official verify
+landed mid-round: SCORE 94.8** (confirming the r19 estimate) — that is r21's baseline. I did NOT
+run the r21 composite verify — the dispatcher owns it (it needs the lane-scoped tsc filter to
+clear the yc-pitch guard).
+
+## The pattern turned this round: the fiction was in the FINDINGS, not only the frames
+
+Four rounds found the fiction in the reference-vs-replica gap. This round found it one level up
+— in a **handed-down measurement** and in the **metric's own reward**. The rank-1 window's
+prior diagnosis was wrong; the rank-4 window's correct fix is guarded by the ruler. Two wins
+shipped; two honest floors documented rather than forced.
+
+| lane | window | the error found | gain |
+|---|---|---|---|
+| **scenes1** | **S4 hex f453-556 (rank 1)** | **The r20-lib "sits 6px low → translate" diagnosis was MIS-MEASURED.** Flat-edge centroids per frame show the hex centre matched to <1px — no translation fits. The real defect: the outline runs **~274·s TALL where the ref draws ~270·s** through the animated entrance/spread, landing the correct 273·s only once settled — a *phase-dependent mis-proportioned trace*, too tall 4-6px in flight. A measured single-axis HEIGHT correction, not the blind uniform refit that lost twice under law 21. Fix: windowed `HH`=277.5 for frame<553, ramped to 282 by the f556 land; settled hold f556+ byte-identical (md5). | hex A window mean **+0.0112**, hex B **+0.0191**; f460 +.031/.035, f470 +.009/.033, f485 +.017/.018, f503 +.005/.021, f553 +.005/.008; only non-win f530 hexB −0.0004 (noise) |
+| **scenes2** | **S15/S16 f2835-2980 (ranks 5,9)** | **Three schedule fictions, all invisible to the metric until the two questions were asked.** (a) **A frozen band where the ref PANS** — `hourAt`/pitch were static; the ref pans the whole band+brackets assembly left (measured off the 07:00/09:00 drop lines: hour@960 **8.241→8.574**, pitch a constant **249**). The static band sat 38px LEFT of the ref at entry and 45px RIGHT by the end — it *crossed* the ref, and both ranked windows sit where it is worst; the pan also killed a ~39px doubled-band ghost at the f2837 S14 handoff. (b) **Brackets drawn too late** — full from mount (ref has them full by f2837). (c) **The "8.0+ USD trillion" figure faded in 25f late** — replaced with the ref's measured right→left clip reveal (f2906-2924), held full through the rank-5 window. | rank 9: f2843 **+.056**, f2860 **+.058**, f2885 **+.045**; rank 5: f2930 +.006, f2955 +.016, f2980 +.020 |
+
+## The honest floors and refutations (shipped nothing — the correct outcome)
+
+- **scenes1 S6 hour-chain: NO DEFECT.** The band already reads 23:00 / 00:00 (marker) / 01:00 /
+  02:00 — identical to the ref; `originHour=24` lands 00:00 on the marker exactly. The brief's
+  "01/02/03 vs 23/00/01" was a **stale observation**. r20's S6 change was only the S5-handoff
+  twin, not the origin. A phantom lever, refuted by direct visual at f1010.
+- **scenes1 S2 face-width:** skipped — low-value, near-floor, gated behind levers 1-2 by the brief.
+- **scenes2 S8 pay-in doc f1478-1511 (rank 4): a REAL defect, ship-BLOCKED, documented.** The
+  two questions found phase-A geometry genuinely mis-built (measured: band pitch **141.6 vs 205**;
+  doc **w500 h480 fixed at y560 vs w820 h577 at y330 panning** on the 00:00 tick; a red 00:00
+  playhead the replica omits). A correct rebuild lifts f1478-1500 by **~+0.025 each** (verified).
+  But the f1511-1535 zoom-out goes near-**blank** in the ref, and OLD's undersized-doc-zoomed-off
+  already matches that blankness (.94-.99); a correct larger doc cannot be evicted as cleanly and
+  **regresses those near-white frames −.03 to −.047** (lesson 8 — SSIM rewards blankness).
+  Reverted byte-identical (f1500/f1511 md5-confirmed); measurements + blocker recorded in-code
+  (`3e8ea4977`) so the next builder does not re-lose the fight. **The next-round primary lever.**
+- **scenes2 S13 f2673-2723 (rank 11): FLOOR.** The brief mislabelled it S14; it is S13
+  (f2339-2726). The ref draws everything we draw — cities, handshake pill, both chips correctly
+  timed, the measured exit slide — and sizes/positions match. The residual is hand-drawn line-art
+  (building interiors, handshake fingers, chip edges) at the soft-vs-hard texture floor — the same
+  class r20 ruled a ceiling for S11. Redrawing loses (law 19). Left as-is.
+
+## The laws this round earned
+
+- **A handed-down residual is a hypothesis, not a measurement — re-measure before you spend a
+  round on it (law 24/25, lifted one level).** r20-lib's "6px low → translate" would have LOST
+  a whole round: a translation does not fit a hex whose centre is already <1px true. Only
+  re-measuring the flat edges per frame exposed the real defect — a phase-dependent HEIGHT
+  over-draw. r19's "fix the size, then read the clock" has a sibling: **verify the size
+  diagnosis itself before acting on it.** The prior round's note pointed at the right WINDOW and
+  the wrong MECHANISM.
+- **The pan that CROSSES the ref (law 26, sharpened).** S15's frozen band was not uniformly
+  wrong — it began 38px left of the ref and ended 45px right, crossing mid-window. Every single
+  frame read "close"; only ink-counting the drop-line positions per frame revealed that the whole
+  assembly should pan. A schedule error that crosses zero hides from frame-by-frame inspection at
+  the crossing. The clock again, this time wearing a pan.
+- **SSIM rewards blankness, and it will guard a wrong build (lesson 8, paid at scale).** The
+  correct S8 fix is blocked because the ref's post-zoom frames go near-white and our *undersized*
+  doc — precisely because it is wrong — vanishes into that white cleanly and scores .94-.99. The
+  ruler is defending the wrong geometry because the wrong geometry happens to disappear. A
+  faithful fix must measure the eviction (zoom-centre) trajectory, not only the doc. When the
+  metric protects a defect, it is protecting a blankness the defect happens to reach.
+
+## r21 metric move (estimate — dispatcher runs the official verify)
+
+r20 baseline SCORE **94.8**. r21 lifted two windows: S4 hex (rank 1, ~103 frames, +.011/.019 per
+hex-half) and S15/S16 (ranks 5+9, ~145 frames, +.045-.058 on the bracket sub-window, +.006-.020
+on the figure sub-window) — together ~4% of the video at per-frame gains of .01-.06, wider than
+r20's ~40-frame entrances. Estimated global-mean Δ **≈ +.0015-.002 → SCORE ~94.9-95.0**. The
+official r21 verify confirms; the PNG per-frame gates above are the r21 record.
+
+## RESIDUAL — ranked for r22 (whole track)
+
+1. **S8 pay-in doc phase-A rebuild (scenes2, rank 4 f1461-1511).** A measured, REAL geometry
+   defect (band pitch 141.6 vs 205; doc w500h480 vs w820h577 panning; missing red 00:00 playhead)
+   worth ~+.025 across ~22 frames — but guarded by the blankness trap. Needs the ref's zoom-CENTRE
+   eviction trajectory measured so a correct larger doc evicts by ~f1518 without regressing the
+   near-white f1511-1535 tail. A dedicated round; measurements already in-code (`3e8ea4977`).
+   **The best-value untouched lever on the track.**
+2. **S4 hex INTERIOR buildings (lib.tsx).** Now the dominant S4 residual after the outline height
+   fix — difference composites light the interior everywhere. A hand-invented trace in lib,
+   off-limits to the scenes lanes. A faithful, measured POSITION re-trace of the interior in the
+   lib lane is the next real S4 gain; a redraw loses (law 19). The outline is now registered.
+3. **S13 / S11 line-art texture floor** (f2673-2723, f2163-2213). Building interiors, handshake,
+   doc interiors at the soft-vs-hard floor, ~.91 ceiling. law 19. Likely terminal.
+4. **Carried:** S17 conveyors/summary (f3341-3391, rank 8, r18-worked, complex); S2 per-pair
+   face-width (rank 10, near-floor per-glyph serif proportion); global `tickAbove` default flip
+   (4→0), still blocked by two default-taking bands in scenes1.
+
+## INFRA / hazards handed to the next lead
+
+- **The shared git index STILL carries the foreign half-merge** (`../.gitignore`, `../data-node`,
+  `../frontend`, `../jarvis`, `../yc-pitch/YCPitchComposition.tsx` — ~12 tsc reds NOT ours). Both
+  r21 lanes committed via `git commit --only -F <msg> -- <path>` and verified `git show --stat`
+  held only their file. The cls-day lane tsc is 0. The official composite verify still needs the
+  lane-scoped tsc filter to clear the yc-pitch guard on verify-replication.sh's whole-repo line.
+- **A SIBLING lane (clsnet r23) committed interleaved on the shared branch** (`1d264b32b`,
+  `60c23f768`, `24e8738f0`) and shares the one render lock. Benign — never break a lock or touch
+  a commit you did not create (law 32/33).
+- Lock free, zero cls-day orphan renders/shells at round end (law 30 honest `ps` test).
+
+## r21 headline for r22
+
+The S4 hex outline is registered and S15 rides the ref's clock. The best-value untouched lever is
+now the **S8 pay-in doc phase-A rebuild** — a measured, real ~+.025×22f geometry defect the metric
+is actively guarding because the wrong build vanishes into white. Same shape as every round: the
+ruler cannot see what should be there. It can only reward what already is. Measure the eviction,
+not just the doc.
+
+---
+
+# r22 — ROUND LEAD CONSOLIDATION — the judge became the EYE, and one pass found twelve — 2026-07-13
+
+**The owner changed the objective.** The composite is a ceiling (94.8, flat three rounds), so the
+JUDGE IS NOW THE EYE; the composite is only a floor. Four lanes: **scenes2-S8** (the r21-blocked
+headline), a **read-only whole-video + CRX eye-audit**, **scenes1**, and **CRX**. **Twelve commits,
+twelve eye-defects fixed** — every one single-file and path-scoped (collision check CLEAN across all
+twelve), every one gated ref|OLD|NEW at ≥3 in-window frames AND eyechecked by the round lead reading
+the filmstrips himself (montage `magick`, ref beside replica), every settled hold byte-identical,
+law-34 ship-proofed. cls-day lane tsc 0; lock free at round end. **No composite verify run — the
+dispatcher's owner owns it** (per brief). The whole-video audit mp4 + 75 ref/replica montage pairs +
+16 strips live in `.claude/rounds/work/cls-day/r22/`.
+
+## The audit that asked the two questions of the WHOLE video at once
+
+r22 rendered the whole replica once and montaged it beside the ref every 2s — 75 pairs, read by eye.
+The metric was blind to every defect below; the eye caught them in one pass. The campaign pattern
+held a fifth round: the largest errors were **schedule** (a fade where the ref builds, a hold where
+the ref pans, an entrance N frames late) and **wrong drawing** (a blob where the ref draws a map, a
+list where the ref draws a staircase, a half-size headline). Law 8 hid them all — low-contrast /
+near-white / blank-outscores-solid.
+
+| # | lane→file | scene / window | the eye saw (metric-blind) | fix | commit |
+|---|---|---|---|---|---|
+| 1 | scenes2 | **S8 pay-in doc** f1466-1535 | undersized fixed doc (w500h480) + wrong band pitch (141.6) + NO red 00:00 playhead; evicts by accident into white | doc **822×577 panning on the 00:00 tick**, pitch **205**, red playhead added, band ×1.473 / doc ×1.085 **separate eviction** measured to the ref's grey-band morph | `682ca098d` |
+| 2 | scenes2 | **S14 "09:00"** f2737-2837 | headline at **HALF size** (fontSize 100), sitting 75px low; held 30f after the ref drops it | fontSize 100→**183**, split to two right-aligned measured bands (pixel-exact, w450 vs ref w451), faded on the ref's clock (phantom headline killed) | `6b3fdeca0` |
+| 3 | scenes2 | **S15 brackets** f2837-3040 | **short arrows hugging the text** + rounded corners | rebuilt as flex-grow **full-width double-arrows** to the bar ends, corners → square | `551ccb723` |
+| 4 | scenes2 | **S10 cities** f1837-1900 | A/B hexes rendered **~15% ghosts** while the ref **builds them solid** left-to-right | the ref does NOT fade (ink-counted) — retimed `hexP` to land near-full at the cut, solid by f1846 | `bf2d33d77` |
+| 5 | scenes2 | **S16 chips** f3040-3095 | pay-out chip-stacks **30f late** (bare A-H circles at f3050) | retimed the chip entrance to build with the scene (full by f3040) | `96e854c2c` |
+| 6 | scenes2 | **S17 summary** f3200-3250 | summary band **8f late** — S16's band (09:00-16:00, no milestones) lingered where the ref shows S17's (23:00-11:00, all milestones) | S16 leaves fast, S17 band+milestones up at the cut, small measured band descent | `f3f4fc42f` |
+| 7 | scenes2 | **S19 end-card** f3595-3615 | icon draw-on **~40% too fast** (full by f3607, ref draws to ~f3615) | stretched the three reveal-front LUTs 14f→20f to track the ref | `af8553128` |
+| 8 | scenes1 | **S3 globe** f300-460 | **blocky blobs at the WRONG longitude** where the ref draws a recognizable world map; scroll **2.8× too slow** (−1.06 vs ref −3.0 px/f) | **BOTH art AND phase**: re-traced the coastlines off ref f380 (law 39 — the trace was measurably unfaithful, not law-19-protected) + scroll `−85 −3.0·(f−380)` | `3d1afa1c8` |
+| 9 | scenes1 | **S7 netting glyph** f1250-1466 | a **thin 3-pill list + hairline arrow** where the ref draws a **2-column staircase of cards + bold arrow** | rebuilt both glyphs (card grid, filled arrow, navy/white split), seated by measured ink bbox | `e93c57305` |
+| 10 | scenes1 | **S2 ruler** f~297-300 | grey currency ruler + ticks **lingering at the frame bottom** the ref cut on f297 | gated the band to `frame < 297` (binary-searched the ref's hard cut) | `ed17d6c25` |
+| 11 | CRX / crx-data | **trillion unit** f2900-3040 | CRX "no banking hours" **occluded by the Margin/delivery bar** (only "…ours" showed); CLS's short "USD trillion" cleared it | reflowed the CRX string → **"never closes"** (ends x530, clears the bar's leftmost pan by 21px), meaning preserved | `52bd0a104` |
+| 12 | CRX / CrxSettlementDay | **brand lockup** f60/f3600/pills | CRX lockup ~**60% of the CLS wordmark's mass** on the intro/end card | `CrxBrandLogo` height 210→**347**, top 150→102 — lands at CLS's own extents (99% h, 95% w). Deviation from the suggested 240-260 flagged; served the goal, one-line revert | `31aacf01b` |
+
+## Perceptual-spend ledger (the eye wins; the metric is charged, documented)
+
+- **S8 f1518/1522 (~2 frames): crop −0.038/−0.042.** The correct larger doc is geometrically faithful
+  to **3px** at f1518 (band pitch 302 vs 301) but a few-px offset on sparse navy-on-white scores BELOW
+  OLD's total blankness (law 8 — the exact trap r21 refused). The eye sees the correct doc leave; the
+  ruler rewarded the wrong doc's absence. **Tail RECOVERED:** killing the giant-label fiction + the
+  grey-strip morph turned f1528 into a win (+0.003) and f1531/1535 into matches — the r21 tail
+  regression is gone.
+- **S10 f1845: crop −0.010.** Blank white outscores a solid city on sparse line-art; eye win f1845-1860
+  (ref solid, OLD ghost, NEW solid). f1850 +0.013, f1855 +0.006.
+- **S7 f1300: crop −0.023.** A kept split-TIMING seam (the ref icon is mid-split at f1300 while our
+  `splitP` starts there); the glyph itself gains (f1280 +0.011, f1340 +0.018). Retiming the split is
+  out of the "leave the choreography untouched" scope.
+- **Globe entry f300-350: crop ~−0.010.** The detailed trace on the low-contrast fly-in globe scores
+  below OLD's sparse blobs; tested holding the entry longitude — scored WORSE (0.728) and read wrong —
+  reverted byte-identical. The dominant SETTLED window is a clean gain (f350 +0.005, f380 +0.006, f400 +0.011).
+- Every other fix is neutral-or-positive on the crop; S14 f2800 **+0.123**, S16 f3050 **+0.056**, S17
+  f3205 **+0.022** are large local gains the whole-frame codec-bonus will dilute (law 18 — narrow area).
+
+## CRX-cut verdict — CLEAN, and it inherits every scene fix
+
+The publishable `CrxSettlementDay` is `ClsDayScenes` + the CRX pack, so it **inherits all nine scene
+fixes automatically** (S8 doc, S14, S15, S10, S16, S17, S19, globe, S7, ruler — eyechecked at S8 f1490,
+matches ClsDay identically). The two CRX-AUTHORED defects are fixed (#11, #12 above). One CRX residual
+routed and NOT taken (below).
+
+## RESIDUAL — ranked eye-residual for r23
+
+1. **CRX pill lockup under-weight (routed null, law 27).** The CRX pill mark reads ~53% of the CLS mark
+   in S10/S17 and ~67% in S4, because the call sites differ: **S4** (scenes1) passes `PillLogo h={98·es}`
+   hand-tuned; **S10/S17** go through lib.tsx `ClsPill` passing `h·logoScale(0.366)` to CLS and CRX
+   identically. One uniform `PillLogo` factor can't match all three and the small S17 pill (w259 h117,
+   `overflow:hidden`) risks CLIPPING the ✳. The correct fix is multi-file (scenes1 S4 + lib ClsPill +
+   scenes2 S17 call sites compensate the CRX branch, THEN harmonize `PillLogo`) — deferred as a
+   coordinated CRX-only round; the aesthetic gap is minor.
+2. **S10 HexCity interior deficit (lib.tsx).** The settled hex carries ~79% of the ref's ink — the
+   per-building interior is hand-invented (law 19/21, twice-refuted). The r22 S10 timing fix rides the
+   existing settled art; the interior is a lib-lane re-trace, not a scenes fix. Also: the S10 ENTRANCE
+   mechanism is opacity-only (the ref builds each building solid) — needs a lib-side `HexCity` build LUT.
+3. **S14/S15 handoff f2810-2837.** The ref grows the brackets (f2818) while ours mounts them at f2837 —
+   a ~19f entrance gap, separate from the r22 fontSize/arrow fixes.
+4. **S7 split-timing seam f1300** (spend above) — retime the icon split to the ref's mid-split state.
+5. **Globe entry f300-350** — the fly-in phase is imprecise (scaling globe); the detailed trace carries
+   a small law-8 spend there. Low value.
+6. **Flow chips in transit (S10 f1950-2050, S17 f3350)** — fewer chips than the ref, but the paths are
+   invented with a recorded negative A/B (law 19/20); a correct fix needs full per-frame path+schedule
+   re-measurement, not a cheap retime. NULL this round.
+7. **Line-art texture floors** (S11/S13 doc & building interiors, handshake) — law-19 terminal, ~.91.
+
+## INFRA / hazards handed to the next lead
+
+- **Every r22 cls-day commit is single-file and path-scoped** (verified: collision check CLEAN across
+  all twelve). The lane tsc filtered to `replicates/cls-day` is **0**; the foreign
+  `yc-pitch`/`data-node`/`frontend`/`jarvis` reds persist in the shared index and still block
+  verify-replication.sh's whole-repo tsc guard — the composite verify needs the lane-scoped filter to run.
+- **A SIBLING clsnet lane (r23) committed interleaved** on the shared branch and shares the one render
+  lock — benign; never break a lock or touch a commit you did not create (laws 32/33). One orphan
+  `chrome-headless-shell` remained at round end (lock free, no active remotion render) — LEFT in place
+  (possible sibling browser; it holds nothing; housekeep reaps it).
+- The whole-video eye-audit is a REUSABLE r22 asset: `work/cls-day/r22/audit-clsday.mp4` +
+  `strips/` + `crops/`. Re-montage from it for free next round instead of re-rendering.
+
+## r22 headline for r23
+
+The eye found twelve defects in one pass that fifteen rounds of SSIM never surfaced — the composite
+cannot ask whether a thing should be there, only whether it matches. Nine scene fixes flow to both cuts;
+the CRX cut is clean but for the routed pill-weight (law 27, multi-file). The next real eye-lever is the
+**S10 HexCity interior + entrance build in lib.tsx** — the only large-area residual left, and it needs
+a lib-side re-trace + build LUT, off the scene lanes. **The ruler measures; the eye judges; this round
+the eye won twelve times.**
