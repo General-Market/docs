@@ -580,8 +580,13 @@ export const Buildings: React.FC<{
       {variant === 0 ? (
         <>
           {/* grey slabs behind the right cluster (ref: the right half is packed
-              with slab + building up to the chamfer, not white) */}
-          <rect x={232} y={128} width={20} height={130} fill={slab} />
+              with slab + building up to the chamfer, not white). r23: the ref grey
+              band left of the right building runs y86..246 (probe f2040 col x=234..242);
+              ours started at y128 and only the strip x232..238 above the temple base
+              (y<160) is ever exposed — extended UP to y84 to show it. The second slab
+              sits behind the stepped tower (fully covered by its paper fill); left as a
+              harmless backdrop. */}
+          <rect x={232} y={84} width={20} height={174} fill={slab} />
           <rect x={286} y={150} width={50} height={108} fill={slab} />
           {/* far-left slender navy tower + mast, horizontal windows */}
           <line x1={44} y1={56} x2={44} y2={76} stroke={ink} strokeWidth={2} />
@@ -596,6 +601,10 @@ export const Buildings: React.FC<{
           {[0, 1].map((c) =>
             [0, 1, 2, 3].map((r) => <rect key={`${c}${r}`} x={104 + c * 20} y={148 + r * 26} width={4} height={12} fill={ink} />),
           )}
+          {/* horizontal floor rule across the plain + dots buildings (r23: ref f2040
+              carries a solid navy run x70..130 at y196 — screen y506 — that our left
+              buildings dropped entirely). */}
+          <line x1={70} y1={196} x2={132} y2={196} stroke={ink} strokeWidth={sw} />
           {/* right navy building: 2-row window-BOX grid (ref f1900 rightcluster
               5x — rectangular panes, not the old plain floor bands) */}
           <rect x={238} y={80} width={40} height={178} fill={paper} stroke={ink} strokeWidth={sw} />
@@ -609,6 +618,10 @@ export const Buildings: React.FC<{
           {/* far-right stepped navy tower — taller, reaching x354 under the
               chamfer (ref keeps the right third packed, not white) */}
           <path d={`M 282 258 L 282 150 L 320 150 L 320 120 L 354 120 L 354 258 Z`} fill={paper} stroke={ink} strokeWidth={sw} />
+          {/* r23: the ref stepped tower carries TWO full-width floor rules (probe
+              f2040: y172 x275..338, y224 x275..333) that ours drew as a bare outline. */}
+          <line x1={284} y1={172} x2={338} y2={172} stroke={ink} strokeWidth={sw} />
+          <line x1={284} y1={224} x2={334} y2={224} stroke={ink} strokeWidth={sw} />
           {/* center red tower: cap + antennae, body w/ inner windows, wide base grid, door */}
           <line x1={184} y1={26} x2={184} y2={40} stroke={accent} strokeWidth={2} />
           <line x1={196} y1={26} x2={196} y2={40} stroke={accent} strokeWidth={2} />
@@ -619,8 +632,12 @@ export const Buildings: React.FC<{
           <rect x={168} y={98} width={16} height={54} fill={accent} />
           <rect x={190} y={98} width={16} height={54} fill={salmon} />
           <rect x={140} y={160} width={102} height={98} fill={paper} stroke={accent} strokeWidth={sw} />
-          {[0, 1, 2, 3].map((c) =>
-            [0, 1, 2, 3].map((r) => <rect key={`b${c}${r}`} x={158 + c * 22} y={178 + r * 20} width={5} height={12} fill={accent} />),
+          {/* base window grid. r23 re-trace: the ref runs SIX columns × THREE rows,
+              not our old 4×4 (probe f2040 rows y180/y200 → tick columns
+              x157/173/191/207/224/241; col x226 → rows y176/198/220). The old 4-column
+              grid at x158/180/202/224 sat off every ref column but the last two. */}
+          {[0, 1, 2, 3, 4, 5].map((c) =>
+            [0, 1, 2].map((r) => <rect key={`b${c}${r}`} x={156 + c * 16.8} y={171 + r * 22} width={4} height={11} fill={accent} />),
           )}
           <rect x={176} y={238} width={22} height={20} fill={paper} stroke={accent} strokeWidth={2} />
           <line x1={187} y1={238} x2={187} y2={258} stroke={accent} strokeWidth={1.6} />
@@ -658,8 +675,12 @@ export const Buildings: React.FC<{
           <line x1={288} y1={70} x2={288} y2={96} stroke={ink} strokeWidth={2} />
           <rect x={268} y={96} width={50} height={28} fill={paper} stroke={ink} strokeWidth={sw} />
           <rect x={268} y={124} width={50} height={134} fill={paper} stroke={ink} strokeWidth={sw} />
-          {[0, 1, 2, 3, 4].map((i) => (
-            <line key={`rr${i}`} x1={276} y1={140 + i * 22} x2={310} y2={140 + i * 22} stroke={ink} strokeWidth={sw} />
+          {/* r23: the ref runs a DENSE ladder — probe f2040 col x=295 gives rungs at
+              y137/151/164/179/193/207 (pitch ~14), where ours drew 5 at pitch 22. Re-traced
+              to the ref's SIX rows; kept the full building span (x274..312) so the ladder
+              reads across the wall like the ref, not a right-shifted stub. */}
+          {[137, 151, 164, 179, 193, 207].map((yy, i) => (
+            <line key={`rr${i}`} x1={274} y1={yy} x2={312} y2={yy} stroke={ink} strokeWidth={sw} />
           ))}
           {/* center red tower B: antenna, crown of bars, banded head, twin dashed columns */}
           <rect x={160} y={16} width={10} height={28} fill={paper} stroke={accent} strokeWidth={2} />
