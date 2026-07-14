@@ -424,13 +424,22 @@ export const REPORT = {
   driftY: 125, // whole group drifts +125px over 2332-2358 (fr_2330 vs fr_2360)
 } as const;
 
-// ─── Shield / ledge (probed zipper sweep + θ at fr_3708/3732/3762) ───
+// ─── Shield / ledge — θ from a dense re-measure of the ref waterline (r24) ───
+// The old three-point probe (7.1/-5.2/0 at 3708/3732/3762) had the see-saw
+// SIGN-FLIPPED and settling ~20f late, so the band read down-right and low
+// through the target settle. Measured per-frame off the ref's own waterline
+// (top-of-navy line-fit, dataθ = -waterlineθ; sd 0.3-2.0px, confirmed by eye:
+// f3708 tilts down-right, f3725 up-right): the band falls from the zipper,
+// overshoots DOWN-right to -7° at f3708, swings UP-right to +7° at f3725, then
+// damps dead flat by f3745 (ref is flat, waterline y593, from f3745 through the
+// settled outro). Endpoint stays θ=0 so f>=3762 — the settled outro (byte-locked)
+// and the rise — are untouched.
 export const LEDGE = {
   center: [948, 575] as const, // band pivot; θ=90 reproduces the zipper at x928-968
   bandH: 40,
   tickEvery: 127,
-  thetaKeys: [3690, 3700, 3708, 3732, 3762] as const,
-  thetaVals: [90, 20, 7.1, -5.2, 0] as const,
+  thetaKeys: [3690, 3700, 3705, 3708, 3712, 3715, 3720, 3725, 3730, 3735, 3740, 3745] as const,
+  thetaVals: [90, 20, -5.7, -7.0, -5.7, -2.4, 4.9, 7.0, 6.4, 4.2, 1.3, 0] as const,
   stacks: {
     baseline: 520, // pill bottoms (band top 555, 35px gap)
     pillW: 135,
