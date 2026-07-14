@@ -2141,12 +2141,25 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
   const pct = `${Math.round(progress * 100)}%`;
   const iconDraw = interpolate(frame, [1206, 1220], [0, 1], clamp); // clockwise arc draw-in
   const connWipe = interpolate(frame, [1222, 1250], [0, 1], clamp); // connector left→right
-  const splitP = interpolate(frame, [1300, 1308], [0, 1], clamp);
+  // r23: the split is STAGED, measured off ref navy-ink f1296..1340 (the old single
+  // splitP f1300..1308 froze the glyph centred until f1300 — ref is already mid-rise
+  // there, crop −0.023 — and pulled the LOWER icon in ~30f early, crop 0.80 @f1304).
+  //   • the "in" glyph RISES inside the still-full big circle f1290..1300 (ref navy
+  //     centroid 501@1296 → 470@1300; center-band white still FULL @1300, so the
+  //     circle must NOT dim yet — keep the big icon opaque and lift only the glyph);
+  //   • the big circle then COLLAPSES into the upper icon f1300.5..1304 (center-band
+  //     white full@1300 → gone@1304; navy centroid 470→330);
+  //   • the LOWER "out" icon appears LATE and draws in gradually (ref lower-navy
+  //     89@1304 · 522@1308 · 1009@1312 · 1137@1320 · 1944@1340).
+  const bigRise = lutS([[1290, 3], [1296, 3], [1298, -14], [1300, -40], [1302, -118], [1304, -168]])(frame); // big-icon glyph gy lift
+  const upP = interpolate(frame, [1300.5, 1304], [0, 1], clamp); // big circle → upper icon
+  const loP = lutS([[1305, 0], [1308, 0.27], [1312, 0.52], [1320, 0.58], [1330, 0.79], [1340, 1]])(frame); // lower icon draw-in
+  const connP = interpolate(frame, [1301, 1310], [0, 1], clamp); // connector single → bracket
   return (
     <div style={{ position: "absolute", inset: 0, background: C.blue, opacity: bgP * (1 - outP) }}>
       {/* dashed connectors sit behind the donut + icons */}
-      {frame >= 1206 && splitP < 1 && <NetConnector mode="single" wipe={connWipe} opacity={1 - splitP} />}
-      {splitP > 0 && <NetConnector mode="bracket" wipe={1} opacity={splitP} />}
+      {frame >= 1206 && connP < 1 && <NetConnector mode="single" wipe={connWipe} opacity={1 - connP} />}
+      {connP > 0 && <NetConnector mode="bracket" wipe={1} opacity={connP} />}
       <Donut
         cx={cx}
         cy={cy}
@@ -2163,14 +2176,10 @@ export const S7Netting: React.FC<{ frame: number; pack: Pack }> = ({ frame, pack
         bgSweep={ringIn}
       />
       {progress > 0.2 && <MarkerTriangle x={1352} y={cy - 289.5 - 131 / 2 - 55} size={40} />}
-      {/* icon circles: one (draws in), then two (split) */}
-      {frame >= 1206 && splitP < 1 && <NetIcon x={511} y={511} r={237} p={1 - splitP} draw={iconDraw} kind="in" gx={-6} gy={3} />}
-      {splitP > 0 && (
-        <>
-          <NetIcon x={516} y={313} r={150} p={splitP} kind="in" gx={-9} gy={2} />
-          <NetIcon x={515} y={721} r={150} p={splitP} kind="out" gx={-4} gy={12} />
-        </>
-      )}
+      {/* icon circles: one big (glyph lifts, then collapses), an upper (in), a late lower (out) */}
+      {frame >= 1206 && upP < 1 && <NetIcon x={511} y={511} r={237} p={1 - upP} draw={iconDraw} kind="in" gx={-6} gy={bigRise} />}
+      {upP > 0 && <NetIcon x={516} y={313} r={150} p={upP} kind="in" gx={-9} gy={2} />}
+      {loP > 0 && <NetIcon x={515} y={721} r={150} p={loP} kind="out" gx={-4} gy={12} />}
     </div>
   );
 };
