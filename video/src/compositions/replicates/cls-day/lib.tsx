@@ -789,7 +789,16 @@ export const HexCity: React.FC<{
   // the outline and the buildings together. Default 1 = the style is not emitted
   // at all, so every existing call site stays byte-identical.
   contentsP?: number;
-}> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1, dense, contentsP = 1 }) => {
+  // S10 BUILD reveal, measured off ref f1837..1847. The ref does NOT fade the hex
+  // in: at f1837 the outline + central RED TEMPLE are already solid and the flanking
+  // towers fill in SOLID, outward from the centre, reaching full by ~f1847. Per-third
+  // ink-count (law 26) proves it is a centre-out WIPE, not an opacity ramp — the CENTRE
+  // third holds ~full (hexA 6775->7054) while the sides grow (hexA L 2352->7986, R
+  // 2280->4790). So this is a hard clip that opens from a central band (covering the
+  // temple) outward, NOT translucency. Default 1 = fully built, no clip emitted, every
+  // existing call site byte-identical.
+  buildFront?: number;
+}> = ({ x, y, w = 300, h = 220, letter, badge = "tl", variant = 0, opacity = 1, ink = C.navyDeep, badgeP = 1, dense, contentsP = 1, buildFront = 1 }) => {
   const hw = w / 2;
   const hh = h / 2;
   const path = hexPath(w, h);
@@ -818,7 +827,23 @@ export const HexCity: React.FC<{
             ...(contentsP < 1 ? { opacity: contentsP } : null),
           }}
         >
-          <Buildings w={w} h={h} variant={variant} dense={dense} />
+          {buildFront < 1 ? (
+            // Centre-out SOLID wipe: an inset clip that at buildFront 0 exposes only
+            // the central ~34%-wide band (the temple: viewBox x128..253, covering both
+            // variants' temples) and opens outward to full by buildFront 1. A hard clip,
+            // not opacity — the towers arrive solid, exactly as the ref builds them.
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                clipPath: `inset(0 ${(1 - buildFront) * 33}% 0 ${(1 - buildFront) * 33}%)`,
+              }}
+            >
+              <Buildings w={w} h={h} variant={variant} dense={dense} />
+            </div>
+          ) : (
+            <Buildings w={w} h={h} variant={variant} dense={dense} />
+          )}
         </div>
       )}
       {letter && badgeP > 0 && (
