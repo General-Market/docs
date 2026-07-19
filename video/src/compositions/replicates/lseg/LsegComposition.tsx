@@ -39,8 +39,21 @@ import {
   PANEL_MOTION,
   B1_ARCHER_H,
   B1_CONFETTI_TOP,
-  B1_TEXT_X,
-  B1_TEXT_Y,
+  S6_DX,
+  S6_CONT,
+  S6_RL,
+  S7_DL,
+  S7_CR,
+  S7_CYB,
+  TxtKeys,
+  B1_TXT,
+  B2_TXT,
+  B2_PL,
+  B2_PT,
+  B3_R,
+  S7_D,
+  B3_Z,
+  DOT_PARA,
 } from "./data";
 
 // "Introducing LSEG World-Check On Demand" — 1:1 replicate.
@@ -461,12 +474,14 @@ const S4: React.FC = () => {
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
         <Photo src="hex-paving-couple.png" x={L.hex.x} y={L.hex.y} w={L.hex.w} h={L.hex.h} />
         <div style={{ position: "absolute", left: L.royal.x, top: L.royal.y, width: L.royal.w, height: L.royal.h, background: COLORS.royalTile }} />
-        <Photo src="gherkin-towers.png" x={L.gherkin.x} y={L.gherkin.y} w={L.gherkin.w} h={L.gherkin.h} />
+        {/* r2: original gherkin/credit-card crops carried the WRONG content
+            (negative grid cells at f560) — re-cropped from settled plates */}
+        <Photo src="gherkin2.png" x={L.gherkin.x} y={L.gherkin.y} w={478} h={492} />
         <Photo src="solar-panels.png" x={L.solar.x} y={L.solar.y} w={L.solar.w} h={L.solar.h} />
       </div>
       {/* right column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
-        <Photo src="container-worker.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} motion={panelMotion("container-worker", fa, 587)} />
+        <Photo src="container2.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} motion={panelMotion("container-worker", fa, 560)} />
         <div style={{ position: "absolute", left: R.cyan.x, top: R.cyan.y, width: R.cyan.w, height: R.cyan.h, background: COLORS.lightBlueTile }} />
         <Photo src="microphones.png" x={R.microphones.x} y={R.microphones.y} w={R.microphones.w} h={R.microphones.h} motion={panelMotion("microphones", fa, 536)} />
         <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={R.dot.h} />
@@ -474,7 +489,7 @@ const S4: React.FC = () => {
       {/* center column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${c}px)` }}>
         <Photo src="boardroom.png" x={C.boardroom.x} y={C.boardroom.y} w={C.boardroom.w} h={C.boardroom.h} motion={panelMotion("boardroom", fa, 515)} />
-        <Photo src="credit-card.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} motion={panelMotion("credit-card", fa, 515)} />
+        <Photo src="credit-card2.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} motion={panelMotion("credit-card", fa, 560)} />
         {/* skyline tile + DOM title; expands about (961.5, 539) into S5 */}
         <div
           style={{
@@ -615,51 +630,51 @@ const S5: React.FC = () => {
   );
 };
 
-// ————— S6 [780,889) — handshake + payment triptych —————
+// ————— S6 [783,889) — handshake + payment triptych —————
+// Measured r2: handshake pops full-bleed at the f783 cut; [gap|containers]
+// slide in from the right, drift right, then the photo exits right while the
+// triptych rushes in from the LEFT (S6_RL group = royal-strip left edge).
+// r1's right-side triptych entrance was direction-fiction (law 17/26).
 const S6: React.FC = () => {
-  const f = useCurrentFrame(); // 0 at 780 (32.5s)
-  const fa = f + 780;
-  const handW = interpolate(f, [0, 14], [1240, 1459], { ...clamp, easing: easeOut });
-  const contX = interpolate(f, [0, 14], [1470, 1694], { ...clamp, easing: easeOut });
-  const duo = interpolate(f, [0, 18], [1, 0], { ...clamp });
-  const tripIn = interpolate(f, [54, 82], [1, 0], { ...clamp, easing: easeOut });
+  const f = useCurrentFrame(); // 0 at 783 (the measured S5->S6 cut)
+  const fa = f + 783;
+  const dx = keyed(S6_DX, fa);
+  const cont = keyed(S6_CONT, fa);
+  const rl = keyed(S6_RL, fa);
+  const duo = interpolate(fa, [783, 801], [1, 0], { ...clamp });
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      {f < 78 && (
+      {dx < 1920 && (
         <>
-          <div style={{ position: "absolute", left: 0, top: 0, width: handW, height: 1080, overflow: "hidden" }}>
-            <Photo src="handshake-office.png" x={0} y={0} w={1459} h={1080} motion={panelMotion("handshake-office", fa, 803)} />
+          {/* full-bleed f784 frame (washed) under the color crop while the
+              ref itself is washed; its content sits at dx+151 */}
+          {fa < 791 && (
+            <div style={{ position: "absolute", left: dx + 151, top: 0, width: 1920, height: 1080, overflow: "hidden" }}>
+              <Img src={A("handshake-full.png")} style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080 }} />
+            </div>
+          )}
+          <div style={{ position: "absolute", left: dx, top: 0, width: 1459, height: 1080, overflow: "hidden" }}>
+            <Img src={A("handshake-office.png")} style={{ position: "absolute", left: 0, top: 0, width: 1459, height: 1080 }} />
           </div>
-          <div style={{ position: "absolute", left: contX, top: 0, width: 1920 - contX, height: 1080, overflow: "hidden" }}>
-            <Photo src="containers-red.png" x={0} y={0} w={226} h={1080} motion={panelMotion("containers-red", fa, 803)} />
-          </div>
-          {/* duotone wash fading off */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "#1d20c0",
-              mixBlendMode: "color",
-              opacity: duo,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "#1215a4",
-              mixBlendMode: "multiply",
-              opacity: duo * 0.55,
-            }}
-          />
+          {cont < 1920 && (
+            <div style={{ position: "absolute", left: cont, top: 0, width: Math.max(0, 1920 - cont), height: 1080, overflow: "hidden" }}>
+              <Img src={A("containers-wide.png")} style={{ position: "absolute", left: 0, top: 0, width: 328, height: 1080 }} />
+            </div>
+          )}
         </>
       )}
-      {f >= 63 && (
-        <div style={{ position: "absolute", inset: 0, transform: `translateX(${tripIn * 1920}px)`, background: "#fff" }}>
-          <Photo src="street-blur.png" x={0} y={0} w={490} h={1080} motion={panelMotion("street-blur", fa, 851)} />
-          <Photo src="phone-terminal.png" x={490} y={0} w={794} h={1080} motion={panelMotion("phone-terminal", fa, 851)} />
-          <div style={{ position: "absolute", left: 1284, top: 0, width: 69, height: 1080, background: COLORS.royalTile }} />
-          <Photo src="skyscrapers-up.png" x={1353} y={0} w={518} h={1080} motion={panelMotion("skyscrapers-up", fa, 851)} />
+      {duo > 0 && (
+        <>
+          <div style={{ position: "absolute", inset: 0, background: "#1d20c0", mixBlendMode: "color", opacity: duo }} />
+          <div style={{ position: "absolute", inset: 0, background: "#1215a4", mixBlendMode: "multiply", opacity: duo * 0.55 }} />
+        </>
+      )}
+      {fa >= 820 && (
+        <div style={{ position: "absolute", inset: 0, transform: `translateX(${rl}px)` }}>
+          <Photo src="street-blur2.png" x={-1356} y={0} w={559} h={1080} />
+          <Photo src="phone-terminal2.png" x={-797} y={0} w={797} h={1080} />
+          <div style={{ position: "absolute", left: 0, top: 0, width: 61, height: 1080, background: COLORS.royalTile }} />
+          <Photo src="sky2.png" x={61} y={0} w={503} h={1080} />
         </div>
       )}
     </AbsoluteFill>
@@ -667,77 +682,173 @@ const S6: React.FC = () => {
 };
 
 // ————— S7 [889,1275) — benefits run —————
+// r2 rebuild: ONE conveyor. B1's rails never hold (S7_CR/S7_CYB/S7_DL); B2
+// rides 750px behind the dot rail; captions enter oversized and shrink on
+// measured [l,t,w] tracks; B3 arrives as a dot rail then a shared vertical
+// wipe (S7_D) drops navy+train while B2 exits below; the settled B3 layout
+// zooms about x=1100 (B3_Z) and the navy expands to swallow the frame.
+const txtTrack = (tab: TxtKeys, f: number) => ({
+  l: keyed(tab.map((k) => [k[0], k[1]] as [number, number]), f),
+  t: keyed(tab.map((k) => [k[0], k[2]] as [number, number]), f),
+  w: keyed(tab.map((k) => [k[0], k[3]] as [number, number]), f),
+});
+
 const S7: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 889 (37.04s)
   const fa = f + 889;
-  const b2In = interpolate(f, [66, 90], [1, 0], { ...clamp, easing: easeOut });
-  const b3In = interpolate(f, [138, 162], [1, 0], { ...clamp, easing: easeOut });
   const mapIn = interpolate(f, [286, 306], [0, 1], { ...clamp, easing: easeOut });
   const crowdIn = interpolate(f, [312, 336], [1, 0], { ...clamp, easing: easeOut });
-  const blueText = {
-    fontFamily: SANS,
-    fontWeight: 600,
-    fontSize: 84,
-    lineHeight: 1.03,
-    color: COLORS.blueText,
-  } as const;
+  const dl = keyed(S7_DL, fa);
+  const cr = keyed(S7_CR, fa);
+  const cyb = keyed(S7_CYB, fa);
+  const p = dl + 750;
+  const d = fa >= 1021 ? keyed(S7_D, fa) : 0;
+  const z = fa >= 1059 ? keyed(B3_Z, fa) : 1;
+  const px = 1100 + (p - 1100) * z;
+  const r0 = fa >= 1008 ? keyed(B3_R, fa) : 1920;
+  const rx = 1100 + (r0 - 1100) * z;
+  const stripW = Math.max(dl - cr, 1);
+  const archH = keyed(B1_ARCHER_H, fa);
+  const confT = keyed(B1_CONFETTI_TOP, fa);
+  const b1 = txtTrack(B1_TXT, fa);
+  const s1 = b1.w / 305;
+  const b2 = txtTrack(B2_TXT, fa);
+  const b2l = fa < 986 ? p + 118 : b2.l;
+  const b2t = fa < 986 ? 160 : b2.t;
+  const s2 = (fa < 986 ? 537 : b2.w) / 365;
+  let pl = keyed(B2_PL, fa);
+  if (fa < 988) pl = Math.max(pl, p + 344);
+  if (fa > 1029) pl = px;
+  const pt = fa < 1026 ? 652 : keyed(B2_PT, fa);
+  const coverL = interpolate(fa, [1144, 1148], [408, 0], { ...clamp });
+  const coverR = interpolate(fa, [1148, 1152], [1520, 1920], { ...clamp });
+  const b3o = interpolate(fa, [1048, 1058], [0, 1], { ...clamp });
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      {/* B1 increase accuracy — converging reveal strips (measured edges) */}
-      {f < 90 && (
+      {fa < 1201 && (
         <div style={{ position: "absolute", inset: 0 }}>
-          <div style={{ position: "absolute", left: 0, top: 0, width: 418, height: 440, background: COLORS.cyanTile }} />
-          <div style={{ position: "absolute", left: 0, top: 440, width: 418, height: 640, background: COLORS.royalTile }} />
-          {/* archer strip: bottom edge grows down, content pinned to frame */}
-          <div style={{ position: "absolute", left: 418, top: 0, width: 1082, height: keyed(B1_ARCHER_H, fa), overflow: "hidden" }}>
-            <Img src={A("archer-tall.png")} style={{ position: "absolute", left: 0, top: 0, width: 1082, height: 434 }} />
-          </div>
-          {/* confetti strip: top edge settles then recedes */}
-          <div style={{ position: "absolute", left: 418, top: keyed(B1_CONFETTI_TOP, fa), width: 1082, height: 1080 - keyed(B1_CONFETTI_TOP, fa), overflow: "hidden" }}>
-            <Img src={A("confetti-bw.png")} style={{ position: "absolute", left: 0, top: 943 - keyed(B1_CONFETTI_TOP, fa), width: 1082, height: 200 }} />
-          </div>
-          <DotPanel x={1500} y={0} w={420} h={1080} />
-          <div style={{ position: "absolute", left: keyed(B1_TEXT_X, fa), top: keyed(B1_TEXT_Y, fa), ...blueText }}>
-            increase
-            <br />
-            accuracy
-          </div>
-        </div>
-      )}
-      {/* B2 your customers */}
-      {f >= 66 && f < 162 && (
-        <div style={{ position: "absolute", inset: 0, transform: `translateX(${b2In * 1920}px)`, background: "#fff" }}>
-          <DotPanel x={0} y={0} w={756} h={1080} />
-          <div style={{ position: "absolute", left: 756, top: 650, width: 324, height: 430, background: COLORS.navyPanel }} />
-          <Photo src="woman-phone-home.png" x={1080} y={650} w={840} h={430} />
-          <div style={{ position: "absolute", left: 878, top: 162, ...blueText }}>
-            your
-            <br />
-            customers
-          </div>
-        </div>
-      )}
-      {/* B3 no more waiting / blind spots */}
-      {f >= 138 && f < 296 && (
-        <div style={{ position: "absolute", inset: 0, transform: `translateX(${b3In * 1920}px)`, background: "#fff" }}>
-          <DotPanel x={0} y={0} w={465} h={1080} />
-          <div style={{ position: "absolute", left: 465, top: 0, width: 985, height: 1043, background: COLORS.navyPanel }} />
-          <Photo src="train-woman.png" x={1460} y={0} w={460} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
-          <div
-            style={{
-              position: "absolute",
-              left: 465,
-              top: 505,
-              width: 985,
-              textAlign: "center",
-              fontFamily: SANS,
-              fontSize: 64,
-              fontWeight: 500,
-              color: "#fff",
-            }}
-          >
-            {f < 227 ? "no more waiting" : "no more blind spots"}
-          </div>
+          {/* left column: cyan grows rightward, cyan/royal boundary rises */}
+          {cr > 0 && (
+            <>
+              <div style={{ position: "absolute", left: 0, top: 0, width: cr, height: Math.min(cyb, 1080), background: COLORS.cyanTile }} />
+              {cyb < 1080 && (
+                <div style={{ position: "absolute", left: 0, top: cyb, width: cr, height: 1080 - cyb, background: COLORS.royalTile }} />
+              )}
+            </>
+          )}
+          {/* B1 strip content rides between the rails, cover-scaled */}
+          {fa < 992 && dl > cr + 5 && (
+            <>
+              {archH > 0 && (
+                <div style={{ position: "absolute", left: cr, top: 0, width: stripW, height: archH, overflow: "hidden" }}>
+                  <Img src={A("archer-tall.png")} style={{ position: "absolute", left: 0, top: 0, width: stripW, height: (stripW * 434) / 1082 }} />
+                </div>
+              )}
+              {confT < 1078 && (
+                <div style={{ position: "absolute", left: cr, top: confT, width: stripW, height: 1080 - confT, overflow: "hidden" }}>
+                  <Img src={A("confetti-bw.png")} style={{ position: "absolute", left: 0, top: 0, width: stripW, height: (stripW * 200) / 1082 }} />
+                </div>
+              )}
+            </>
+          )}
+          {/* B1 caption: measured [l,t,w] track, shrinks 1.76x then rides out */}
+          {fa <= 975 && (
+            <div
+              style={{
+                position: "absolute",
+                left: b1.l - 4 * s1,
+                top: b1.t - 10 * s1,
+                transform: `scale(${s1})`,
+                transformOrigin: "top left",
+                fontFamily: SANS,
+                fontSize: 78,
+                fontWeight: 500,
+                lineHeight: 1.09,
+                color: COLORS.blueText,
+              }}
+            >
+              increase
+              <br />
+              accuracy
+            </div>
+          )}
+          {/* Belt dot panel. The ref halftone is a LIVE pattern (NCC of any
+              crop decays to ~0.13 within +-40f) — measured ceiling. Use the
+              f990 texture only inside its valid window, with its measured
+              parallax vs the belt (the pattern slides faster than the rail);
+              the sparse lattice elsewhere (misplaced dense ink loses). */}
+          {fa >= 963 && fa <= 1008 ? (
+            <Img
+              src={A("dots-belt.png")}
+              style={{ position: "absolute", left: p - 750 + keyed(DOT_PARA, fa), top: 0, width: 750, height: 1080 }}
+            />
+          ) : (
+            <DotPanel x={px - 750} y={0} w={750} h={1080} />
+          )}
+          {/* B2 card + navy + photo */}
+          {p < 1930 && (
+            <>
+              <div style={{ position: "absolute", left: Math.max(px, 0), top: 0, width: 1920 - Math.max(px, 0), height: 1080, background: "#fff" }} />
+              {650 + (pt - 652) < 1080 && (
+                <div style={{ position: "absolute", left: px, top: 650 + (pt - 652), width: 344, height: 430, background: COLORS.navyPanel }} />
+              )}
+              {pt < 1080 && (
+                <div style={{ position: "absolute", left: pl, top: pt, width: 1096, height: 428, overflow: "hidden" }}>
+                  <Img src={A("woman-phone-wide.png")} style={{ position: "absolute", left: 0, top: 0, width: 1096, height: 428 }} />
+                </div>
+              )}
+              {fa < 1053 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: b2l - 4 * s2,
+                    top: b2t - 24 * s2,
+                    transform: `scale(${s2})`,
+                    transformOrigin: "top left",
+                    fontFamily: SANS,
+                    fontSize: 78,
+                    fontWeight: 500,
+                    lineHeight: 1.06,
+                    color: COLORS.blueText,
+                  }}
+                >
+                  your
+                  <br />
+                  customers
+                </div>
+              )}
+            </>
+          )}
+          {/* B3 dot rail sliding in */}
+          {r0 < 1920 && <DotPanel x={rx} y={0} w={465 * z} h={1080} />}
+          {/* shared vertical wipe: B3 navy + train drop from the top */}
+          {d > 0 && (
+            <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: d, overflow: "hidden" }}>
+              <div style={{ position: "absolute", left: px, top: 0, width: Math.max(rx - px, 0), height: 1080, background: COLORS.navyPanel }} />
+              <Photo src="train-woman.png" x={rx} y={0} w={460} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
+            </div>
+          )}
+          {/* navy expands left then right to swallow the frame (f1144-1152) */}
+          {fa >= 1144 && (
+            <div style={{ position: "absolute", left: coverL, top: 0, width: Math.max(coverR - coverL, 0), height: 1080, background: COLORS.navyPanel }} />
+          )}
+          {/* B3 caption */}
+          {b3o > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                left: 1100 + (652 - 1100) * z,
+                top: 470 * z - 22,
+                fontFamily: SANS,
+                fontSize: 82 * z,
+                fontWeight: 500,
+                color: "#fff",
+                opacity: b3o,
+              }}
+            >
+              {fa < 1116 ? "no more waiting" : "no more blind spots"}
+            </div>
+          )}
         </div>
       )}
       {/* B4 world map */}
@@ -946,10 +1057,10 @@ export const LsegComposition: React.FC = () => (
     <Sequence from={478} durationInFrames={136}>
       <S4 />
     </Sequence>
-    <Sequence from={614} durationInFrames={166}>
+    <Sequence from={614} durationInFrames={169}>
       <S5 />
     </Sequence>
-    <Sequence from={780} durationInFrames={109}>
+    <Sequence from={783} durationInFrames={106}>
       <S6 />
     </Sequence>
     <Sequence from={889} durationInFrames={386}>
