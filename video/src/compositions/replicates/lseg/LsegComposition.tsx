@@ -54,6 +54,7 @@ import {
   S7_D,
   B3_Z,
   DOT_PARA,
+  CUBE_YAW,
 } from "./data";
 
 // "Introducing LSEG World-Check On Demand" — 1:1 replicate.
@@ -950,28 +951,49 @@ const cubeVerts = (yaw: number, pitch: number) => {
 
 const S8: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 1275 (53.125s)
+  const fa = f + 1275;
   const dublin = f < 199;
-  // isometric-ish corner view (ref f055 silhouette: cube spans ~625..1310 x,
-  // ~150..885 y), slow drift. Static-plate SSIM ceiling here is ~0.44 — the
-  // reference background is moving timelapse footage.
-  const yaw = 0.785 + f * 0.003;
-  const verts = cubeVerts(yaw, -0.42);
-  // Eye-gated vs f1290/f1450 overlays; chamfer fitter degenerates on this
-  // background (see STATE r1) — full per-caption pose keys deferred to r2.
-  const size = 215;
-  const captions: Array<[number, number, string]> = [
-    [9, 62, "World-Check On Demand"],
-    [65, 113, "Built for automation."],
-    [116, 161, "Scaled for the future."],
-    [164, 199, "Trusted for 25 years."],
-  ];
+  // r2: the cube sits at a FIXED pose in PLATE space and rides the plate's
+  // measured zoom-out (r1's rotating-yaw + screen-fixed cube was fiction —
+  // the sky apex is constant at plate (988,84) across the scene). Only a
+  // slow yaw drift remains (front edge sweeps to vertical by f1414).
+  // NOTE: the dublin PANEL_MOTION s-column is already relative to the f1275
+  // asset (first row 0.9625 at f1278 — the zoom leaps in the first 3 frames);
+  // anchor-normalizing at 1275 clamps to that row and inflates s by 4%.
+  const m0 = panelMotion("dublin-riverfront", fa, 1275);
+  const m = { dx: m0.dx, dy: m0.dy, s: m0.s * 0.9625 };
+  const yaw = keyed(CUBE_YAW, fa);
+  const verts = cubeVerts(yaw, -0.55);
+  const size = 257 * m.s;
+  const ccx = 960 + (985 - 960) * m.s + m.dx;
+  const ccy = 540 + (554 - 540) * m.s + m.dy;
+  // Captions swap INSTANTLY (white-mask counts jump full<->0 in <=2f) and
+  // all die at f1463; measured: centered x~970, cap-top 495, font ~104.
+  const caption =
+    fa >= 1281 && fa < 1334 ? "World-Check On Demand"
+    : fa >= 1334 && fa < 1368 ? "Built for automation."
+    : fa >= 1368 && fa < 1408 ? "Scaled for the future."
+    : fa >= 1408 && fa < 1463 ? "Trusted for 25 years."
+    : null;
   const nowO = interpolate(f, [203, 212, 258, 268], [0, 1, 1, 0], { ...clamp });
   const lockO = interpolate(f, [273, 295], [0, 1], { ...clamp });
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.royalTile }}>
       {dublin && (
         <>
-          <Photo src="dublin-riverfront.png" x={0} y={0} w={1920} h={1080} motion={panelMotion("dublin-riverfront", f + 1275, 1275)} />
+          {/* outer ring: f1437-inpainted wide plate — the zoom-out exposes
+              content beyond the f1275 crop; a royal border here is fiction
+              (the ref is always full-bleed). Interior plate covers its
+              inpaint scars. */}
+          <Photo
+            src="dublin-outer.png"
+            x={0}
+            y={0}
+            w={1920}
+            h={1080}
+            motion={{ dx: m.dx, dy: m.dy - 4.6 * (m.s / 0.8886), s: (m.s / 0.8886) * 1.005 }}
+          />
+          <Photo src="dublin-riverfront.png" x={0} y={0} w={1920} h={1080} motion={m} />
           <svg
             style={{ position: "absolute", left: 0, top: 0 }}
             width={1920}
@@ -980,39 +1002,32 @@ const S8: React.FC = () => {
             {CUBE_EDGES.map(([a, b]) => (
               <line
                 key={`${a}-${b}`}
-                x1={963 + verts[a][0] * size}
-                y1={508 + verts[a][1] * size}
-                x2={963 + verts[b][0] * size}
-                y2={508 + verts[b][1] * size}
+                x1={ccx + verts[a][0] * size}
+                y1={ccy + verts[a][1] * size}
+                x2={ccx + verts[b][0] * size}
+                y2={ccy + verts[b][1] * size}
                 stroke="rgba(255,255,255,0.92)"
                 strokeWidth={2.6}
               />
             ))}
           </svg>
-          {captions.map(([a, b, textStr]) => {
-            const o = interpolate(f, [a, a + 7, b - 6, b], [0, 1, 1, 0], {
-              ...clamp,
-            });
-            return (
-              <div
-                key={textStr}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 500,
-                  width: 1920,
-                  textAlign: "center",
-                  fontFamily: SANS,
-                  fontSize: 76,
-                  fontWeight: 500,
-                  color: "#fff",
-                  opacity: o,
-                }}
-              >
-                {textStr}
-              </div>
-            );
-          })}
+          {caption && (
+            <div
+              style={{
+                position: "absolute",
+                left: 20,
+                top: 469,
+                width: 1900,
+                textAlign: "center",
+                fontFamily: SANS,
+                fontSize: 104,
+                fontWeight: 500,
+                color: "#fff",
+              }}
+            >
+              {caption}
+            </div>
+          )}
         </>
       )}
       {!dublin && (

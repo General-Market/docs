@@ -344,6 +344,11 @@ export const B3_Z: Keys = [
   [1132, 1.124], [1136, 1.13], [1140, 1.136], [1144, 1.142],
 ];
 
+// S8 cube yaw drift (plate space; front edge vertical by f1414).
+export const CUBE_YAW: Keys = [
+  [1281, 0.67], [1320, 0.68], [1414, 0.785], [1474, 0.83],
+];
+
 // S7 B1: converging reveal strips (edge-scanned, abs frames).
 export const B1_ARCHER_H: Keys = [
   [889, 56], [892, 67], [895, 86], [898, 109], [901, 130], [904, 152],
