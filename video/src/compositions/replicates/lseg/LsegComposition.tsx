@@ -743,9 +743,12 @@ const S7: React.FC = () => {
   const p = dl + 750;
   const d = fa >= 1021 ? keyed(S7_D, fa) : 0;
   const z = fa >= 1059 ? keyed(B3_Z, fa) : 1;
-  const px = 1100 + (p - 1100) * z;
+  // r3: zoom center re-fit from the navy panel's own edge pairs across the
+  // zoom (1065<->1123<->1135): c=995, not r2's 1100 (that fit caught the
+  // f1144+ cover expansion). Left edge now tracks ref <=5px through f1135.
+  const px = 995 + (p - 995) * z;
   const r0 = fa >= 1008 ? keyed(B3_R, fa) : 1920;
-  const rx = 1100 + (r0 - 1100) * z;
+  const rx = 995 + (r0 - 995) * z;
   const stripW = Math.max(dl - cr, 1);
   const archH = keyed(B1_ARCHER_H, fa);
   const confT = keyed(B1_CONFETTI_TOP, fa);
@@ -881,7 +884,11 @@ const S7: React.FC = () => {
           {d > 0 && (
             <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: d, overflow: "hidden" }}>
               <div style={{ position: "absolute", left: px, top: 0, width: Math.max(rx - px, 0), height: 1080, background: COLORS.navyPanel }} />
-              <Photo src="train-woman.png" x={rx} y={0} w={460} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
+              {/* r3: the window WIDENS with the zoom (panelMotion already
+                  carries the content scale — it tracked this same layout
+                  zoom; the div width must ride it too or the visible slice
+                  freezes at 460). */}
+              <Photo src="train-woman.png" x={rx} y={0} w={460 * z} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
             </div>
           )}
           {/* navy expands left then right to swallow the frame (f1144-1152) */}
@@ -893,7 +900,7 @@ const S7: React.FC = () => {
             <div
               style={{
                 position: "absolute",
-                left: 1100 + (652 - 1100) * z,
+                left: 995 + (652 - 995) * z,
                 top: 470 * z - 22,
                 fontFamily: SANS,
                 fontSize: 82 * z,
