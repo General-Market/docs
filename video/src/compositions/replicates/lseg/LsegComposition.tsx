@@ -36,6 +36,7 @@ import {
   S4_RIGHT,
   S4_CENTER,
   SKY_TITLE,
+  PANEL_MOTION,
 } from "./data";
 
 // "Introducing LSEG World-Check On Demand" — 1:1 replicate.
@@ -69,6 +70,25 @@ const keyed = (keys: Keys, f: number): number => {
   return keys[keys.length - 1][1];
 };
 
+// Measured internal panel motion: translate/scale the still so it replays the
+// ref clip's tracked drift, anchored so the asset's own source frame renders
+// as cropped (transform = measured(fa) - measured(anchor)).
+const panelMotion = (
+  name: string,
+  fa: number,
+  anchor: number,
+): { dx: number; dy: number; s: number } => {
+  const keys = PANEL_MOTION[name];
+  if (!keys) return { dx: 0, dy: 0, s: 1 };
+  const at = (f: number, i: 1 | 2 | 3): number =>
+    keyed(keys.map((k) => [k[0], k[i]] as [number, number]), f);
+  return {
+    dx: at(fa, 1) - at(anchor, 1),
+    dy: at(fa, 2) - at(anchor, 2),
+    s: at(fa, 3) / at(anchor, 3),
+  };
+};
+
 const Photo: React.FC<{
   src: string;
   x: number;
@@ -76,19 +96,34 @@ const Photo: React.FC<{
   w: number;
   h: number;
   style?: React.CSSProperties;
-}> = ({ src, x, y, w, h, style }) => (
-  <Img
-    src={A(src)}
+  motion?: { dx: number; dy: number; s: number };
+}> = ({ src, x, y, w, h, style, motion }) => (
+  <div
     style={{
       position: "absolute",
       left: x,
       top: y,
       width: w,
       height: h,
-      objectFit: "cover",
+      overflow: "hidden",
       ...style,
     }}
-  />
+  >
+    <Img
+      src={A(src)}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: w,
+        height: h,
+        objectFit: "cover",
+        transform: motion
+          ? `translate(${motion.dx}px, ${motion.dy}px) scale(${motion.s})`
+          : undefined,
+      }}
+    />
+  </div>
 );
 
 // White dots on gradient royal — the recurring side-rail pattern.
@@ -259,7 +294,7 @@ const S3a: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${e}px)` }}>
-        <Photo src="eye-macro.png" x={0} y={0} w={585} h={1080} />
+        <Photo src="eye-macro.png" x={0} y={0} w={585} h={1080} motion={panelMotion("eye-macro", fa, 179)} />
         {/* chevron city — crops carry their own white diagonals */}
         <Photo src="city-arrow-top.png" x={586} y={0} w={410} h={578} />
         <Photo src="city-arrow-teal.png" x={586} y={578} w={410} h={502} />
@@ -323,7 +358,7 @@ const S3b: React.FC = () => {
           }}
         >
           <div style={{ position: "absolute", inset: 0, transform: `translateX(${Math.max(0, phoneEdge - keyed(PHONE_EDGE, 274))}px)` }}>
-            <Photo src="phone-touch-full.png" x={0} y={0} w={1920} h={1080} />
+            <Photo src="phone-touch-full.png" x={0} y={0} w={1920} h={1080} motion={panelMotion("phone-touch", fa, 224)} />
             {fa >= 222 && towerX < 1920 && (
               <Photo src="tower-night.png" x={towerX} y={0} w={458} h={1080} />
             )}
@@ -373,17 +408,7 @@ const S3b: React.FC = () => {
       {/* earth crossfades over everything, title riding in */}
       {xfade > 0 && (
         <div style={{ position: "absolute", inset: 0, opacity: xfade }}>
-          <Img
-            src={A("earth.png")}
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: 1920,
-              height: 1080,
-              objectFit: "cover",
-            }}
-          />
+          <Photo src="earth-full.png" x={0} y={0} w={1920} h={1080} motion={panelMotion("earth", fa, 450)} />
           <div
             style={{
               position: "absolute",
@@ -433,15 +458,15 @@ const S4: React.FC = () => {
       </div>
       {/* right column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
-        <Photo src="container-worker.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} />
+        <Photo src="container-worker.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} motion={panelMotion("container-worker", fa, 587)} />
         <div style={{ position: "absolute", left: R.cyan.x, top: R.cyan.y, width: R.cyan.w, height: R.cyan.h, background: COLORS.lightBlueTile }} />
-        <Photo src="microphones.png" x={R.microphones.x} y={R.microphones.y} w={R.microphones.w} h={R.microphones.h} />
+        <Photo src="microphones.png" x={R.microphones.x} y={R.microphones.y} w={R.microphones.w} h={R.microphones.h} motion={panelMotion("microphones", fa, 536)} />
         <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={R.dot.h} />
       </div>
       {/* center column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${c}px)` }}>
-        <Photo src="boardroom.png" x={C.boardroom.x} y={C.boardroom.y} w={C.boardroom.w} h={C.boardroom.h} />
-        <Photo src="credit-card.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} />
+        <Photo src="boardroom.png" x={C.boardroom.x} y={C.boardroom.y} w={C.boardroom.w} h={C.boardroom.h} motion={panelMotion("boardroom", fa, 515)} />
+        <Photo src="credit-card.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} motion={panelMotion("credit-card", fa, 515)} />
         {/* skyline tile + DOM title; expands about (961.5, 539) into S5 */}
         <div
           style={{
@@ -454,7 +479,7 @@ const S4: React.FC = () => {
             transformOrigin: `${961.5 - C.skyline.x}px ${539 - C.skyline.y}px`,
           }}
         >
-          <Photo src="navy-skyline.png" x={11} y={3} w={958} h={545} />
+          <Photo src="navy-skyline.png" x={11} y={3} w={958} h={545} motion={panelMotion("navy-skyline", fa, 560)} />
           <div
             style={{
               position: "absolute",
@@ -520,6 +545,7 @@ const CHECK_ITEMS = [
 ];
 const S5: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 614 (25.58s)
+  const fa = f + 614;
   const t = f / FPS + 25.58;
   const shift = -190 * (t - 26.5);
   const photoO = (a: number, b: number) =>
@@ -527,9 +553,9 @@ const S5: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.royalChecklist }}>
       <div style={{ position: "absolute", left: 960, top: 0, width: 960, height: 1080 }}>
-        <Photo src="waterfall-poncho.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(25.7, 28.1) }} />
-        <Photo src="podium-speaker.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(28.1, 30.2) }} />
-        <Photo src="paris-street.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(30.2, 32.6) }} />
+        <Photo src="waterfall-poncho.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(25.7, 28.1) }} motion={panelMotion("waterfall-poncho", fa, 635)} />
+        <Photo src="podium-speaker.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(28.1, 30.2) }} motion={panelMotion("podium-speaker", fa, 683)} />
+        <Photo src="paris-street.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(30.2, 32.6) }} motion={panelMotion("paris-street", fa, 731)} />
       </div>
       {CHECK_ITEMS.map((label, i) => {
         const center = 520 + i * 232 + shift;
@@ -584,19 +610,20 @@ const S5: React.FC = () => {
 // ————— S6 [780,889) — handshake + payment triptych —————
 const S6: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 780 (32.5s)
+  const fa = f + 780;
   const handW = interpolate(f, [0, 14], [1240, 1459], { ...clamp, easing: easeOut });
   const contX = interpolate(f, [0, 14], [1470, 1694], { ...clamp, easing: easeOut });
   const duo = interpolate(f, [0, 18], [1, 0], { ...clamp });
-  const tripIn = interpolate(f, [63, 90], [1, 0], { ...clamp, easing: easeOut });
+  const tripIn = interpolate(f, [54, 82], [1, 0], { ...clamp, easing: easeOut });
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
       {f < 78 && (
         <>
           <div style={{ position: "absolute", left: 0, top: 0, width: handW, height: 1080, overflow: "hidden" }}>
-            <Photo src="handshake-office.png" x={0} y={0} w={1459} h={1080} />
+            <Photo src="handshake-office.png" x={0} y={0} w={1459} h={1080} motion={panelMotion("handshake-office", fa, 803)} />
           </div>
           <div style={{ position: "absolute", left: contX, top: 0, width: 1920 - contX, height: 1080, overflow: "hidden" }}>
-            <Photo src="containers-red.png" x={0} y={0} w={226} h={1080} />
+            <Photo src="containers-red.png" x={0} y={0} w={226} h={1080} motion={panelMotion("containers-red", fa, 803)} />
           </div>
           {/* duotone wash fading off */}
           <div
@@ -621,10 +648,10 @@ const S6: React.FC = () => {
       )}
       {f >= 63 && (
         <div style={{ position: "absolute", inset: 0, transform: `translateX(${tripIn * 1920}px)`, background: "#fff" }}>
-          <Photo src="street-blur.png" x={0} y={0} w={490} h={1080} />
-          <Photo src="phone-terminal.png" x={490} y={0} w={794} h={1080} />
+          <Photo src="street-blur.png" x={0} y={0} w={490} h={1080} motion={panelMotion("street-blur", fa, 851)} />
+          <Photo src="phone-terminal.png" x={490} y={0} w={794} h={1080} motion={panelMotion("phone-terminal", fa, 851)} />
           <div style={{ position: "absolute", left: 1284, top: 0, width: 69, height: 1080, background: COLORS.royalTile }} />
-          <Photo src="skyscrapers-up.png" x={1353} y={0} w={518} h={1080} />
+          <Photo src="skyscrapers-up.png" x={1353} y={0} w={518} h={1080} motion={panelMotion("skyscrapers-up", fa, 851)} />
         </div>
       )}
     </AbsoluteFill>
@@ -634,6 +661,7 @@ const S6: React.FC = () => {
 // ————— S7 [889,1275) — benefits run —————
 const S7: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 889 (37.04s)
+  const fa = f + 889;
   const drift = interpolate(f, [0, 72], [30, -40], { ...clamp });
   const b2In = interpolate(f, [66, 90], [1, 0], { ...clamp, easing: easeOut });
   const b3In = interpolate(f, [138, 162], [1, 0], { ...clamp, easing: easeOut });
@@ -653,8 +681,8 @@ const S7: React.FC = () => {
         <div style={{ position: "absolute", inset: 0, transform: `translateY(${drift}px)` }}>
           <div style={{ position: "absolute", left: 0, top: -60, width: 418, height: 500, background: COLORS.cyanTile }} />
           <div style={{ position: "absolute", left: 0, top: 440, width: 418, height: 700, background: COLORS.royalTile }} />
-          <Photo src="archer.png" x={418} y={0} w={1082} h={335} />
-          <Photo src="confetti-bw.png" x={418} y={943} w={1082} h={200} />
+          <Photo src="archer.png" x={418} y={0} w={1082} h={335} motion={panelMotion("archer", fa, 923)} />
+          <Photo src="confetti-bw.png" x={418} y={943} w={1082} h={200} motion={panelMotion("confetti-bw", fa, 923)} />
           <DotPanel x={1500} y={-60} w={420} h={1200} />
           <div style={{ position: "absolute", left: 510, top: 552, ...blueText }}>
             increase
@@ -681,7 +709,7 @@ const S7: React.FC = () => {
         <div style={{ position: "absolute", inset: 0, transform: `translateX(${b3In * 1920}px)`, background: "#fff" }}>
           <DotPanel x={0} y={0} w={465} h={1080} />
           <div style={{ position: "absolute", left: 465, top: 0, width: 985, height: 1043, background: COLORS.navyPanel }} />
-          <Photo src="train-woman.png" x={1460} y={0} w={460} h={1080} />
+          <Photo src="train-woman.png" x={1460} y={0} w={460} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
           <div
             style={{
               position: "absolute",
@@ -799,7 +827,6 @@ const cubeVerts = (yaw: number, pitch: number) => {
 const S8: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 1275 (53.125s)
   const dublin = f < 199;
-  const zoom = 1 + f * 0.0003;
   // isometric-ish corner view (ref f055 silhouette: cube spans ~625..1310 x,
   // ~150..885 y), slow drift. Static-plate SSIM ceiling here is ~0.44 — the
   // reference background is moving timelapse footage.
@@ -818,16 +845,7 @@ const S8: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: COLORS.royalTile }}>
       {dublin && (
         <>
-          <Img
-            src={A("dublin-riverfront.png")}
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: 1920,
-              height: 1080,
-              transform: `scale(${zoom})`,
-            }}
-          />
+          <Photo src="dublin-riverfront.png" x={0} y={0} w={1920} h={1080} motion={panelMotion("dublin-riverfront", f + 1275, 1275)} />
           <svg
             style={{ position: "absolute", left: 0, top: 0 }}
             width={1920}
