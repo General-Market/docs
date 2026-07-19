@@ -30,6 +30,7 @@ import {
   EARTH_TITLE,
   EARTH_TILE,
   S4_C,
+  S4_CC,
   S4_S,
   S4_SL,
   S4_SR,
@@ -486,6 +487,7 @@ const S4: React.FC = () => {
   const f = useCurrentFrame(); // local, 0 at abs 478
   const fa = f + 478;
   const c = keyed(S4_C, fa);
+  const cg = keyed(S4_CC, fa);
   const s = keyed(S4_S, fa);
   const sL = fa < 560 ? keyed(S4_SL, fa) : s;
   const sR = fa < 560 ? keyed(S4_SR, fa) : s;
@@ -530,10 +532,20 @@ const S4: React.FC = () => {
         <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={937} flatBg={COLORS.dotPanelBg} />
         <div style={{ position: "absolute", left: R.dot.x, top: 1917, width: R.dot.w, height: 700, background: COLORS.lightBlueTile }} />
       </div>
-      {/* center column */}
+      {/* center column — TWO tracks (r4): boardroom rides S4_C; the
+          [credit-card + skyline] group rides its own S4_CC track ~7.5%
+          ahead (card NCC .998+; skyline slot colors constant in group
+          coords). The card tile shows 198px of extra photo above its
+          settled crop during the entry (cc-tall). */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${c}px)` }}>
         <Photo src="boardroom.png" x={C.boardroom.x} y={C.boardroom.y} w={C.boardroom.w} h={C.boardroom.h} motion={panelMotion("boardroom", fa, 515)} />
-        <Photo src="credit-card2.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} motion={panelMotion("credit-card", fa, 560)} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${cg}px)` }}>
+        {fa < 548 ? (
+          <Photo src="cc-tall.png" x={C.creditCard.x} y={C.creditCard.y - 198} w={486} h={462} />
+        ) : (
+          <Photo src="credit-card2.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} motion={panelMotion("credit-card", fa, 560)} />
+        )}
         {/* skyline tile + DOM title; expands about (961.5, 539) into S5 */}
         <div
           style={{

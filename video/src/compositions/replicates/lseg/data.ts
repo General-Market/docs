@@ -135,6 +135,23 @@ export const S4_C: Keys = [
   [524, 277], [526, 215], [528, 164], [530, 124], [532, 92], [534, 67],
   [536, 45], [538, 30], [540, 18], [542, 10], [544, 4], [546, 0], [614, 0],
 ];
+// S4 center LOWER GROUP offset (r4): the credit-card + skyline block rides
+// its OWN track ~7.5% AHEAD of the boardroom (card-asset NCC .998+ f518-550;
+// skyline slot colors constant in group coords across the whole entry —
+// one shared track for both). <518 extrapolated at the measured 0.925*S4_C
+// ratio (card NCC unreliable in the fast blur). The card tile also shows
+// 198px of EXTRA photo above its settled crop during entry (cc-tall.png,
+// ref f526 [957..1443]x[0..462]; settled crop = its rows 198..462).
+// Pre-518 keys = S4_C (boardroom track): the 0.925-ratio extrapolation
+// LOST at the f514 crop gate (-.018) — in the fast blur the group reads
+// closer to the boardroom; divergence is only measurable from 518.
+export const S4_CC: Keys = [
+  [478, 1583], [494, 1575], [496, 1567], [498, 1540], [502, 1515],
+  [506, 1455], [510, 1289], [514, 983], [516, 799],
+  [518, 580], [522, 335], [526, 198], [530, 115], [534, 62],
+  [538, 28], [542, 9], [546, 1], [550, 0], [614, 0],
+];
+
 // S4 entry offsets, PER SIDE (column-edge scans f478-506; the two sides run
 // ~20-50px apart during the drop — r1's single extrapolated track was ~250px
 // wrong at f490). Below-screen tiles (cyan2/solar/dots-937) measured from the
