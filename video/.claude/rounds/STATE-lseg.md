@@ -381,3 +381,111 @@ PLATEAU ASSESSMENT: not yet. r4 can honestly buy +1.0-1.5 (mostly items
 halftones (3 windows), S8 timelapse (144f), rotating earth (~90f),
 video-clip panel interiors (S2/S3/S5/S6 people move). Asymptote with
 current assets ~= 89-90. A round 5+ grinds <0.5.
+(r4 verdict: the +1.0-1.5 was optimistic — S8/S4 shares were ceiling
+double-counted; actual r4 buy +0.4. See CLOSING below.)
+
+## Round 4 (2026-07-19) — CLOSING ROUND. SCORE 87.9 (+0.4). CAMPAIGN PLATEAU.
+(video SSIM .8680 · keyframe .8110 · color .9874 · duration .9992;
+artifacts lseg-{framessim,keyframes,verify}-r4.*; attempt
+work/lseg/r4/attempt-r4-rescue.mp4; scratch work/lseg/r4/;
+commits 999db200e..this)
+
+### Campaign trajectory
+r1 80.4 -> r2 85.4 -> r3 87.5 -> r4 87.9. Global framessim .794 -> .868.
+
+### Queue results (what each item actually bought)
+1. S8 plate registration: CEILING CONFIRMED — per-frame NCC regfit at 17
+   frames shows r3's 2-key boost ramp already at the floor (<=0.2% scale,
+   <=2px offset residual everywhere). No change shipped.
+   Cube densification: SHIPPED (8->19 anchors, DT polish on ref-temporal
+   clutter masks — r3's att-based masks unusable now HEAD's cube sits ON
+   the ref lines; fit beat the seed at all 17 anchors, eye-gated at 6) —
+   but composite S8 windows FLAT (.739/.781/.798): the 2.6px wireframe is
+   invisible to SSIM under timelapse texture (law 8 — geometry+eye
+   adjudicated the keep). S8 residual is now ~all timelapse floor.
+2. B2 entrance 964-1012: .725 -> .750 (+.025). The buy was structural:
+   B1 ARCHER CONTENT WAS COVER-SCALED FICTION — ref pins the photo at
+   native scale (asset-NCC .99+ f912-980, entering 1.19->1.0 by f948),
+   translates it with the belt and only CLIPS it; the old stripW mount
+   rescaled continuously and left a white band from f966 (whole 445x178
+   thumbnail by f984). B1_ARCH track. Gates +.07-.10 across f918-972.
+   B2_TXT/B2_PL re-verified registered (no ranked cells). f996-1008
+   left-band cells adjudicated: live halftone (same density, other phase).
+3. S4 entry 477-525: .687 -> .692. Cell-by-cell adjudication:
+   - FIXED: S4 CENTER IS TWO TRACKS — [credit-card+skyline] group rides
+     S4_CC ~7.5% ahead of boardroom's S4_C (card NCC .998+ f518-550;
+     skyline slot colors constant in group coords), and the card tile
+     shows 198px of EXTRA photo above its settled crop during entry
+     (cc-tall.png from f526). f520 +.092, f526 +.052, f534 crop +.106.
+     Pre-518 stays on S4_C (0.925-ratio extrapolation lost at f514).
+   - CEILING: gherkin registered (NCC d=7px — the apparent 100px offset
+     was blur illusion); dot tile brightness already matched (p99 193 vs
+     204), density = morphing halftone; NEGATIVE A/B in-code: synthetic
+     vertical Gaussian smear on the dropping columns loses 5/6 gates
+     (isotropic-per-axis blur is not directional exposure smear).
+4. B1/S4 slices: absorbed by items 2-3 (B1 exit window 912-960 left the
+   bottom-14 list entirely; 526-574 likewise).
+5. Sweep finds (all shipped, gated):
+   - Train pane f1092+: panelMotion s-column IS the layout zoom — the
+     460*z width already applies it; stacking both pushed content +50-60px
+     right (suitcase off-pane). Piecewise at the f1091 anchor (identity
+     both sides). f1104 +.016, f1130 +.019, f1080 held.
+   - B4 map title ink-metered: font 66->80, lineHeight 1.375, top 421.5
+     (ref cap bands y448-505/558-615). f1160/f1180 +.005.
+   - B3 caption GHOST-FADES over the cover+young map (band p99
+     201@1144 -> floor@1152), not instant death. f1146-f1152 +.004-.005.
+   - S4 skyline title sat 21px LOW and 9% narrow: top 485, ls 4.7.
+     Crop gates f560 .750->.836, f576 .692->.771, f600 .664->.748.
+6. Fiction pass (two questions, all scenes):
+   - S5 ITEMS FADE IN (~12f, measured starts 618/638/654/678/702); ours
+     popped. clip2 cut is 640 not 641 (f640 .781->.940!). f644/f660 +.01.
+   - S2 TYPING IS AN S-CURVE ending ~f125; the linear ramp ran 270-320px
+     of ink short mid-line. New render ink-registers +-22px. PERCEPTUAL
+     SPEND (recorded): crop -.011/-.013 at f118/f122 — the metric prefers
+     our own well-matched pane photo over Avenir-glyph text; schedule is
+     measured truth (law 26).
+   - LAW-24 REVERSAL: r3's "end RISK block 0.59x" was a MID-FADE
+     threshold artifact. Settled ref ink x961-1403 (442w ~= S1's 436).
+     Override dropped; f1590 crop .774->.790.
+   - Vindicated by measurement: B1_ARCHER_H edge table (ref white-row at
+     f900 = 124 ~= table 130 — the contact-sheet "defect" was a misread);
+     f190/f250/f850 thumbnails anomalies refuted (wholes .87/.87/.80).
+
+### Keyframe-target verdicts (r3 -> r4)
+kf10 t=20s .611 -> .611 CEILING (rotating earth tile + morphing halftone +
+  directional smear dominate the frame; every ranked cell adjudicated)
+kf27 t=54s .663 -> .663 CEILING (S8 timelapse life; cube geometry-exact)
+kf3  t=6s  .676 -> .677 CEILING (S2 video-clip panel interiors evolve)
+kf28 t=56s .677 -> .679 CEILING (S8 timelapse)
+kf11 t=22s .680 -> .714 FIXED (+.034, S4 two-track center + cc-tall)
+Bonus: kf20 t=40s .700 -> .809 (+.109, archer mount); kf12 t=24s +.007.
+
+### MEASURED-CEILING LEDGER (what NEW ASSETS could still buy)
+1. S8 dublin timelapse (f1275-1474, worst windows .74-.80): a MOVING
+   plate (video clip of the actual timelapse, or per-10f plate series)
+   buys the .978->.947 NCC decay back — est +0.5-0.8 composite. The cube
+   and captions are now at their floor.
+2. Live halftones (3 zones: S4 dot tile, S7 belt+wipe, B3 rail;
+   windows 964-1068 residuals): only a FRAME-SYNCED dot texture series
+   (re-crop per 4-8f from the ref) beats flat/lattice — est +0.3-0.5.
+3. Rotating earth (f428-516): an earth VIDEO clip or ~10-frame tile
+   series — est +0.2-0.3 (kf9 .711 and half of kf10's residual).
+4. Video-clip panel interiors (S2 belt f126-174, S3 blur zone 260-308,
+   S5 right photos, S6 people): per-phase re-crops every ~8f —
+   est +0.3-0.5 spread thin over ~150f.
+5. Real LSEG brand fonts (sans + flared serif): the Avenir/Georgia glyph
+   gap costs ~1-2% on every text frame and is the recorded S2-typing
+   spend — est +0.2-0.4.
+Sum if ALL new-asset lanes were bought: ~89.5-90.5 — matches the r3
+asymptote estimate, but every remaining point now requires new assets,
+none is reachable by measurement/schedule work on the current ones.
+
+### PLATEAU DECLARATION
+Campaign PLATEAU at 87.9. Score < 88.5, but a round 5 on current assets
+has NO identified fixable area: every bottom-window grid cell is now
+either fixed, negative-A/B'd in-code, or instrument-classified as
+texture/timelapse/glyph ceiling. r3's "asymptote 89-90 with current
+assets" was optimistic by ~1.5 — the S8/S4 estimates double-counted
+residual that the instruments now attribute to the plates themselves.
+Reopen ONLY with new assets (ledger above), highest-value first: moving
+dublin plate, frame-synced halftone series, earth clip, brand fonts.
