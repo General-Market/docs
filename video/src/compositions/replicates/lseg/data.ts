@@ -196,6 +196,38 @@ export const S4_CENTER = {
 // Skyline tile title (white-pixel bbox f560): centered on tile, cap-box y504-562.
 export const SKY_TITLE = { top: 506, size: 80 } as const;
 
+// S3a caption (r3 ink-track): the text rides its OWN decelerating track —
+// NOT the tablet layer (r1 fiction; the x1001 clip actively cut it f185+).
+// Ink left edge per frame; cap-top constant 478; two-line pitch 87 at ~75px.
+export const S3A_TXT: Keys = [
+  [178, 1100], [185, 965], [200, 771], [204, 732], [208, 696],
+  [212, 664], [216, 633], [220, 602],
+];
+
+// S5 (r3 re-measure): the conveyor DECELERATES INTO A SETTLE at f722
+// (text rows frozen at 299/525/758 through f746) — the old -190px/s forever
+// was fiction. Shift keys from item-text row tracks.
+export const S5_SHIFT: Keys = [
+  [614, 175], [626, 21], [642, -67], [658, -136], [666, -212],
+  [682, -330], [690, -440], [698, -455], [714, -657], [722, -685],
+  [781, -685],
+];
+// S5 frame lines (appear ~674 at y200/873, then CLOSE 746-774 wiping the
+// items as they pass — the closing-curtain exit; all faded by 774).
+export const S5_FRAME: Array<[number, number, number]> = [
+  [674, 200, 873], [746, 207, 867], [754, 237, 837], [762, 289, 784],
+  [770, 367, 705], [774, 406, 666],
+];
+// S5 right-photo phases (asset-NCC): waterfall / clip2(f650) / podium /
+// clip4(f698) / paris — FIVE clips, two of which r0-r2 never had.
+export const S5_PHASES = [
+  { f0: 614, f1: 641, src: "waterfall-poncho.png", anchor: 635, motion: "waterfall-poncho" },
+  { f0: 641, f1: 660, src: "s5-clip2.png", anchor: 650, motion: "" },
+  { f0: 660, f1: 685, src: "podium-speaker.png", anchor: 683, motion: "podium-speaker" },
+  { f0: 685, f1: 712, src: "s5-clip4.png", anchor: 698, motion: "" },
+  { f0: 712, f1: 781, src: "paris-street.png", anchor: 731, motion: "paris-street" },
+] as const;
+
 // S3a per-panel parallax (template-tracked; offsets rel comp mounts).
 export const S3A_EYECHEV: Keys = [
   [166, 1400], [168, 789], [172, 199], [176, 71], [180, -22], [184, -91],
@@ -372,6 +404,19 @@ export const DOT_PARA: Keys = [
 export const B3_Z: Keys = [
   [1059, 1], [1080, 1.017], [1100, 1.052], [1125, 1.094], [1128, 1.118],
   [1132, 1.124], [1136, 1.13], [1140, 1.136], [1144, 1.142],
+];
+
+// B5 crowd wedge apex track (r3, leftmost-cyan scan): the wedge pops in
+// near-placed, settles left to 296@1213, then accelerates off right —
+// r0's 900px entrance slide was fiction. Mount x = apex - 5.
+// The apex is a CLIP, not a translation (r3, three A/Bs to learn it):
+// translating the photo with the apex lost -0.37 (people must stay put);
+// freezing the wedge lost too (ref apex truly retreats 345@1230 ->
+// 554@1260 -> 702@1271). The wedge SHAPE erodes over fixed content.
+export const CROWD_APEX: Keys = [
+  [1201, 385], [1204, 379], [1207, 373], [1210, 345], [1213, 296],
+  [1216, 303], [1219, 311], [1222, 326], [1225, 334], [1228, 341],
+  [1230, 345], [1245, 424], [1260, 554], [1271, 702], [1275, 760],
 ];
 
 // S8 cube pose (r3): landmark+DT fits on cleaned line masks at 6 anchors.

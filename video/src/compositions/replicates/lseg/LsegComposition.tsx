@@ -57,6 +57,11 @@ import {
   S7_D,
   B3_Z,
   DOT_PARA,
+  CROWD_APEX,
+  S3A_TXT,
+  S5_SHIFT,
+  S5_FRAME,
+  S5_PHASES,
   CUBE_POSE,
   S8_CAPS,
   S8_CAP_TOP,
@@ -198,7 +203,8 @@ const Lockup: React.FC<{
   y: number;
   scale?: number;
   color?: string;
-}> = ({ x, y, scale = 1, color = "#fff" }) => (
+  riskTransform?: string;
+}> = ({ x, y, scale = 1, color = "#fff", riskTransform }) => (
   <div
     style={{
       position: "absolute",
@@ -212,13 +218,18 @@ const Lockup: React.FC<{
       color,
     }}
   >
+    {/* r3 ink-metered vs f60/f1580: ref caps are ~20% TALLER than Georgia's
+        at matched width — both blocks scaleY 1.2; RISK block sits higher
+        (ref cap-top 485 vs LSEG 488) and 14px closer. */}
     <div
       style={{
         fontFamily: SERIF,
         fontSize: 118,
         fontWeight: 700,
-        letterSpacing: 8,
+        letterSpacing: 6,
         lineHeight: 0.9,
+        transform: "scaleY(1.2) translateY(-8px)",
+        transformOrigin: "top left",
       }}
     >
       LSEG
@@ -228,9 +239,11 @@ const Lockup: React.FC<{
         fontFamily: SERIF,
         fontSize: 46,
         fontWeight: 600,
-        letterSpacing: 4,
+        letterSpacing: 4.5,
         lineHeight: 1.18,
-        paddingTop: 4,
+        transform: riskTransform ?? "scaleY(1.2) translateY(-14px)",
+        transformOrigin: "top left",
+        marginLeft: -14,
       }}
     >
       RISK
@@ -340,30 +353,25 @@ const S3a: React.FC = () => {
         <Photo src="city-arrow-top.png" x={586} y={0} w={410} h={578} />
         <Photo src="city-arrow-teal.png" x={586} y={578} w={410} h={502} />
       </div>
+      {/* r3: the caption rides its OWN measured track (S3A_TXT) — r1's
+          tablet-rider + x1001 clip was fiction (the clip cut live text from
+          f185). Ref: cap-top 478 const, font ~75, two-line pitch 87. */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          clipPath: "polygon(1001px 0, 1920px 0, 1920px 1080px, 1001px 1080px)",
+          left: keyed(S3A_TXT, fa) - 5,
+          top: 456,
+          fontFamily: SANS,
+          fontSize: 75,
+          fontWeight: 500,
+          lineHeight: 1.16,
+          color: COLORS.blueText,
+          opacity: interpolate(fa, [172, 182], [0, 1], { ...clamp }),
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            left: 847 + t,
-            top: 462,
-            fontFamily: SANS,
-            fontSize: 58,
-            fontWeight: 500,
-            lineHeight: 1.34,
-            color: COLORS.blueText,
-            opacity: interpolate(fa, [172, 182], [0, 1], { ...clamp }),
-          }}
-        >
-          the moment
-          <br />
-          it appears
-        </div>
+        the moment
+        <br />
+        it appears
       </div>
       <div style={{ position: "absolute", inset: 0, transform: `translateX(${t}px)` }}>
         <Photo src="man-tablet.png" x={1330} y={0} w={590} h={880} />
@@ -608,25 +616,50 @@ const CHECK_ITEMS = [
 const S5: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 614 (25.58s)
   const fa = f + 614;
-  const t = f / FPS + 25.58;
-  const shift = -190 * (t - 26.5);
-  const photoO = (a: number, b: number) =>
-    interpolate(t, [a, a + 0.35, b, b + 0.35], [0, 1, 1, 0], { ...clamp });
+  // r3: measured shift table — the belt decelerates into a SETTLE at f722
+  // (rows frozen at 299/525/758 through 746), then a closing-curtain exit:
+  // the frame lines converge and wipe the items, all gone by 774.
+  const shift = keyed(S5_SHIFT, fa);
+  const frameTop = keyed(S5_FRAME.map((k) => [k[0], k[1]] as [number, number]), fa);
+  const frameBot = keyed(S5_FRAME.map((k) => [k[0], k[2]] as [number, number]), fa);
+  const frameO = interpolate(fa, [672, 676, 768, 774], [0, 1, 1, 0], { ...clamp });
+  const exitO = interpolate(fa, [768, 774], [1, 0], { ...clamp });
+  const phase = S5_PHASES.find((p) => fa >= p.f0 && fa < p.f1) ?? S5_PHASES[4];
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.royalChecklist }}>
       <div style={{ position: "absolute", left: 960, top: 0, width: 960, height: 1080 }}>
-        <Photo src="waterfall-poncho.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(25.7, 28.1) }} motion={panelMotion("waterfall-poncho", fa, 635)} />
-        <Photo src="podium-speaker.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(28.1, 30.2) }} motion={panelMotion("podium-speaker", fa, 683)} />
-        <Photo src="paris-street.png" x={0} y={0} w={960} h={1080} style={{ opacity: photoO(30.2, 32.6) }} motion={panelMotion("paris-street", fa, 731)} />
+        <Photo
+          src={phase.src}
+          x={0}
+          y={0}
+          w={960}
+          h={1080}
+          motion={phase.motion ? panelMotion(phase.motion, fa, phase.anchor) : undefined}
+        />
       </div>
+      {/* static frame lines (appear ~674, close 746-774) */}
+      <div style={{ position: "absolute", left: 60, top: frameTop, width: 815, height: 1, background: "rgba(255,255,255,0.85)", opacity: frameO }} />
+      <div style={{ position: "absolute", left: 60, top: frameBot, width: 815, height: 1, background: "rgba(255,255,255,0.85)", opacity: frameO }} />
+      {/* items live inside the frame band: real clip once the frame exists
+          (ref hides entries below y873; the closing lines wipe items) */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          clipPath:
+            fa >= 674
+              ? `inset(${frameTop}px 0 ${1080 - frameBot}px 0)`
+              : undefined,
+          opacity: exitO,
+        }}
+      >
       {CHECK_ITEMS.map((label, i) => {
         const center = 520 + i * 232 + shift;
         if (center < -150 || center > 1250) return null;
         return (
           <div key={label}>
-            <div style={{ position: "absolute", left: 60, top: center - 116, width: 815, height: 1, background: "rgba(255,255,255,0.85)" }} />
-            {i === CHECK_ITEMS.length - 1 && (
-              <div style={{ position: "absolute", left: 60, top: center + 116, width: 815, height: 1, background: "rgba(255,255,255,0.85)" }} />
+            {i > 0 && (
+              <div style={{ position: "absolute", left: 60, top: center - 116, width: 815, height: 1, background: "rgba(255,255,255,0.85)" }} />
             )}
             <div style={{ position: "absolute", left: 60, top: center - 70, width: 14, height: 140, borderRadius: 7, background: "rgba(2,10,170,0.9)" }} />
             <div
@@ -665,6 +698,7 @@ const S5: React.FC = () => {
           </div>
         );
       })}
+      </div>
     </AbsoluteFill>
   );
 };
@@ -675,8 +709,8 @@ const S5: React.FC = () => {
 // triptych rushes in from the LEFT (S6_RL group = royal-strip left edge).
 // r1's right-side triptych entrance was direction-fiction (law 17/26).
 const S6: React.FC = () => {
-  const f = useCurrentFrame(); // 0 at 783 (the measured S5->S6 cut)
-  const fa = f + 783;
+  const f = useCurrentFrame(); // 0 at 781 (r3: ref cut ramps 780->782)
+  const fa = f + 781;
   const dx = keyed(S6_DX, fa);
   const cont = keyed(S6_CONT, fa);
   const rl = keyed(S6_RL, fa);
@@ -735,8 +769,9 @@ const txtTrack = (tab: TxtKeys, f: number) => ({
 const S7: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 889 (37.04s)
   const fa = f + 889;
-  const mapIn = interpolate(f, [286, 306], [0, 1], { ...clamp, easing: easeOut });
-  const crowdIn = interpolate(f, [312, 336], [1, 0], { ...clamp, easing: easeOut });
+  // r3: ref map text pops ON at abs f1150 (white-px step 0->17.7k, no
+  // fade) and the dot map ramps 1150->1186; r2 ran 25 frames late.
+  const mapIn = interpolate(f, [261, 297], [0, 1], { ...clamp, easing: easeOut });
   const dl = keyed(S7_DL, fa);
   const cr = keyed(S7_CR, fa);
   const cyb = keyed(S7_CYB, fa);
@@ -891,11 +926,9 @@ const S7: React.FC = () => {
               <Photo src="train-woman.png" x={rx} y={0} w={460 * z} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
             </div>
           )}
-          {/* navy expands left then right to swallow the frame (f1144-1152) */}
-          {fa >= 1144 && (
-            <div style={{ position: "absolute", left: coverL, top: 0, width: Math.max(coverR - coverL, 0), height: 1080, background: COLORS.navyPanel }} />
-          )}
-          {/* B3 caption */}
+          {/* B3 caption — drawn BEFORE the cover so the expanding navy
+              occludes it (r3: ref caption dies 1144-1146 as the cover
+              crosses it; it never survives to the map) */}
           {b3o > 0 && (
             <div
               style={{
@@ -912,12 +945,16 @@ const S7: React.FC = () => {
               {fa < 1116 ? "no more waiting" : "no more blind spots"}
             </div>
           )}
+          {/* navy expands left then right to swallow the frame (f1144-1152) */}
+          {fa >= 1144 && (
+            <div style={{ position: "absolute", left: coverL, top: 0, width: Math.max(coverR - coverL, 0), height: 1080, background: COLORS.navyPanel }} />
+          )}
         </div>
       )}
       {/* B4 world map */}
-      {f >= 286 && f < 336 && (
-        <AbsoluteFill style={{ backgroundColor: COLORS.navy, opacity: mapIn }}>
-          <div style={{ position: "absolute", inset: 0, transform: `scale(${0.96 + 0.04 * mapIn})` }}>
+      {f >= 261 && f < 336 && (
+        <AbsoluteFill style={{ backgroundColor: COLORS.navy }}>
+          <div style={{ position: "absolute", inset: 0, opacity: 0.6 + 0.4 * mapIn, transform: `scale(${0.96 + 0.04 * mapIn})` }}>
             {MAP_GRID.map((row, r) =>
               row.split("").map((cell, cIdx) =>
                 cell === "." ? null : (
@@ -957,12 +994,45 @@ const S7: React.FC = () => {
           </div>
         </AbsoluteFill>
       )}
-      {/* B5 crowd wedge */}
+      {/* B5 crowd wedge — r3: bg is NAVY (#010D99 sampled at three corners;
+          royalTile was fiction) and the ref wedge reaches x~343 — the old
+          crop started at 536 and missed 190px of it (crowd-overhead2 =
+          f1230 re-crop). */}
       {f >= 312 && (
-        <AbsoluteFill style={{ backgroundColor: COLORS.royalTile }}>
-          <div style={{ position: "absolute", inset: 0, transform: `translateX(${crowdIn * 900}px)` }}>
-            <Photo src="crowd-overhead.png" x={536} y={0} w={1384} h={1080} />
-          </div>
+        <AbsoluteFill style={{ backgroundColor: COLORS.navy }}>
+          {/* r3: fixed content, ERODING wedge clip — the apex retreats on
+              the measured track while the people stay put (translating the
+              photo lost -0.37; freezing lost -0.07/-0.14). Edge slopes from
+              f1230: top hits y0 at apex+465, bottom hits y1080 at apex+855. */}
+          {(() => {
+            const ax = keyed(CROWD_APEX, fa);
+            return (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  // after 1245 the late asset's own baked boundary is the
+                  // truer wedge (its source frame is late; A/B .93 vs .85)
+                  clipPath:
+                    fa < 1245
+                      ? `polygon(${ax}px 585px, ${ax + 465}px 0px, 1920px 0px, 1920px 1080px, ${ax + 855}px 1080px)`
+                      : undefined,
+                }}
+              >
+                {fa < 1249 && <Photo src="crowd-overhead2.png" x={340} y={0} w={1580} h={1080} />}
+                {fa >= 1245 && (
+                  <Photo
+                    src="crowd-overhead.png"
+                    x={536}
+                    y={0}
+                    w={1384}
+                    h={1080}
+                    style={{ opacity: interpolate(fa, [1245, 1249], [0, 1], { ...clamp }) }}
+                  />
+                )}
+              </div>
+            );
+          })()}
         </AbsoluteFill>
       )}
     </AbsoluteFill>
@@ -1115,8 +1185,10 @@ const S8: React.FC = () => {
           >
             Now
           </div>
+          {/* r3: the END lockup's RISK block is genuinely smaller than
+              S1's (ref ink 959-1217 = 258w vs S1 436w; LSEG identical). */}
           <div style={{ position: "absolute", inset: 0, opacity: lockO }}>
-            <Lockup x={552} y={478} />
+            <Lockup x={552} y={491} riskTransform="scale(0.59, 1.02) translateY(-2px)" />
           </div>
         </>
       )}
@@ -1141,10 +1213,10 @@ export const LsegComposition: React.FC = () => (
     <Sequence from={478} durationInFrames={136}>
       <S4 />
     </Sequence>
-    <Sequence from={614} durationInFrames={169}>
+    <Sequence from={614} durationInFrames={167}>
       <S5 />
     </Sequence>
-    <Sequence from={783} durationInFrames={106}>
+    <Sequence from={781} durationInFrames={108}>
       <S6 />
     </Sequence>
     <Sequence from={889} durationInFrames={386}>
