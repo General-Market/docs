@@ -83,7 +83,11 @@ export const S3A_ARRIVE: Keys = [
 // S3b: ONE pan group [office | developer], group coords = screen at f380.
 // Template-tracked content dx (score 1.0 rows only; <280 extrapolated +40/f).
 export const S3B_GROUP_DX: Keys = [
-  [262, -1665], [280, -945], [284, -783], [288, -651], [292, -544],
+  // NEGATIVE A/B (r2): NCC pins f274-280 exactly (score 1.0) but pushing the
+  // same trend into the unmeasurable blur zone f262-272 LOST (-0.09 at f270,
+  // -0.12 at f266) — r1's shallower line wins there; kink kept deliberately.
+  [262, -1665], [270, -1305], [274, -1260], [276, -1144], [278, -1039],
+  [280, -945], [284, -783], [288, -651], [292, -544],
   [296, -457], [300, -386], [304, -330], [308, -285], [312, -251],
   [316, -225], [320, -202], [324, -180], [328, -160], [332, -142],
   [336, -127], [340, -113], [344, -102], [348, -93], [352, -85],
