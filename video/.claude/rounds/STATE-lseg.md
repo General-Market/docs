@@ -280,3 +280,104 @@ sky2(f870) woman-phone-wide(f1014) dots-belt(f990) dots-s4(f484, unused —
 lattice won) gherkin2(f520) gherkin-full(f498) credit-card2(f560)
 container2(f560) dublin-outer(f1437, inpainted) afro-polka(f150)
 woman-wall(f158) teal-glass(f163) train-platform(f165)
+
+## Round 3 (2026-07-19) — queue + fiction sweep. SCORE 87.5 (+2.1)
+(video SSIM .8633 · keyframe .8045 · color .9866 · duration .9992; artifacts
+lseg-{framessim,keyframes,verify}-r3.*; attempt work/lseg/r3/attempt-r3.mp4;
+measurement scratch work/lseg/r3/; commits 1e855f7ca..49552bd0b + this)
+
+### S8 CLASSIFIED VERDICT (law 9; per-keyframe grids at 13 frames f1303-1447)
+Every keyframe's worst cells were r2c3/r3c3/r3c4 (center = caption+cube).
+Classification of the r2 residual, adjudicated by instrument:
+- FIXABLE, FIXED: cube pose — the ref cube TUMBLES (yaw LINEAR 0.0153
+  rad/f; the fit predicts both face-on frames 1351/1455), pitch ~0.49,
+  roll ~-0.02, center (960,505) and size ~230 SCREEN-FIXED. r2's
+  plate-riding corner pose was 30-40deg wrong. Instruments: DT fitters
+  collapse on night clutter (3 failures documented); what worked =
+  hand-read silhouette hulls -> Hungarian-assignment vertex fit ->
+  DT local polish, eye-gated. CUBE_POSE table, 6 anchors.
+- FIXABLE, FIXED: captions 7-11% oversized and low (ref cap-height 66.5
+  -> font 93 + per-caption tracking, left-aligned at ref ink-left,
+  cap-top 500.5); plate 0.5-1.0% small (NCC boost ramp); r2's outer ring
+  leaked a royal border EVERY frame (scale clamped >=1).
+- FLOOR (reference-self-contradiction / video texture): timelapse life —
+  static-patch NCC at BEST registration decays .978->.947 across the
+  scene (lights flicker, water shimmers, boats move). Dominates the
+  remaining residual (~55-60%). Plus Avenir-vs-brand glyph shapes (~2%
+  area) and minor inpaint scars under the ring.
+- STILL FIXABLE (r4): per-frame plate registration (my ramp is 2-key),
+  cube anchor densification/polish (5-20px residuals at anchors).
+Gates: f1290 .650->.688, f1387 .571->.720, f1455 .565->.733 (crop gates
++.05-.09); S8 windows .66-.68 -> .74-.80. Honest S8 floor est ~.80-.85.
+
+### Queue results (rolling-window means r2 -> r3)
+1. S8 1303-1447 (.66-.68) -> .739/.782/.799 (+.06-.12)
+2. S4 entry 470-518 (.687) -> .687 net-flat: center column fixed (+75px
+   error, NCC .94-1.00 track; f510 .478->.550, f514 .569->.678 mp4) but
+   the window is dominated by MEASURED CEILINGS: earth tile rotates, dot
+   tile is a morphing halftone (16.5px FFT at entry, 12.9-15.5 by f506 —
+   dense lattice match LOST, negative A/B in-code; bg now flat #0129F2)
+3. belt exit 942-990 (.711) -> ~.73-.79: motion-gated dots (flat wins
+   +.12-.15 while belt moves — law 4 extended: absent beats misplaced
+   even vs sparse), texture window tightened [976,1008] by NCC
+4. wipe 1017-1065 (.727) -> .803 (+.076): trailing panel dotless
+   (+.11-.20 sim), S7_D verified EXACT vs per-2f edge scan (r2 stands)
+5. B3 zoom 1099-1147 (.759) -> .788 (+.029): zoom center refit c=995
+   from navy edge pairs (r2's 1100 caught the cover), train window
+   widens with z (div was frozen at 460 while content zoomed)
+
+### Fiction sweep finds (two questions per scene; contact sheets)
+- S5 IS A SETTLE-AND-CLOSE, not an endless conveyor: belt decelerates
+  into a HOLD at f722 (rows frozen 299/525/758 through 746), frame lines
+  at y200/873 from ~674 (content clipped to the band), then the lines
+  CLOSE 746-774 wiping items, royal blank, cut ramps 780-781. r0's
+  -190px/s forever + crossfading 3 photos was double fiction: ref has
+  FIVE right-photo phases (two clips extracted fresh: s5-clip2 f650,
+  s5-clip4 f698). Gates: f650 .766->.953, f700 .722->.938, f690 +.21.
+- S5->S6 cut is 781 not 783 (f781 .517->.768).
+- B4 map was 25f LATE: ref text pops (no fade) at f1150. B3 caption must
+  die under the expanding cover 1144-1146 (z-order moved; it overstayed
+  to 1201 in r2).
+- B5 crowd wedge: bg is NAVY not royalTile; the wedge is an ERODING CLIP
+  over FIXED content (apex 345@1230 -> 554@1260 -> 702@1271): translating
+  the photo lost -0.37, freezing lost -.07-.14; clip + late-frame second
+  asset (crossfade 1245-1249) wins: f1210 .53->.74, f1230 .79->.96,
+  f1260 .89->.98, f1271 .81->.89.
+- Lockup ink-metered: ref caps ~20% taller than Georgia's at matched
+  width (scaleY 1.2 both blocks, RISK closer+higher); the END lockup's
+  RISK block is genuinely 0.59x (ink 258w vs S1 436w).
+- S3a caption: font 75 (was 58) on its OWN measured track — r1's
+  tablet-rider + x1001 clip was cutting live text from f185.
+- f340 right-edge royal band suspicion: refuted (pan offset ~35px only).
+
+### Instrument findings
+- imread(path, IMREAD_GRAYSCALE) DISAGREES with cvtColor(BGR2GRAY) and
+  the disagreement is FILE-DEPENDENT (ffmpeg-written vs remotion-written
+  PNGs carry different gamma chunks): whole-frame gates biased ~-0.08
+  against remotion stills. The crowd "regression" was gate artifact.
+  Standing rule: decode color, cvtColor, always.
+- The mp4-proxy gate needs same-GOP-phase caution: fresh segment
+  encodes read ~-0.01 vs mid-GOP attempt frames on texture (S4 early).
+- Wedge apex color-threshold scans drift with exposure (the late apex
+  "motion" was real here, but the same scan earlier produced a false
+  translate — the clip-vs-translate distinction only fell to A/B).
+
+### Round-4 queue (worst windows after r3, with honest estimates)
+1. 478-526 (.687) — S4 entry: mostly measured ceiling now (rotating
+   earth interior + morphing halftone). Fixable slice: per-frame column
+   regfit residuals, boardroom content scale. est +.005-.01 composite.
+2. 960-1008 (.725) — B2 entrance: B2_TXT re-verify during shrink,
+   woman-photo entry track (B2_PL is 3-key), dots-belt edge. est +.01.
+3. 1294-1438 (.74-.80) — S8: per-frame plate registration + cube anchor
+   densification (12 anchors), caption glyph floor. est +.003-.005.
+4. 912-960 (.796) — B1 exit: archer/confetti reveal geometry during the
+   fast push. est +.005.
+5. 526-574 / 430-478 (.82) — S4 settle + earth full-bleed: earth
+   rotates (ceiling); skyline title metrics measurable. est +.005.
+6. 260-308 (.833) — dev/office blur zone: documented negative A/B
+   (r2), likely floor.
+PLATEAU ASSESSMENT: not yet. r4 can honestly buy +1.0-1.5 (mostly items
+1-4 + residual sweep). Beyond r4 the measured ceilings dominate: live
+halftones (3 windows), S8 timelapse (144f), rotating earth (~90f),
+video-clip panel interiors (S2/S3/S5/S6 people move). Asymptote with
+current assets ~= 89-90. A round 5+ grinds <0.5.
