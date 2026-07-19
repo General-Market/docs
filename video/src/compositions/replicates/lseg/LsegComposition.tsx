@@ -948,26 +948,21 @@ const S7: React.FC = () => {
                   carries the content scale — it tracked this same layout
                   zoom; the div width must ride it too or the visible slice
                   freezes at 460). */}
-              <Photo src="train-woman.png" x={rx} y={0} w={460 * z} h={1080} motion={panelMotion("train-woman", fa, 1091)} />
-            </div>
-          )}
-          {/* B3 caption — drawn BEFORE the cover so the expanding navy
-              occludes it (r3: ref caption dies 1144-1146 as the cover
-              crosses it; it never survives to the map) */}
-          {b3o > 0 && (
-            <div
-              style={{
-                position: "absolute",
-                left: 995 + (652 - 995) * z,
-                top: 470 * z - 22,
-                fontFamily: SANS,
-                fontSize: 82 * z,
-                fontWeight: 500,
-                color: "#fff",
-                opacity: b3o,
-              }}
-            >
-              {fa < 1116 ? "no more waiting" : "no more blind spots"}
+              {/* r4: panelMotion only BEFORE its f1091 anchor (real relative
+                  slide during the pane entry — dropping it lost -.015 at
+                  f1080); after 1091 its s-column IS the layout zoom
+                  (1.1455@1150 == B3_Z 1.142@1144) which the 460*z Img width
+                  already applies — stacking both pushed the content
+                  +50-60px right by f1104 (the suitcase left the pane).
+                  Both branches are identity at 1091: continuous. */}
+              <Photo
+                src="train-woman.png"
+                x={rx}
+                y={0}
+                w={460 * z}
+                h={1080}
+                motion={fa < 1092 ? panelMotion("train-woman", fa, 1091) : undefined}
+              />
             </div>
           )}
           {/* navy expands left then right to swallow the frame (f1144-1152) */}
@@ -1001,15 +996,17 @@ const S7: React.FC = () => {
           </div>
           <div
             style={{
+              // r4 ink-metered: ref cap bands y448-505 / y558-615 (cap 57,
+              // pitch 110) -> font 80, lineHeight 1.375, top 448-(110-57)/2.
               position: "absolute",
               left: 0,
-              top: 428,
+              top: 421.5,
               width: 1920,
               textAlign: "center",
               fontFamily: SANS,
-              fontSize: 66,
+              fontSize: 80,
               fontWeight: 500,
-              lineHeight: 1.75,
+              lineHeight: 1.375,
               color: "#fff",
             }}
           >
@@ -1018,6 +1015,26 @@ const S7: React.FC = () => {
             On Demand
           </div>
         </AbsoluteFill>
+      )}
+      {/* B3 caption — r4: it does NOT die instantly under the cover; the ref
+          GHOST-FADES it over the expanding navy and the young map plate
+          (band p99 201@1144 -> 141@1146 -> 98@1148 -> 68@1150 -> floor@1152),
+          so it draws ABOVE the cover and B4 with the measured fade. */}
+      {b3o > 0 && fa < 1153 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 995 + (652 - 995) * z,
+            top: 470 * z - 22,
+            fontFamily: SANS,
+            fontSize: 82 * z,
+            fontWeight: 500,
+            color: "#fff",
+            opacity: b3o * interpolate(fa, [1144, 1152], [1, 0], { ...clamp }),
+          }}
+        >
+          {fa < 1116 ? "no more waiting" : "no more blind spots"}
+        </div>
       )}
       {/* B5 crowd wedge — r3: bg is NAVY (#010D99 sampled at three corners;
           royalTile was fiction) and the ref wedge reaches x~343 — the old
