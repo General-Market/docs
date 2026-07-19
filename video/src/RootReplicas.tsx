@@ -26,6 +26,8 @@ import {
   netGrowthSideBySideMeta,
   crxGrowthLoopMeta,
 } from "./compositions/replicates/netgrowth/NetGrowthComps";
+import { lsegReplicateMeta } from "./compositions/replicates/lseg/LsegComposition";
+import { lsegSideBySideMeta } from "./compositions/replicates/lseg/LsegSideBySide";
 
 // Replica-only entry (src/index-replicas.ts). The main src/index.ts bundles
 // every composition, which (a) copies the full multi-GB public/ tree per
@@ -55,6 +57,8 @@ export const RootReplicas: React.FC = () => (
       netGrowthReplicateMeta,
       netGrowthSideBySideMeta,
       crxGrowthLoopMeta,
+      lsegReplicateMeta,
+      lsegSideBySideMeta,
     ].map((meta) => (
       <Composition key={meta.id} {...meta} />
     ))}
