@@ -216,8 +216,10 @@ export const S4_CENTER = {
   creditCard: { x: 957, y: 0, w: 486, h: 264 },
   skyline: { x: 478, y: 264, w: 964, h: 548 },
 } as const;
-// Skyline tile title (white-pixel bbox f560): centered on tile, cap-box y504-562.
-export const SKY_TITLE = { top: 506, size: 80 } as const;
+// Skyline tile title — r4 ink-metered vs render: ref ink y504-562 x577-1340;
+// the r3 render sat 21px LOW and 9% NARROW (Avenir aspect). top -21 and
+// letterSpacing 4.7 stretch to the ref ink box without inflating height.
+export const SKY_TITLE = { top: 485, size: 80, ls: 4.7 } as const;
 
 // S3a caption (r3 ink-track): the text rides its OWN decelerating track —
 // NOT the tablet layer (r1 fiction; the x1001 clip actively cut it f185+).

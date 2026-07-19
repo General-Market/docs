@@ -569,6 +569,7 @@ const S4: React.FC = () => {
               fontFamily: SANS,
               fontSize: SKY_TITLE.size,
               fontWeight: 600,
+              letterSpacing: SKY_TITLE.ls,
               color: "#fff",
               opacity: interpolate(fa, [537, 545], [0, 1], { ...clamp }),
             }}
