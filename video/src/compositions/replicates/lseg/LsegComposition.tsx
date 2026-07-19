@@ -775,10 +775,12 @@ const S8: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 1275 (53.125s)
   const dublin = f < 199;
   const zoom = 1 + f * 0.0003;
-  // isometric-ish corner view (ref f055 silhouette), slow drift
+  // isometric-ish corner view (ref f055 silhouette: cube spans ~625..1310 x,
+  // ~150..885 y), slow drift. Static-plate SSIM ceiling here is ~0.44 — the
+  // reference background is moving timelapse footage.
   const yaw = 0.785 + f * 0.003;
-  const verts = cubeVerts(yaw, -0.5);
-  const size = 342;
+  const verts = cubeVerts(yaw, -0.42);
+  const size = 272;
   const captions: Array<[number, number, string]> = [
     [9, 62, "World-Check On Demand"],
     [65, 113, "Built for automation."],
