@@ -824,7 +824,11 @@ const S7: React.FC = () => {
               style={{ position: "absolute", left: p - 750 + keyed(DOT_PARA, fa), top: 0, width: 750, height: 1080 }}
             />
           ) : (
-            <DotPanel x={px - 750} y={0} w={750} h={1080} dots={fa > 1008} flatBg={fa <= 1008 ? COLORS.dotPanelBg : undefined} />
+            // r3: dots OFF for the belt panel's whole life — the ref pattern
+            // here is a live dense halftone with density waves at every
+            // phase; the gradient-only panel beats the lattice on the wipe's
+            // left region too (f1033 .54 -> .75 sim at ref-median luma).
+            <DotPanel x={px - 750} y={0} w={750} h={1080} dots={false} />
           )}
           {/* B2 card + navy + photo */}
           {p < 1930 && (
