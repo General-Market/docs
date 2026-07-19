@@ -240,10 +240,14 @@ const S1: React.FC = () => {
           inset: 0,
           transform: `translate(${wedgeIn * 430}px, ${wedgeIn * -300}px)`,
           clipPath:
-            "polygon(1252px 0px, 1920px 0px, 1920px 748px, 1444px 318px)",
+            "polygon(1284px 0px, 1920px 0px, 1920px 790px, 1234px 312px)",
         }}
       >
-        <Photo src="shibuya-crossing.png" x={1240} y={0} w={680} h={760} />
+        <Photo src="shibuya-wedge.png" x={1234} y={0} w={686} h={796} />
+        {/* measured 6px white seam along the lower diagonal */}
+        <svg style={{ position: "absolute", left: 0, top: 0 }} width={1920} height={1080}>
+          <line x1={1234} y1={312} x2={1920} y2={790} stroke="#fff" strokeWidth={6} />
+        </svg>
       </div>
     </AbsoluteFill>
   );
@@ -841,7 +845,9 @@ const S8: React.FC = () => {
   // reference background is moving timelapse footage.
   const yaw = 0.785 + f * 0.003;
   const verts = cubeVerts(yaw, -0.42);
-  const size = 272;
+  // Eye-gated vs f1290/f1450 overlays; chamfer fitter degenerates on this
+  // background (see STATE r1) — full per-caption pose keys deferred to r2.
+  const size = 215;
   const captions: Array<[number, number, string]> = [
     [9, 62, "World-Check On Demand"],
     [65, 113, "Built for automation."],
@@ -863,10 +869,10 @@ const S8: React.FC = () => {
             {CUBE_EDGES.map(([a, b]) => (
               <line
                 key={`${a}-${b}`}
-                x1={958 + verts[a][0] * size}
-                y1={505 + verts[a][1] * size}
-                x2={958 + verts[b][0] * size}
-                y2={505 + verts[b][1] * size}
+                x1={963 + verts[a][0] * size}
+                y1={508 + verts[a][1] * size}
+                x2={963 + verts[b][0] * size}
+                y2={508 + verts[b][1] * size}
                 stroke="rgba(255,255,255,0.92)"
                 strokeWidth={2.6}
               />
