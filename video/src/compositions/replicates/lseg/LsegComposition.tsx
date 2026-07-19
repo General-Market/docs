@@ -31,6 +31,9 @@ import {
   EARTH_TILE,
   S4_C,
   S4_S,
+  S4_SL,
+  S4_SR,
+  S4_GZ,
   SKY_EXPAND,
   S4_LEFT,
   S4_RIGHT,
@@ -459,6 +462,8 @@ const S4: React.FC = () => {
   const fa = f + 478;
   const c = keyed(S4_C, fa);
   const s = keyed(S4_S, fa);
+  const sL = fa < 560 ? keyed(S4_SL, fa) : s;
+  const sR = fa < 560 ? keyed(S4_SR, fa) : s;
   const sky = SKY_EXPAND[0][0] <= fa ? keyed(SKY_EXPAND, fa) : 1;
   // earth tile (x, w, bottom) from the measured table; h = w / 1.763
   const ex = keyed(EARTH_TILE.map(([a, x]) => [a, x] as [number, number]), fa);
@@ -471,21 +476,28 @@ const S4: React.FC = () => {
   const C = S4_CENTER;
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      {/* left column */}
-      <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
+      {/* left column (entry stack extends below screen: gherkin is 772 tall,
+          then cyan2 at 1608 and solar at 2031 — r1's solar at y1180 was a
+          displaced fiction) */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${sL}px)` }}>
         <Photo src="hex-paving-couple.png" x={L.hex.x} y={L.hex.y} w={L.hex.w} h={L.hex.h} />
         <div style={{ position: "absolute", left: L.royal.x, top: L.royal.y, width: L.royal.w, height: L.royal.h, background: COLORS.royalTile }} />
-        {/* r2: original gherkin/credit-card crops carried the WRONG content
-            (negative grid cells at f560) — re-cropped from settled plates */}
-        <Photo src="gherkin2.png" x={L.gherkin.x} y={L.gherkin.y} w={478} h={492} />
-        <Photo src="solar-panels.png" x={L.solar.x} y={L.solar.y} w={L.solar.w} h={L.solar.h} />
+        {/* full-height gherkin (f498, 451w — right 27px sit under the earth
+            tile during entry) + settled-plate top overlay at full width */}
+        {fa < 540 && (
+          <Photo src="gherkin-full.png" x={L.gherkin.x} y={L.gherkin.y} w={451} h={772} motion={{ dx: 0, dy: 0, s: keyed(S4_GZ, fa) }} />
+        )}
+        {fa >= 540 && <Photo src="gherkin2.png" x={L.gherkin.x} y={L.gherkin.y} w={478} h={492} />}
+        <div style={{ position: "absolute", left: 0, top: 1608, width: 478, height: 423, background: COLORS.lightBlueTile }} />
+        <Photo src="solar-panels.png" x={0} y={2031} w={478} h={260} />
       </div>
-      {/* right column */}
-      <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
+      {/* right column (dot tile is 937 tall; cyan2 below at 1917) */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateY(${sR}px)` }}>
         <Photo src="container2.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} motion={panelMotion("container-worker", fa, 560)} />
         <div style={{ position: "absolute", left: R.cyan.x, top: R.cyan.y, width: R.cyan.w, height: R.cyan.h, background: COLORS.lightBlueTile }} />
         <Photo src="microphones.png" x={R.microphones.x} y={R.microphones.y} w={R.microphones.w} h={R.microphones.h} motion={panelMotion("microphones", fa, 536)} />
-        <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={R.dot.h} />
+        <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={937} />
+        <div style={{ position: "absolute", left: R.dot.x, top: 1917, width: R.dot.w, height: 700, background: COLORS.lightBlueTile }} />
       </div>
       {/* center column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${c}px)` }}>
@@ -522,7 +534,11 @@ const S4: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* earth tile overlay: shrinks from full-bleed, rides up and out */}
+      {/* earth tile overlay: shrinks from full-bleed, rides up and out;
+          a cyan band rides directly above it during the entry */}
+      {fa < 517 && eb > 0 && eb - eh > 0 && (
+        <div style={{ position: "absolute", left: ex, top: eb - eh - 800, width: ew, height: 800, background: COLORS.lightBlueTile }} />
+      )}
       {fa < 517 && eb > 0 && (
         <div
           style={{

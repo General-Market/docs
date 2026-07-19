@@ -129,6 +129,26 @@ export const S4_C: Keys = [
   [524, 256], [526, 199], [528, 152], [530, 115], [532, 85], [534, 62],
   [536, 42], [538, 28], [540, 17], [542, 9], [544, 4], [546, 0], [614, 0],
 ];
+// S4 entry offsets, PER SIDE (column-edge scans f478-506; the two sides run
+// ~20-50px apart during the drop — r1's single extrapolated track was ~250px
+// wrong at f490). Below-screen tiles (cyan2/solar/dots-937) measured from the
+// same scans.
+export const S4_SL: Keys = [
+  [478, -1508], [482, -1052], [486, -874], [490, -755], [494, -641],
+  [498, -549], [502, -487], [506, -418], [510, -360], [514, -310],
+  [518, -266], [524, -210], [530, -162], [540, -94], [550, -40], [560, 0],
+];
+// Gherkin photo internal zoom during entry (NCC scale sweep, rel f498).
+export const S4_GZ: Keys = [
+  [482, 1.13], [486, 1.1], [490, 1.06], [494, 1.04], [498, 1.0],
+  [506, 0.95], [540, 0.95],
+];
+export const S4_SR: Keys = [
+  [478, -1460], [482, -988], [486, -846], [490, -704], [494, -594],
+  [498, -541], [502, -463], [506, -399], [510, -344], [514, -300],
+  [518, -255], [524, -201], [530, -152], [540, -90], [550, -38], [560, 0],
+];
+
 // S4 side columns offset s (hex/royal-edge template track; 0 = f560 layout;
 // the sides NEVER settle - still +96 by f612).
 export const S4_S: Keys = [
