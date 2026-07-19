@@ -37,6 +37,10 @@ import {
   S4_CENTER,
   SKY_TITLE,
   PANEL_MOTION,
+  B1_ARCHER_H,
+  B1_CONFETTI_TOP,
+  B1_TEXT_X,
+  B1_TEXT_Y,
 } from "./data";
 
 // "Introducing LSEG World-Check On Demand" — 1:1 replicate.
@@ -662,7 +666,6 @@ const S6: React.FC = () => {
 const S7: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 889 (37.04s)
   const fa = f + 889;
-  const drift = interpolate(f, [0, 72], [30, -40], { ...clamp });
   const b2In = interpolate(f, [66, 90], [1, 0], { ...clamp, easing: easeOut });
   const b3In = interpolate(f, [138, 162], [1, 0], { ...clamp, easing: easeOut });
   const mapIn = interpolate(f, [286, 306], [0, 1], { ...clamp, easing: easeOut });
@@ -676,15 +679,21 @@ const S7: React.FC = () => {
   } as const;
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      {/* B1 increase accuracy */}
+      {/* B1 increase accuracy — converging reveal strips (measured edges) */}
       {f < 90 && (
-        <div style={{ position: "absolute", inset: 0, transform: `translateY(${drift}px)` }}>
-          <div style={{ position: "absolute", left: 0, top: -60, width: 418, height: 500, background: COLORS.cyanTile }} />
-          <div style={{ position: "absolute", left: 0, top: 440, width: 418, height: 700, background: COLORS.royalTile }} />
-          <Photo src="archer.png" x={418} y={0} w={1082} h={335} motion={panelMotion("archer", fa, 923)} />
-          <Photo src="confetti-bw.png" x={418} y={943} w={1082} h={200} motion={panelMotion("confetti-bw", fa, 923)} />
-          <DotPanel x={1500} y={-60} w={420} h={1200} />
-          <div style={{ position: "absolute", left: 510, top: 552, ...blueText }}>
+        <div style={{ position: "absolute", inset: 0 }}>
+          <div style={{ position: "absolute", left: 0, top: 0, width: 418, height: 440, background: COLORS.cyanTile }} />
+          <div style={{ position: "absolute", left: 0, top: 440, width: 418, height: 640, background: COLORS.royalTile }} />
+          {/* archer strip: bottom edge grows down, content pinned to frame */}
+          <div style={{ position: "absolute", left: 418, top: 0, width: 1082, height: keyed(B1_ARCHER_H, fa), overflow: "hidden" }}>
+            <Img src={A("archer-tall.png")} style={{ position: "absolute", left: 0, top: 0, width: 1082, height: 434 }} />
+          </div>
+          {/* confetti strip: top edge settles then recedes */}
+          <div style={{ position: "absolute", left: 418, top: keyed(B1_CONFETTI_TOP, fa), width: 1082, height: 1080 - keyed(B1_CONFETTI_TOP, fa), overflow: "hidden" }}>
+            <Img src={A("confetti-bw.png")} style={{ position: "absolute", left: 0, top: 943 - keyed(B1_CONFETTI_TOP, fa), width: 1082, height: 200 }} />
+          </div>
+          <DotPanel x={1500} y={0} w={420} h={1080} />
+          <div style={{ position: "absolute", left: keyed(B1_TEXT_X, fa), top: keyed(B1_TEXT_Y, fa), ...blueText }}>
             increase
             <br />
             accuracy
