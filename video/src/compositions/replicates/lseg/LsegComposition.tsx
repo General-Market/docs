@@ -40,6 +40,7 @@ import {
   S4_CENTER,
   SKY_TITLE,
   PANEL_MOTION,
+  B1_ARCH,
   B1_ARCHER_H,
   B1_CONFETTI_TOP,
   S6_DX,
@@ -818,7 +819,19 @@ const S7: React.FC = () => {
             <>
               {archH > 0 && (
                 <div style={{ position: "absolute", left: cr, top: 0, width: stripW, height: archH, overflow: "hidden" }}>
-                  <Img src={A("archer-tall.png")} style={{ position: "absolute", left: 0, top: 0, width: stripW, height: (stripW * 434) / 1082 }} />
+                  {/* r4: content pinned at its measured NATIVE-scale track
+                      (B1_ARCH) — the ref never cover-scales the photo to the
+                      strip; the strip only CLIPS it (NCC .99+ f912-980). */}
+                  <Img
+                    src={A("archer-tall.png")}
+                    style={{
+                      position: "absolute",
+                      left: keyed(B1_ARCH.map((k) => [k[0], k[2]] as [number, number]), fa) - cr,
+                      top: keyed(B1_ARCH.map((k) => [k[0], k[3]] as [number, number]), fa),
+                      width: 1082 * keyed(B1_ARCH.map((k) => [k[0], k[1]] as [number, number]), fa),
+                      height: 434 * keyed(B1_ARCH.map((k) => [k[0], k[1]] as [number, number]), fa),
+                    }}
+                  />
                 </div>
               )}
               {confT < 1078 && (

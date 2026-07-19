@@ -464,6 +464,22 @@ export const S8_CAPS = [
 export const S8_CAP_TOP = 474;
 export const S8_CAP_SIZE = 93;
 
+// B1 archer content mount (r4, scale-swept NCC of the asset into ref,
+// scores .99+ f912-980): the ref photo rides at ~NATIVE scale (entering
+// 1.19 -> 1.0 by f948) and translates with the belt — it is NEVER
+// cover-scaled to the shrinking strip (the old stripW mount squeezed the
+// whole 1082x434 asset into a 445x178 div by f984 and left a white band
+// under the photo from f966). [f, scale, mountX, mountY]; ends extrapolated
+// on the local rates (984+ rides the dot rail's velocity, matched 976-980).
+export const B1_ARCH: Array<[number, number, number, number]> = [
+  [889, 1.17, 463, -244], [912, 1.17, 378, -140], [918, 1.19, 356, -113],
+  [924, 1.11, 396, -78], [930, 1.06, 422, -54], [936, 1.03, 438, -38],
+  [942, 1.015, 445, -26], [948, 1.0, 452, -15], [954, 1.0, 445, -8],
+  [960, 1.0, 418, 0], [964, 1.0, 385, 6], [968, 1.0, 332, 12],
+  [972, 1.0, 249, 19], [976, 1.005, 104, 25], [980, 1.005, -170, 33],
+  [984, 1.005, -525, 41], [988, 1.005, -880, 49], [992, 1.005, -1235, 57],
+];
+
 // S7 B1: converging reveal strips (edge-scanned, abs frames).
 export const B1_ARCHER_H: Keys = [
   [889, 56], [892, 67], [895, 86], [898, 109], [901, 130], [904, 152],
