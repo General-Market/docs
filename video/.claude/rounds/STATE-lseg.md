@@ -145,3 +145,138 @@ per-caption pose keys, then interpolate.
 Also: office/dev pre-f280 reveal is extrapolated (dx table starts at
 measured f280); verify-replication tsc gate dies on the untracked sibling
 yc-pitch file — r1 verify ran with it temporarily moved aside (restored).
+
+## Round 2 (2026-07-18) — fiction hunt on the round-2 queue. SCORE 85.4 (+5.0)
+(video SSIM .8397 · keyframe .7749 · color .9807 · duration .9992)
+
+### Queue results (window means, mp4 composite r1 -> r2)
+1. S7 B2/B3 961-1057:  .574 -> .724 (+.150)
+2. S8 1394-1442:       .577 -> .662 (+.086) · 1299-1347: .579 -> .681 (+.102)
+3. S4 entry 478-526:   .651 -> .691 (+.040)
+4. S6 exit 824-872:    .651 -> .889 (+.238)
+5. S6->B1 872-920:     .726 -> .861 (+.135)
+6. S2 belt 126-174:    .763 -> .834 (+.070)
+x. office/dev 220-280: .835 -> .848 (+.012)
+   B1 889-961:         .737 -> .794 (+.057) · whole: .794 -> .840
+
+### Round-3 priorities (worst 2s rolling windows after r2)
+1. 1303-1447 (.66-.68, three contiguous windows) — S8 dublin: sits near the
+   measured timelapse floor; remaining fixable ink = cube yaw refinement
+   (landmark fitters collapse; needs a better instrument), water/lights are
+   ceiling. Demand a classified per-keyframe verdict before spending here.
+2. 470-518 (.687) — S4 entry: earth-tile interior (ref earth ROTATES —
+   ceiling), center-column cyan band timing, side-column residuals.
+3. 942-990 (.711) — S7 belt exit: dot-halftone live-pattern ceiling zone +
+   B1 strip content during the fast push (cover-scale approximation).
+4. 1017-1065 (.727) — B2->B3 wipe: photo push-out parallax approximate
+   (PT table 3 keys), B3 text metrics during wipe.
+5. 1099-1147 (.759) — B3 zoom phase: dot region live-pattern ceiling,
+   train content zoom (panel-motion anchor vs measured pane edge).
+
+(commits b20bb40a1 → this round; artifacts lseg-*-r2.*; attempt mp4
+work/lseg/r2/attempt-r2.mp4; measurement scratch work/lseg/r2/)
+
+### The big structural finds (fiction laws paid the round)
+- S7 IS ONE CONVEYOR. B1's rails never hold still: left cyan column widens
+  108→475 (S7_CR), the cyan/royal boundary rises 1080→266 (S7_CYB), the dot
+  rail slides 1810→1443 then accelerates off with the whole belt (S7_DL);
+  B2 rides 750px behind the rail (card = DL+750); B3 arrives as a dot rail
+  (B3_R) then a shared vertical WIPE (S7_D: navy+train drop from y0 while
+  B2's card/text/photo push out the bottom). After settle the B3 layout
+  zooms about x=1100 (B3_Z, fitted center — recovered independently from
+  both navy edges, law 37) and the navy expands left-then-right (f1144-52)
+  into the full-frame plate B4's map fades onto. r1's slide-in/slide-over
+  B2/B3 model was wholesale fiction.
+- CAPTIONS ENTER OVERSIZED AND SHRINK. B1 "increase accuracy" scales
+  1.76x→1x while drifting (B1_TXT [l,t,w] per-frame track), then rides the
+  belt out; B2 "your customers" enters at ~114px and lands at ~80px
+  (B2_TXT). r1's static captions were fictions of stillness. B2 text
+  calibrated to ±4px against ref ink bboxes.
+- S6 REMEASURED END TO END: handshake pops FULL-BLEED at the f783 cut
+  (sequence re-cut 780→783), the [gap|containers] assembly slides in from
+  the right, everything drifts right +9/f, then the photo exits right on a
+  clean NCC content-dx track (S6_DX, score 1.000, scale 1.00 — no zoom).
+  The triptych enters from the LEFT decelerating (S6_RL) — r1 slid it in
+  from the right (direction fiction); its panels were re-cropped from the
+  settled f870 plate (street 559w / phone-term 797w / royal 61w / sky 503w;
+  f870 still now scores .999).
+- S8: THE CUBE LIVES IN PLATE SPACE. Its sky apex is constant at plate
+  (988,84) across the scene — the cube rides the dublin zoom-out with only
+  a slow yaw drift (CUBE_YAW 0.67→0.83, front edge vertical at f1414);
+  r1's screen-fixed rotating cube (yaw+0.003/f) was fiction. Size 215→257
+  (plate), pitch -0.55, center (985,554). Chamfer/LSQ fitters still
+  collapse on the night clutter (size slams the lower bound; landmark LSQ
+  RMS 61px) — final pose is landmark+overlay-gated, not fitter-trusted.
+- S8 CAPTIONS: swap INSTANTLY (white-mask counts jump in <=2f), windows
+  [1281,1334)/[1334,1368)/[1368,1408)/[1408,1463), all gone at 1463 —
+  r1's faded schedule was up to 30f late on swap 3/4. Font ~104 (was 76),
+  centered x~970, cap-top 495.
+- S8 BORDER FICTION: scaling the f1275 plate below 1.0 exposed a royal
+  ring the ref never shows. Outer ring now filled by an f1437 plate with
+  cube+caption cv2-inpainted (dublin-outer.png) — its scars stay hidden
+  under the interior plate. Plus a real bug: the dublin PANEL_MOTION
+  s-column is already relative to the f1275 asset; anchor-normalizing at
+  1275 clamped to the first row (0.9625) and inflated the plate 4%.
+- S4 ENTRY: the sides run on SEPARATE offset tracks (S4_SL/S4_SR, ~50px
+  apart mid-drop); r1's single extrapolated track was ~250px wrong at f490
+  (-755 actual vs -480). The stacks extend below screen: gherkin is 772
+  tall (full-height re-crop from f498 + measured 1.13→0.95 internal zoom
+  S4_GZ), then lightBlue cyan2 at 1608 and solar at 2031 (r1's solar at
+  y1180 was displaced fiction); right column: dot tile is 937 tall (not
+  500) with cyan2 below at 1917; a cyan band rides above the earth tile.
+- S4 SETTLED TILES: gherkin/credit-card/container crops carried the WRONG
+  content (gherkin cells NEGATIVE ssim) — re-cropped from the settled f560
+  plate (gherkin2/credit-card2/container2). f560 .717→.823 (png).
+- S2 mid-conveyor panels extracted and mounted at belt coords:
+  afro-polka@1936 (f150), woman-wall@2765 (f158), teal-glass@3620 (f163),
+  train-platform@4485 (f165). f158 .648→.860. The "missing left panel" at
+  f138 is the video-clip ceiling (same clip, people moved), not an asset.
+- Office/dev pan measured f274-280 by NCC (score 1.0; r1's +40/f
+  extrapolation was 2.6x too slow there).
+
+### Instrument findings
+- THE DOT PANEL IS A LIVE HALFTONE. Pitch is 15-19px varying across the
+  panel (r0's drawn 22px lattice anticorrelates: grid cells 0.04-0.27);
+  but NCC of ANY crop decays to ~0.13 within +-40f — the pattern
+  re-renders continuously. Documented ceiling: texture (dots-belt.png,
+  f990) used only in its valid window f963-1008 with a measured parallax
+  vs the rail (DOT_PARA — the pattern slides faster than the belt);
+  sparse lattice elsewhere (misplaced dense ink loses to absent, law 4).
+  f990 .707→.935.
+- mp4-vs-mp4 codec bonus is HUGE on blurred/photographic windows (up to
+  +0.15 at f270, +0.08-0.13 in S4 entry, ~+0.10 in S8): r1's framessim
+  numbers are NOT comparable to png-still gates there. All r2 A/Bs were
+  re-based same-pipeline (r1 attempt frame extracted to png) before any
+  keep/revert call.
+- NEGATIVE A/B (in data.ts): pushing the measured office/dev NCC trend
+  into the unmeasurable blur zone f262-272 LOST (-0.09 at f270) — r1's
+  shallower line wins there; kink kept deliberately.
+
+### A/B ledger (png-still vs ref, same-pipeline r1→r2)
+f784-800: .834→.990 (f800) · f815 .708→.868 · f820 .709→.855 ·
+f826 .658→.744 · f846 .568→.751 · f870 .669→.999 · f884 .664→.692 ·
+f906 .757→.822 · f930 .733 (wash) · f960 .667→.712 · f975 .449→.689 ·
+f990 .574→.935 · f1005-1035 ~.54→.68-.73 · f1044 .614→.728 ·
+f1056 .709→.731 · f1070 .786→.772* · f1100 .819→.745* · f1150 .718→.771
+(*png basis; same-pipeline r1-png at 1414 was .479 vs r2 .570)
+S8: f1290 .603→.651 · f1320 .573→.584 · f1350 .587→.594 · f1414 .578→.570*
+· f1455 .581→.572* (r1-png .479 at 1414 — mp4 numbers inflated)
+S4: f482 .569→.614 · f490 .511→.562 · f498 .497→.640 · f506 .483→.524 ·
+f514 .516→.583 · f560 .717→.823 (r1-png bases)
+S2: f138 .717→.767 · f146 .681→.804 · f150 .812→.855 · f154 .751→.895 ·
+f158 .648→.860 · f163 .558→.679
+
+### Ceilings measured this round
+- Dot halftone: live pattern, ~0.13 NCC outside +-40f of any crop.
+- Dublin: with true zoom + full-bleed ring the bg floor sits ~.57-.65
+  (was claimed .44-.58): remaining residual is timelapse life (lights,
+  water), the rotating earth (S4), and panel-clip interiors.
+- S2 f126-150 left panels: same video clip evolving (silhouette at f138
+  is the handshake-glass clip later in time) — content ceiling.
+
+### New assets (public/ gitignored; cloned into pubdir/lseg)
+handshake-full(f784) containers-wide(f788) street-blur2/phone-terminal2/
+sky2(f870) woman-phone-wide(f1014) dots-belt(f990) dots-s4(f484, unused —
+lattice won) gherkin2(f520) gherkin-full(f498) credit-card2(f560)
+container2(f560) dublin-outer(f1437, inpainted) afro-polka(f150)
+woman-wall(f158) teal-glass(f163) train-platform(f165)
