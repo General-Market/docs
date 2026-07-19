@@ -162,7 +162,8 @@ const DotPanel: React.FC<{
   pitch?: number;
   dotR?: number;
   flatBg?: string;
-}> = ({ x, y, w, h, opacity = 1, pitch = 22, dotR = 2.6, flatBg }) => (
+  dots?: boolean;
+}> = ({ x, y, w, h, opacity = 1, pitch = 22, dotR = 2.6, flatBg, dots = true }) => (
   <svg
     style={{ position: "absolute", left: x, top: y, opacity }}
     width={w}
@@ -176,7 +177,8 @@ const DotPanel: React.FC<{
       </linearGradient>
     </defs>
     <rect width={w} height={h} fill={flatBg ?? "url(#dotbg)"} />
-    {Array.from({ length: Math.ceil(h / pitch) }, (_, r) =>
+    {dots &&
+      Array.from({ length: Math.ceil(h / pitch) }, (_, r) =>
       Array.from({ length: Math.ceil(w / pitch) }, (_, c) => (
         <circle
           key={`${r}-${c}`}
@@ -810,17 +812,19 @@ const S7: React.FC = () => {
             </div>
           )}
           {/* Belt dot panel. The ref halftone is a LIVE pattern (NCC of any
-              crop decays to ~0.13 within +-40f) — measured ceiling. Use the
-              f990 texture only inside its valid window, with its measured
-              parallax vs the belt (the pattern slides faster than the rail);
-              the sparse lattice elsewhere (misplaced dense ink loses). */}
-          {fa >= 963 && fa <= 1008 ? (
+              crop decays fast; the f990 texture reads 0.78@980, 0.34@970) —
+              measured ceiling. r3: while the belt MOVES the ref pattern is a
+              dense motion-blurred halftone (~12px, morphing) — a FLAT panel
+              beats the 22px lattice by +0.12-0.13 there (f910 .50 vs .64,
+              f958 .47 vs .59; absent ink beats misplaced, law 4). Texture in
+              its tightened valid window; lattice only where r2 measured it. */}
+          {fa >= 976 && fa <= 1008 ? (
             <Img
               src={A("dots-belt.png")}
               style={{ position: "absolute", left: p - 750 + keyed(DOT_PARA, fa), top: 0, width: 750, height: 1080 }}
             />
           ) : (
-            <DotPanel x={px - 750} y={0} w={750} h={1080} />
+            <DotPanel x={px - 750} y={0} w={750} h={1080} dots={fa > 1008} flatBg={fa <= 1008 ? COLORS.dotPanelBg : undefined} />
           )}
           {/* B2 card + navy + photo */}
           {p < 1930 && (
@@ -856,8 +860,19 @@ const S7: React.FC = () => {
               )}
             </>
           )}
-          {/* B3 dot rail sliding in */}
-          {r0 < 1920 && <DotPanel x={rx} y={0} w={465 * z} h={1080} />}
+          {/* B3 dot rail: flat while sliding (f1030 flat .80 vs lattice .66),
+              lattice once settled (f1060 lattice .57 vs flat .43 — the ref
+              pattern is coarse and crisp only at rest). */}
+          {r0 < 1920 && (
+            <DotPanel
+              x={rx}
+              y={0}
+              w={465 * z}
+              h={1080}
+              dots={fa >= 1056}
+              flatBg={fa < 1056 ? COLORS.dotPanelBg : undefined}
+            />
+          )}
           {/* shared vertical wipe: B3 navy + train drop from the top */}
           {d > 0 && (
             <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: d, overflow: "hidden" }}>

@@ -364,9 +364,10 @@ export const S7_D: Keys = [
   [1047, 663], [1050, 760], [1053, 857], [1056, 948], [1059, 1020],
   [1062, 1035], [1065, 1043], [1071, 1055], [1080, 1067], [1092, 1080],
 ];
-// Belt dot texture parallax vs rail (NCC, valid f963-1008 only).
+// Belt dot texture parallax vs rail. r3: texture NCC vs ref is 0.99@990,
+// 0.78@980 but 0.34@970 and <=0.2 before — window tightened to [976,1008].
 export const DOT_PARA: Keys = [
-  [963, 108], [970, 97], [980, 69], [990, 0], [1000, -17], [1008, -25],
+  [976, 82], [980, 69], [990, 0], [1000, -17], [1008, -25],
 ];
 export const B3_Z: Keys = [
   [1059, 1], [1080, 1.017], [1100, 1.052], [1125, 1.094], [1128, 1.118],
