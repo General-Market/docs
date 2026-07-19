@@ -16,6 +16,26 @@ import {
   MAP_ORIGIN,
   MAP_PITCH,
   MAP_DOT,
+  Keys,
+  S2_TEXT,
+  S2_SCROLL,
+  S3A_EYECHEV,
+  S3A_TAB,
+  S3B_GROUP_DX,
+  DEV_EDGE,
+  PHONE_EDGE,
+  TOWER,
+  BAND,
+  EARTH_XFADE,
+  EARTH_TITLE,
+  EARTH_TILE,
+  S4_C,
+  S4_S,
+  SKY_EXPAND,
+  S4_LEFT,
+  S4_RIGHT,
+  S4_CENTER,
+  SKY_TITLE,
 } from "./data";
 
 // "Introducing LSEG World-Check On Demand" — 1:1 replicate.
@@ -35,6 +55,19 @@ const clamp = {
   extrapolateRight: "clamp",
 } as const;
 const easeOut = Easing.out(Easing.cubic);
+
+// Linear interpolation through a measured [frame, value] key table.
+const keyed = (keys: Keys, f: number): number => {
+  if (f <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    if (f <= keys[i][0]) {
+      const [f0, v0] = keys[i - 1];
+      const [f1, v1] = keys[i];
+      return v0 + ((v1 - v0) * (f - f0)) / (f1 - f0);
+    }
+  }
+  return keys[keys.length - 1][1];
+};
 
 const Photo: React.FC<{
   src: string;
@@ -177,68 +210,55 @@ const S1: React.FC = () => {
   );
 };
 
-// ————— S2 [103,166) — what-if split —————
+// ————— S2 [103,166) — what-if split + strip scroll-off —————
 const S2: React.FC = () => {
-  const f = useCurrentFrame(); // local
+  const f = useCurrentFrame(); // local, 0 at abs 103
+  const fa = f + 103;
   const text = "What if you could manage risk...";
-  const n = Math.floor(interpolate(f, [2, 34], [0, text.length], { ...clamp }));
+  const n = Math.floor(interpolate(fa, [103, 130], [0, text.length], { ...clamp }));
+  const scroll = keyed(S2_SCROLL, fa);
   return (
     <AbsoluteFill style={{ backgroundColor: "#04053a" }}>
-      <Photo src="handshake-glass.png" x={0} y={0} w={957} h={1080} />
-      <div
-        style={{
-          position: "absolute",
-          left: 957,
-          top: 0,
-          width: 8,
-          height: 1080,
-          background: "#fff",
-        }}
-      />
-      <Photo src="phone-verification.png" x={965} y={0} w={913} h={1080} />
-      <div
-        style={{
-          position: "absolute",
-          left: 1878,
-          top: 0,
-          width: 42,
-          height: 1080,
-          background: "#060B4E",
-        }}
-      />
-      <DotPanel x={1888} y={340} w={32} h={500} opacity={0.5} />
-      <div
-        style={{
-          position: "absolute",
-          left: 286,
-          top: 528,
-          width: 1400,
-          fontFamily: SANS,
-          fontSize: 66,
-          fontWeight: 500,
-          color: "#fff",
-          letterSpacing: 1,
-        }}
-      >
-        {text.slice(0, n)}
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${scroll}px)` }}>
+        <Photo src="handshake-glass.png" x={0} y={0} w={957} h={1080} />
+        <div style={{ position: "absolute", left: 957, top: 0, width: 8, height: 1080, background: "#fff" }} />
+        <Photo src="phone-verification.png" x={965} y={0} w={913} h={1080} />
+        <div style={{ position: "absolute", left: 1878, top: 0, width: 42, height: 1080, background: "#060B4E" }} />
+        <DotPanel x={1888} y={340} w={32} h={500} opacity={0.5} />
+        <div
+          style={{
+            position: "absolute",
+            left: S2_TEXT.x,
+            top: S2_TEXT.top,
+            width: 1500,
+            fontFamily: SANS,
+            fontSize: S2_TEXT.size,
+            fontWeight: 500,
+            lineHeight: 1.2,
+            color: "#fff",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {text.slice(0, n)}
+        </div>
       </div>
     </AbsoluteFill>
   );
 };
 
-// ————— S3a [166,220) — the moment it appears —————
+// ————— S3a [166,220) — conveyor arrival — the moment it appears —————
 const S3a: React.FC = () => {
   const f = useCurrentFrame();
-  const slide = interpolate(f, [0, 26], [1, 0], { ...clamp, easing: easeOut });
+  const fa = f + 166;
+  // Panels stream through at different velocities and never hold still:
+  // eye+chevron overshoot the mount and keep exiting left; the tablet
+  // trails ~350px behind; the caption rides the tablet layer behind a
+  // screen-fixed clip at x1001 (all template-tracked).
+  const e = keyed(S3A_EYECHEV, fa);
+  const t = keyed(S3A_TAB, fa);
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          transform: `translateX(${-slide * 640}px)`,
-        }}
-      >
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${e}px)` }}>
         <Photo src="eye-macro.png" x={0} y={0} w={585} h={1080} />
         {/* chevron city — crops carry their own white diagonals */}
         <Photo src="city-arrow-top.png" x={586} y={0} w={410} h={578} />
@@ -247,38 +267,31 @@ const S3a: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          left: 1078,
-          top: 470,
-          fontFamily: SANS,
-          fontSize: 58,
-          fontWeight: 500,
-          lineHeight: 1.55,
-          color: COLORS.blueText,
-          opacity: interpolate(f, [6, 16], [0, 1], { ...clamp }),
-        }}
-      >
-        the moment
-        <br />
-        it appears
-      </div>
-      <div
-        style={{
-          position: "absolute",
           inset: 0,
-          transform: `translateX(${slide * 590}px)`,
+          clipPath: "polygon(1001px 0, 1920px 0, 1920px 1080px, 1001px 1080px)",
         }}
       >
-        <Photo src="man-tablet.png" x={1330} y={0} w={590} h={880} />
         <div
           style={{
             position: "absolute",
-            left: 1663,
-            top: 880,
-            width: 257,
-            height: 200,
-            background: "#0A138C",
+            left: 847 + t,
+            top: 462,
+            fontFamily: SANS,
+            fontSize: 58,
+            fontWeight: 500,
+            lineHeight: 1.34,
+            color: COLORS.blueText,
+            opacity: interpolate(fa, [172, 182], [0, 1], { ...clamp }),
           }}
-        />
+        >
+          the moment
+          <br />
+          it appears
+        </div>
+      </div>
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${t}px)` }}>
+        <Photo src="man-tablet.png" x={1330} y={0} w={590} h={880} />
+        <div style={{ position: "absolute", left: 1663, top: 880, width: 257, height: 200, background: "#0A138C" }} />
       </div>
     </AbsoluteFill>
   );
@@ -286,86 +299,58 @@ const S3a: React.FC = () => {
 
 // ————— S3b/c/d [220,478) — phone-touch → developer → now you can → earth —————
 const S3b: React.FC = () => {
-  const f = useCurrentFrame(); // local, 0 at 220
-  // beat A: phone-touch + shrinking tower rail [0,44)
-  const towerX = interpolate(f, [0, 40], [1462, 1922], {
+  const f = useCurrentFrame(); // local, 0 at abs 220
+  const fa = f + 220;
+  const dx = keyed(S3B_GROUP_DX, fa);
+  const devEdge = keyed(DEV_EDGE, fa);
+  const phoneEdge = keyed(PHONE_EDGE, fa);
+  const towerX = TOWER.x0 + TOWER.v * (fa - TOWER.f0);
+  const bandW = interpolate(fa, [BAND.grow0, BAND.grow1], [0, BAND.w], {
     ...clamp,
     easing: easeOut,
   });
-  // beat B: dev slides in to x455 (12.5s pose), pans right to x830 while
-  // office enters from the left (14.5-16.2s).
-  const devSlide = interpolate(f, [44, 78, 96, 148], [1090, -375, -375, 0], {
-    ...clamp,
-    easing: easeOut,
-  });
-  const officeIn = interpolate(f, [112, 152], [1, 0], {
-    ...clamp,
-    easing: easeOut,
-  });
-  // now-you-can band [160,210)
-  const bandW = interpolate(f, [160, 186], [0, 650], {
-    ...clamp,
-    easing: easeOut,
-  });
-  // earth rise [208,238), title [238,250)
-  const earthY = interpolate(f, [208, 238], [1080, 0], {
-    ...clamp,
-    easing: easeOut,
-  });
-  const titleO = interpolate(f, [238, 252], [0, 1], { ...clamp });
-  const earthScale = interpolate(f, [208, 258], [1.02, 1.07], { ...clamp });
+  const xfade = interpolate(fa, [EARTH_XFADE.f0, EARTH_XFADE.f1], [0, 1], { ...clamp });
+  const titleO = interpolate(fa, [429, 433], [0, 1], { ...clamp });
   return (
-    <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      {f < 130 && (
-        <>
-          <Photo src="phone-touch.png" x={0} y={0} w={1616} h={1080} />
-          <Photo src="tower-night.png" x={towerX} y={0} w={458} h={1080} />
-        </>
-      )}
-      {/* developer slides in from right, office from left */}
-      {f >= 44 && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              transform: `translateX(${devSlide}px)`,
-            }}
-          >
-            <Photo src="developer-code.png" x={830} y={0} w={1090} h={1080} />
-            <div
-              style={{
-                position: "absolute",
-                left: 1920,
-                top: 0,
-                width: 145,
-                height: 1080,
-                background: COLORS.royalTile,
-                opacity: interpolate(f, [96, 120], [1, 0], { ...clamp }),
-              }}
-            />
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              transform: `translateX(${-officeIn * 830}px)`,
-            }}
-          >
-            <Photo src="office-training.png" x={0} y={0} w={830} h={1080} />
-          </div>
-        </>
-      )}
-      {/* now you can */}
-      {f >= 160 && f < 216 && (
+    <AbsoluteFill style={{ backgroundColor: COLORS.royalTile }}>
+      {/* phone-touch full-bleed, pushed off right by the incoming panel */}
+      {fa < 300 && (
         <div
           style={{
             position: "absolute",
-            left: 630,
-            top: 478,
+            inset: 0,
+            clipPath: `polygon(${phoneEdge}px 0, 1920px 0, 1920px 1080px, ${phoneEdge}px 1080px)`,
+          }}
+        >
+          <div style={{ position: "absolute", inset: 0, transform: `translateX(${Math.max(0, phoneEdge - keyed(PHONE_EDGE, 274))}px)` }}>
+            <Photo src="phone-touch-full.png" x={0} y={0} w={1920} h={1080} />
+            {fa >= 222 && towerX < 1920 && (
+              <Photo src="tower-night.png" x={towerX} y={0} w={458} h={1080} />
+            )}
+          </div>
+        </div>
+      )}
+      {/* pan group: [office | developer], group coords = screen at f380 */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          clipPath: `polygon(0 0, ${devEdge}px 0, ${devEdge}px 1080px, 0 1080px)`,
+        }}
+      >
+        <Photo src="office-pan.png" x={-276 + dx} y={0} w={1131} h={1080} />
+        <Photo src="developer-pan.png" x={855 + dx} y={0} w={1451} h={1080} />
+      </div>
+      {/* now you can band */}
+      {fa >= BAND.grow0 && fa < BAND.hide && (
+        <div
+          style={{
+            position: "absolute",
+            left: BAND.x,
+            top: BAND.y,
             width: bandW,
-            height: 102,
-            background: "#fff",
+            height: BAND.h,
+            background: "#FCFCFC",
             overflow: "hidden",
             display: "flex",
             alignItems: "center",
@@ -374,10 +359,10 @@ const S3b: React.FC = () => {
           <div
             style={{
               fontFamily: SANS,
-              fontSize: 64,
+              fontSize: 92,
               fontWeight: 500,
-              color: COLORS.blueText,
-              paddingLeft: 46,
+              color: "#051EEE",
+              paddingLeft: 33,
               whiteSpace: "nowrap",
             }}
           >
@@ -385,15 +370,9 @@ const S3b: React.FC = () => {
           </div>
         </div>
       )}
-      {/* earth full-bleed rise */}
-      {f >= 208 && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            transform: `translateY(${earthY}px)`,
-          }}
-        >
+      {/* earth crossfades over everything, title riding in */}
+      {xfade > 0 && (
+        <div style={{ position: "absolute", inset: 0, opacity: xfade }}>
           <Img
             src={A("earth.png")}
             style={{
@@ -401,20 +380,19 @@ const S3b: React.FC = () => {
               left: 0,
               top: 0,
               width: 1920,
-              height: 1109,
+              height: 1080,
               objectFit: "cover",
-              transform: `scale(${earthScale})`,
             }}
           />
           <div
             style={{
               position: "absolute",
               left: 0,
-              top: 500,
+              top: EARTH_TITLE.top,
               width: 1920,
               textAlign: "center",
               fontFamily: SANS,
-              fontSize: 76,
+              fontSize: EARTH_TITLE.size,
               fontWeight: 500,
               color: "#fff",
               opacity: titleO,
@@ -430,56 +408,103 @@ const S3b: React.FC = () => {
 
 // ————— S4 [478,614) — mosaic —————
 const S4: React.FC = () => {
-  const f = useCurrentFrame(); // local, 0 at 478 (≈19.92s)
-  const t = f / FPS + 19.92;
-  // center column scrolls up fast then drifts; sides drift down.
-  const c = interpolate(t, [20.4, 21, 22, 24, 25.6], [300, 0, -805, -830, -845], {
-    ...clamp,
-    easing: Easing.inOut(Easing.quad),
-  });
-  const s = interpolate(t, [21, 22, 24, 25.6], [0, 293, 305, 320], {
-    ...clamp,
-  });
-  // earth shrinks from full-bleed into the centre tile, then rides the column
-  const er = interpolate(t, [19.92, 20.42], [0, 1], {
-    ...clamp,
-    easing: easeOut,
-  });
-  const ex = interpolate(er, [0, 1], [0, 345]);
-  const ey = interpolate(er, [0, 1], [0, 186]) + (t > 20.42 ? c - 0 : 0);
-  const ew = interpolate(er, [0, 1], [1920, 1212]);
-  const eh = interpolate(er, [0, 1], [1109, 700]);
+  const f = useCurrentFrame(); // local, 0 at abs 478
+  const fa = f + 478;
+  const c = keyed(S4_C, fa);
+  const s = keyed(S4_S, fa);
+  const sky = SKY_EXPAND[0][0] <= fa ? keyed(SKY_EXPAND, fa) : 1;
+  // earth tile (x, w, bottom) from the measured table; h = w / 1.763
+  const ex = keyed(EARTH_TILE.map(([a, x]) => [a, x] as [number, number]), fa);
+  const ew = keyed(EARTH_TILE.map(([a, , w]) => [a, w] as [number, number]), fa);
+  const eb = keyed(EARTH_TILE.map(([a, , , b]) => [a, b] as [number, number]), fa);
+  const eh = ew / 1.763;
+  const escale = ew / 1920;
+  const L = S4_LEFT;
+  const R = S4_RIGHT;
+  const C = S4_CENTER;
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
       {/* left column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
-        <Photo src="hex-paving-couple.png" x={0} y={-305} w={478} h={505} />
-        <div style={{ position: "absolute", left: 0, top: 200, width: 478, height: 345, background: COLORS.royalTile }} />
-        <Photo src="gherkin-towers.png" x={0} y={545} w={478} h={535} />
+        <Photo src="hex-paving-couple.png" x={L.hex.x} y={L.hex.y} w={L.hex.w} h={L.hex.h} />
+        <div style={{ position: "absolute", left: L.royal.x, top: L.royal.y, width: L.royal.w, height: L.royal.h, background: COLORS.royalTile }} />
+        <Photo src="gherkin-towers.png" x={L.gherkin.x} y={L.gherkin.y} w={L.gherkin.w} h={L.gherkin.h} />
+        <Photo src="solar-panels.png" x={L.solar.x} y={L.solar.y} w={L.solar.w} h={L.solar.h} />
       </div>
       {/* right column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${s}px)` }}>
-        <Photo src="container-worker.png" x={1443} y={-305} w={477} h={175} />
-        <div style={{ position: "absolute", left: 1443, top: -130, width: 477, height: 417, background: COLORS.lightBlueTile }} />
-        <Photo src="microphones.png" x={1447} y={287} w={473} h={403} />
-        <DotPanel x={1443} y={690} w={477} h={390} />
-        <div style={{ position: "absolute", left: 1443, top: 1080, width: 477, height: 320, background: COLORS.royalTile }} />
+        <Photo src="container-worker.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} />
+        <div style={{ position: "absolute", left: R.cyan.x, top: R.cyan.y, width: R.cyan.w, height: R.cyan.h, background: COLORS.lightBlueTile }} />
+        <Photo src="microphones.png" x={R.microphones.x} y={R.microphones.y} w={R.microphones.w} h={R.microphones.h} />
+        <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={R.dot.h} />
       </div>
       {/* center column */}
       <div style={{ position: "absolute", inset: 0, transform: `translateY(${c}px)` }}>
-        <div style={{ position: "absolute", left: 478, top: -258, width: 965, height: 300, background: COLORS.lightBlueTile }} />
-        <Photo src="boardroom.png" x={478} y={42} w={965} h={553} />
-        <Photo src="credit-card.png" x={957} y={595} w={486} h={485} />
-        <div style={{ position: "absolute", left: 478, top: 595, width: 479, height: 485, background: "#fff" }} />
-        <Photo src="navy-skyline.png" x={481} y={1095} w={958} h={545} />
-        <div style={{ position: "absolute", left: 478, top: 1640, width: 965, height: 385, background: COLORS.royalTile }} />
+        <Photo src="boardroom.png" x={C.boardroom.x} y={C.boardroom.y} w={C.boardroom.w} h={C.boardroom.h} />
+        <Photo src="credit-card.png" x={C.creditCard.x} y={C.creditCard.y} w={C.creditCard.w} h={C.creditCard.h} />
+        {/* skyline tile + DOM title; expands about (961.5, 539) into S5 */}
+        <div
+          style={{
+            position: "absolute",
+            left: C.skyline.x,
+            top: C.skyline.y,
+            width: C.skyline.w,
+            height: C.skyline.h,
+            transform: `scale(${sky})`,
+            transformOrigin: `${961.5 - C.skyline.x}px ${539 - C.skyline.y}px`,
+          }}
+        >
+          <Photo src="navy-skyline.png" x={11} y={3} w={958} h={545} />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: SKY_TITLE.top - C.skyline.y,
+              width: C.skyline.w,
+              textAlign: "center",
+              fontFamily: SANS,
+              fontSize: SKY_TITLE.size,
+              fontWeight: 600,
+              color: "#fff",
+              opacity: interpolate(fa, [537, 545], [0, 1], { ...clamp }),
+            }}
+          >
+            LSEG World-Check
+          </div>
+        </div>
       </div>
-      {/* earth transition layer */}
-      {t < 22 && (
-        <Img
-          src={A("earth.png")}
-          style={{ position: "absolute", left: ex, top: ey, width: ew, height: eh, objectFit: "cover" }}
-        />
+      {/* earth tile overlay: shrinks from full-bleed, rides up and out */}
+      {fa < 517 && eb > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: ex,
+            top: eb - eh,
+            width: ew,
+            height: eh,
+            overflow: "hidden",
+          }}
+        >
+          <Img
+            src={A("earth.png")}
+            style={{ position: "absolute", left: 0, top: 0, width: ew, height: eh, objectFit: "cover" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: (EARTH_TITLE.top - (1080 - 1080) ) * escale + (eh - 1080 * escale) / 2,
+              width: ew,
+              textAlign: "center",
+              fontFamily: SANS,
+              fontSize: EARTH_TITLE.size * escale,
+              fontWeight: 500,
+              color: "#fff",
+            }}
+          >
+            LSEG World-Check On Demand
+          </div>
+        </div>
       )}
     </AbsoluteFill>
   );
