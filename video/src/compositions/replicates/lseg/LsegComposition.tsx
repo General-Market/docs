@@ -288,13 +288,17 @@ const S3a: React.FC = () => {
 const S3b: React.FC = () => {
   const f = useCurrentFrame(); // local, 0 at 220
   // beat A: phone-touch + shrinking tower rail [0,44)
-  const towerX = interpolate(f, [0, 32], [1462, 1885], {
+  const towerX = interpolate(f, [0, 40], [1462, 1922], {
     ...clamp,
     easing: easeOut,
   });
-  // beat B: office+dev slide in and cover [44,80)
-  const devIn = interpolate(f, [44, 78], [1, 0], { ...clamp, easing: easeOut });
-  const officeIn = interpolate(f, [58, 92], [1, 0], {
+  // beat B: dev slides in to x455 (12.5s pose), pans right to x830 while
+  // office enters from the left (14.5-16.2s).
+  const devSlide = interpolate(f, [44, 78, 96, 148], [1090, -375, -375, 0], {
+    ...clamp,
+    easing: easeOut,
+  });
+  const officeIn = interpolate(f, [112, 152], [1, 0], {
     ...clamp,
     easing: easeOut,
   });
@@ -312,7 +316,7 @@ const S3b: React.FC = () => {
   const earthScale = interpolate(f, [208, 258], [1.02, 1.07], { ...clamp });
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff" }}>
-      {f < 90 && (
+      {f < 130 && (
         <>
           <Photo src="phone-touch.png" x={0} y={0} w={1616} h={1080} />
           <Photo src="tower-night.png" x={towerX} y={0} w={458} h={1080} />
@@ -325,19 +329,19 @@ const S3b: React.FC = () => {
             style={{
               position: "absolute",
               inset: 0,
-              transform: `translateX(${devIn * 1090}px)`,
+              transform: `translateX(${devSlide}px)`,
             }}
           >
             <Photo src="developer-code.png" x={830} y={0} w={1090} h={1080} />
             <div
               style={{
                 position: "absolute",
-                left: 1920 - devIn * 260,
+                left: 1920,
                 top: 0,
                 width: 145,
                 height: 1080,
                 background: COLORS.royalTile,
-                opacity: interpolate(f, [78, 96], [1, 0], { ...clamp }),
+                opacity: interpolate(f, [96, 120], [1, 0], { ...clamp }),
               }}
             />
           </div>
@@ -429,7 +433,7 @@ const S4: React.FC = () => {
   const f = useCurrentFrame(); // local, 0 at 478 (≈19.92s)
   const t = f / FPS + 19.92;
   // center column scrolls up fast then drifts; sides drift down.
-  const c = interpolate(t, [20.4, 21, 22, 24, 25.6], [300, 0, -830, -855, -880], {
+  const c = interpolate(t, [20.4, 21, 22, 24, 25.6], [300, 0, -805, -830, -845], {
     ...clamp,
     easing: Easing.inOut(Easing.quad),
   });
@@ -467,8 +471,8 @@ const S4: React.FC = () => {
         <Photo src="boardroom.png" x={478} y={42} w={965} h={553} />
         <Photo src="credit-card.png" x={957} y={595} w={486} h={485} />
         <div style={{ position: "absolute", left: 478, top: 595, width: 479, height: 485, background: "#fff" }} />
-        <Photo src="navy-skyline.png" x={481} y={1370} w={958} h={545} />
-        <div style={{ position: "absolute", left: 478, top: 1915, width: 965, height: 385, background: COLORS.royalTile }} />
+        <Photo src="navy-skyline.png" x={481} y={1095} w={958} h={545} />
+        <div style={{ position: "absolute", left: 478, top: 1640, width: 965, height: 385, background: COLORS.royalTile }} />
       </div>
       {/* earth transition layer */}
       {t < 22 && (
@@ -609,7 +613,7 @@ const S7: React.FC = () => {
   const b2In = interpolate(f, [66, 90], [1, 0], { ...clamp, easing: easeOut });
   const b3In = interpolate(f, [138, 162], [1, 0], { ...clamp, easing: easeOut });
   const mapIn = interpolate(f, [286, 306], [0, 1], { ...clamp, easing: easeOut });
-  const crowdIn = interpolate(f, [328, 354], [1, 0], { ...clamp, easing: easeOut });
+  const crowdIn = interpolate(f, [312, 336], [1, 0], { ...clamp, easing: easeOut });
   const blueText = {
     fontFamily: SANS,
     fontWeight: 600,
@@ -714,7 +718,7 @@ const S7: React.FC = () => {
         </AbsoluteFill>
       )}
       {/* B5 crowd wedge */}
-      {f >= 328 && (
+      {f >= 312 && (
         <AbsoluteFill style={{ backgroundColor: COLORS.royalTile }}>
           <div style={{ position: "absolute", inset: 0, transform: `translateX(${crowdIn * 900}px)` }}>
             <Photo src="crowd-overhead.png" x={536} y={0} w={1384} h={1080} />
@@ -771,9 +775,10 @@ const S8: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 1275 (53.125s)
   const dublin = f < 199;
   const zoom = 1 + f * 0.0003;
-  const yaw = 0.62 + f * 0.0042;
-  const verts = cubeVerts(yaw, -0.32);
-  const size = 318;
+  // isometric-ish corner view (ref f055 silhouette), slow drift
+  const yaw = 0.785 + f * 0.003;
+  const verts = cubeVerts(yaw, -0.5);
+  const size = 342;
   const captions: Array<[number, number, string]> = [
     [9, 62, "World-Check On Demand"],
     [65, 113, "Built for automation."],
