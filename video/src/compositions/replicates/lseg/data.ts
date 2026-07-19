@@ -60,8 +60,19 @@ export const MAP_DOT = 25;
 export type Keys = Array<[number, number]>;
 
 // S2: typed line. Cap-measured: text left x349, cap-top y534, em ~84,
-// white #FFF on the baked bright-royal glass pane. Types ~1.15 chars/f from f104.
+// white #FFF on the baked bright-royal glass pane.
 export const S2_TEXT = { x: 349, top: 511, size: 84 } as const;
+// r4: typing is an S-CURVE ending ~f125, not linear-to-130 (ref ink right
+// edge 412@106, 619@110, 993@114, 1335@118, 1523@122, full 1573@126;
+// 38.2px/char). [f, chars].
+export const S2_TYPE: Keys = [
+  [104, 0], [106, 1.6], [110, 7], [114, 16.8], [118, 25.8],
+  [122, 30.7], [125, 32],
+];
+// r4: S5 checklist items FADE IN as they arrive (~12f per item; measured
+// p99.5 band luma: Sanctions dark@636 full@652, PEPs 78@660 full@668,
+// AdvMedia 179@684, Enforce 183@708). [fadeStart per item 0-4].
+export const S5_FADE = [618, 638, 654, 678, 702] as const;
 // S2 strip scroll (whole layout translateX), phase-correlated cum from f126.
 export const S2_SCROLL: Keys = [
   [126, 0], [128, -18], [130, -44], [132, -80], [134, -126], [136, -183],
@@ -246,8 +257,9 @@ export const S5_FRAME: Array<[number, number, number]> = [
 // S5 right-photo phases (asset-NCC): waterfall / clip2(f650) / podium /
 // clip4(f698) / paris — FIVE clips, two of which r0-r2 never had.
 export const S5_PHASES = [
-  { f0: 614, f1: 641, src: "waterfall-poncho.png", anchor: 635, motion: "waterfall-poncho" },
-  { f0: 641, f1: 660, src: "s5-clip2.png", anchor: 650, motion: "" },
+  // r4: clip2 cut re-measured at 639/640 (photo-band color steps at 640).
+  { f0: 614, f1: 640, src: "waterfall-poncho.png", anchor: 635, motion: "waterfall-poncho" },
+  { f0: 640, f1: 660, src: "s5-clip2.png", anchor: 650, motion: "" },
   { f0: 660, f1: 685, src: "podium-speaker.png", anchor: 683, motion: "podium-speaker" },
   { f0: 685, f1: 712, src: "s5-clip4.png", anchor: 698, motion: "" },
   { f0: 712, f1: 781, src: "paris-street.png", anchor: 731, motion: "paris-street" },

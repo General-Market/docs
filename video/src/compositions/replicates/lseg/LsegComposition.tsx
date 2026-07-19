@@ -18,6 +18,7 @@ import {
   MAP_DOT,
   Keys,
   S2_TEXT,
+  S2_TYPE,
   S2_SCROLL,
   S3A_EYECHEV,
   S3A_TAB,
@@ -64,6 +65,7 @@ import {
   S5_SHIFT,
   S5_FRAME,
   S5_PHASES,
+  S5_FADE,
   CUBE_POSE,
   S8_CAPS,
   S8_CAP_TOP,
@@ -300,7 +302,9 @@ const S2: React.FC = () => {
   const f = useCurrentFrame(); // local, 0 at abs 103
   const fa = f + 103;
   const text = "What if you could manage risk...";
-  const n = Math.floor(interpolate(fa, [103, 130], [0, text.length], { ...clamp }));
+  // r4: measured s-curve (S2_TYPE) — the linear [103,130] ramp lagged the
+  // ref by ~5 chars through the middle of the line.
+  const n = Math.floor(keyed(S2_TYPE, fa));
   const scroll = keyed(S2_SCROLL, fa);
   return (
     <AbsoluteFill style={{ backgroundColor: "#04053a" }}>
@@ -670,8 +674,10 @@ const S5: React.FC = () => {
       {CHECK_ITEMS.map((label, i) => {
         const center = 520 + i * 232 + shift;
         if (center < -150 || center > 1250) return null;
+        // r4: items fade in over ~12f on their measured windows (S5_FADE)
+        const itemO = interpolate(fa, [S5_FADE[i], S5_FADE[i] + 12], [0, 1], { ...clamp });
         return (
-          <div key={label}>
+          <div key={label} style={{ opacity: itemO }}>
             {i > 0 && (
               <div style={{ position: "absolute", left: 60, top: center - 116, width: 815, height: 1, background: "rgba(255,255,255,0.85)" }} />
             )}
@@ -1228,10 +1234,12 @@ const S8: React.FC = () => {
           >
             Now
           </div>
-          {/* r3: the END lockup's RISK block is genuinely smaller than
-              S1's (ref ink 959-1217 = 258w vs S1 436w; LSEG identical). */}
+          {/* r4 REVERSAL (law 24): r3's "end RISK block 0.59x" was a
+              MID-FADE threshold artifact — at the settled end frames the
+              ref RISK/INTELLIGENCE ink spans x961-1403 (442w ~= S1's 436).
+              Same lockup as S1. */}
           <div style={{ position: "absolute", inset: 0, opacity: lockO }}>
-            <Lockup x={552} y={491} riskTransform="scale(0.59, 1.02) translateY(-2px)" />
+            <Lockup x={552} y={491} />
           </div>
         </>
       )}
