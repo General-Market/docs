@@ -368,10 +368,35 @@ export const B3_Z: Keys = [
   [1132, 1.124], [1136, 1.13], [1140, 1.136], [1144, 1.142],
 ];
 
-// S8 cube yaw drift (plate space; front edge vertical by f1414).
-export const CUBE_YAW: Keys = [
-  [1281, 0.67], [1320, 0.68], [1414, 0.785], [1474, 0.83],
+// S8 cube pose (r3): landmark+DT fits on cleaned line masks at 6 anchors.
+// The ref cube TUMBLES: yaw is linear at ~0.0153 rad/f (face-on at f1351 and
+// f1455 — the linear model predicts both), pitch ~0.49 constant, roll ~-0.02,
+// center ~(960,505) and size ~230 SCREEN-FIXED (it does not ride the plate
+// zoom — r2's plate-riding 0.785-yaw cube was fiction; r2's own fitters
+// collapsed on night clutter, r3's assignment fit + DT polish did not).
+// [f, yaw, pitch, roll, size, cx, cy]; ends extrapolated on the linear spin.
+export const CUBE_POSE: Array<[number, number, number, number, number, number, number]> = [
+  [1275, 0.3604, 0.5406, -0.0173, 239.7, 955.0, 492.4],
+  [1290, 0.5895, 0.5406, -0.0173, 239.7, 955.0, 492.4],
+  [1315, 0.9333, 0.4601, -0.0198, 226.7, 959.3, 513.4],
+  [1351, 1.4857, 0.4436, -0.0206, 215.7, 956.7, 522.6],
+  [1387, 2.1199, 0.5306, -0.0213, 229.7, 975.5, 491.4],
+  [1423, 2.5931, 0.4605, -0.0097, 231.1, 964.0, 511.6],
+  [1455, 3.0833, 0.4921, -0.0186, 238.0, 957.0, 480.0],
+  [1474, 3.3734, 0.4921, -0.0186, 238.0, 957.0, 480.0],
 ];
+
+// S8 captions (r3 ink-bbox measures): ref cap-height 66.5px (font 93 at
+// Avenir cap ratio), cap-top 500.5, left-aligned at the ref ink left edge;
+// per-caption letterSpacing stretches Avenir to the ref ink width.
+export const S8_CAPS = [
+  { f0: 1281, f1: 1334, text: "World-Check On Demand", left: 414, ls: 1.35 },
+  { f0: 1334, f1: 1368, text: "Built for automation.", left: 509, ls: 1.8 },
+  { f0: 1368, f1: 1408, text: "Scaled for the future.", left: 518, ls: 2.1 },
+  { f0: 1408, f1: 1463, text: "Trusted for 25 years.", left: 523, ls: 2.6 },
+] as const;
+export const S8_CAP_TOP = 474;
+export const S8_CAP_SIZE = 93;
 
 // S7 B1: converging reveal strips (edge-scanned, abs frames).
 export const B1_ARCHER_H: Keys = [

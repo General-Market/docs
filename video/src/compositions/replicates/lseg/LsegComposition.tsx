@@ -57,7 +57,10 @@ import {
   S7_D,
   B3_Z,
   DOT_PARA,
-  CUBE_YAW,
+  CUBE_POSE,
+  S8_CAPS,
+  S8_CAP_TOP,
+  S8_CAP_SIZE,
 } from "./data";
 
 // "Introducing LSEG World-Check On Demand" — 1:1 replicate.
@@ -944,12 +947,7 @@ const CUBE_EDGES: Array<[number, number]> = [
   [2, 6],
   [3, 7],
 ];
-const cubeVerts = (yaw: number, pitch: number) => {
-  const v: Array<[number, number, number]> = [];
-  for (const sx of [-1, 1])
-    for (const sy of [-1, 1])
-      for (const sz of [-1, 1]) v.push([sx, sy, sz]);
-  // order: standard cube corners
+const cubeVerts = (yaw: number, pitch: number, roll: number) => {
   const idx = [
     [-1, -1, -1],
     [1, -1, -1],
@@ -961,13 +959,18 @@ const cubeVerts = (yaw: number, pitch: number) => {
     [-1, 1, 1],
   ] as Array<[number, number, number]>;
   return idx.map(([x, y, z]) => {
-    // yaw around Y, then pitch around X
+    // yaw around Y, pitch around X, then roll in screen plane (r3 fit model)
     const x1 = x * Math.cos(yaw) + z * Math.sin(yaw);
     const z1 = -x * Math.sin(yaw) + z * Math.cos(yaw);
     const y1 = y * Math.cos(pitch) - z1 * Math.sin(pitch);
     const z2 = y * Math.sin(pitch) + z1 * Math.cos(pitch);
     const persp = 5.2 / (5.2 + z2);
-    return [x1 * persp, y1 * persp] as [number, number];
+    const sx = x1 * persp;
+    const sy = y1 * persp;
+    return [
+      sx * Math.cos(roll) - sy * Math.sin(roll),
+      sx * Math.sin(roll) + sy * Math.cos(roll),
+    ] as [number, number];
   });
 };
 
@@ -975,28 +978,31 @@ const S8: React.FC = () => {
   const f = useCurrentFrame(); // 0 at 1275 (53.125s)
   const fa = f + 1275;
   const dublin = f < 199;
-  // r2: the cube sits at a FIXED pose in PLATE space and rides the plate's
-  // measured zoom-out (r1's rotating-yaw + screen-fixed cube was fiction —
-  // the sky apex is constant at plate (988,84) across the scene). Only a
-  // slow yaw drift remains (front edge sweeps to vertical by f1414).
   // NOTE: the dublin PANEL_MOTION s-column is already relative to the f1275
   // asset (first row 0.9625 at f1278 — the zoom leaps in the first 3 frames);
   // anchor-normalizing at 1275 clamps to that row and inflates s by 4%.
+  // r3: NCC registration says our plate ran 0.5-1.0% small vs ref — boost
+  // ramp measured 1.010 (early) -> 1.005 (late).
+  const plateBoost = interpolate(fa, [1290, 1420], [1.01, 1.005], { ...clamp });
   const m0 = panelMotion("dublin-riverfront", fa, 1275);
-  const m = { dx: m0.dx, dy: m0.dy, s: m0.s * 0.9625 };
-  const yaw = keyed(CUBE_YAW, fa);
-  const verts = cubeVerts(yaw, -0.55);
-  const size = 257 * m.s;
-  const ccx = 960 + (985 - 960) * m.s + m.dx;
-  const ccy = 540 + (554 - 540) * m.s + m.dy;
+  const m = { dx: m0.dx, dy: m0.dy, s: m0.s * 0.9625 * plateBoost };
+  // r3 cube: measured pose keys (screen space, tumbling — see data.ts).
+  const pose = {
+    yaw: keyed(CUBE_POSE.map((k) => [k[0], k[1]] as [number, number]), fa),
+    pitch: keyed(CUBE_POSE.map((k) => [k[0], k[2]] as [number, number]), fa),
+    roll: keyed(CUBE_POSE.map((k) => [k[0], k[3]] as [number, number]), fa),
+    size: keyed(CUBE_POSE.map((k) => [k[0], k[4]] as [number, number]), fa),
+    cx: keyed(CUBE_POSE.map((k) => [k[0], k[5]] as [number, number]), fa),
+    cy: keyed(CUBE_POSE.map((k) => [k[0], k[6]] as [number, number]), fa),
+  };
+  const verts = cubeVerts(pose.yaw, pose.pitch, pose.roll);
+  const size = pose.size;
+  const ccx = pose.cx;
+  const ccy = pose.cy;
   // Captions swap INSTANTLY (white-mask counts jump full<->0 in <=2f) and
-  // all die at f1463; measured: centered x~970, cap-top 495, font ~104.
-  const caption =
-    fa >= 1281 && fa < 1334 ? "World-Check On Demand"
-    : fa >= 1334 && fa < 1368 ? "Built for automation."
-    : fa >= 1368 && fa < 1408 ? "Scaled for the future."
-    : fa >= 1408 && fa < 1463 ? "Trusted for 25 years."
-    : null;
+  // all die at f1463; r3 ink-bbox: cap-height 66.5 (font 93), cap-top 500.5,
+  // left-aligned at ref ink left, letterSpacing stretches to ref width.
+  const cap = S8_CAPS.find((c) => fa >= c.f0 && fa < c.f1);
   const nowO = interpolate(f, [203, 212, 258, 268], [0, 1, 1, 0], { ...clamp });
   const lockO = interpolate(f, [273, 295], [0, 1], { ...clamp });
   return (
@@ -1007,13 +1013,17 @@ const S8: React.FC = () => {
               content beyond the f1275 crop; a royal border here is fiction
               (the ref is always full-bleed). Interior plate covers its
               inpaint scars. */}
+          {/* r3: clamp outer scale to >=1 — the formula dips to ~0.97 late in
+              the zoom and leaked a royal ring on every r2 frame (the ref is
+              always full-bleed; a border is fiction). The ~2% ring-content
+              misregistration under the clamp is invisible in the photo ring. */}
           <Photo
             src="dublin-outer.png"
             x={0}
             y={0}
             w={1920}
             h={1080}
-            motion={{ dx: m.dx, dy: m.dy - 4.6 * (m.s / 0.8886), s: (m.s / 0.8886) * 1.005 }}
+            motion={{ dx: m.dx, dy: m.dy - 4.6 * (m.s / 0.8886), s: Math.max((m.s / 0.8886) * 1.005, 1.0) }}
           />
           <Photo src="dublin-riverfront.png" x={0} y={0} w={1920} h={1080} motion={m} />
           <svg
@@ -1033,21 +1043,21 @@ const S8: React.FC = () => {
               />
             ))}
           </svg>
-          {caption && (
+          {cap && (
             <div
               style={{
                 position: "absolute",
-                left: 20,
-                top: 469,
-                width: 1900,
-                textAlign: "center",
+                left: cap.left,
+                top: S8_CAP_TOP,
                 fontFamily: SANS,
-                fontSize: 104,
+                fontSize: S8_CAP_SIZE,
                 fontWeight: 500,
+                letterSpacing: cap.ls,
+                whiteSpace: "nowrap",
                 color: "#fff",
               }}
             >
-              {caption}
+              {cap.text}
             </div>
           )}
         </>
