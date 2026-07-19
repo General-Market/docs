@@ -150,14 +150,19 @@ const Photo: React.FC<{
   </div>
 );
 
-// White dots on gradient royal — the recurring side-rail pattern.
+// White dots on royal — the recurring side-rail pattern. Default is the S7
+// gradient belt look; S4's tile is FLAT #0129F2 with a measured 16.5px pitch
+// at entry (r3, FFT autocorr) relaxing to ~22 by the settle.
 const DotPanel: React.FC<{
   x: number;
   y: number;
   w: number;
   h: number;
   opacity?: number;
-}> = ({ x, y, w, h, opacity = 1 }) => (
+  pitch?: number;
+  dotR?: number;
+  flatBg?: string;
+}> = ({ x, y, w, h, opacity = 1, pitch = 22, dotR = 2.6, flatBg }) => (
   <svg
     style={{ position: "absolute", left: x, top: y, opacity }}
     width={w}
@@ -170,14 +175,14 @@ const DotPanel: React.FC<{
         <stop offset="1" stopColor={COLORS.dotPanelBg2} />
       </linearGradient>
     </defs>
-    <rect width={w} height={h} fill="url(#dotbg)" />
-    {Array.from({ length: Math.ceil(h / 22) }, (_, r) =>
-      Array.from({ length: Math.ceil(w / 22) }, (_, c) => (
+    <rect width={w} height={h} fill={flatBg ?? "url(#dotbg)"} />
+    {Array.from({ length: Math.ceil(h / pitch) }, (_, r) =>
+      Array.from({ length: Math.ceil(w / pitch) }, (_, c) => (
         <circle
           key={`${r}-${c}`}
-          cx={11 + c * 22}
-          cy={11 + r * 22}
-          r={2.6}
+          cx={pitch / 2 + c * pitch}
+          cy={pitch / 2 + r * pitch}
+          r={dotR}
           fill="rgba(255,255,255,0.75)"
         />
       )),
@@ -505,7 +510,13 @@ const S4: React.FC = () => {
         <Photo src="container2.png" x={R.container.x} y={R.container.y} w={R.container.w} h={R.container.h} motion={panelMotion("container-worker", fa, 560)} />
         <div style={{ position: "absolute", left: R.cyan.x, top: R.cyan.y, width: R.cyan.w, height: R.cyan.h, background: COLORS.lightBlueTile }} />
         <Photo src="microphones.png" x={R.microphones.x} y={R.microphones.y} w={R.microphones.w} h={R.microphones.h} motion={panelMotion("microphones", fa, 536)} />
-        <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={937} />
+        {/* NEGATIVE A/B (r3): matching the entry-frame dot pitch (16.5 by FFT,
+            then 12.9-15.5 at f506 — the halftone MORPHS) lost -0.08..-0.13 on
+            the dotBR crop at every gate: live pattern, phase unknowable, and
+            misplaced dense ink loses to sparse (law 4). Keep the soft 22px
+            lattice; only the bg was honestly wrong (ref is FLAT #0129F2 here,
+            corners 240-243/39-42/1-3 — the r0 gradient was S7's). */}
+        <DotPanel x={R.dot.x} y={R.dot.y} w={R.dot.w} h={937} flatBg={COLORS.dotPanelBg} />
         <div style={{ position: "absolute", left: R.dot.x, top: 1917, width: R.dot.w, height: 700, background: COLORS.lightBlueTile }} />
       </div>
       {/* center column */}

@@ -125,22 +125,27 @@ export const EARTH_TILE: Array<[number, number, number, number]> = [
   [506, 468, 985, 610], [508, 472, 979, 544], [510, 474, 975, 440],
   [512, 476, 942, 324], [514, 477, 930, 180], [516, 478, 920, 20],
 ];
-// S4 center column offset c (skyline/boardroom template tracks; 0 = settled).
+// S4 center column offset c (0 = settled). r3: f502-514 re-based on
+// boardroom-asset NCC into ref (scores .68-1.00) — r2's keys ran ~75px high
+// through the drop; 516-544 rescaled x1.080 to keep velocity continuous.
 export const S4_C: Keys = [
-  [478, 1583], [494, 1575], [496, 1567], [498, 1540], [500, 1511],
-  [502, 1475], [504, 1431], [506, 1377], [508, 1307], [510, 1213],
-  [512, 1085], [514, 910], [516, 740], [518, 580], [520, 438], [522, 335],
-  [524, 256], [526, 199], [528, 152], [530, 115], [532, 85], [534, 62],
-  [536, 42], [538, 28], [540, 17], [542, 9], [544, 4], [546, 0], [614, 0],
+  [478, 1583], [494, 1575], [496, 1567], [498, 1540],
+  [502, 1515], [506, 1455], [510, 1289], [514, 983],
+  [516, 799], [518, 626], [520, 473], [522, 362],
+  [524, 277], [526, 215], [528, 164], [530, 124], [532, 92], [534, 67],
+  [536, 45], [538, 30], [540, 18], [542, 10], [544, 4], [546, 0], [614, 0],
 ];
 // S4 entry offsets, PER SIDE (column-edge scans f478-506; the two sides run
 // ~20-50px apart during the drop — r1's single extrapolated track was ~250px
 // wrong at f490). Below-screen tiles (cyan2/solar/dots-937) measured from the
 // same scans.
+// r3: 506+ re-based on gherkin-asset NCC (score 1.000 at its f498 source);
+// r2 keys drifted 15-24px high through the late drop; correction tapered to
+// the settle.
 export const S4_SL: Keys = [
   [478, -1508], [482, -1052], [486, -874], [490, -755], [494, -641],
-  [498, -549], [502, -487], [506, -418], [510, -360], [514, -310],
-  [518, -266], [524, -210], [530, -162], [540, -94], [550, -40], [560, 0],
+  [498, -549], [502, -487], [506, -425], [510, -375], [514, -331],
+  [518, -290], [524, -228], [530, -175], [540, -101], [550, -43], [560, 0],
 ];
 // Gherkin photo internal zoom during entry (NCC scale sweep, rel f498).
 export const S4_GZ: Keys = [
