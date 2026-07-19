@@ -145,6 +145,12 @@ export const S4_C: Keys = [
 // Pre-518 keys = S4_C (boardroom track): the 0.925-ratio extrapolation
 // LOST at the f514 crop gate (-.018) — in the fast blur the group reads
 // closer to the boardroom; divergence is only measurable from 518.
+// NEGATIVE A/B (r4): synthetic vertical motion smear on the entry columns
+// (feGaussianBlur "0 v/4", capped 16) LOST at 5 of 6 gates (f514 -.057,
+// f490 -.012, f484 -.009; only f508 +.008) — an isotropic-per-axis Gaussian
+// is not the ref's directional exposure smear; crisp stills win. Do not
+// re-try without a true motion-blur kernel. Gherkin placement adjudicated
+// registered (asset-NCC d=(-7,-5) at f484); entry residual = blur ceiling.
 export const S4_CC: Keys = [
   [478, 1583], [494, 1575], [496, 1567], [498, 1540], [502, 1515],
   [506, 1455], [510, 1289], [514, 983], [516, 799],
