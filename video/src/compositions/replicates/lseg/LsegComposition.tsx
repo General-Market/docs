@@ -285,6 +285,12 @@ const S2: React.FC = () => {
         <Photo src="phone-verification.png" x={965} y={0} w={913} h={1080} />
         <div style={{ position: "absolute", left: 1878, top: 0, width: 42, height: 1080, background: "#060B4E" }} />
         <DotPanel x={1888} y={340} w={32} h={500} opacity={0.5} />
+        {/* r2: mid-conveyor panels (belt coords from scroll-normalized crops:
+            afro f150, wall f158, teal f163, train f165 — sharpest passes) */}
+        <Photo src="afro-polka.png" x={1936} y={0} w={800} h={1080} />
+        <Photo src="woman-wall.png" x={2765} y={0} w={840} h={1080} />
+        <Photo src="teal-glass.png" x={3620} y={0} w={860} h={1080} />
+        <Photo src="train-platform.png" x={4485} y={0} w={1208} h={1080} />
         <div
           style={{
             position: "absolute",
