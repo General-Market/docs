@@ -146,3 +146,29 @@ jarvis/**/__pycache__/
 
 # AIRPLANE work-program screenshots captured via ./shot — local scratch, do not commit
 /image*.png
+
+# Autoresearch loop metric log — regenerated every run, not source of truth
+video/autoresearch-results.tsv
+
+# Video render-loop scratch — per-run working files, contact sheets, publish dirs
+# (already-tracked STATE/verify text files stay tracked; new render output is scratch)
+video/.claude/rounds/
+video/work/
+video/.slim-crxsocial/
+video/.crxwave-pubdir/
+video/luts/
+video/music-library/
+# Large re-fetchable data snapshots (keep the compute scripts + small distributions)
+video/data/*.jsonl
+video/data/hyperliquid-leaderboard-snapshot.json
+
+# Audio extraction scratch
+audio-extract/
+
+# X-targeting runtime cache — re-fetchable via twapi, not source of truth
+docs/x-targeting/cache/
+
+# Editor/redeploy backup snapshots
+*.bak
+*.bak.*
+*.bak-*
