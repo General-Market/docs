@@ -327,7 +327,7 @@ function chartRange(start: number, end: number) {
 
 function drawDotGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const spacing = 24;
-  ctx.fillStyle = "rgba(0, 82, 255, 0.18)";
+  ctx.fillStyle = "rgba(45, 91, 255, 0.18)";
   for (let y = spacing / 2; y < h; y += spacing) {
     for (let x = spacing / 2; x < w; x += spacing) {
       ctx.beginPath();
@@ -376,7 +376,7 @@ function drawPhoneChart(
       ? CHART_CANDLES[newest - 1].c
       : CHART_CANDLES[0].o;
   const isUp = last >= prev;
-  ctx.fillStyle = isUp ? "#0052FF" : "#E03B4A";
+  ctx.fillStyle = isUp ? "#2D5BFF" : "#E03B4A";
   ctx.font = "700 64px ui-monospace, SFMono-Regular, monospace";
   ctx.textAlign = "right";
   ctx.fillText(last.toFixed(2), w - 40, 110);
@@ -419,7 +419,7 @@ function drawPhoneChart(
     const yH = priceToY(c.h);
     const yL = priceToY(c.l);
     const isGreen = c.c >= c.o;
-    const color = isGreen ? "#0052FF" : "#E03B4A";
+    const color = isGreen ? "#2D5BFF" : "#E03B4A";
 
     // Wick
     ctx.strokeStyle = color;
@@ -438,7 +438,7 @@ function drawPhoneChart(
 
   // Footer ticker — current change %
   const changePct = ((last - CHART_CANDLES[0].o) / CHART_CANDLES[0].o) * 100;
-  ctx.fillStyle = changePct >= 0 ? "#0052FF" : "#E03B4A";
+  ctx.fillStyle = changePct >= 0 ? "#2D5BFF" : "#E03B4A";
   ctx.font = "600 40px ui-monospace, SFMono-Regular, monospace";
   ctx.textAlign = "left";
   ctx.fillText(

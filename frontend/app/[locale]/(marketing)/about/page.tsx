@@ -76,12 +76,12 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       description: 'On-chain protocol for index products and AI prediction markets.',
       sameAs: [
         'https://x.com/otc_max',
-        'https://discord.gg/xsfgzwR6',
+        'https://discord.gg/QbasycShP',
       ],
       contactPoint: {
         '@type': 'ContactPoint',
         contactType: 'customer support',
-        url: 'https://discord.gg/xsfgzwR6',
+        url: 'https://discord.gg/QbasycShP',
       },
     },
   }
@@ -264,7 +264,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         <div className="border border-border-light">
           <div className="flex items-center gap-8 p-6 md:p-8">
             <a
-              href="https://discord.gg/xsfgzwR6"
+              href="https://discord.gg/QbasycShP"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"

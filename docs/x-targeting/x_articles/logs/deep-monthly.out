@@ -1,0 +1,2485 @@
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=hyperliquid-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8671914  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8671914  spent=0c ($0.0)  count=7
+  ↳ xarticles:rt-gte-500:p1  bal_before=8671914  est=300c
+  ↳ xarticles:rt-gte-500:p1  bal_after=8671914  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8671914  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8671914  spent=0c ($0.0)  count=7
+  ↳ xarticles:rt-gte-500-latest:p1  bal_before=8671914  est=300c
+  ↳ xarticles:rt-gte-500-latest:p1  bal_after=8671914  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8671914  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8666124  spent=5790c ($0.0579)  count=20
+  ↳ xarticles:rt-gte-200:p1  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200:p1  bal_after=8666124  spent=0c ($0.0)  count=1
+  ↳ xarticles:rt-gte-200:p2  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200:p2  bal_after=8666124  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-200:p3  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200:p3  bal_after=8666124  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-200:p4  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200:p4  bal_after=8666124  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-200:p5  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200:p5  bal_after=8666124  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8666124  spent=0c ($0.0)  count=12
+  ↳ xarticles:rt-gte-200-latest:p1  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-200-latest:p1  bal_after=8666124  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8666124  spent=0c ($0.0)  count=2
+  ↳ xarticles:rt-gte-100:p1  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-100:p1  bal_after=8666124  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-100:p2  bal_before=8666124  est=300c
+  ↳ xarticles:rt-gte-100:p2  bal_after=8659299  spent=6825c ($0.0683)  count=17
+  ↳ xarticles:rt-gte-100:p3  bal_before=8659299  est=300c
+  ↳ xarticles:rt-gte-100:p3  bal_after=8659299  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-100:p4  bal_before=8659299  est=300c
+  ↳ xarticles:rt-gte-100:p4  bal_after=8659299  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8659299  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8659299  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-100-latest:p1  bal_before=8659299  est=300c
+  ↳ xarticles:rt-gte-100-latest:p1  bal_after=8659299  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8659299  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5000:p1  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-5000:p1  bal_after=8659299  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8659299  spent=0c ($0.0)  count=2
+  ↳ xarticles:likes-gte-5000-latest:p1  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p1  bal_after=8659299  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8659299  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2000:p1  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-2000:p1  bal_after=8659299  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2000:p2  bal_before=8659299  est=300c
+  ↳ xarticles:likes-gte-2000:p2  bal_after=8650254  spent=9045c ($0.0905)  count=7
+  ↳ xarticles:likes-gte-2000:p3  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-2000:p3  bal_after=8650254  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2000:p4  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-2000:p4  bal_after=8650254  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2000:p5  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-2000:p5  bal_after=8650254  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2000:p6  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-2000:p6  bal_after=8650254  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8650254  spent=0c ($0.0)  count=7
+  ↳ xarticles:likes-gte-2000-latest:p1  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p1  bal_after=8650254  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8650254  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8650254  spent=0c ($0.0)  count=11
+  ↳ xarticles:likes-gte-1000-latest:p1  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p1  bal_after=8650254  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8650254  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8644149  spent=6105c ($0.0611)  count=20
+  ↳ xarticles:likes-gte-500:p1  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p1  bal_after=8644149  spent=0c ($0.0)  count=17
+  ↳ xarticles:likes-gte-500:p2  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p2  bal_after=8644149  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-500:p3  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p3  bal_after=8644149  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-500:p4  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p4  bal_after=8644149  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-500:p5  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p5  bal_after=8644149  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-500:p6  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p6  bal_after=8644149  spent=0c ($0.0)  count=19
+  ↳ xarticles:likes-gte-500:p7  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p7  bal_after=8644149  spent=0c ($0.0)  count=8
+  ↳ xarticles:likes-gte-500:p8  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500:p8  bal_after=8644149  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8644149  spent=0c ($0.0)  count=18
+  ↳ xarticles:likes-gte-500-latest:p1  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-500-latest:p1  bal_after=8644149  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8644149  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p1  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-250:p1  bal_after=8644149  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p2  bal_before=8644149  est=300c
+  ↳ xarticles:likes-gte-250:p2  bal_after=8633589  spent=10560c ($0.1056)  count=20
+  ↳ xarticles:likes-gte-250:p3  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p3  bal_after=8633589  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p4  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p4  bal_after=8633589  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p5  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p5  bal_after=8633589  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p6  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p6  bal_after=8633589  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p7  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p7  bal_after=8633589  spent=0c ($0.0)  count=17
+  ↳ xarticles:likes-gte-250:p8  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p8  bal_after=8633589  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p9  bal_before=8633589  est=300c
+  ↳ xarticles:likes-gte-250:p9  bal_after=8623164  spent=10425c ($0.1042)  count=0
+
+### likes-gte-250-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8623164  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250-latest:p1  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-250-latest:p1  bal_after=8623164  spent=0c ($0.0)  count=17
+  ↳ xarticles:likes-gte-250-latest:p2  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-250-latest:p2  bal_after=8623164  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8623164  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100:p1  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p1  bal_after=8623164  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100:p2  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p2  bal_after=8623164  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100:p3  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p3  bal_after=8623164  spent=0c ($0.0)  count=16
+  ↳ xarticles:likes-gte-100:p4  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p4  bal_after=8623164  spent=0c ($0.0)  count=15
+  ↳ xarticles:likes-gte-100:p5  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p5  bal_after=8623164  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100:p6  bal_before=8623164  est=300c
+  ↳ xarticles:likes-gte-100:p6  bal_after=8614659  spent=8505c ($0.0851)  count=14
+  ↳ xarticles:likes-gte-100:p7  bal_before=8614659  est=300c
+  ↳ xarticles:likes-gte-100:p7  bal_after=8614659  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8614659  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8614659  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100-latest:p1  bal_before=8614659  est=300c
+  ↳ xarticles:likes-gte-100-latest:p1  bal_after=8614659  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100-latest:p2  bal_before=8614659  est=300c
+  ↳ xarticles:likes-gte-100-latest:p2  bal_after=8614659  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100-latest:p3  bal_before=8614659  est=300c
+  ↳ xarticles:likes-gte-100-latest:p3  bal_after=8608599  spent=6060c ($0.0606)  count=20
+  ↳ xarticles:likes-gte-100-latest:p4  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-100-latest:p4  bal_after=8608599  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100-latest:p5  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-100-latest:p5  bal_after=8608599  spent=0c ($0.0)  count=18
+  ↳ xarticles:likes-gte-100-latest:p6  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-100-latest:p6  bal_after=8608599  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8608599  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p1  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-50:p1  bal_after=8608599  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p2  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-50:p2  bal_after=8608599  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p3  bal_before=8608599  est=300c
+  ↳ xarticles:likes-gte-50:p3  bal_after=8600799  spent=7800c ($0.078)  count=20
+  ↳ xarticles:likes-gte-50:p4  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-50:p4  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p5  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-50:p5  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p6  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-50:p6  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p7  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-50:p7  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p8  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-50:p8  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p9  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-50:p9  bal_after=8600799  spent=0c ($0.0)  count=20
+
+### likes-gte-25 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p1  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-25:p1  bal_after=8600799  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p2  bal_before=8600799  est=300c
+  ↳ xarticles:likes-gte-25:p2  bal_after=8595129  spent=5670c ($0.0567)  count=20
+  ↳ xarticles:likes-gte-25:p3  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p3  bal_after=8595129  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p4  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p4  bal_after=8595129  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p5  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p5  bal_after=8595129  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p6  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p6  bal_after=8595129  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p7  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p7  bal_after=8595129  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p8  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p8  bal_after=8595129  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p9  bal_before=8595129  est=300c
+  ↳ xarticles:likes-gte-25:p9  bal_after=8587119  spent=8010c ($0.0801)  count=20
+
+### likes-gte-10 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p1  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p1  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p2  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p2  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p3  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p3  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p4  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p4  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p5  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p5  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p6  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p6  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p7  bal_before=8587119  est=300c
+  ↳ xarticles:likes-gte-10:p7  bal_after=8587119  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p8  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-10:p8  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p9  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-10:p9  bal_after=8578449  spent=0c ($0.0)  count=20
+
+### likes-gte-5 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p1  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p1  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p2  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p2  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p3  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p3  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p4  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p4  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p5  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p5  bal_after=8578449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p6  bal_before=8578449  est=300c
+  ↳ xarticles:likes-gte-5:p6  bal_after=8570679  spent=7770c ($0.0777)  count=20
+  ↳ xarticles:likes-gte-5:p7  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-5:p7  bal_after=8570679  spent=0c ($0.0)  count=19
+  ↳ xarticles:likes-gte-5:p8  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-5:p8  bal_after=8570679  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p9  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-5:p9  bal_after=8570679  spent=0c ($0.0)  count=20
+
+### likes-gte-2 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8570679  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p1  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-2:p1  bal_after=8570679  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p2  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-2:p2  bal_after=8570679  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p3  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-2:p3  bal_after=8570679  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p4  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-2:p4  bal_after=8570679  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p5  bal_before=8570679  est=300c
+  ↳ xarticles:likes-gte-2:p5  bal_after=8560614  spent=10065c ($0.1007)  count=20
+  ↳ xarticles:likes-gte-2:p6  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-2:p6  bal_after=8560614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p7  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-2:p7  bal_after=8560614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p8  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-2:p8  bal_after=8560614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p9  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-2:p9  bal_after=8560614  spent=0c ($0.0)  count=19
+
+### likes-gte-1 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8560614  spent=0c ($0.0)  count=18
+  ↳ xarticles:likes-gte-1:p1  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-1:p1  bal_after=8560614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p2  bal_before=8560614  est=300c
+  ↳ xarticles:likes-gte-1:p2  bal_after=8547864  spent=12750c ($0.1275)  count=0
+
+### replies-gte-2000 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8547864  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-2000:p1  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-2000:p1  bal_after=8547864  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-2000:p2  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-2000:p2  bal_after=8547864  spent=0c ($0.0)  count=19
+  ↳ xarticles:replies-gte-2000:p3  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-2000:p3  bal_after=8547864  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-2000:p4  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-2000:p4  bal_after=8547864  spent=0c ($0.0)  count=11
+  ↳ xarticles:replies-gte-2000:p5  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-2000:p5  bal_after=8547864  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8547864  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8542749  spent=5115c ($0.0512)  count=0
+
+### replies-gte-100 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8542749  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8540739  spent=2010c ($0.0201)  count=2
+  ↳ xarticles:replies-gte-100:p1  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-100:p1  bal_after=8540739  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-100:p2  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-100:p2  bal_after=8540739  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8540739  spent=0c ($0.0)  count=19
+  ↳ xarticles:replies-gte-25:p1  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p1  bal_after=8540739  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p2  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p2  bal_after=8540739  spent=0c ($0.0)  count=2
+  ↳ xarticles:replies-gte-25:p3  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p3  bal_after=8540739  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p4  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p4  bal_after=8540739  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p5  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p5  bal_after=8540739  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p6  bal_before=8540739  est=300c
+  ↳ xarticles:replies-gte-25:p6  bal_after=8533629  spent=7110c ($0.0711)  count=20
+  ↳ xarticles:replies-gte-25:p7  bal_before=8533629  est=300c
+  ↳ xarticles:replies-gte-25:p7  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p8  bal_before=8533629  est=300c
+  ↳ xarticles:replies-gte-25:p8  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p9  bal_before=8533629  est=300c
+  ↳ xarticles:replies-gte-25:p9  bal_after=8533629  spent=0c ($0.0)  count=20
+
+### broad-native-top [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8533629  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p1  bal_before=8533629  est=300c
+  ↳ xarticles:broad-native-top:p1  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p2  bal_before=8533629  est=300c
+  ↳ xarticles:broad-native-top:p2  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p3  bal_before=8533629  est=300c
+  ↳ xarticles:broad-native-top:p3  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p4  bal_before=8533629  est=300c
+  ↳ xarticles:broad-native-top:p4  bal_after=8533629  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p5  bal_before=8533629  est=300c
+  ↳ xarticles:broad-native-top:p5  bal_after=8522079  spent=11550c ($0.1155)  count=20
+  ↳ xarticles:broad-native-top:p6  bal_before=8522079  est=300c
+  ↳ xarticles:broad-native-top:p6  bal_after=8522079  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p7  bal_before=8522079  est=300c
+  ↳ xarticles:broad-native-top:p7  bal_after=8522079  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p8  bal_before=8522079  est=300c
+  ↳ xarticles:broad-native-top:p8  bal_after=8522079  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p9  bal_before=8522079  est=300c
+  ↳ xarticles:broad-native-top:p9  bal_after=8522079  spent=0c ($0.0)  count=20
+
+### keyword-native-top [Top] x10p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8522079  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8522079  spent=0c ($0.0)  count=19
+  ↳ xarticles:keyword-native-top:p1  bal_before=8522079  est=300c
+  ↳ xarticles:keyword-native-top:p1  bal_after=8522079  spent=0c ($0.0)  count=17
+  ↳ xarticles:keyword-native-top:p2  bal_before=8522079  est=300c
+  ↳ xarticles:keyword-native-top:p2  bal_after=8522079  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p3  bal_before=8522079  est=300c
+  ↳ xarticles:keyword-native-top:p3  bal_after=8508774  spent=13305c ($0.1331)  count=20
+  ↳ xarticles:keyword-native-top:p4  bal_before=8508774  est=300c
+  ↳ xarticles:keyword-native-top:p4  bal_after=8508774  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p5  bal_before=8508774  est=300c
+  ↳ xarticles:keyword-native-top:p5  bal_after=8508774  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p6  bal_before=8508774  est=300c
+  ↳ xarticles:keyword-native-top:p6  bal_after=8508774  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p7  bal_before=8508774  est=300c
+  ↳ xarticles:keyword-native-top:p7  bal_after=8508774  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p8  bal_before=8508774  est=300c
+  ↳ xarticles:keyword-native-top:p8  bal_after=8508774  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p9  bal_before=8508774  est=300c
+  ↳ xarticles:keyword-native-top:p9  bal_after=8498904  spent=9870c ($0.0987)  count=20
+
+### keyword-native-latest [Latest] x50p (Hyperliquid OR HyperEVM OR HyperCore OR $HYPE OR HIP-3 OR HIP-4 OR HLP OR HyperUnit OR Hyperbeat OR Felix OR HypurrFi OR HyperLend OR Kinetiq OR HyperSwap OR Hypernova OR HyperBloom OR Ventuals OR trade.xyz OR alt.fun OR USDH OR Dexari OR pvp.trade OR stHYPE OR $PURR) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p1  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p1  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p2  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p2  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p3  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p3  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p4  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p4  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p5  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p5  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p6  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p6  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p7  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p7  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p8  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p8  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p9  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p9  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p10  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p10  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p11  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p11  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p12  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p12  bal_after=8498904  spent=0c ($0.0)  count=19
+  ↳ xarticles:keyword-native-latest:p13  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p13  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p14  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p14  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p15  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p15  bal_after=8498904  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p16  bal_before=8498904  est=300c
+  ↳ xarticles:keyword-native-latest:p16  bal_after=8486409  spent=12495c ($0.125)  count=20
+  ↳ xarticles:keyword-native-latest:p17  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p17  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p18  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p18  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p19  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p19  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p20  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p20  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p21  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p21  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p22  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p22  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p23  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p23  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p24  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p24  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p25  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p25  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p26  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p26  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p27  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p27  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p28  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p28  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p29  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p29  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p30  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p30  bal_after=8486409  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p31  bal_before=8486409  est=300c
+  ↳ xarticles:keyword-native-latest:p31  bal_after=8478264  spent=8145c ($0.0814)  count=20
+  ↳ xarticles:keyword-native-latest:p32  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p32  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p33  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p33  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p34  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p34  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p35  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p35  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p36  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p36  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p37  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p37  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p38  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p38  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p39  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p39  bal_after=8478264  spent=0c ($0.0)  count=19
+  ↳ xarticles:keyword-native-latest:p40  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p40  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p41  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p41  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p42  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p42  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p43  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p43  bal_after=8478264  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p44  bal_before=8478264  est=300c
+  ↳ xarticles:keyword-native-latest:p44  bal_after=8467494  spent=10770c ($0.1077)  count=0
+  ↳ xarticles:author-baseline:SoSoValueCrypto  bal_before=8467494  est=300c
+  ↳ xarticles:author-baseline:SoSoValueCrypto  bal_after=8462094  spent=5400c ($0.054)  count=20
+  ↳ xarticles:author-baseline:MossAI_CN  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:MossAI_CN  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Travix_fi  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:Travix_fi  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:nativemarkets  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:nativemarkets  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BL_labs_xyz  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:BL_labs_xyz  bal_after=8462094  spent=0c ($0.0)  count=1
+  ↳ xarticles:author-baseline:0xasrequired  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:0xasrequired  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:punk2898  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:punk2898  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Delphi_Digital  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:Delphi_Digital  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HYPERPEPS  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:HYPERPEPS  bal_after=8462094  spent=0c ($0.0)  count=1
+  ↳ xarticles:author-baseline:ilies_larbi  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:ilies_larbi  bal_after=8462094  spent=0c ($0.0)  count=19
+  ↳ xarticles:author-baseline:HyperliquidPC  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:HyperliquidPC  bal_after=8462094  spent=0c ($0.0)  count=19
+  ↳ xarticles:author-baseline:Rekt_Zerker  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:Rekt_Zerker  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:kneel4none  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:kneel4none  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:MixemaCrypto  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:MixemaCrypto  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_after=8462094  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:virtuals_io  bal_before=8462094  est=300c
+  ↳ xarticles:author-baseline:virtuals_io  bal_after=8453394  spent=8700c ($0.087)  count=20
+  ↳ xarticles:author-baseline:HyperliquidR  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:HyperliquidR  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:moonpay  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:moonpay  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:minstrell_  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:minstrell_  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BrianRoemmele  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:BrianRoemmele  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:VikingoDigital_  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:VikingoDigital_  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:giant_cutie  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:giant_cutie  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Dan1umma  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:Dan1umma  bal_after=8453394  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:monetrix_xyz  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:monetrix_xyz  bal_after=8453394  spent=0c ($0.0)  count=8
+  ↳ xarticles:author-baseline:CryptoDinduz  bal_before=8453394  est=300c
+  ↳ xarticles:author-baseline:CryptoDinduz  bal_after=8442609  spent=10785c ($0.1079)  count=20
+  ↳ xarticles:author-baseline:XBITDEX  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:XBITDEX  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:blocmates  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:blocmates  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:qlabsofficial  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:qlabsofficial  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:El__khalil  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:El__khalil  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:0xpostrich  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:0xpostrich  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:798_eth  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:798_eth  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Defi_Warhol  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:Defi_Warhol  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:EzBruv  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:EzBruv  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:_Telaga_  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:_Telaga_  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_IDN  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_IDN  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:cryptodotnews  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:cryptodotnews  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Blockworks  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:Blockworks  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:maid_crypto  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:maid_crypto  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:the_smart_ape  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:the_smart_ape  bal_after=8442609  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Tanaka_L2  bal_before=8442609  est=300c
+  ↳ xarticles:author-baseline:Tanaka_L2  bal_after=8428599  spent=14010c ($0.1401)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:0xSweep  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:0xSweep  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:GracyBitget  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:GracyBitget  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:TheDeFiPlug  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:TheDeFiPlug  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_after=8428599  spent=0c ($0.0)  count=19
+  ↳ xarticles:author-baseline:Baheet_  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:Baheet_  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:saizyo_crypto  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:saizyo_crypto  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Rekt_Zerker  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:Rekt_Zerker  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:superexvip  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:superexvip  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:kylewmi  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:kylewmi  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_after=8428599  spent=0c ($0.0)  count=19
+  ↳ xarticles:author-baseline:PDmytriiev  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:PDmytriiev  bal_after=8428599  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:giantcutie666  bal_before=8428599  est=300c
+  ↳ xarticles:author-baseline:giantcutie666  bal_after=8416149  spent=12450c ($0.1245)  count=20
+  ↳ xarticles:author-baseline:Eli5defi  bal_before=8416149  est=300c
+  ↳ xarticles:author-baseline:Eli5defi  bal_after=8416149  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8416149  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8416149  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:redstone_defi  bal_before=8416149  est=300c
+  ↳ xarticles:author-baseline:redstone_defi  bal_after=8416149  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:eulerfinance  bal_before=8416149  est=300c
+  ↳ xarticles:author-baseline:eulerfinance  bal_after=8416149  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BitgetWallet  bal_before=8416149  est=300c
+  ↳ xarticles:author-baseline:BitgetWallet  bal_after=8416149  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8416149  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8404779  spent=11370c ($0.1137)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ZanaVentures  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:ZanaVentures  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Baheet_  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:Baheet_  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ShitcoinDotCom  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:ShitcoinDotCom  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:IAmAlenSultanic  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:IAmAlenSultanic  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:giantcutie666  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:giantcutie666  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:PinkBrains_io  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:PinkBrains_io  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:iQunix  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:iQunix  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:CryptoPulseGLBL  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:CryptoPulseGLBL  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:houseki_kirei  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:houseki_kirei  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Asodiqu_1  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:Asodiqu_1  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:siriusxyzzz  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:siriusxyzzz  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:zuoyeweb3  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:zuoyeweb3  bal_after=8404779  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:antoniayly  bal_before=8404779  est=300c
+  ↳ xarticles:author-baseline:antoniayly  bal_after=8392569  spent=12210c ($0.1221)  count=19
+  ↳ xarticles:author-baseline:rgvrmdya  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:rgvrmdya  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:castle_labs  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:castle_labs  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:defiufo  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:defiufo  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Cryptocium_id  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:Cryptocium_id  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:botblastcap  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:botblastcap  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:TomCryptoDefi  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:TomCryptoDefi  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:realpepito  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:realpepito  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ModestusOkoye  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:ModestusOkoye  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OAK_Res  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:OAK_Res  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:0x10Me  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:0x10Me  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:PDmytriiev  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:PDmytriiev  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ilamks88  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:ilamks88  bal_after=8392569  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:MinaraCN  bal_before=8392569  est=300c
+  ↳ xarticles:author-baseline:MinaraCN  bal_after=8381064  spent=11505c ($0.115)  count=20
+  ↳ xarticles:author-baseline:iQunix  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:iQunix  bal_after=8381064  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:SebMontgomery  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:SebMontgomery  bal_after=8381064  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:wowens  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:wowens  bal_after=8381064  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperliquidFR  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:HyperliquidFR  bal_after=8381064  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:MavenHL  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:MavenHL  bal_after=8381064  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:FourPillarsFP  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:FourPillarsFP  bal_after=8381064  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:hyperinals  bal_before=8381064  est=300c
+  ↳ xarticles:author-baseline:hyperinals  bal_after=8372454  spent=8610c ($0.0861)  count=20
+  ↳ xarticles:author-baseline:getoutofhome  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:getoutofhome  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:deriveinsights  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:deriveinsights  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:pendle_grandma  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:pendle_grandma  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OAK_Res  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:OAK_Res  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:EvanCrypto17  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:EvanCrypto17  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BiteyeCN  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:BiteyeCN  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:CryptoKid  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:CryptoKid  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:StorkOracle  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:StorkOracle  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Lemniscap  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:Lemniscap  bal_after=8372454  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Rakeshshawaskme  bal_before=8372454  est=300c
+  ↳ xarticles:author-baseline:Rakeshshawaskme  bal_after=8361234  spent=11220c ($0.1122)  count=20
+  ↳ xarticles:author-baseline:Panoptic_xyz  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:Panoptic_xyz  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:a1research__  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:a1research__  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:munji33  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:munji33  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:eazyscalp  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:eazyscalp  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:goldrushdev  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:goldrushdev  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:KittenswapHype  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:KittenswapHype  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BitMartExchange  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:BitMartExchange  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ctrlfdotfun  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:ctrlfdotfun  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:the_smart_ape  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:the_smart_ape  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:abrayadh  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:abrayadh  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:betashop  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:betashop  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OAK_Res_FR  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:OAK_Res_FR  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:CieloFinance  bal_before=8361234  est=300c
+  ↳ xarticles:author-baseline:CieloFinance  bal_after=8361234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:SteveGMworld  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:SteveGMworld  bal_after=8349234  spent=0c ($0.0)  count=10
+  ↳ xarticles:author-baseline:Trenton1122  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:Trenton1122  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:0xmediaco  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:0xmediaco  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:hmalviya9  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:hmalviya9  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:BitgetWalletCN  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:BitgetWalletCN  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:FalconXGlobal  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:FalconXGlobal  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:GoodCryptoApp  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:GoodCryptoApp  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:botblastcap  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:botblastcap  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:monarch_fast  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:monarch_fast  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:elindinga  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:elindinga  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:StarkCrypto3  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:StarkCrypto3  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:jollygreenmoney  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:jollygreenmoney  bal_after=8349234  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:SmaeiliVahid  bal_before=8349234  est=300c
+  ↳ xarticles:author-baseline:SmaeiliVahid  bal_after=8338344  spent=10890c ($0.1089)  count=20
+  ↳ xarticles:author-baseline:BlockFlow_News  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:BlockFlow_News  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ThePitApp  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:ThePitApp  bal_after=8338344  spent=0c ($0.0)  count=12
+  ↳ xarticles:author-baseline:OSL_ID  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:OSL_ID  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:YounghoYh_PARK  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:YounghoYh_PARK  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:aveai_info  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:aveai_info  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:questflow  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:questflow  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:AaronSolanaa  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:AaronSolanaa  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:VexTxs  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:VexTxs  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:stonksdotxyz  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:stonksdotxyz  bal_after=8338344  spent=0c ($0.0)  count=5
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OdailyChina  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:OdailyChina  bal_after=8338344  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:PANewsCN  bal_before=8338344  est=300c
+  ↳ xarticles:author-baseline:PANewsCN  bal_after=8327769  spent=10575c ($0.1057)  count=20
+  ↳ xarticles:author-baseline:humanjets  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:humanjets  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Anna_nanachan  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Anna_nanachan  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:coinage_x_daic  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:coinage_x_daic  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:monarch_fast  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:monarch_fast  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:sriramkri  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:sriramkri  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OdailyChina  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:OdailyChina  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:CryptoTaxSucks  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:CryptoTaxSucks  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:0xNancyshi  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:0xNancyshi  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:PANewsCN  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:PANewsCN  bal_after=8327769  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:PANewsCN  bal_before=8327769  est=300c
+  ↳ xarticles:author-baseline:PANewsCN  bal_after=8315574  spent=12195c ($0.122)  count=20
+  ↳ xarticles:author-baseline:ChainCatcher_  bal_before=8315574  est=300c
+  ↳ xarticles:author-baseline:ChainCatcher_  bal_after=8315574  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8315574  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8315574  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:todayindefi  bal_before=8315574  est=300c
+  ↳ xarticles:author-baseline:todayindefi  bal_after=8315574  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:PANewsCN  bal_before=8315574  est=300c
+  ↳ xarticles:author-baseline:PANewsCN  bal_after=8315574  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8315574  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8315574  spent=0c ($0.0)  count=20
+{
+  "date": "2026-06-10",
+  "niche": "hyperliquid-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hyperliquid-30d",
+  "tweets": 3555,
+  "native_x_articles": 171,
+  "top": {
+    "tweet_id": "2059675813944103391",
+    "tweet_url": "https://x.com/kneel4none/status/2059675813944103391",
+    "article_url": "https://x.com/i/article/2059671545237409792",
+    "title": "Hyperliquid Killed The Idea of Crypto",
+    "preview_text": "to start of this article, i seriously think hyperliquid is an overall bad thing for the ecosystem\nnot in a “evil cabal conspiracy” type of way but more in a “this was inevitably where the market was",
+    "cover_media_img_url": "https://pbs.twimg.com/media/HJVwIYRbEAAz5yk.jpg",
+    "author": "kneel4none",
+    "author_name": "k4n",
+    "author_followers": 11014,
+    "created_at": "Wed May 27 16:39:15 +0000 2026",
+    "likes": 246,
+    "retweets": 8,
+    "replies": 12,
+    "quotes": 3,
+    "bookmarks": 44,
+    "views": 555791,
+    "query_label": "likes-gte-250-latest",
+    "engagement": 313,
+    "weighted_engagement": 324,
+    "engagement_per_1k_views": 0.563,
+    "score": 424,
+    "author_avg_views_last10": 156.6,
+    "author_avg_views_min_age_hours": 4,
+    "views_per_1k_followers": 50462.23,
+    "views_vs_author_avg": 3549.112,
+    "outlier_score": 405373.993
+  }
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hyperliquid-30d/by-likes.md (171 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hyperliquid-30d/by-views.md (171 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=hip3-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8315574  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8315574  spent=0c ($0.0)  count=4
+  ↳ xarticles:rt-gte-500-latest:p1  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-500-latest:p1  bal_after=8315574  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8315574  spent=0c ($0.0)  count=6
+  ↳ xarticles:rt-gte-200:p1  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-200:p1  bal_after=8315574  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8315574  spent=0c ($0.0)  count=6
+  ↳ xarticles:rt-gte-200-latest:p1  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-200-latest:p1  bal_after=8315574  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8315574  spent=0c ($0.0)  count=1
+  ↳ xarticles:rt-gte-100:p1  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-100:p1  bal_after=8315574  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8315574  spent=0c ($0.0)  count=10
+  ↳ xarticles:rt-gte-100-latest:p1  bal_before=8315574  est=300c
+  ↳ xarticles:rt-gte-100-latest:p1  bal_after=8315574  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8315574  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8306124  spent=9450c ($0.0945)  count=20
+  ↳ xarticles:likes-gte-5000:p1  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-5000:p1  bal_after=8306124  spent=0c ($0.0)  count=5
+  ↳ xarticles:likes-gte-5000:p2  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-5000:p2  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8306124  spent=0c ($0.0)  count=2
+  ↳ xarticles:likes-gte-5000-latest:p1  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p1  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8306124  spent=0c ($0.0)  count=5
+  ↳ xarticles:likes-gte-2000-latest:p1  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p1  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8306124  spent=0c ($0.0)  count=7
+  ↳ xarticles:likes-gte-1000:p1  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-1000:p1  bal_after=8306124  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1000:p2  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-1000:p2  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8306124  spent=0c ($0.0)  count=7
+  ↳ xarticles:likes-gte-1000-latest:p1  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p1  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8306124  spent=0c ($0.0)  count=10
+  ↳ xarticles:likes-gte-500-latest:p1  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-500-latest:p1  bal_after=8306124  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8306124  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8298219  spent=7905c ($0.079)  count=1
+  ↳ xarticles:likes-gte-250:p1  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250:p1  bal_after=8298219  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p2  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250:p2  bal_after=8298219  spent=0c ($0.0)  count=1
+  ↳ xarticles:likes-gte-250:p3  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250:p3  bal_after=8298219  spent=0c ($0.0)  count=12
+  ↳ xarticles:likes-gte-250:p4  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250:p4  bal_after=8298219  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p5  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250:p5  bal_after=8298219  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p6  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250:p6  bal_after=8298219  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8298219  spent=0c ($0.0)  count=13
+  ↳ xarticles:likes-gte-250-latest:p1  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-250-latest:p1  bal_after=8298219  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8298219  spent=0c ($0.0)  count=5
+  ↳ xarticles:likes-gte-100:p1  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-100:p1  bal_after=8298219  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100:p2  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-100:p2  bal_after=8298219  spent=0c ($0.0)  count=1
+  ↳ xarticles:likes-gte-100:p3  bal_before=8298219  est=300c
+  ↳ xarticles:likes-gte-100:p3  bal_after=8288394  spent=9825c ($0.0983)  count=20
+  ↳ xarticles:likes-gte-100:p4  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-100:p4  bal_after=8288394  spent=0c ($0.0)  count=3
+  ↳ xarticles:likes-gte-100:p5  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-100:p5  bal_after=8288394  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8288394  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100-latest:p1  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-100-latest:p1  bal_after=8288394  spent=0c ($0.0)  count=8
+  ↳ xarticles:likes-gte-100-latest:p2  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-100-latest:p2  bal_after=8288394  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8288394  spent=0c ($0.0)  count=10
+  ↳ xarticles:likes-gte-50:p1  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-50:p1  bal_after=8288394  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p2  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-50:p2  bal_after=8288394  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8288394  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8279934  spent=8460c ($0.0846)  count=15
+  ↳ xarticles:likes-gte-25:p1  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-25:p1  bal_after=8279934  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p2  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-25:p2  bal_after=8279934  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8279934  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p1  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p1  bal_after=8279934  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p2  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p2  bal_after=8279934  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p3  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p3  bal_after=8279934  spent=0c ($0.0)  count=9
+  ↳ xarticles:likes-gte-10:p4  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p4  bal_after=8279934  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p5  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p5  bal_after=8279934  spent=0c ($0.0)  count=5
+  ↳ xarticles:likes-gte-10:p6  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-10:p6  bal_after=8279934  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8279934  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p1  bal_before=8279934  est=300c
+  ↳ xarticles:likes-gte-5:p1  bal_after=8271744  spent=8190c ($0.0819)  count=20
+  ↳ xarticles:likes-gte-5:p2  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p2  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p3  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p3  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p4  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p4  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p5  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p5  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p6  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p6  bal_after=8271744  spent=0c ($0.0)  count=12
+  ↳ xarticles:likes-gte-5:p7  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p7  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p8  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p8  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p9  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-5:p9  bal_after=8271744  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p1  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-2:p1  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p2  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-2:p2  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p3  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-2:p3  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p4  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-2:p4  bal_after=8271744  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p5  bal_before=8271744  est=300c
+  ↳ xarticles:likes-gte-2:p5  bal_after=8259579  spent=12165c ($0.1216)  count=20
+  ↳ xarticles:likes-gte-2:p6  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-2:p6  bal_after=8259579  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8259579  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p1  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p1  bal_after=8259579  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p2  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p2  bal_after=8259579  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p3  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p3  bal_after=8259579  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p4  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p4  bal_after=8259579  spent=0c ($0.0)  count=10
+  ↳ xarticles:likes-gte-1:p5  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p5  bal_after=8259579  spent=0c ($0.0)  count=13
+  ↳ xarticles:likes-gte-1:p6  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p6  bal_after=8259579  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p7  bal_before=8259579  est=300c
+  ↳ xarticles:likes-gte-1:p7  bal_after=8259579  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8259579  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8259579  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8259579  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-100:p1  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-100:p1  bal_after=8259579  spent=0c ($0.0)  count=2
+  ↳ xarticles:replies-gte-100:p2  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-100:p2  bal_after=8259579  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "deployer auction") min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8259579  spent=0c ($0.0)  count=2
+  ↳ xarticles:replies-gte-25:p1  bal_before=8259579  est=300c
+  ↳ xarticles:replies-gte-25:p1  bal_after=8259579  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p1  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p1  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p2  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p2  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p3  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p3  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p4  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p4  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p5  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p5  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p6  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p6  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p7  bal_before=8253384  est=300c
+  ↳ xarticles:broad-native-top:p7  bal_after=8253384  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p8  bal_before=8248524  est=300c
+  ↳ xarticles:broad-native-top:p8  bal_after=8246169  spent=2355c ($0.0236)  count=0
+
+### keyword-native-top [Top] x10p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p1  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p1  bal_after=8246169  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p2  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p2  bal_after=8246169  spent=0c ($0.0)  count=9
+  ↳ xarticles:keyword-native-top:p3  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p3  bal_after=8246169  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p4  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p4  bal_after=8246169  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p5  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p5  bal_after=8246169  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p6  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p6  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (HIP-3 OR HIP3 OR "builder deployed" OR "builder-deployed" OR "permissionless perp" OR "deployer auction") (Hyperliquid OR HyperCore OR perp OR perps OR market) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:Delphi_Digital  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:Delphi_Digital  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:virtuals_io  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:virtuals_io  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:HyperliquidR  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:HyperliquidR  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:tokenfi  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:tokenfi  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:blocmates  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:blocmates  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:ZanaVentures  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:ZanaVentures  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:PinkBrains_io  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:PinkBrains_io  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:castle_labs  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:castle_labs  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:realpepito  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:realpepito  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:OAK_Res  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:OAK_Res  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:OAK_Res  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:OAK_Res  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:MyriadMarkets  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:MyriadMarkets  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:BlockBeatsAsia  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:munji33  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:munji33  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:a1research__  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:a1research__  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:BitMartExchange  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:BitMartExchange  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:OAK_Res_FR  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:OAK_Res_FR  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:FalconXGlobal  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:FalconXGlobal  bal_after=8246169  spent=0c ($0.0)  count=0
+  ↳ xarticles:author-baseline:aveai_info  bal_before=8246169  est=300c
+  ↳ xarticles:author-baseline:aveai_info  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "hip3-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hip3-30d",
+  "tweets": 1134,
+  "native_x_articles": 23,
+  "top": {
+    "tweet_id": "2057796036114977157",
+    "tweet_url": "https://x.com/HyperliquidR/status/2057796036114977157",
+    "article_url": "https://x.com/i/article/2057781060952363008",
+    "title": "Hyperliquid Through a TradFi Lens: Weekend Markets, Builder Codes, and Transparent Rules",
+    "preview_text": "Article written by Jeroen Nieuwkoop, Chief Operating Officer, Hyperliquid Strategies Inc. Web version available on HRC here. \nHyperliquid Strategies Inc is a digital asset treasury company. We hold",
+    "cover_media_img_url": "https://pbs.twimg.com/media/HI6_ydiXsAAI5mf.jpg",
+    "author": "HyperliquidR",
+    "author_name": "Hyperliquid Research Collective (HRC)",
+    "author_followers": 3483,
+    "created_at": "Fri May 22 12:09:41 +0000 2026",
+    "likes": 127,
+    "retweets": 36,
+    "replies": 7,
+    "quotes": 13,
+    "bookmarks": 87,
+    "views": 42056,
+    "query_label": "likes-gte-100",
+    "engagement": 270,
+    "weighted_engagement": 319,
+    "engagement_per_1k_views": 6.42,
+    "score": 333.01866666666666,
+    "author_avg_views_last10": 0.0,
+    "author_avg_views_min_age_hours": 4,
+    "views_per_1k_followers": 12074.648,
+    "views_vs_author_avg": 0.0,
+    "outlier_score": 12081.068
+  }
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hip3-30d/by-likes.md (23 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hip3-30d/by-views.md (23 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=hip4-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets" OR "event perps" OR "express a bet") url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets" OR "event perps" OR "express a bet") url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets" OR "event perps" OR "express a bet") url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "hip4-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hip4-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hip4-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hip4-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=hyperevm-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova) min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR precompile OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova OR HyperBloom) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR precompile OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova OR HyperBloom) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (HyperEVM OR "Hyper EVM" OR HyperCore OR CoreWriter OR precompile OR Hyperbeat OR HyperSwap OR HyperLend OR Felix OR HypurrFi OR Kinetiq OR Hypernova OR HyperBloom) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "hyperevm-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hyperevm-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hyperevm-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hyperevm-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=hl-defi-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p ("HLP vault" OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq OR Hyperdrive) min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (HLP OR "HLP vault" OR Hyperliquid OR HyperEVM) (vault OR lending OR looping OR staking OR LST OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (HLP OR "HLP vault" OR Hyperliquid OR HyperEVM) (vault OR lending OR looping OR staking OR LST OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (HLP OR "HLP vault" OR Hyperliquid OR HyperEVM) (vault OR lending OR looping OR staking OR LST OR stHYPE OR Felix OR HypurrFi OR HyperLend OR Hyperbeat OR Kinetiq) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "hl-defi-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hl-defi-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hl-defi-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/hl-defi-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=ai-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (AI OR agent OR agents OR agentic OR LLM OR Claude OR GPT OR autonomous) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (AI OR agent OR agents OR agentic OR LLM OR Claude OR GPT OR autonomous) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (AI OR agent OR agents OR agentic OR LLM OR Claude OR GPT OR autonomous) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "ai-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/ai-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/ai-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/ai-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=trading-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (trading OR trader OR market OR markets OR portfolio OR quant OR stock OR stocks OR finance OR liquidity) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "trading-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/trading-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/trading-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/trading-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=trading-ai-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (AI OR agent OR agents OR LLM) (trading OR trader OR quant OR market OR markets OR portfolio OR crypto OR DeFi OR perp OR prediction) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (AI OR agent OR agents OR LLM) (trading OR trader OR quant OR market OR markets OR portfolio OR crypto OR DeFi OR perp OR prediction) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (AI OR agent OR agents OR LLM) (trading OR trader OR quant OR market OR markets OR portfolio OR crypto OR DeFi OR perp OR prediction) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "trading-ai-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/trading-ai-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/trading-ai-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/trading-ai-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=crypto-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (crypto OR DeFi OR onchain OR blockchain OR Web3 OR perp OR perps OR DEX OR token) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (crypto OR DeFi OR onchain OR blockchain OR Web3 OR perp OR perps OR DEX OR token) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (crypto OR DeFi OR onchain OR blockchain OR Web3 OR perp OR perps OR DEX OR token) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "crypto-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/crypto-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/crypto-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/crypto-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=pumpfun-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (pump.fun OR pumpfun OR "pump fun" OR memecoin OR memecoins OR "meme coin" OR launchpad OR "bonding curve" OR LetsBonk OR bonkfun OR alt.fun OR Bankr OR perpad OR dogecoin OR clanker OR four.meme OR daos.fun OR "fair launch" OR 土狗 OR 狗狗币 OR 梗币) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (pump.fun OR pumpfun OR "pump fun" OR memecoin OR memecoins OR "meme coin" OR launchpad OR "bonding curve" OR LetsBonk OR bonkfun OR alt.fun OR Bankr OR perpad OR dogecoin OR clanker OR four.meme OR daos.fun OR "fair launch" OR 土狗 OR 狗狗币 OR 梗币) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (pump.fun OR pumpfun OR "pump fun" OR memecoin OR memecoins OR "meme coin" OR launchpad OR "bonding curve" OR LetsBonk OR bonkfun OR alt.fun OR Bankr OR perpad OR dogecoin OR clanker OR four.meme OR daos.fun OR "fair launch" OR 土狗 OR 狗狗币 OR 梗币) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "pumpfun-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/pumpfun-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/pumpfun-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/pumpfun-30d/by-views.md (0 articles)
+date: illegal option -- -
+usage: date [-jnRu] [-I[date|hours|minutes|seconds|ns]] [-f input_fmt]
+            [ -z output_zone ] [-r filename|seconds] [-v[+|-]val[y|m|w|d|H|M|S]]
+            [[[[mm]dd]HH]MM[[cc]yy][.SS] | new_date] [+output_fmt]
+[] monthly fetch niche=prediction-markets-30d date=2026-06-10 max=500
+
+### rt-gte-500 [Top] x10p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x50p min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x10p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x50p min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x10p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x50p min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x10p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x50p min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x10p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x50p min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x10p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x50p min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500 [Top] x10p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x50p min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x10p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x50p min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x10p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-100-latest [Latest] x50p min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x10p min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x10p min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x10p min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x10p min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x10p min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### likes-gte-1 [Top] x10p min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8246169  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-2000 [Top] x10p min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x10p min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x10p min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x10p min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8246169  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x10p (Polymarket OR Kalshi OR prediction OR forecast OR "betting market" OR "outcome market" OR "outcome markets" OR "event contract" OR Vizo OR XPredict OR predict.fun OR "limitless exchange" OR "myriad markets" OR metaculus OR futarchy OR 预测市场 OR 予測市場) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-top [Top] x10p (Polymarket OR Kalshi OR prediction OR forecast OR "betting market" OR "outcome market" OR "outcome markets" OR "event contract" OR Vizo OR XPredict OR predict.fun OR "limitless exchange" OR "myriad markets" OR metaculus OR futarchy OR 预测市场 OR 予測市場) url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+
+### keyword-native-latest [Latest] x50p (Polymarket OR Kalshi OR prediction OR forecast OR "betting market" OR "outcome market" OR "outcome markets" OR "event contract" OR Vizo OR XPredict OR predict.fun OR "limitless exchange" OR "myriad markets" OR metaculus OR futarchy OR 预测市场 OR 予測市場) url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8246169  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8246169  spent=0c ($0.0)  count=0
+{
+  "date": "2026-06-10",
+  "niche": "prediction-markets-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/prediction-markets-30d",
+  "tweets": 0,
+  "native_x_articles": 0,
+  "top": null
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/prediction-markets-30d/by-likes.md (0 articles)
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-10/prediction-markets-30d/by-views.md (0 articles)

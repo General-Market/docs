@@ -1,0 +1,29 @@
+verdict	handle	followers	bio	signal_text
+PASS	@HansonBirringer	2667	Managing Director @ Flowdesk	Built MM bot for Hyperliquid native markets, posted detailed trace of 5-min auto-rebalance — institutional MM dev who actively codes
+PASS	@lliu54827	1083	"不会 code，用 Claude 跑 BTC 交易机器人" (uses Claude to run BTC bot)	Runs Freqtrade multi-strategy + ML on ccxt, deep on OHLCV cleaning across exchanges — genuine retail bot dev w/ small audience
+PASS	@den_zel21	4067	Web3 AI Builder, @arc contributor	"Spent tonight building a bot that monitors 229 crypto markets on Hyperliquid 24/7" — Hyperliquid funding-rate bot builder
+PASS	@0xPhilanthrop	59853	Genius billionaire playboy philanthropist	"I built a bot that doesn't trade markets — it trades other bots on Polymarket... studies behavior. 70% of Polymarket volume is bot-driven" — meta-bot dev, exactly the cohort
+PASS	@_hummingbot	16610	Open source framework for AI trading agents	Framework brand (relaxed filter allows). Hosts Botcamp cohorts, Aevo perps connector — anchor account for indie bot devs
+MIDDLE	@kaish3n	7101	Building @ALgoatorg	Tracks scalper/zombie-token sniper bot wallets; builder, but @ALgoator unclear if bot or alpha tool
+MIDDLE	@saturnterminal	5939	"AI-powered Solana sniper bot"	Brand-product account (sniper bot SaaS) — useful as ecosystem anchor, not an indie dev
+MIDDLE	@smcfactory	1950	"autonomous AI agent"	Building Hummingbot-based liquidity engine on Base, but the account is a meme token (CA listed) — borderline
+MIDDLE	@ekinoks_26	8342	Onchain community	Wrote about Trojan/BONKbot/BullX + "Thorp Strategy Engine" running Opus 4.6/GPT-5.5/DeepSeek — bot-aware analyst, not confirmed dev
+REJECT	@TGweb3333	5553	Polymarket affiliate link + meme TG	KOL-affiliate, exact form we drop
+REJECT	@Atenov_D	10974	Polymarket Adept (affiliate)	KOL-affiliate even though tweet is about NautilusTrader
+REJECT	@qkl2058	67046	PolyMarket+PolyCop signup links	KOL-affiliate
+REJECT	@sol_jingou	51650	冲狗 tools + OKX/Binance ref links	KOL-affiliate
+REJECT	@vespamatic96	21254	pumpfun contributor + e-book sales	Promo
+REJECT	@reedin__eth	6878	BTC maxi + DM for alpha	KOL-shitpost archetype
+REJECT	@DivyanshT91162	7373	"DM for collaborations"	Generic AI-content creator
+REJECT	@dipanshu_ai	4161	"Promoted 150+ brands"	Affiliate marketer
+REJECT	@dunik_7	3360	"AI-powered wallet hunter, polymarket"	Affiliate/tooling promo
+REJECT	@0xavseenko	9644	Generic crypto educator	Wrote about Claude-coded sniper bot but only as narrative content, not as dev
+REJECT	@ugo_udkm	2524	"creative sometimes"	Empty signal; just retweeted Nautilus
+REJECT	@PrakashS720	3931	"Just build — less thinking"	No bot-dev content
+REJECT	@huoshan007	53629	NFT + BNB maxi	Out of cohort
+REJECT	@SMratitiwa86867	6388	AI content creator	Generic
+REJECT	@puff_2000	2420	"AI PM, ex-Google PM"	Wrote about Backtrader+Binance-python repo — but bio reads ex-FAANG influencer
+REJECT	@DanWWj	1211	#ZenFam alpha collective	Out of cohort
+REJECT	@BlackCatDeFi	1391	"Compounding Interest Life"	Generic DeFi
+REJECT	@de1lymoon	1912	Polymarket researcher	Affiliate-adjacent
+REJECT	@tommy_love123	10623	"AI x Investing" content creator	NautilusTrader content but not active bot dev

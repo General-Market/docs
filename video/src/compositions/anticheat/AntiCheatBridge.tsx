@@ -350,7 +350,7 @@ const RightAnswer: React.FC = () => {
           style={{
             position: "absolute",
             inset: -90,
-            background: `radial-gradient(ellipse at 30% 50%, rgba(0,82,255,${
+            background: `radial-gradient(ellipse at 30% 50%, rgba(45, 91, 255,${
               0.22 * bloom
             }), transparent 65%)`,
             filter: "blur(60px)",

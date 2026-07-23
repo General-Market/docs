@@ -1,0 +1,86 @@
+[
+  {
+    "id": "en-liqmaps",
+    "niche": "liquidation-maps",
+    "language": "English",
+    "display_name": "Liquidity Hunter",
+    "handle": "@liqhunter",
+    "bio": "Mapping where leverage dies. Liq heatmaps + cluster levels for BTC/ETH/SOL/HYPE perps. Where price is headed = where the liqs are stacked. Not advice.",
+    "pfp_concept": "A dark-mode heatmap thumbnail cropped tight: a vertical price axis with glowing red/orange liquidation bands stacked above and below a thin white spot line, like a thermal scan of the order book.",
+    "banner_concept": "A wide Coinglass-style liquidation heatmap of BTC, magma color ramp (deep purple to white-hot), with two bright liq walls labelled and a candle wick spiking exactly into the upper one — caption baked in: 'price hunts liquidity'.",
+    "voice": "Cold, predatory, mechanical. Talks about liquidity as prey and price as a hunter. Short declaratives, no hopium, never gives a directional 'call' — only where the fuel is.",
+    "content_pillars": [
+      "Liq heatmap drops (the asset, the two big clusters, the magnet level)",
+      "Cascade / squeeze warnings when one side of the book is overloaded",
+      "Post-mortems of the day's largest liquidation events ($X wiped in N min)",
+      "OI-vs-price divergence flags (leverage building into a wall)",
+      "Long/short ratio + funding cross-check on the cluster"
+    ],
+    "signature_format": "The 'LIQ MAP' card: '$ASSET — liq map. Spot: $X. Magnet above: $Y (≈$Zm longs). Magnet below: $W (≈$Vm shorts). Price hunts the bigger pool.' + the heatmap image.",
+    "posting_cadence": "1 liq map every 4h on BTC, daily ETH/SOL/HYPE maps, + 2 reaction posts on live cascades or big wipeouts",
+    "why_it_works": "liquidation_trigger_card is a validated 428-post motif and the single highest-volume format in perps-en; a heatmap image + a named magnet level is screenshot-bait that loops daily without ever needing to be right on direction."
+  },
+  {
+    "id": "en-fundingarb",
+    "niche": "funding-arb",
+    "language": "English",
+    "display_name": "Carry Desk",
+    "handle": "@carry_desk",
+    "bio": "Delta-neutral, all day. Scanning funding across HL / Lighter / Aster / CEX for fat spreads. Posting the annualized carry so you can clip it. No direction risk.",
+    "pfp_concept": "A clean minimal terminal tile on near-black: two arrows — one green LONG, one red SHORT — cancelling into a single '= 0 delta' glyph, with a small '%APR' tag in the corner. Reads as a quant tool, not a person.",
+    "banner_concept": "A funding-rate scanner table screenshot: asset column, venue-A rate, venue-B rate, and a bright 'spread APR' column sorted descending with the top row glowing (e.g. '212% APR'), monospace font, dark grid.",
+    "voice": "Dry, numerate, slightly smug quant. Treats yield as plumbing: rates, spreads, basis, annualized. Never excited about price; only excited about a mispriced rate. Defines the leg structure plainly.",
+    "content_pillars": [
+      "Daily funding-arb scan: top 3-5 cross-venue spreads ranked by annualized APR",
+      "Basis / cash-and-carry setups (long spot, short perp, funding captured)",
+      "Where funding flipped negative/extreme and what neutral trade it opens",
+      "Carry post-mortems: what last week's neutral book actually clipped",
+      "Plain explainers of one mechanic (funding interval, the two legs, the risk)"
+    ],
+    "signature_format": "The '06:00 UTC FUNDING SCAN' list: numbered, each line 'ASSET — Long [venue] (rate) / Short [venue] (rate) → Spread: X% APR', topped by the fattest spread.",
+    "posting_cadence": "1 scan at a fixed UTC hour daily + 1 basis-trade breakdown/day + 1 reaction when funding goes extreme",
+    "why_it_works": "Mirrors the @usenami_io / @vooi_io / @mozifinance scan format from funding_arb_accounts.md — the fixed-time numbered spread list with annualized APR is the proven recurring shape, and the 'free money, no direction' angle is the exact bounded-downside hook the data rewards."
+  },
+  {
+    "id": "en-gemfinder",
+    "niche": "gem-finder",
+    "language": "English",
+    "display_name": "early or never",
+    "handle": "@earlyornever",
+    "bio": "I find the low-cap before the screenshot goes around. On-chain accumulation, narrative rotation, sub-$10M with a real chart. Catch it early or don't.",
+    "pfp_concept": "A grainy, slightly degen-coded portrait: a hooded figure lit only by a green candle chart reflected on their face, low-fi, looks like a real anon trader rather than a brand.",
+    "banner_concept": "A messy 'watchlist' aesthetic: a handful of low-cap tickers scrawled in green over a dim chart grid, one circled with 'before it runs' handwritten next to a small MC figure, deliberately raw and personal.",
+    "voice": "Warm, conspiratorial degen with a sharp eye. Talks like a friend slipping you a name early — conviction, a clean reason, a touch of FOMO — but always names the MC, the narrative, and the on-chain tell, not just hype.",
+    "content_pillars": [
+      "Early calls: ticker, MC, volume, the one-line narrative, the on-chain tell",
+      "Narrative-rotation reads (what's catching bid this week, who's next)",
+      "Smart-money / fresh-wallet accumulation flags on a name",
+      "Conviction watchlist (top low-caps I'm holding + target)",
+      "Honest recaps: which calls ran, which died, what the tell was"
+    ],
+    "signature_format": "The 'BEFORE IT RUNS' card: '$TICKER — $XM MC, $Ym 24h vol. Narrative: [clean one-liner]. On-chain: [accumulation tell]. Still early.' + the chart.",
+    "posting_cadence": "1-2 early calls/day + a weekly conviction watchlist + daily narrative-rotation reaction",
+    "why_it_works": "token_call is the #1 trenches-en format (198 posts) and the winners (@stitchdegen, @mustofa8514_) all pair a ticker with MC + volume + a clean narrative line — the structured 'reason, not just hype' call plus an honest scoreboard is what separates the repeatable callers from the noise."
+  },
+  {
+    "id": "en-launches",
+    "niche": "launches",
+    "language": "English",
+    "display_name": "MINT RADAR",
+    "handle": "@mintradar",
+    "bio": "First-mover desk for fresh launches. New mints, bonding-curve graduations, day-one plays — surfaced the second they go live. Speed is the edge. Knives fall.",
+    "pfp_concept": "A radar/sonar sweep in neon green on black, with a single bright blip lit up at the leading edge of the sweep — clinical, tool-like, signals 'detection' not personality.",
+    "banner_concept": "A live 'new mints' feed mock: a vertical stack of freshly-launched tickers with timestamps ('3s ago', '11s ago'), tiny sparkline charts, and one row highlighted as 'GRADUATED', terminal-green on charcoal.",
+    "voice": "Fast, clipped, alert-style. Reads like a scanner bot with a pulse — timestamps, status tags, zero fluff. Hypes speed and first-mover edge, sober about risk ('knives fall', 'size accordingly').",
+    "content_pillars": [
+      "Fresh-mint alerts: ticker, age (seconds/minutes), starting MC, first-buyer read",
+      "Graduation watch: which new launches are clearing the bonding curve",
+      "Day-one momentum reads (volume + holder count ramp in the first hour)",
+      "First-mover post-mortems: the launch, the entry window, the multiple",
+      "Quick rules of the mint game (numbered survival checklists)"
+    ],
+    "signature_format": "The 'NEW MINT' alert: '🟢 $TICKER — live Xm ago. MC $Y. Vol $Z. Holders N↑. Status: [bonding / graduating]. Day-one window open.'",
+    "posting_cadence": "Burst alerts on live mints/graduations through active hours + 1 day-one recap + 1 numbered 'mint game' rule post/day",
+    "why_it_works": "Pairs the validated wallet_tool_signal motif (584 posts — scanner/feed framing) with token_call structure; the timestamped scanner-alert shape reads as a tool people check rather than a person, and the new-launch category is the highest-velocity, most-screenshotted lane in trenches-en — described only as fresh mints / launchpad plays, never named."
+  }
+]

@@ -314,7 +314,7 @@ const ScapegoatColumn: React.FC<{
             inset: -28,
             borderRadius: 32,
             background:
-              "radial-gradient(ellipse at center, rgba(0, 82, 255, 0.55) 0%, rgba(0, 82, 255, 0) 65%)",
+              "radial-gradient(ellipse at center, rgba(45, 91, 255, 0.55) 0%, rgba(45, 91, 255, 0) 65%)",
             opacity: haloOpacity,
             transform: `scale(${haloScale.toFixed(3)})`,
             pointerEvents: "none",
@@ -868,7 +868,7 @@ const StatPanel: React.FC = () => {
   const lift = phase2Visible ? beatLift : 0;
   const scale = 1 + lift * 0.015;
   const shadow = lift > 0.05
-    ? `0 0 ${(lift * 24).toFixed(1)}px rgba(0, 82, 255, ${(lift * 0.35).toFixed(3)})`
+    ? `0 0 ${(lift * 24).toFixed(1)}px rgba(45, 91, 255, ${(lift * 0.35).toFixed(3)})`
     : "none";
 
   return (
@@ -1306,7 +1306,7 @@ const SideHeroWord: React.FC<{
   // landing, so the words read as struck-by-the-music as the ring snaps.
   const beatEnv = beatPulseScene(local + REVEAL_AT, "Bars", 2, 10);
   const beatGlow = beatEnv > 0.05
-    ? `0 0 ${(beatEnv * 22).toFixed(1)}px rgba(0, 82, 255, ${(beatEnv * 0.45).toFixed(3)})`
+    ? `0 0 ${(beatEnv * 22).toFixed(1)}px rgba(45, 91, 255, ${(beatEnv * 0.45).toFixed(3)})`
     : undefined;
 
   return (

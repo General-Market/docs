@@ -7,7 +7,11 @@ import {
   interpolate,
 } from "remotion";
 import { loadFont as loadCaveat } from "@remotion/google-fonts/Caveat";
+import { loadFont as loadYanone } from "@remotion/google-fonts/YanoneKaffeesatz";
+import { loadFont as loadNeucha } from "@remotion/google-fonts/Neucha";
+import { measureText } from "@remotion/layout-utils";
 import { CAM_A, CAM_B, CAM_B_START } from "./camera-data";
+import { HAND_BOX } from "./hand-data";
 import {
   BASE_CANDLES,
   GRID_V,
@@ -24,6 +28,14 @@ export const DURATION = 1784; // 29.73s — matches reference tradingbook-origin
 const { fontFamily: CAVEAT } = loadCaveat("normal", {
   subsets: ["latin"],
   weights: ["400", "600", "700"],
+});
+const { fontFamily: YANONE } = loadYanone("normal", {
+  subsets: ["latin"],
+  weights: ["400", "500", "700"],
+});
+const { fontFamily: NEUCHA } = loadNeucha("normal", {
+  subsets: ["latin"],
+  weights: ["400"],
 });
 
 // ═════════════════════════════════════════════════════════════════
@@ -643,6 +655,586 @@ const WipeLabel: React.FC<{
 };
 
 // ═════════════════════════════════════════════════════════════════
+// Study-card segment (frames 1213–1437), rebuilt in code.
+// The reference films a "Bull pennant" study card with a real hand
+// writing over it: white card + Yanone-Kaffeesatz text + hand-drawn
+// diagram, over the defocused anchor-view chart. Everything below is
+// vector/text except the hand+pen, which rides as per-frame
+// alpha-matted sprites (hand-data.ts). All numbers measured on the
+// reference (screen px of the 1080x1920 frame).
+// ═════════════════════════════════════════════════════════════════
+
+// card geometry
+const CARD_L = 164;
+const CARD_T = 431;
+const CARD_W = 743;
+const CARD_H = 1055;
+const CARD_R = 48;
+
+// palette (measured)
+const BK_INK = "#000000";
+const BK_ROYAL = "#1649bd"; // TARGET / Target / 100% / D text blue
+const BK_LINE_BLUE = "#0f46d1"; // diagram lines + arrows
+const BK_INDIGO = "#362e99"; // single letters A/B/C/D
+const BK_VIOLET = "#462884"; // AB / CD tokens
+const BK_BREAKOUT = "#30206e";
+const BK_GREEN_PATH = "#0c7e6a";
+const BK_ORANGE = "#da8d15";
+const BK_TICK_RED = "#d53551";
+const BK_LABEL_RED = "#d2202c";
+const BK_LABEL_GREEN = "#33e936";
+const BK_CIRCLE_GREEN = "#2be236";
+
+// Yanone Kaffeesatz vertical metrics: at line-height 1 the cap top sits
+// just below the CSS top; final value tuned against rendered stills
+const YK_TOP = 0.166;
+const NE_TOP = 0.26; // Neucha em top → cap top
+
+// fitted text line: measured ink box + measureText → scaleX (house pattern)
+const BookLine: React.FC<{
+  x: number;
+  x1: number;
+  y: number; // ink top (≈ cap/ascender top)
+  fs: number;
+  spans: { t: string; c?: string }[];
+  weight?: 400 | 500 | 700;
+  font?: string;
+  rotate?: number; // deg, around the line's left edge
+  shadow?: string;
+  skew?: number;
+  tracking?: string;
+  strokeW?: number; // -webkit-text-stroke, thickens marker glyphs
+}> = ({ x, x1, y, fs, spans, weight = 400, font = YANONE, rotate, shadow, skew, tracking, strokeW }) => {
+  const text = spans.map((s) => s.t).join("");
+  const natural = measureText({
+    text,
+    fontFamily: font,
+    fontSize: fs,
+    fontWeight: String(weight),
+    letterSpacing: tracking,
+  }).width;
+  const scaleX = natural > 0 ? (x1 - x) / natural : 1;
+  const tf = [
+    rotate ? `rotate(${rotate}deg)` : "",
+    skew ? `skewX(${skew}deg)` : "",
+    `scaleX(${scaleX.toFixed(4)})`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y - (font === NEUCHA ? NE_TOP : YK_TOP) * fs,
+        fontFamily: font,
+        fontSize: fs,
+        fontWeight: weight,
+        lineHeight: 1,
+        letterSpacing: tracking,
+        whiteSpace: "pre",
+        color: BK_INK,
+        transform: tf,
+        transformOrigin: "left top",
+        textShadow: shadow,
+        WebkitTextStroke: strokeW ? `${strokeW}px` : undefined,
+      }}
+    >
+      {spans.map((s, i) => (
+        <span key={i} style={s.c ? { color: s.c } : undefined}>
+          {s.t}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+// body copy: [x0, x1, inkTop, spans]
+const BODY_FS = 30.6; // cap ≈ 22
+const BOOK_BODY: { x: number; x1: number; y: number; spans: { t: string; c?: string }[] }[] = [
+  { x: 203, x1: 823, y: 574, spans: [{ t: "- The emergence of such a pattern is preceded by a sharp price" }] },
+  { x: 203, x1: 859, y: 611, spans: [{ t: "movement in the form of an almost straight line, accompanied by a" }] },
+  { x: 202, x1: 469, y: 647, spans: [{ t: "significant volume of trade." }] },
+  { x: 201, x1: 814, y: 691, spans: [{ t: "- After an impulse reaches a certain strong price level, a small" }] },
+  { x: 201, x1: 852, y: 727, spans: [{ t: "triangle-like ”band” is formed. After which, in most cases, further" }] },
+  { x: 201, x1: 625, y: 764, spans: [{ t: "development of the current trend continues" }] },
+  {
+    x: 204,
+    x1: 804,
+    y: 830,
+    spans: [{ t: "- " }, { t: "TARGET", c: BK_ROYAL }, { t: " - (the place where you want to close an open trade)" }],
+  },
+  // right column (beside the diagram)
+  { x: 652, x1: 889, y: 1177, spans: [{ t: "- " }, { t: "AB", c: BK_VIOLET }, { t: " - flagpole (distance" }] },
+  { x: 651, x1: 898, y: 1217, spans: [{ t: "from the beginning of the" }] },
+  { x: 651, x1: 891, y: 1254, spans: [{ t: "formation of the flagpole" }] },
+  { x: 651, x1: 889, y: 1290, spans: [{ t: "to the maximum point of" }] },
+  { x: 651, x1: 750, y: 1323, spans: [{ t: "the figure)" }] },
+  // CD block (bottom left)
+  { x: 274, x1: 574, y: 1332, spans: [{ t: "- " }, { t: "CD", c: BK_VIOLET }, { t: " - distance from the" }] },
+  { x: 266, x1: 589, y: 1369, spans: [{ t: "last local minimum to the" }] },
+  { x: 259, x1: 538, y: 1405, spans: [{ t: "horizontal target line" }] },
+];
+
+// hand-drawn diagram, all vector (screen coords)
+const BookDiagram: React.FC = () => (
+  <svg
+    width={1080}
+    height={1920}
+    viewBox="0 0 1080 1920"
+    style={{ position: "absolute", left: 0, top: 0 }}
+  >
+    <defs>
+      <linearGradient id="bk-tri" x1="0" y1="1157" x2="0" y2="1232" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#71d3c3" stopOpacity={0.9} />
+        <stop offset="100%" stopColor="#71d3c3" stopOpacity={0.06} />
+      </linearGradient>
+    </defs>
+
+    {/* teal fill triangles under the zigzag peaks */}
+    <polygon points="322,1157 303,1231 353,1232" fill="url(#bk-tri)" />
+    <polygon points="390,1175 369,1230 419,1231" fill="url(#bk-tri)" />
+    <polygon points="446,1189 428,1227 473,1224" fill="url(#bk-tri)" />
+
+    {/* green price path: flagpole → zigzag → breakout */}
+    <path
+      d="M 252 1466 L 320 1150 L 361 1241 L 390 1168 L 426 1234 L 445 1186 L 477 1223 L 539 922"
+      fill="none"
+      stroke={BK_GREEN_PATH}
+      strokeWidth={2.2}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+
+    {/* orange trendlines */}
+    <line x1={286} y1={1137} x2={539} y2={1216} stroke={BK_ORANGE} strokeWidth={1.9} strokeLinecap="round" />
+    <line x1={284} y1={1260} x2={500} y2={1219.8} stroke={BK_ORANGE} strokeWidth={1.9} strokeLinecap="round" />
+
+    {/* red tick marks astride the trendlines (serifed slash) */}
+    {(
+      [
+        [317, 1140],
+        [387, 1160],
+        [441, 1176],
+        [365, 1254],
+        [426, 1243],
+        [480, 1236],
+      ] as Pt[]
+    ).map(([cx, cy], i) => (
+      <g key={`tk${i}`} transform={`translate(${cx}, ${cy})`} stroke={BK_TICK_RED} strokeWidth={1.8}>
+        <line x1={-3} y1={3.3} x2={3} y2={-3.3} />
+        <line x1={1} y1={-4.4} x2={4.7} y2={-2.4} />
+        <line x1={-4.7} y1={2.4} x2={-1} y2={4.4} />
+      </g>
+    ))}
+
+    {/* B / A horizontal levels + left 100% double arrow */}
+    <line x1={192} y1={1148} x2={309} y2={1148} stroke={BK_LINE_BLUE} strokeWidth={2.2} />
+    <line x1={192} y1={1465.5} x2={247} y2={1465.5} stroke={BK_LINE_BLUE} strokeWidth={2.2} />
+    <g stroke={BK_LINE_BLUE} strokeWidth={2.2} fill="none">
+      <line x1={222.5} y1={1162} x2={222.5} y2={1459} />
+      <path d={`M 214.5 1174 L 222.5 1162 L 230.5 1174`} />
+      <path d={`M 214.5 1447 L 222.5 1459 L 230.5 1447`} />
+    </g>
+
+    {/* C level + right 100% double arrow + D/target short line */}
+    <line x1={494} y1={1192} x2={611} y2={1192} stroke={BK_LINE_BLUE} strokeWidth={2.2} />
+    <g stroke={BK_LINE_BLUE} strokeWidth={2.2} fill="none">
+      <line x1={562.5} y1={921} x2={562.5} y2={1187} />
+      <path d={`M 554.5 933 L 562.5 921 L 570.5 933`} />
+      <path d={`M 554.5 1175 L 562.5 1187 L 570.5 1175`} />
+    </g>
+    <line x1={560} y1={912} x2={611} y2={912} stroke={BK_LINE_BLUE} strokeWidth={2.2} />
+
+    {/* Target crosshair scope: ring + centre dot + 4 cross ticks */}
+    <g stroke={BK_LINE_BLUE} strokeWidth={2} fill="none">
+      <circle cx={543} cy={911} r={8} />
+      <circle cx={543} cy={911} r={2.4} fill={BK_LINE_BLUE} stroke="none" />
+      <line x1={543} y1={899.5} x2={543} y2={905.5} />
+      <line x1={543} y1={916.5} x2={543} y2={922.5} />
+      <line x1={531.5} y1={911} x2={537.5} y2={911} />
+      <line x1={548.5} y1={911} x2={554.5} y2={911} />
+    </g>
+
+    {/* Breakout arrow + green breakout circle */}
+    <g stroke={BK_BREAKOUT} strokeWidth={2} fill="none">
+      <path d="M 424 1058 C 438 1096 455 1140 471 1171" />
+      <path d={`M 461.5 1166 L 471 1171 L 470.5 1160.5`} />
+    </g>
+    <circle cx={481} cy={1196} r={11} fill="none" stroke={BK_CIRCLE_GREEN} strokeWidth={1.7} />
+
+    {/* clipart 1: celebrating trader (simplified flat shapes) */}
+    <g>
+      {/* mint swoosh ribbon + arrow */}
+      <path
+        d="M 833 1082 C 790 1094 725 1082 716 1046 C 711 1022 733 1008 757 1013"
+        fill="none"
+        stroke="#06d9ac"
+        strokeWidth={15}
+        strokeLinecap="round"
+      />
+      <line x1={757} y1={1013} x2={796} y2={972} stroke="#06d9ac" strokeWidth={14} />
+      <polygon points="815,950 781,958 806,984" fill="#06d9ac" />
+      {/* person */}
+      <path d="M 758 1023 L 761 975 L 794 973 L 799 1023 Z" fill="#7a70e8" />
+      <line x1={794} y1={982} x2={824} y2={968} stroke="#7a70e8" strokeWidth={9} strokeLinecap="round" />
+      <line x1={764} y1={982} x2={787} y2={976} stroke="#7a70e8" strokeWidth={8} strokeLinecap="round" />
+      <path d="M 758 1030 L 799 1028 L 786 1058 L 748 1092 L 736 1082 L 766 1052 Z" fill="#6f64d6" />
+      <ellipse cx={762} cy={1085} rx={8} ry={5} fill="#695cb7" />
+      <circle cx={788} cy={990} r={9.5} fill="#e9b8b0" />
+      <path d="M 779 985 A 10 10 0 0 1 797 984 L 794 976 L 782 976 Z" fill="#2f2a55" />
+      <circle cx={780} cy={972} r={4} fill="#2f2a55" />
+      <rect x={804} y={1008} width={17} height={17} rx={4} fill="#f17d3d" />
+      {/* coins + sparkles */}
+      {(
+        [
+          [715, 982, 12],
+          [755, 1008, 8],
+          [838, 1034, 11],
+          [800, 1068, 9],
+          [717, 1079, 12],
+        ] as number[][]
+      ).map(([cx, cy, r], i) => (
+        <g key={`co${i}`}>
+          <circle cx={cx} cy={cy} r={r} fill="#eec410" stroke="#e6bb06" strokeWidth={2} />
+          <text
+            x={cx}
+            y={cy + r * 0.5}
+            fontSize={r * 1.4}
+            fill="#d8a800"
+            textAnchor="middle"
+            fontFamily={AXIS_FONT}
+            fontWeight={700}
+          >
+            $
+          </text>
+        </g>
+      ))}
+      {(
+        [
+          [734, 956],
+          [836, 1007],
+          [714, 1049],
+          [786, 1084],
+        ] as Pt[]
+      ).map(([cx, cy], i) => (
+        <path
+          key={`sp${i}`}
+          d={`M ${cx} ${cy - 5} L ${cx + 2} ${cy - 1.5} L ${cx + 5} ${cy} L ${cx + 2} ${cy + 1.5} L ${cx} ${cy + 5} L ${cx - 2} ${cy + 1.5} L ${cx - 5} ${cy} L ${cx - 2} ${cy - 1.5} Z`}
+          fill="#e8d72d"
+        />
+      ))}
+    </g>
+
+    {/* charging bull line-art sketch (below the C line) */}
+    <g stroke="#2f2f36" strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M 537 1206 C 532 1199 534 1193 541 1194 C 537 1200 540 1205 545 1206" />
+      <path d="M 545 1200 C 556 1192 577 1190 592 1196 C 606 1201 616 1198 620 1190 C 626 1193 623 1201 616 1204" />
+      <path d="M 620 1190 C 624 1187 626 1190 624 1194" />
+      <path d="M 543 1206 C 541 1214 542 1224 546 1233 M 553 1210 C 552 1220 554 1229 558 1237" />
+      <path d="M 592 1200 C 596 1212 598 1224 597 1236 M 604 1204 C 608 1214 610 1226 609 1238" />
+      <path d="M 545 1204 C 560 1210 580 1212 596 1206" />
+    </g>
+
+    {/* clipart 2: saver + piggy bank line art */}
+    <g stroke="#2b2b2b" strokeWidth={2.4} fill="none" strokeLinecap="round">
+      <path d="M 712 1381 C 700 1390 698 1408 710 1414 C 722 1420 736 1412 736 1400" stroke="#4e8f82" strokeWidth={2.6} />
+      <path d="M 706 1386 C 698 1396 700 1410 712 1416" stroke="#4e8f82" strokeWidth={2} opacity={0.7} />
+      <circle cx={745} cy={1405} r={9} />
+      <path d="M 741 1414 C 729 1420 724 1438 727 1452 L 729 1466" />
+      <path d="M 738 1466 L 740 1450 C 741 1442 745 1436 752 1432" />
+      <path d="M 750 1418 C 757 1414 763 1412 758 1412" />
+      <circle cx={766} cy={1412} r={9.5} fill="#efd468" />
+      <path d="M 777 1396 L 781 1391 M 784 1401 L 789 1398" strokeWidth={2} />
+      {/* piggy */}
+      <ellipse cx={784} cy={1444} rx={25} ry={19} />
+      <path d="M 806 1438 C 812 1439 813 1448 807 1450" />
+      <path d="M 792 1427 L 799 1420 L 801 1428" fill="#f2b8c4" />
+      <path d="M 796 1440 C 798 1442 798 1444 796 1445" strokeWidth={1.8} />
+      <line x1={771} y1={1462} x2={771} y2={1466} />
+      <line x1={796} y1={1462} x2={796} y2={1466} />
+      <rect x={768} y={1452} width={13} height={4} fill="#eed162" stroke="none" />
+      <rect x={778} y={1444} width={11} height={5} fill="#eed162" stroke="none" />
+      <rect x={785} y={1452} width={12} height={4} fill="#eed162" stroke="none" />
+    </g>
+  </svg>
+);
+
+// the study card: white rounded rect + header gradient + all text + diagram
+const BookCard: React.FC = () => (
+  <div
+    style={{
+      position: "absolute",
+      left: CARD_L,
+      top: CARD_T,
+      width: CARD_W,
+      height: CARD_H,
+      borderRadius: CARD_R,
+      background: "#fdfdfd",
+      boxShadow: "1px 1.5px 2px rgba(45,40,45,0.7), 3px 4px 8px rgba(60,55,60,0.42)",
+      overflow: "hidden",
+    }}
+  >
+    {/* children keep screen coordinates */}
+    <div style={{ position: "absolute", left: -CARD_L, top: -CARD_T, width: 1080, height: 1920 }}>
+      {/* header gradient (purple → white over 131px) */}
+      <div
+        style={{
+          position: "absolute",
+          left: CARD_L,
+          top: CARD_T,
+          width: CARD_W,
+          height: 134,
+          background:
+            "linear-gradient(180deg, #e0b1f0 0%, #e6b9f4 3%, #ecc4f6 22%, #eeccf7 37%, #f2ddf9 56%, #f7ecfa 76%, #fbf7fd 91%, #fdfdfd 100%)",
+        }}
+      />
+      <BookLine x={422} x1={657} y={458} fs={61} weight={500} spans={[{ t: "Bull pennant" }]} />
+      {BOOK_BODY.map((l, i) => (
+        <BookLine key={i} x={l.x} x1={l.x1} y={l.y} fs={BODY_FS} tracking="0.024em" spans={l.spans} />
+      ))}
+      <BookDiagram />
+      {/* diagram text labels */}
+      <BookLine x={330} x1={444} y={1125} fs={20} rotate={17} spans={[{ t: "Resistance line", c: BK_LABEL_RED }]} />
+      <BookLine x={346} x1={431} y={1254} fs={19} rotate={-12} spans={[{ t: "Support line", c: BK_LABEL_GREEN }]} />
+      <BookLine x={382} x1={463} y={1022} fs={28} spans={[{ t: "Breakout", c: BK_BREAKOUT }]} />
+      <BookLine x={467} x1={525} y={900} fs={28} spans={[{ t: "Target", c: BK_ROYAL }]} />
+      <BookLine x={183} x1={196} y={1142} fs={14.5} spans={[{ t: "B", c: BK_INDIGO }]} />
+      <BookLine x={181} x1={196} y={1458} fs={14.5} spans={[{ t: "A", c: BK_INDIGO }]} />
+      <BookLine x={618} x1={631} y={1186} fs={14.5} spans={[{ t: "C", c: BK_INDIGO }]} />
+      <BookLine x={609} x1={622} y={906} fs={14.5} spans={[{ t: "D", c: BK_INDIGO }]} />
+      <BookLine x={230} x1={271} y={1289} fs={16} spans={[{ t: "100%", c: BK_ROYAL }]} />
+      <BookLine x={572} x1={615} y={1062} fs={16} spans={[{ t: "100%", c: BK_ROYAL }]} />
+    </div>
+  </div>
+);
+
+// page title above the card (marker handwriting with white halo + soft shadow)
+const TITLE_SHADOW =
+  "0 0 3px #fff, 2.5px 0 1.5px #fff, -2.5px 0 1.5px #fff, 0 2.5px 1.5px #fff, 0 -2.5px 1.5px #fff, 2px 2px 1px #fff, -2px 2px 1px #fff, 4px 4px 4px rgba(108,107,96,0.85)";
+const BookTitle: React.FC<{ line?: 1 | 2 }> = ({ line }) => (
+  <>
+    {line !== 2 && (
+      <BookLine
+        x={345}
+        x1={748}
+        y={280}
+        fs={66}
+        font={NEUCHA}
+        skew={-10}
+        shadow={TITLE_SHADOW}
+        strokeW={1.3}
+        spans={[{ t: "Trading BOOK", c: "#15140a" }]}
+      />
+    )}
+    {line !== 1 && (
+      <BookLine
+        x={398}
+        x1={691}
+        y={357}
+        fs={61}
+        font={NEUCHA}
+        skew={-10}
+        shadow={TITLE_SHADOW}
+        strokeW={1.2}
+        spans={[
+          { t: "link in ", c: "#15140a" },
+          { t: "bio", c: "#0a2f9a" },
+        ]}
+      />
+    )}
+  </>
+);
+
+// ── segment timeline (all measured on the reference) ──
+// Entry 1213→1239: the card slides in from the left (exp ease-out) and
+// fades over 12f; the title fades IN PLACE (no slide, 1221→1237); the
+// chart behind never moves — its defocus σ ramps 0.5→5 over 1213–1237.
+// Hold 1240→1402: pixel-static.
+// Exit 1403→1419: the WHOLE composite (bg + card + title) bobs, then
+// whips down (1413–16, ~55px/f) and up-right (1417–19); the card is
+// destroyed by motion blur, never by a plain fade. 1417→1437 the
+// zoomed chart whips in underneath and lands exactly on CAM_B at 1438.
+const ENTRY_ALPHA = [
+  [1213, 0.04], [1214, 0.13], [1215, 0.23], [1216, 0.31], [1217, 0.42],
+  [1218, 0.54], [1219, 0.62], [1220, 0.72], [1221, 0.82], [1222, 0.92],
+  [1224, 0.98], [1226, 1],
+];
+// the title fades in place, first line landing before the second
+const TITLE1_ALPHA = [
+  [1217, 0],
+  [1220, 0.15],
+  [1222, 0.35],
+  [1225, 0.75],
+  [1228, 1],
+];
+const TITLE2_ALPHA = [
+  [1220, 0],
+  [1224, 0.16],
+  [1226, 0.35],
+  [1228, 0.57],
+  [1232, 0.87],
+  [1236, 0.98],
+  [1240, 1],
+];
+const BG_BLUR_SIGMA = [
+  [1213, 0.5],
+  [1237, 5.6],
+];
+// exit composite translation (bob → vertical whip → diagonal whip)
+const EXIT_DX = [
+  [1402, 0], [1403, 0], [1404, 1], [1405, 1], [1406, 3], [1407, 5],
+  [1408, 8], [1409, 12], [1410, 19], [1411, 26], [1412, 31], [1413, 32],
+  [1414, 26], [1415, 22], [1416, 23], [1417, 46], [1418, 109], [1419, 213],
+];
+const EXIT_DY = [
+  [1402, 0], [1403, 1], [1404, 4], [1405, 10], [1406, 17], [1407, 23],
+  [1408, 26], [1409, 21], [1410, 4], [1411, -14], [1412, -18], [1413, 10],
+  [1414, 65], [1415, 121], [1416, 152], [1417, 143], [1418, 47], [1419, -147],
+];
+// incoming chart whip camera (screen = s*anchor + t), solved per frame;
+// noisy mid-whip values ride under σ≈12 blur and land exactly on CAM_B[0]
+const WHIP_S = [
+  [1417, 1.75], [1419, 1.82], [1420, 1.94], [1423, 2.102], [1424, 2.077],
+  [1425, 2.052], [1426, 2.012], [1427, 1.987], [1429, 1.997], [1430, 1.937],
+  [1431, 1.972], [1432, 1.967], [1433, 1.917], [1434, 1.962], [1435, 2.002],
+  [1437, 2.007], [1438, 2.0075],
+];
+const WHIP_TX = [
+  [1417, -600], [1419, -680], [1420, -752], [1423, -794], [1424, -809],
+  [1425, -824], [1427, -824], [1428, -836], [1429, -845], [1430, -806],
+  [1431, -821], [1432, -812], [1433, -773], [1434, -788], [1435, -803],
+  [1436, -794], [1437, -791], [1438, -784.95],
+];
+const WHIP_TY = [
+  [1417, -500], [1419, -710], [1420, -665], [1421, -740], [1423, -704],
+  [1424, -767], [1425, -830], [1426, -875], [1427, -920], [1428, -977],
+  [1429, -1037], [1430, -1001], [1431, -1052], [1432, -1049], [1433, -983],
+  [1434, -1016], [1435, -1031], [1436, -1004], [1437, -983], [1438, -958.85],
+];
+const WHIP_IN_ALPHA = [
+  [1416, 0],
+  [1420, 1],
+];
+
+// the whole card-era composite (defocused chart + title + card); the exit
+// renders it twice at consecutive positions — the reference's frame-blend
+// leaves crisp double-exposure ghosts, not a gaussian smear
+const CardComposite: React.FC<{ frame: number }> = ({ frame }) => {
+  const entryDx = frame < 1238 ? -153 * Math.pow(0.87, frame - 1213) : 0;
+  const cardAlpha = kf(frame, ENTRY_ALPHA);
+  const bgBlur = kf(frame, BG_BLUR_SIGMA);
+  return (
+    <>
+      <div style={{ position: "absolute", inset: 0, filter: `blur(${bgBlur.toFixed(1)}px)` }}>
+        <ChartScene frame={1212} cam={[1, 0, -0.01]} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: kf(frame, TITLE1_ALPHA) }}>
+        <BookTitle line={1} />
+      </div>
+      <div style={{ position: "absolute", inset: 0, opacity: kf(frame, TITLE2_ALPHA) }}>
+        <BookTitle line={2} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: cardAlpha,
+          transform: `translateX(${entryDx.toFixed(1)}px)`,
+        }}
+      >
+        <BookCard />
+      </div>
+    </>
+  );
+};
+
+const whipCamAt = (f: number): [number, number, number] => [
+  kf(f, WHIP_S),
+  kf(f, WHIP_TX),
+  kf(f, WHIP_TY),
+];
+
+const BookSegment: React.FC<{ frame: number }> = ({ frame }) => {
+  // exit composite motion; ghost = previous frame's position (frame blend)
+  const compDx = kf(frame, EXIT_DX);
+  const compDy = kf(frame, EXIT_DY);
+  const pDx = kf(frame - 1, EXIT_DX);
+  const pDy = kf(frame - 1, EXIT_DY);
+  const ghosting = Math.abs(compDx - pDx) + Math.abs(compDy - pDy) > 4;
+  const whipAlpha = kf(frame, WHIP_IN_ALPHA);
+  const cardEra = frame <= 1419;
+  const whipEra = frame >= 1417;
+
+  // hand sprite: file j = frame - 1213 holds reference frame 1213 + j
+  const li = Math.min(Math.max(frame - 1213, 1), 225);
+  const bi = (li - 1) * 4;
+  const hx = HAND_BOX[bi];
+  const hy = HAND_BOX[bi + 1];
+  const hw = HAND_BOX[bi + 2];
+  const hh = HAND_BOX[bi + 3];
+
+  return (
+    <AbsoluteFill style={{ background: "#FDFCED", overflow: "hidden" }}>
+      {/* card-era composite, double-exposed while the exit whips it out */}
+      {cardEra &&
+        (ghosting
+          ? [
+              { dx: pDx, dy: pDy, o: 0.45 },
+              { dx: compDx, dy: compDy, o: 0.55 },
+            ]
+          : [{ dx: compDx, dy: compDy, o: 1 }]
+        ).map((c, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              inset: 0,
+              transform: `translate(${c.dx.toFixed(1)}px, ${c.dy.toFixed(1)}px)`,
+              opacity: (whipEra ? 1 - whipAlpha : 1) * c.o,
+              filter: ghosting ? "blur(1.2px)" : undefined,
+            }}
+          >
+            <CardComposite frame={frame} />
+          </div>
+        ))}
+
+      {/* incoming zoomed chart: current view solid + two trailing camera
+          echoes on top (the reference shows discrete ghost echoes from
+          frame blending, not one smooth smear) */}
+      {whipEra && (
+        <div style={{ position: "absolute", inset: 0, opacity: whipAlpha }}>
+          <div style={{ position: "absolute", inset: 0, filter: "blur(1.8px)" }}>
+            <ChartScene frame={frame} cam={whipCamAt(frame)} />
+          </div>
+          <div style={{ position: "absolute", inset: 0, opacity: 0.32, filter: "blur(2.4px)" }}>
+            <ChartScene frame={frame} cam={whipCamAt(frame - 0.8)} />
+          </div>
+          <div style={{ position: "absolute", inset: 0, opacity: 0.2, filter: "blur(3px)" }}>
+            <ChartScene frame={frame} cam={whipCamAt(frame - 1.6)} />
+          </div>
+        </div>
+      )}
+
+      {/* the one irreducible raster: the live hand + pen */}
+      {hw > 0 && (
+        <Img
+          src={staticFile(`tradingbook-assets/hand/h_${String(li).padStart(4, "0")}.webp`)}
+          style={{
+            position: "absolute",
+            left: hx,
+            top: hy,
+            width: hw,
+            height: hh,
+            filter: "drop-shadow(-7px 10px 8px rgba(60,50,45,0.22))",
+          }}
+        />
+      )}
+    </AbsoluteFill>
+  );
+};
+
+// ═════════════════════════════════════════════════════════════════
 // Main composition
 // ═════════════════════════════════════════════════════════════════
 
@@ -650,19 +1242,24 @@ export const TradingBookComposition: React.FC = () => {
   const rawFrame = useCurrentFrame();
   const frame = Math.min(rawFrame, 1781);
 
-  // ── live-action book segment: per-frame plates ──
+  // ── study-card segment: rebuilt in code (chart under blur + vector card
+  //    + alpha-matted hand sprite) ──
   if (frame >= BOOK_START && frame <= BOOK_END) {
-    return (
-      <AbsoluteFill style={{ backgroundColor: "#FCFEF0" }}>
-        <Img
-          src={staticFile(`tradingbook-assets/book/b_${frame}.jpg`)}
-          style={{ width: 1080, height: 1920 }}
-        />
-      </AbsoluteFill>
-    );
+    return <BookSegment frame={frame} />;
   }
 
-  const [s, tx, ty] = camAt(frame);
+  return <ChartScene frame={frame} />;
+};
+
+// The full chart world (window, candles, ink, chrome) at a given frame.
+// `cam` overrides the measured camera path (used by the book segment,
+// whose background holds the anchor view); with an override the
+// velocity motion-blur is disabled — the caller supplies its own.
+const ChartScene: React.FC<{ frame: number; cam?: [number, number, number] }> = ({
+  frame,
+  cam,
+}) => {
+  const [s, tx, ty] = cam ?? camAt(frame);
 
   // velocity-proportional motion blur, measured as the apparent motion of
   // the content point at screen center (zooms produce ~zero center motion,
@@ -674,8 +1271,8 @@ export const TradingBookComposition: React.FC = () => {
   const pc: Pt = [(540 - tx) / s, (960 - ty) / s];
   const vx = (camN[0] * pc[0] + camN[1] - (camP[0] * pc[0] + camP[1])) / 2;
   const vy = (camN[0] * pc[1] + camN[2] - (camP[0] * pc[1] + camP[2])) / 2;
-  const blurX = Math.min(Math.abs(vx) * 0.05, 12);
-  const blurY = Math.min(Math.abs(vy) * 0.075, 22);
+  const blurX = cam ? 0 : Math.min(Math.abs(vx) * 0.05, 12);
+  const blurY = cam ? 0 : Math.min(Math.abs(vy) * 0.075, 22);
   const blurred = blurX > 0.6 || blurY > 0.6;
 
   // ── ink states ──
@@ -819,23 +1416,7 @@ export const TradingBookComposition: React.FC = () => {
 
               <Grid />
 
-              {/* watermark (below candles, plate-fixed; drawn twice — the
-                  alpha-keyed raster reads too faint at 1x) */}
-              <image
-                href={staticFile("tradingbook-assets/watermark.png")}
-                x={220}
-                y={620}
-                width={632}
-                height={632}
-              />
-              <image
-                href={staticFile("tradingbook-assets/watermark.png")}
-                x={220}
-                y={620}
-                width={632}
-                height={632}
-                opacity={0.5}
-              />
+              {/* watermark removed on request — blank chart background */}
 
               {/* pink pennant fill — clipped at the support tip x while drawing */}
               {frame >= 99 &&

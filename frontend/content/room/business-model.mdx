@@ -6,70 +6,61 @@ description: "How money is made, how the unit economics work, how it scales."
 
 # The Business Model
 
-> **What goes on this page:** Revenue model, unit economics, projections. The financial model itself can be a link to a spreadsheet — but the headline numbers and assumptions live on this page.
+## We expand the market, we don't slice it
+
+Every venue caps the number of markets it can run by the price of liquidity. A paid market maker costs upward of $1M to seed a single market, burned whether or not it trades. So the venue can afford a few thousand markets, and no more. The number of markets that can *exist* is set by the cost of liquidity.
+
+General prices a whole block at once. Because the block is netted, the collateral it requires collapses far below the naive sum, and the marginal cost of one more market falls to near zero. The cap lifts. Markets that were never economical — thin, niche, long-tail — become viable. We do not take a slice of the existing market. We expand it toward a billion markets.
+
+> Liquidity per market bankrupts. Liquidity per block scales.
 
 ## How we make money
 
-Replace with the real revenue model. Two or three sentences. Then a bulleted breakdown:
+A flat take on every settled pool. No order book to maintain, no maker to pay, no inventory to hedge.
 
-- **Transaction fee:** X% of every settled market, taken from the winning pool
-- **Spread on parimutuel pricing:** Y% baked into payout math
-- **Premium features:** Bot API access, advanced analytics, custom market creation — pricing TBD
-- **Treasury yield:** Settlement collateral earns yield in stable-asset vaults while pending resolution
+- **Primary:** a fee on settled volume, the same order of magnitude as a Binance perp — ~0.05% of volume, taken from the pool at resolution.
+- **Marginal cost of a new market:** near zero — two users make a market, so supply grows without us buying it.
 
-State the primary revenue driver clearly. If 80% of revenue comes from one mechanism, say so.
+One mechanism drives the model. Everything else is downstream of settled volume.
 
 ## Unit economics
 
-> **Format:** A single table with the key per-user or per-market economics. Investors will read this twice.
+The economics are unusual because the cost of supply is near zero. A market that two people use can run profitably for years.
 
-| Metric | Today | At scale (target) |
+> *Modeled from stated assumptions — a Binance-perp-level fee, near-zero marginal market cost. Live cohort data will sharpen these as it accrues.*
+
+| Metric | Today (testnet) | At scale (target) |
 |---|---|---|
-| Average market volume | $X | $Y |
-| Take rate | Z% | Z% |
-| Revenue per active user / month | $A | $B |
-| Cost per active user / month | $C | $D |
-| Contribution margin | E% | F% |
-| Payback period | G months | H months |
-
-Cite assumptions for every "at scale" column. Bare projections without assumptions look amateurish.
+| Fee | ~0.05% of volume | ~0.05% of volume |
+| Revenue source | Pre-revenue | Settled volume |
+| Marginal cost per new market | ~$0 | ~$0 |
+| Gross margin | No revenue yet | 85%+ — infra-only cost of goods |
 
 ## Revenue projections
 
-> **What goes here:** 3-year revenue forecast. Conservative, base, aggressive. Replace placeholders with real numbers from the financial model.
+Revenue scales with one variable: how fast settled volume ramps. The fee is fixed and thin; distribution is the lever.
+
+> *Modeled from stated assumptions. Not yet validated by live revenue.*
 
 | | Year 1 | Year 2 | Year 3 |
 |---|---|---|---|
-| **Conservative** | $X | $Y | $Z |
-| **Base** | $A | $B | $C |
-| **Aggressive** | $D | $E | $F |
+| **Conservative** — organic only | $0.1M | $0.6M | $1.8M |
+| **Base** — distribution from month 6 | $0.3M | $1.5M | $6M |
+| **Aggressive** — a venue integrates behind us | $0.6M | $5M | $20M+ |
 
-State the key assumption that differentiates each scenario. Examples:
-- Conservative: organic growth only, no paid acquisition
-- Base: paid acquisition starts month 6, $X CAC
-- Aggressive: major exchange listing or licensing deal in year 2
+The differentiator between scenarios is distribution, not technology. The machine is already built.
 
 ## Cost structure
 
-Where the money goes. A simple breakdown.
+Low and flat. Three production VPS carry the whole system today.
 
-| Category | % of spend | Notes |
+| Category | Share | Notes |
 |---|---|---|
-| Engineering payroll | Replace | Replace |
-| Infrastructure (RPC, oracles, hosting) | Replace | Replace |
-| Legal / regulatory | Replace | Replace |
-| Marketing / growth | Replace | Replace |
-| Operations | Replace | Replace |
+| Engineering payroll | ~70% | Two to three hires post-raise |
+| Infrastructure (RPC, oracles, hosting) | ~10% | Three VPS, BLS quorum — cheap to run |
+| Legal / regulatory | ~10% | Jurisdictional analysis, offshore-first wrapper |
+| Growth | ~10% | Begins month 6, into data-native channels |
 
 ## Path to profitability
 
-One paragraph. What month do you cross breakeven in the base case? What's the first year you generate positive operating cash flow? If you don't expect profitability in the forecast period, say so and explain why that's intentional.
-
----
-
-> **Source documents to attach or link:**
-> - Full financial model (Google Sheets / Excel)
-> - Last 2 years of financial statements
-> - Current year-to-date P&L
-> - Cap table (also linked from Due Diligence)
-> - Cohort retention data (if applicable)
+The burn is small and the marginal cost of supply is near zero, so breakeven is a question of distribution, not unit economics. In the base case, settled volume crosses the level that covers the team inside the 18-month window. We could choose profitability early. We choose growth instead, because the market we are expanding is far larger than the one we already serve.

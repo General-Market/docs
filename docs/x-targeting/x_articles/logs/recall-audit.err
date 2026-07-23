@@ -1,0 +1,170 @@
+  ↳ audit:broad-1000:p0  bal_before=9849669  est=300c
+  ↳ audit:broad-1000:p0  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-1000:p1  bal_before=9849669  est=300c
+  ↳ audit:broad-1000:p1  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-1000:p2  bal_before=9849669  est=300c
+  ↳ audit:broad-1000:p2  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-1000:p3  bal_before=9849669  est=300c
+  ↳ audit:broad-1000:p3  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-200:p0  bal_before=9849669  est=300c
+  ↳ audit:broad-200:p0  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-200:p1  bal_before=9849669  est=300c
+  ↳ audit:broad-200:p1  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-200:p2  bal_before=9849669  est=300c
+  ↳ audit:broad-200:p2  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-200:p3  bal_before=9849669  est=300c
+  ↳ audit:broad-200:p3  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-50:p0  bal_before=9849669  est=300c
+  ↳ audit:broad-50:p0  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-50:p1  bal_before=9849669  est=300c
+  ↳ audit:broad-50:p1  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-50:p2  bal_before=9849669  est=300c
+  ↳ audit:broad-50:p2  bal_after=9849669  spent=0c ($0.0)  count=20
+  ↳ audit:broad-50:p3  bal_before=9849669  est=300c
+  ↳ audit:broad-50:p3  bal_after=9847269  spent=2400c ($0.024)  count=20
+  ↳ audit:broad-10:p0  bal_before=9847269  est=300c
+  ↳ audit:broad-10:p0  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-10:p1  bal_before=9847269  est=300c
+  ↳ audit:broad-10:p1  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-10:p2  bal_before=9847269  est=300c
+  ↳ audit:broad-10:p2  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-10:p3  bal_before=9847269  est=300c
+  ↳ audit:broad-10:p3  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-2:p0  bal_before=9847269  est=300c
+  ↳ audit:broad-2:p0  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-2:p1  bal_before=9847269  est=300c
+  ↳ audit:broad-2:p1  bal_after=9847269  spent=0c ($0.0)  count=19
+  ↳ audit:broad-2:p2  bal_before=9847269  est=300c
+  ↳ audit:broad-2:p2  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-2:p3  bal_before=9847269  est=300c
+  ↳ audit:broad-2:p3  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-latest:p0  bal_before=9847269  est=300c
+  ↳ audit:broad-latest:p0  bal_after=9847269  spent=0c ($0.0)  count=18
+  ↳ audit:broad-latest:p1  bal_before=9847269  est=300c
+  ↳ audit:broad-latest:p1  bal_after=9847269  spent=0c ($0.0)  count=19
+  ↳ audit:broad-latest:p2  bal_before=9847269  est=300c
+  ↳ audit:broad-latest:p2  bal_after=9847269  spent=0c ($0.0)  count=20
+  ↳ audit:broad-latest:p3  bal_before=9847269  est=300c
+  ↳ audit:broad-latest:p3  bal_after=9847269  spent=0c ($0.0)  count=20
+
+BROAD corpus: 108 native Articles in last 48h
+
+  ↳ audit:trading-ai-kw-top:p0  bal_before=9847269  est=300c
+  ↳ audit:trading-ai-kw-top:p0  bal_after=9847269  spent=0c ($0.0)  count=19
+  ↳ audit:trading-ai-kw-top:p1  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-top:p1  bal_after=9842829  spent=0c ($0.0)  count=20
+  ↳ audit:trading-ai-kw-top:p2  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-top:p2  bal_after=9842829  spent=0c ($0.0)  count=18
+  ↳ audit:trading-ai-kw-top:p3  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-top:p3  bal_after=9842829  spent=0c ($0.0)  count=20
+  ↳ audit:trading-ai-kw-latest:p0  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-latest:p0  bal_after=9842829  spent=0c ($0.0)  count=20
+  ↳ audit:trading-ai-kw-latest:p1  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-latest:p1  bal_after=9842829  spent=0c ($0.0)  count=20
+  ↳ audit:trading-ai-kw-latest:p2  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-latest:p2  bal_after=9842829  spent=0c ($0.0)  count=20
+  ↳ audit:trading-ai-kw-latest:p3  bal_before=9842829  est=300c
+  ↳ audit:trading-ai-kw-latest:p3  bal_after=9842829  spent=0c ($0.0)  count=20
+trading-ai           search= 15  broad_relevant=  3  MISSED=  2
+  ↳ audit:ai-kw-top:p0  bal_before=9842829  est=300c
+  ↳ audit:ai-kw-top:p0  bal_after=9840174  spent=2655c ($0.0266)  count=18
+  ↳ audit:ai-kw-top:p1  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-top:p1  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:ai-kw-top:p2  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-top:p2  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:ai-kw-top:p3  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-top:p3  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:ai-kw-latest:p0  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-latest:p0  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:ai-kw-latest:p1  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-latest:p1  bal_after=9840174  spent=0c ($0.0)  count=19
+  ↳ audit:ai-kw-latest:p2  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-latest:p2  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:ai-kw-latest:p3  bal_before=9840174  est=300c
+  ↳ audit:ai-kw-latest:p3  bal_after=9840174  spent=0c ($0.0)  count=20
+ai                   search= 25  broad_relevant= 32  MISSED= 27
+  ↳ audit:trading-kw-top:p0  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-top:p0  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:trading-kw-top:p1  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-top:p1  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:trading-kw-top:p2  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-top:p2  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:trading-kw-top:p3  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-top:p3  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:trading-kw-latest:p0  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-latest:p0  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:trading-kw-latest:p1  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-latest:p1  bal_after=9840174  spent=0c ($0.0)  count=19
+  ↳ audit:trading-kw-latest:p2  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-latest:p2  bal_after=9840174  spent=0c ($0.0)  count=20
+  ↳ audit:trading-kw-latest:p3  bal_before=9840174  est=300c
+  ↳ audit:trading-kw-latest:p3  bal_after=9836319  spent=3855c ($0.0386)  count=20
+trading              search= 37  broad_relevant=  9  MISSED=  7
+  ↳ audit:crypto-kw-top:p0  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-top:p0  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:crypto-kw-top:p1  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-top:p1  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:crypto-kw-top:p2  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-top:p2  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:crypto-kw-top:p3  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-top:p3  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:crypto-kw-latest:p0  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-latest:p0  bal_after=9836319  spent=0c ($0.0)  count=19
+  ↳ audit:crypto-kw-latest:p1  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-latest:p1  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:crypto-kw-latest:p2  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-latest:p2  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:crypto-kw-latest:p3  bal_before=9836319  est=300c
+  ↳ audit:crypto-kw-latest:p3  bal_after=9836319  spent=0c ($0.0)  count=20
+crypto               search= 30  broad_relevant=  9  MISSED=  5
+  ↳ audit:prediction-markets-kw-top:p0  bal_before=9836319  est=300c
+  ↳ audit:prediction-markets-kw-top:p0  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:prediction-markets-kw-top:p1  bal_before=9836319  est=300c
+  ↳ audit:prediction-markets-kw-top:p1  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:prediction-markets-kw-top:p2  bal_before=9836319  est=300c
+  ↳ audit:prediction-markets-kw-top:p2  bal_after=9836319  spent=0c ($0.0)  count=20
+  ↳ audit:prediction-markets-kw-top:p3  bal_before=9836319  est=300c
+  ↳ audit:prediction-markets-kw-top:p3  bal_after=9832449  spent=3870c ($0.0387)  count=20
+  ↳ audit:prediction-markets-kw-latest:p0  bal_before=9832449  est=300c
+  ↳ audit:prediction-markets-kw-latest:p0  bal_after=9832449  spent=0c ($0.0)  count=20
+  ↳ audit:prediction-markets-kw-latest:p1  bal_before=9832449  est=300c
+  ↳ audit:prediction-markets-kw-latest:p1  bal_after=9832449  spent=0c ($0.0)  count=20
+  ↳ audit:prediction-markets-kw-latest:p2  bal_before=9832449  est=300c
+  ↳ audit:prediction-markets-kw-latest:p2  bal_after=9832449  spent=0c ($0.0)  count=20
+  ↳ audit:prediction-markets-kw-latest:p3  bal_before=9832449  est=300c
+  ↳ audit:prediction-markets-kw-latest:p3  bal_after=9832449  spent=0c ($0.0)  count=20
+prediction-markets   search= 25  broad_relevant=  2  MISSED=  1
+  ↳ audit:polymarket-kw-top:p0  bal_before=9832449  est=300c
+  ↳ audit:polymarket-kw-top:p0  bal_after=9832449  spent=0c ($0.0)  count=20
+  ↳ audit:polymarket-kw-top:p1  bal_before=9832449  est=300c
+  ↳ audit:polymarket-kw-top:p1  bal_after=9832449  spent=0c ($0.0)  count=20
+  ↳ audit:polymarket-kw-top:p2  bal_before=9832449  est=300c
+  ↳ audit:polymarket-kw-top:p2  bal_after=9832449  spent=0c ($0.0)  count=20
+  ↳ audit:polymarket-kw-top:p3  bal_before=9832449  est=300c
+  ↳ audit:polymarket-kw-top:p3  bal_after=9829749  spent=2700c ($0.027)  count=20
+  ↳ audit:polymarket-kw-latest:p0  bal_before=9829749  est=300c
+  ↳ audit:polymarket-kw-latest:p0  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:polymarket-kw-latest:p1  bal_before=9829749  est=300c
+  ↳ audit:polymarket-kw-latest:p1  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:polymarket-kw-latest:p2  bal_before=9829749  est=300c
+  ↳ audit:polymarket-kw-latest:p2  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:polymarket-kw-latest:p3  bal_before=9829749  est=300c
+  ↳ audit:polymarket-kw-latest:p3  bal_after=9829749  spent=0c ($0.0)  count=20
+polymarket           search= 51  broad_relevant=  2  MISSED=  1
+  ↳ audit:pumpfun-kw-top:p0  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-top:p0  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:pumpfun-kw-top:p1  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-top:p1  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:pumpfun-kw-top:p2  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-top:p2  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:pumpfun-kw-top:p3  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-top:p3  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:pumpfun-kw-latest:p0  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-latest:p0  bal_after=9829749  spent=0c ($0.0)  count=19
+  ↳ audit:pumpfun-kw-latest:p1  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-latest:p1  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:pumpfun-kw-latest:p2  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-latest:p2  bal_after=9829749  spent=0c ($0.0)  count=20
+  ↳ audit:pumpfun-kw-latest:p3  bal_before=9829749  est=300c
+  ↳ audit:pumpfun-kw-latest:p3  bal_after=9829749  spent=0c ($0.0)  count=20
+pumpfun              search= 48  broad_relevant=  1  MISSED=  0

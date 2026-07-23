@@ -13,9 +13,9 @@
 // word-level transcript of final.mp4 (see captions.ts) so the reveal tracks the
 // audio to ~1 frame.
 //
-// Brand colours: base #FFFFFF, keyword #2E7BFF (GM #0052FF brightened for video),
-// glow a low-opacity white/blue. Font SF Pro Display, weight 800/900, ~96px,
-// tight tracking. Lower-third so it clears the centred head.
+// Brand colours: base #FFFFFF, keyword #2D5BFF (GM Electric),
+// glow a low-opacity white/blue. Font = brand sans (Bricolage Grotesque),
+// weight 800, ~96px, tight tracking. Lower-third so it clears the centred head.
 
 import React from "react";
 import {
@@ -30,11 +30,11 @@ import { font } from "../../common/fonts";
 import { CAPTIONS, captionStart, captionEnd, type Caption } from "./captions";
 import { activePanel } from "./panelEvents";
 
-// SF Pro Display first (the project's Apple display face); Inter as the loaded
-// fallback at heavy weight so it renders identically in any environment.
-const CAPTION_FONT = `"SF Pro Display", ${font}, "Helvetica Neue", sans-serif`;
+// Brand sans (Bricolage Grotesque) at heavy weight — identical in preview and
+// render (SF Pro is unavailable in the renderer, so we don't lead with it).
+const CAPTION_FONT = font;
 
-const HIGHLIGHT = "#2E7BFF"; // GM electric blue #0052FF, brightened for video.
+const HIGHLIGHT = "#2D5BFF"; // GM Electric.
 
 // Window padding around a caption's spoken span. A short lead so the first
 // word's pop reads as it lands; a held tail so the finished line stays a beat
@@ -58,8 +58,8 @@ const BASE_GLOW = [
 const HIGHLIGHT_GLOW = [
   "0 2px 10px rgba(0,0,0,0.55)",
   "0 1px 2px rgba(0,0,0,0.8)",
-  "0 0 18px rgba(46,123,255,0.55)",
-  "0 0 44px rgba(46,123,255,0.42)",
+  "0 0 18px rgba(45, 91, 255,0.55)",
+  "0 0 44px rgba(45, 91, 255,0.42)",
 ].join(", ");
 
 // One word: pops in on its spoken frame with a small spring, then holds. The
@@ -117,7 +117,7 @@ const Word: React.FC<{
             background: HIGHLIGHT,
             transform: `scaleX(${ruleP})`,
             transformOrigin: "left center",
-            boxShadow: "0 0 14px rgba(46,123,255,0.6)",
+            boxShadow: "0 0 14px rgba(45, 91, 255,0.6)",
           }}
         />
       )}
@@ -163,7 +163,7 @@ const CaptionBlock: React.FC<{ caption: Caption; mountFrames: number; durFrames:
         opacity,
         fontFamily: CAPTION_FONT,
         fontSize: 98,
-        fontWeight: 900,
+        fontWeight: 800,
         letterSpacing: "-0.02em",
         lineHeight: 1.08,
         textAlign: "center",

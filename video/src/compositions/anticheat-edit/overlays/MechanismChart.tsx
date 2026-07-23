@@ -27,7 +27,7 @@ import { MECHANISMS, MAX_BPS, TOTAL_BPS, type Mechanism } from "./data";
 const W = 1920;
 
 const FG = colors.fg; // #0A0A0A
-const ACCENT = colors.accent; // #0052FF
+const ACCENT = colors.accent; // #2D5BFF
 const ACCENT_SOFT = colors.accentSoft; // #5B79FF
 const DIM = colors.dim; // #6E727A
 const FAINT_BAR = "#C7D0DA";
@@ -159,7 +159,7 @@ export const MechanismChart: React.FC<MechanismChartProps> = ({ highlightSlug })
                     width: 260,
                     height: h + 220,
                     background:
-                      "radial-gradient(ellipse at center, rgba(0,82,255,0.40) 0%, rgba(0,82,255,0) 68%)",
+                      "radial-gradient(ellipse at center, rgba(45, 91, 255,0.40) 0%, rgba(45, 91, 255,0) 68%)",
                     opacity: 0.55 + 0.45 * breath,
                     filter: "blur(6px)",
                     pointerEvents: "none",
@@ -179,7 +179,7 @@ export const MechanismChart: React.FC<MechanismChartProps> = ({ highlightSlug })
                   background: barColor,
                   boxShadow:
                     isActive && active
-                      ? `0 0 0 1px ${ACCENT_SOFT} inset, 0 12px 30px rgba(0,82,255,0.28)`
+                      ? `0 0 0 1px ${ACCENT_SOFT} inset, 0 12px 30px rgba(45, 91, 255,0.28)`
                       : "none",
                 }}
               />

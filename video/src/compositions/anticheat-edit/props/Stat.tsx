@@ -64,14 +64,16 @@ const Figure: React.FC<{ side: Side; delay: number }> = ({ side, delay }) => {
       </div>
       <div
         style={{
-          marginTop: 26,
+          marginTop: 30,
           fontFamily: monoFont,
-          fontSize: 23,
-          fontWeight: 500,
-          letterSpacing: "0.16em",
+          fontSize: 46,
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          lineHeight: 1.15,
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.62)",
-          whiteSpace: "nowrap",
+          color: "rgba(255,255,255,0.7)",
+          maxWidth: 600,
+          textAlign: "center",
         }}
       >
         {side.label}
@@ -150,13 +152,16 @@ export const StatSolo: React.FC<{ value: string; caption: string; tone?: Tone }>
       </div>
       <div
         style={{
-          marginTop: 34,
+          marginTop: 38,
           fontFamily: monoFont,
-          fontSize: 26,
-          fontWeight: 500,
-          letterSpacing: "0.14em",
+          fontSize: 46,
+          fontWeight: 600,
+          letterSpacing: "0.05em",
+          lineHeight: 1.2,
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.62)",
+          color: "rgba(255,255,255,0.7)",
+          maxWidth: 1300,
+          textAlign: "center",
         }}
       >
         {caption}

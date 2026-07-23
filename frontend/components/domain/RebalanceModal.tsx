@@ -683,7 +683,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
                     : t('rebalance.button.rebalance')}
                 </WalletActionButton>
                 <a
-                  href="https://discord.gg/xsfgzwR6"
+                  href="https://discord.gg/QbasycShP"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors flex items-center"

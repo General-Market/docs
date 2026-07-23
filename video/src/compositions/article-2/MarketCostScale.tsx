@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ArticlePage, type ArticleContent } from "./ArticlePage";
 import { ACCENT, FPS, H, SANS, SANS_TEXT, W } from "./theme";
+import { BrandMark } from "../../components/BrandMark";
 
 /* ── The facts ──────────────────────────────────────────────────────────────
  * Polymarket earmarked ~$5M in liquidity incentives for April 2026, spread
@@ -203,6 +204,7 @@ export const MarketCostScale: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <BrandMark surface="dark" />
       <AbsoluteFill>
         <ArticlePage
           article={POLY_ARTICLE}

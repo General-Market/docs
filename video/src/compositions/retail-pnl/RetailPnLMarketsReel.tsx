@@ -867,7 +867,7 @@ export const RetailPnLMarketsReel: React.FC<RetailPnLMarketsReelProps> = ({
           {(
             [
               ["#27D6FF", borderOff, borderOff],
-              ["#2E7BFF", 0, 0],
+              ["#2D5BFF", 0, 0],
               ["#6A5CFF", -borderOff, -borderOff],
             ] as const
           ).map(([stroke, ox, oy]) => (

@@ -171,10 +171,11 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatBarsMeta.component />
         </TransitionSeries.Sequence>
 
-        {/* Bars → Rigged: soft snap. The carousel hands off to the
-            "everyone is rigged" article wall — same descent, fewer steps. */}
+        {/* Bars → Rigged: soft snap, pushing left. The carousel explodes
+            rightward, so the scene exits left and the "everyone is rigged"
+            article wall slides in from the right. */}
         <TransitionSeries.Transition
-          presentation={snapZoomSoft()}
+          presentation={snapZoomSoft("left")}
           timing={linearTiming({ durationInFrames: T_BARS_RIGGED })}
         />
 
@@ -184,8 +185,11 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatRiggedMeta.component />
         </TransitionSeries.Sequence>
 
+        {/* Rigged → Stat: the verdict cut. fg lunges left + zooms, bg
+            shears the opposite way — the rigged wall is thrown out as the
+            0.04%/70% verdict slams in from the right. */}
         <TransitionSeries.Transition
-          presentation={snapZoomIntense()}
+          presentation={snapZoomIntense("left")}
           timing={linearTiming({ durationInFrames: T_RIGGED_STAT })}
         />
 
@@ -195,8 +199,11 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatStatMeta.component />
         </TransitionSeries.Sequence>
 
+        {/* Stat → Solution: the music-death pivot. fg pulls back, veils,
+            and drifts right — the world recedes and the solution rises
+            from the left as the track drops out. */}
         <TransitionSeries.Transition
-          presentation={snapZoomOut(colors.bg)}
+          presentation={snapZoomOut(colors.bg, "right")}
           timing={linearTiming({ durationInFrames: T_STAT_SOLUTION })}
         />
 
@@ -206,8 +213,11 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatSolutionMeta.component />
         </TransitionSeries.Sequence>
 
+        {/* Solution → Reassure: soft snap, pushing right — alternates
+            against the previous soft cut so consecutive pushes don't
+            stack on the same vector. */}
         <TransitionSeries.Transition
-          presentation={snapZoomSoft()}
+          presentation={snapZoomSoft("right")}
           timing={linearTiming({ durationInFrames: T_SOLUTION_REASSURE })}
         />
 
@@ -217,8 +227,10 @@ export const AntiCheatFull: React.FC = () => {
           <antiCheatReassureMeta.component />
         </TransitionSeries.Sequence>
 
+        {/* Reassure → Switch: soft snap, pushing left — completes the
+            left/right/left alternation across the three soft cuts. */}
         <TransitionSeries.Transition
-          presentation={snapZoomSoft()}
+          presentation={snapZoomSoft("left")}
           timing={linearTiming({ durationInFrames: T_REASSURE_BRIDGE })}
         />
 

@@ -1,0 +1,194 @@
+{
+  "lookback_hours": 48,
+  "broad_corpus": 108,
+  "niches": {
+    "trading-ai": {
+      "found_by_niche_search": 15,
+      "relevant_in_broad": 3,
+      "missed_by_search": 2,
+      "miss_examples": [
+        {
+          "likes": 252,
+          "author": "inference_labs",
+          "title": "The Computer Vision Trust Problem No One's Talking About"
+        },
+        {
+          "likes": 231,
+          "author": "virtuals_io",
+          "title": "Trading on Autopilot: Virtuals Agents, Hyperliquid Perps, and HIP-3 Markets"
+        }
+      ]
+    },
+    "ai": {
+      "found_by_niche_search": 25,
+      "relevant_in_broad": 32,
+      "missed_by_search": 27,
+      "miss_examples": [
+        {
+          "likes": 1491,
+          "author": "RLanceMartin",
+          "title": "Designing loops with Fable 5"
+        },
+        {
+          "likes": 766,
+          "author": "akshay_pachaar",
+          "title": "Your Agent Harness Should Repair Itself"
+        },
+        {
+          "likes": 548,
+          "author": "qumaiu",
+          "title": "CTO・社内SEがAI駆動開発で社内SIerになっていないか？"
+        },
+        {
+          "likes": 402,
+          "author": "mert",
+          "title": "the coming crisis: crypto, AI, and spaceflight"
+        },
+        {
+          "likes": 328,
+          "author": "sairahul1",
+          "title": "I Fed SpaceX's 300-Page IPO Filing Into AI. Here's What Retail Investors Will Miss."
+        },
+        {
+          "likes": 311,
+          "author": "_nikhilsheoran",
+          "title": "How I Got a 50 LPA job at 19 (twice)"
+        },
+        {
+          "likes": 306,
+          "author": "amitiitbhu",
+          "title": "How to design a loop that prompts your agent?"
+        },
+        {
+          "likes": 252,
+          "author": "inference_labs",
+          "title": "The Computer Vision Trust Problem No One's Talking About"
+        },
+        {
+          "likes": 231,
+          "author": "virtuals_io",
+          "title": "Trading on Autopilot: Virtuals Agents, Hyperliquid Perps, and HIP-3 Markets"
+        },
+        {
+          "likes": 229,
+          "author": "AnatoliKopadze",
+          "title": "AI Agents. What they are and how to Build Your Own Step by Step."
+        },
+        {
+          "likes": 219,
+          "author": "AlchainHust",
+          "title": "别再问我什么是爱马仕！"
+        },
+        {
+          "likes": 204,
+          "author": "eng_khairallah1",
+          "title": "How to Build Your First App Using Claude With Zero Experience (Full Course)"
+        }
+      ]
+    },
+    "trading": {
+      "found_by_niche_search": 37,
+      "relevant_in_broad": 9,
+      "missed_by_search": 7,
+      "miss_examples": [
+        {
+          "likes": 4695,
+          "author": "Aster_FND__",
+          "title": "🎉 $ASTER Community Rewards Program"
+        },
+        {
+          "likes": 1104,
+          "author": "SoSoValueCrypto",
+          "title": "ETF Flows Remain Under Pressure: BTC and ETH See Redemptions While Altcoin ETFs Show Selective Inflo"
+        },
+        {
+          "likes": 1059,
+          "author": "kunley_drukpa",
+          "title": "CONVERSATIONS WITH BRAZILIAN PRESIDENTIAL CANDIDATE RENAN SANTOS - ON BRAZIL’S PROBLEMS"
+        },
+        {
+          "likes": 252,
+          "author": "inference_labs",
+          "title": "The Computer Vision Trust Problem No One's Talking About"
+        },
+        {
+          "likes": 231,
+          "author": "virtuals_io",
+          "title": "Trading on Autopilot: Virtuals Agents, Hyperliquid Perps, and HIP-3 Markets"
+        },
+        {
+          "likes": 218,
+          "author": "nodiens",
+          "title": "Introducing Nodiens Indices"
+        },
+        {
+          "likes": 92,
+          "author": "Defi_Warhol",
+          "title": "A Guide to Prediction Market Types "
+        }
+      ]
+    },
+    "crypto": {
+      "found_by_niche_search": 30,
+      "relevant_in_broad": 9,
+      "missed_by_search": 5,
+      "miss_examples": [
+        {
+          "likes": 2523,
+          "author": "CeliaWallet",
+          "title": "Why Mining Needs to End in Q3 2026 "
+        },
+        {
+          "likes": 251,
+          "author": "JakeGagain",
+          "title": "The Bull Run Begins On TON! "
+        },
+        {
+          "likes": 231,
+          "author": "virtuals_io",
+          "title": "Trading on Autopilot: Virtuals Agents, Hyperliquid Perps, and HIP-3 Markets"
+        },
+        {
+          "likes": 218,
+          "author": "nodiens",
+          "title": "Introducing Nodiens Indices"
+        },
+        {
+          "likes": 196,
+          "author": "leopardracer",
+          "title": "The Local LLM Playbook for 2026: From Raspberry Pi to RTX 5090"
+        }
+      ]
+    },
+    "prediction-markets": {
+      "found_by_niche_search": 25,
+      "relevant_in_broad": 2,
+      "missed_by_search": 1,
+      "miss_examples": [
+        {
+          "likes": 1059,
+          "author": "kunley_drukpa",
+          "title": "CONVERSATIONS WITH BRAZILIAN PRESIDENTIAL CANDIDATE RENAN SANTOS - ON BRAZIL’S PROBLEMS"
+        }
+      ]
+    },
+    "polymarket": {
+      "found_by_niche_search": 51,
+      "relevant_in_broad": 2,
+      "missed_by_search": 1,
+      "miss_examples": [
+        {
+          "likes": 1059,
+          "author": "kunley_drukpa",
+          "title": "CONVERSATIONS WITH BRAZILIAN PRESIDENTIAL CANDIDATE RENAN SANTOS - ON BRAZIL’S PROBLEMS"
+        }
+      ]
+    },
+    "pumpfun": {
+      "found_by_niche_search": 48,
+      "relevant_in_broad": 1,
+      "missed_by_search": 0,
+      "miss_examples": []
+    }
+  }
+}

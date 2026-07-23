@@ -13,6 +13,7 @@ const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
 const defaultEngagementTargets = ["100xgemfinder", "chinadegen"];
 let refreshInFlight = null;
+let articleRefreshInFlight = null;
 
 function readJsonl(file) {
   if (!fs.existsSync(file)) return [];
@@ -143,6 +144,34 @@ function refreshEngagementQueue(targetValue) {
     refreshInFlight = null;
   });
   return refreshInFlight;
+}
+
+// Manual article fetch — the same run_daily.sh the systemd timer used to run,
+// now fired only on a button press so twitterapi.io is never hit on its own.
+function refreshArticles() {
+  if (articleRefreshInFlight) return articleRefreshInFlight;
+  const script = path.join(root, "run_daily.sh");
+  articleRefreshInFlight = new Promise((resolve) => {
+    const child = spawn("bash", [script], {
+      cwd: repoRoot,
+      env: { ...process.env, ROOT_DIR: repoRoot },
+    });
+    let output = "";
+    const append = (chunk) => {
+      output = (output + chunk.toString()).slice(-12000);
+    };
+    child.stdout.on("data", append);
+    child.stderr.on("data", append);
+    child.on("error", (error) => {
+      resolve({ ok: false, code: 1, output: error.message });
+    });
+    child.on("close", (code) => {
+      resolve({ ok: code === 0, code, output });
+    });
+  }).finally(() => {
+    articleRefreshInFlight = null;
+  });
+  return articleRefreshInFlight;
 }
 
 // ─────────────────────────── codex reply drafts (network on, same login family-chat uses)
@@ -579,6 +608,8 @@ const html = String.raw`<!doctype html>
           <option value="views">Rank by: Article views</option>
           <option value="score">Rank by: Raw score</option>
         </select>
+        <button class="refreshButton" id="refreshArticlesButton" type="button"><span class="spinner"></span><span id="refreshArticlesText">Refresh today</span></button>
+        <span class="refreshStatus" id="refreshArticlesStatus"></span>
       </div>
       <div class="controls hidden" id="engagementControls">
         <select id="engDateSelect" aria-label="Engagement date"></select>
@@ -753,6 +784,30 @@ const html = String.raw`<!doctype html>
       if (draftAllButton) draftAllButton.onclick = () => draftAll();
       const aiFilterButton = document.getElementById("aiFilterButton");
       if (aiFilterButton) aiFilterButton.onclick = () => aiFilter();
+      const articleButton = document.getElementById("refreshArticlesButton");
+      if (articleButton) {
+        const articleText = document.getElementById("refreshArticlesText");
+        const articleStatus = document.getElementById("refreshArticlesStatus");
+        articleButton.onclick = async () => {
+          articleButton.disabled = true;
+          articleButton.classList.add("loading");
+          articleText.textContent = "Refreshing";
+          articleStatus.textContent = "Fetching today's articles from twitterapi.io — a few minutes";
+          try {
+            const result = await fetch("/api/articles/refresh", { method: "POST" }).then((r) => r.json());
+            articleStatus.textContent = result.ok ? "Done" : "Refresh failed";
+            await loadArticleIndex();
+            state.mode = "articles";
+            renderMode();
+          } catch (error) {
+            articleStatus.textContent = "Refresh failed";
+          } finally {
+            articleButton.disabled = false;
+            articleButton.classList.remove("loading");
+            articleText.textContent = "Refresh today";
+          }
+        };
+      }
     }
 
     async function loadArticles() {
@@ -1216,6 +1271,17 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === "/api/articles") {
     res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
     res.end(JSON.stringify(getArticles(url)));
+    return;
+  }
+  if (url.pathname === "/api/articles/refresh") {
+    if (req.method !== "POST") {
+      res.writeHead(405, { "content-type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "method not allowed" }));
+      return;
+    }
+    const result = await refreshArticles();
+    res.writeHead(result.ok ? 200 : 500, { "content-type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(result));
     return;
   }
   if (url.pathname === "/api/engagement/index") {

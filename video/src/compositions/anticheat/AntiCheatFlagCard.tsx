@@ -113,7 +113,7 @@ export const AntiCheatFlagCard: React.FC<Props> = ({ flag }) => {
             left: W / 2 - 540,
             width: 1080,
             height: 480,
-            background: `radial-gradient(closest-side, ${colors.accentTint} 0%, rgba(0,82,255,0) 70%)`,
+            background: `radial-gradient(closest-side, ${colors.accentTint} 0%, rgba(45, 91, 255,0) 70%)`,
             opacity: halo,
             pointerEvents: "none",
           }}

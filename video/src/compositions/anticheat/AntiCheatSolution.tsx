@@ -143,7 +143,7 @@ const FlatPhone: React.FC<{
           style={{
             position: "absolute",
             inset: 0,
-            background: `linear-gradient(180deg, rgba(0,82,255,${(safetyMask * 0.32).toFixed(3)}) 0%, rgba(91,134,255,${(safetyMask * 0.55).toFixed(3)}) 100%)`,
+            background: `linear-gradient(180deg, rgba(45, 91, 255,${(safetyMask * 0.32).toFixed(3)}) 0%, rgba(91,134,255,${(safetyMask * 0.55).toFixed(3)}) 100%)`,
             mixBlendMode: "screen",
             opacity: safetyMask,
           }}
@@ -318,7 +318,7 @@ const Headline: React.FC = () => {
             height: 760,
             transform: `scale(${haloScale.toFixed(3)})`,
             transformOrigin: "center center",
-            background: `radial-gradient(ellipse at center, rgba(0,82,255,${(0.45 * haloAmt + 0.04).toFixed(3)}) 0%, rgba(0,82,255,${(0.18 * haloAmt + 0.02).toFixed(3)}) 32%, rgba(0,82,255,0) 68%)`,
+            background: `radial-gradient(ellipse at center, rgba(45, 91, 255,${(0.45 * haloAmt + 0.04).toFixed(3)}) 0%, rgba(45, 91, 255,${(0.18 * haloAmt + 0.02).toFixed(3)}) 32%, rgba(45, 91, 255,0) 68%)`,
             filter: "blur(80px)",
             mixBlendMode: "multiply",
           }}
@@ -351,7 +351,7 @@ const Headline: React.FC = () => {
                 width: 130,
                 height: 130,
                 flexShrink: 0,
-                filter: `drop-shadow(0 8px ${(28 + wordmarkGlow * 14).toFixed(2)}px rgba(0, 82, 255, ${(0.30 + wordmarkGlow * 0.25).toFixed(3)}))`,
+                filter: `drop-shadow(0 8px ${(28 + wordmarkGlow * 14).toFixed(2)}px rgba(45, 91, 255, ${(0.30 + wordmarkGlow * 0.25).toFixed(3)}))`,
               }}
             />
             <span
@@ -362,7 +362,7 @@ const Headline: React.FC = () => {
                 letterSpacing: "-0.05em",
                 color: colors.fg,
                 lineHeight: 0.95,
-                textShadow: `0 8px ${(28 + wordmarkGlow * 14).toFixed(2)}px rgba(0, 82, 255, ${(0.30 + wordmarkGlow * 0.25).toFixed(3)})`,
+                textShadow: `0 8px ${(28 + wordmarkGlow * 14).toFixed(2)}px rgba(45, 91, 255, ${(0.30 + wordmarkGlow * 0.25).toFixed(3)})`,
               }}
             >
               General

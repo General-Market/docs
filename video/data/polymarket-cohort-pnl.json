@@ -1,0 +1,40 @@
+{
+  "snapshot_taken_at": "2026-05-15T00:00:00Z",
+  "source": "PARTIAL — see notes. No public dataset publishes the (cohort_year x percentile) matrix in pre-aggregated form. Closest sources: (1) Dune dashboard 'Polymarket Trader Cashflow PnL' by defioasis — https://dune.com/defioasis/polymarket-pnl — aggregate dollar-bin distribution across all cohorts. (2) Academic paper 'Who Wins and Who Loses In Prediction Markets? Evidence from Polymarket' by Akey/Gregoire/Harvie/Martineau (SSRN abstract_id=6443103) — analyzes 1.4M users 2022-2026 with concentration stats but PDF is gated, no cohort-year table publicly visible. (3) Jon Becker's open dataset — https://github.com/jon-becker/prediction-market-analysis (36 GB parquet, every OrderFilled event on Polygon CTFExchange + legacy FPMM trades) — would let us derive the matrix from scratch with several hours of compute.",
+  "status": "no_cohort_data_available",
+  "cohorts": {},
+  "aggregate_distribution_no_cohort_split": {
+    "snapshot_source": "https://dune.com/defioasis/polymarket-pnl (cashflow PnL = sale proceeds + redemptions - purchase costs, excludes unrealized; covers Polymarket launch through ~May 2026)",
+    "n_addresses_total": 2559543,
+    "net_cashflow_pnl_usd": -9130000000,
+    "dollar_bins": [
+      {"bin": "profit_gt_1M",       "addresses": 97,      "pct_of_addresses": 0.0038, "total_pnl_usd":  452700000, "share_of_profits_pct": 45.77},
+      {"bin": "profit_100K_1M",     "addresses": 609,     "pct_of_addresses": 0.0238, "total_pnl_usd":  166200000, "share_of_profits_pct": 16.80},
+      {"bin": "profit_10K_100K",    "addresses": 7996,    "pct_of_addresses": 0.3124, "total_pnl_usd":  184600000, "share_of_profits_pct": 18.67},
+      {"bin": "profit_1K_10K",      "addresses": 51158,   "pct_of_addresses": 1.987,  "total_pnl_usd":  145500000, "share_of_profits_pct": 14.71},
+      {"bin": "profit_0_1K",        "addresses": 391332,  "pct_of_addresses": 15.29,  "total_pnl_usd":   40100000, "share_of_profits_pct":  4.05},
+      {"bin": "loss_0_1K",          "addresses": 1895119, "pct_of_addresses": 74.04,  "total_pnl_usd": -175700000, "share_of_losses_pct":   1.74},
+      {"bin": "loss_1K_10K",        "addresses": 180403,  "pct_of_addresses":  7.05,  "total_pnl_usd": -499000000, "share_of_losses_pct":   4.93},
+      {"bin": "loss_10K_100K",      "addresses": 27290,   "pct_of_addresses":  1.07,  "total_pnl_usd": -741000000, "share_of_losses_pct":   7.32},
+      {"bin": "loss_100K_1M",       "addresses": 4392,    "pct_of_addresses":  0.17,  "total_pnl_usd": -1290000000,"share_of_losses_pct":  12.80},
+      {"bin": "loss_gt_1M",         "addresses": 1147,    "pct_of_addresses":  0.04,  "total_pnl_usd": -7410000000,"share_of_losses_pct":  73.22}
+    ]
+  },
+  "academic_aggregate_no_cohort_split": {
+    "source": "Akey, Gregoire, Harvie, Martineau (SSRN 6443103) — 1.4M users, 70M trades, $20B+ volume, Nov 2022 - Oct 2025",
+    "pct_users_with_positive_returns": 0.292,
+    "share_of_gains_top_001pct": 0.585,
+    "share_of_gains_top_1pct":  0.841,
+    "share_of_gains_top_5pct":  0.958,
+    "share_of_gains_top_25pct": 0.996,
+    "pct_wallets_pnl_over_1k_usd": 0.0051,
+    "pct_users_with_losses_total": 0.708
+  },
+  "what_would_unlock_the_real_matrix": {
+    "path_a_dune_query": "Author a new Dune query joining polymarket.trades with a per-user min(block_time) cohort. Cost: $0 to write, ~$10-50 one-shot exec on Dune's Pro tier (DuneSQL). Wall time: 30-60 min once API key is provisioned. Output: (address, first_trade_year, lifetime_pnl_usd) -> percentile in pandas.",
+    "path_b_jbecker_dataset": "Download s3.jbecker.dev/data.tar.zst (36 GB compressed, ~150 GB extracted). Compute per-address cashflow PnL across all OrderFilled events + legacy FPMMBuy/FPMMSell + market resolutions. Bucket by year of first trade. Wall time: 4-12 hours including download.",
+    "path_c_subgraph": "Polymarket positions subgraph at Goldsky returns aggregated user positions but not full trade history; pagination over ~2.5M users at 1k/page = 2500 requests, multi-hour and rate-limited.",
+    "path_d_request_paper_authors": "Email Akey/Gregoire/Harvie/Martineau and ask for the cohort-year breakdown. They have it. The paper computes it. They just didn't publish that exact crosstab."
+  },
+  "warning_for_chart_use": "Do NOT fabricate cohort numbers. The Saez/Zucman year-scrub story IS true for Polymarket — every public source confirms profits concentrate over time and later cohorts face a more efficient (read: more brutal) market — but the per-cohort percentile numbers themselves require running one of the four paths above. Shipping fake numbers here would be the one thing the chart's premise cannot survive."
+}

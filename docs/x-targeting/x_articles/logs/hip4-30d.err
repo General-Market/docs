@@ -1,0 +1,340 @@
+
+### rt-gte-500 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500:p0  bal_before=8956179  est=300c
+  ↳ xarticles:rt-gte-500:p0  bal_after=8956179  spent=0c ($0.0)  count=0
+
+### rt-gte-500-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-500-latest:p0  bal_before=8956179  est=300c
+  ↳ xarticles:rt-gte-500-latest:p0  bal_after=8956179  spent=0c ($0.0)  count=2
+  ↳ xarticles:rt-gte-500-latest:p1  bal_before=8956179  est=300c
+  ↳ xarticles:rt-gte-500-latest:p1  bal_after=8956179  spent=0c ($0.0)  count=0
+
+### rt-gte-200 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200:p0  bal_before=8956179  est=300c
+  ↳ xarticles:rt-gte-200:p0  bal_after=8956179  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-200:p1  bal_before=8956179  est=300c
+  ↳ xarticles:rt-gte-200:p1  bal_after=8956179  spent=0c ($0.0)  count=0
+
+### rt-gte-200-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:200 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-200-latest:p0  bal_before=8956179  est=300c
+  ↳ xarticles:rt-gte-200-latest:p0  bal_after=8956134  spent=45c ($0.0004)  count=4
+  ↳ xarticles:rt-gte-200-latest:p1  bal_before=8956134  est=300c
+  ↳ xarticles:rt-gte-200-latest:p1  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### rt-gte-100 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100:p0  bal_before=8956134  est=300c
+  ↳ xarticles:rt-gte-100:p0  bal_after=8956134  spent=0c ($0.0)  count=10
+  ↳ xarticles:rt-gte-100:p1  bal_before=8956134  est=300c
+  ↳ xarticles:rt-gte-100:p1  bal_after=8956134  spent=0c ($0.0)  count=20
+  ↳ xarticles:rt-gte-100:p2  bal_before=8956134  est=300c
+  ↳ xarticles:rt-gte-100:p2  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### rt-gte-100-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_retweets:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:rt-gte-100-latest:p0  bal_before=8956134  est=300c
+  ↳ xarticles:rt-gte-100-latest:p0  bal_after=8956134  spent=0c ($0.0)  count=10
+  ↳ xarticles:rt-gte-100-latest:p1  bal_before=8956134  est=300c
+  ↳ xarticles:rt-gte-100-latest:p1  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### likes-gte-5000 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000:p0  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-5000:p0  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### likes-gte-5000-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:5000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-5000-latest:p0  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### likes-gte-2000 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000:p0  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-2000:p0  bal_after=8956134  spent=0c ($0.0)  count=3
+  ↳ xarticles:likes-gte-2000:p1  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-2000:p1  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### likes-gte-2000-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p0  bal_after=8956134  spent=0c ($0.0)  count=3
+  ↳ xarticles:likes-gte-2000-latest:p1  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-2000-latest:p1  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### likes-gte-1000 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000:p0  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-1000:p0  bal_after=8956134  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1000:p1  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-1000:p1  bal_after=8956134  spent=0c ($0.0)  count=0
+
+### likes-gte-1000-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:1000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p0  bal_after=8956134  spent=0c ($0.0)  count=5
+  ↳ xarticles:likes-gte-1000-latest:p1  bal_before=8956134  est=300c
+  ↳ xarticles:likes-gte-1000-latest:p1  bal_after=8954649  spent=1485c ($0.0149)  count=0
+
+### likes-gte-500 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500:p0  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-500:p0  bal_after=8954649  spent=0c ($0.0)  count=0
+
+### likes-gte-500-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-500-latest:p0  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-500-latest:p0  bal_after=8954649  spent=0c ($0.0)  count=7
+  ↳ xarticles:likes-gte-500-latest:p1  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-500-latest:p1  bal_after=8954649  spent=0c ($0.0)  count=0
+
+### likes-gte-250 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250:p0  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250:p0  bal_after=8954649  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p1  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250:p1  bal_after=8954649  spent=0c ($0.0)  count=2
+  ↳ xarticles:likes-gte-250:p2  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250:p2  bal_after=8954649  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-250:p3  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250:p3  bal_after=8954649  spent=0c ($0.0)  count=10
+  ↳ xarticles:likes-gte-250:p4  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250:p4  bal_after=8954649  spent=0c ($0.0)  count=0
+
+### likes-gte-250-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:250 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-250-latest:p0  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250-latest:p0  bal_after=8954649  spent=0c ($0.0)  count=15
+  ↳ xarticles:likes-gte-250-latest:p1  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-250-latest:p1  bal_after=8954649  spent=0c ($0.0)  count=0
+
+### likes-gte-100 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100:p0  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-100:p0  bal_after=8954649  spent=0c ($0.0)  count=7
+  ↳ xarticles:likes-gte-100:p1  bal_before=8954649  est=300c
+  ↳ xarticles:likes-gte-100:p1  bal_after=8953614  spent=1035c ($0.0103)  count=0
+
+### likes-gte-100-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-100-latest:p0  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-100-latest:p0  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-100-latest:p1  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-100-latest:p1  bal_after=8953614  spent=0c ($0.0)  count=16
+  ↳ xarticles:likes-gte-100-latest:p2  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-100-latest:p2  bal_after=8953614  spent=0c ($0.0)  count=0
+
+### likes-gte-50 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:50 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-50:p0  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-50:p0  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-50:p1  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-50:p1  bal_after=8953614  spent=0c ($0.0)  count=7
+  ↳ xarticles:likes-gte-50:p2  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-50:p2  bal_after=8953614  spent=0c ($0.0)  count=2
+  ↳ xarticles:likes-gte-50:p3  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-50:p3  bal_after=8953614  spent=0c ($0.0)  count=0
+
+### likes-gte-25 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-25:p0  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-25:p0  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p1  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-25:p1  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p2  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-25:p2  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p3  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-25:p3  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-25:p4  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-25:p4  bal_after=8953614  spent=0c ($0.0)  count=2
+  ↳ xarticles:likes-gte-25:p5  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-25:p5  bal_after=8953614  spent=0c ($0.0)  count=0
+
+### likes-gte-10 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:10 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-10:p0  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-10:p0  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p1  bal_before=8953614  est=300c
+  ↳ xarticles:likes-gte-10:p1  bal_after=8953614  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p2  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-10:p2  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p3  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-10:p3  bal_after=8951004  spent=0c ($0.0)  count=15
+  ↳ xarticles:likes-gte-10:p4  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-10:p4  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-10:p5  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-10:p5  bal_after=8951004  spent=0c ($0.0)  count=0
+
+### likes-gte-5 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:5 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-5:p0  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-5:p0  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p1  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-5:p1  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p2  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-5:p2  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p3  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-5:p3  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p4  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-5:p4  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-5:p5  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-5:p5  bal_after=8951004  spent=0c ($0.0)  count=0
+
+### likes-gte-2 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:2 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-2:p0  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-2:p0  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p1  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-2:p1  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p2  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-2:p2  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p3  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-2:p3  bal_after=8951004  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p4  bal_before=8951004  est=300c
+  ↳ xarticles:likes-gte-2:p4  bal_after=8947449  spent=3555c ($0.0355)  count=14
+  ↳ xarticles:likes-gte-2:p5  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-2:p5  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p6  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-2:p6  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-2:p7  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-2:p7  bal_after=8947449  spent=0c ($0.0)  count=20
+
+### likes-gte-1 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_faves:1 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:likes-gte-1:p0  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p0  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p1  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p1  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p2  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p2  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p3  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p3  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p4  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p4  bal_after=8947449  spent=0c ($0.0)  count=6
+  ↳ xarticles:likes-gte-1:p5  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p5  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p6  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p6  bal_after=8947449  spent=0c ($0.0)  count=20
+  ↳ xarticles:likes-gte-1:p7  bal_before=8947449  est=300c
+  ↳ xarticles:likes-gte-1:p7  bal_after=8947449  spent=0c ($0.0)  count=20
+
+### replies-gte-2000 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:2000 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-2000:p0  bal_before=8947449  est=300c
+  ↳ xarticles:replies-gte-2000:p0  bal_after=8947449  spent=0c ($0.0)  count=2
+  ↳ xarticles:replies-gte-2000:p1  bal_before=8947449  est=300c
+  ↳ xarticles:replies-gte-2000:p1  bal_after=8947449  spent=0c ($0.0)  count=0
+
+### replies-gte-500 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:500 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-500:p0  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-500:p0  bal_after=8944149  spent=0c ($0.0)  count=0
+
+### replies-gte-100 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:100 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-100:p0  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-100:p0  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-100:p1  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-100:p1  bal_after=8944149  spent=0c ($0.0)  count=2
+  ↳ xarticles:replies-gte-100:p2  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-100:p2  bal_after=8944149  spent=0c ($0.0)  count=0
+
+### replies-gte-25 [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets") min_replies:25 url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:replies-gte-25:p0  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-25:p0  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p1  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-25:p1  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p2  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-25:p2  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:replies-gte-25:p3  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-25:p3  bal_after=8944149  spent=0c ($0.0)  count=4
+  ↳ xarticles:replies-gte-25:p4  bal_before=8944149  est=300c
+  ↳ xarticles:replies-gte-25:p4  bal_after=8944149  spent=0c ($0.0)  count=0
+
+### broad-native-top [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets" OR "event perps" OR "express a bet") url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:broad-native-top:p0  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p0  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p1  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p1  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p2  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p2  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p3  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p3  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p4  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p4  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p5  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p5  bal_after=8944149  spent=0c ($0.0)  count=20
+  ↳ xarticles:broad-native-top:p6  bal_before=8944149  est=300c
+  ↳ xarticles:broad-native-top:p6  bal_after=8940669  spent=3480c ($0.0348)  count=20
+  ↳ xarticles:broad-native-top:p7  bal_before=8940669  est=300c
+  ↳ xarticles:broad-native-top:p7  bal_after=8940669  spent=0c ($0.0)  count=20
+
+### keyword-native-top [Top] x8p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets" OR "event perps" OR "express a bet") url:x.com/i/article since:2026-05-11 -is:retweet min_faves:5
+  ↳ xarticles:keyword-native-top:p0  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p0  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p1  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p1  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p2  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p2  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p3  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p3  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p4  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p4  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p5  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p5  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-top:p6  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p6  bal_after=8940669  spent=0c ($0.0)  count=3
+  ↳ xarticles:keyword-native-top:p7  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-top:p7  bal_after=8940669  spent=0c ($0.0)  count=20
+
+### keyword-native-latest [Latest] x14p (HIP-4 OR HIP4 OR "outcome market" OR "outcome markets" OR "event perps" OR "express a bet") url:x.com/i/article since:2026-05-11 -is:retweet
+  ↳ xarticles:keyword-native-latest:p0  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-latest:p0  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p1  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-latest:p1  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p2  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-latest:p2  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p3  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-latest:p3  bal_after=8940669  spent=0c ($0.0)  count=19
+  ↳ xarticles:keyword-native-latest:p4  bal_before=8940669  est=300c
+  ↳ xarticles:keyword-native-latest:p4  bal_after=8940669  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p5  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p5  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p6  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p6  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p7  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p7  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p8  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p8  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p9  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p9  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p10  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p10  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p11  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p11  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p12  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p12  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:keyword-native-latest:p13  bal_before=8936724  est=300c
+  ↳ xarticles:keyword-native-latest:p13  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:XLayerOfficial  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:XLayerOfficial  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:GenLayer  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:GenLayer  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Delphi_Digital  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:Delphi_Digital  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperliquidR  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:HyperliquidR  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:blocmates  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:blocmates  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8936724  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_before=8936724  est=300c
+  ↳ xarticles:author-baseline:ArrakisFinance  bal_after=8932539  spent=4185c ($0.0418)  count=19
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:HyperEVM_CN  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:antoniayly  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:antoniayly  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OAK_Res  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:OAK_Res  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_ES  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:OAK_Res  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:OAK_Res  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:0xFleck  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:0xFleck  bal_after=8932539  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Hyperliquid_TUR  bal_before=8932539  est=300c
+  ↳ xarticles:author-baseline:Hyperliquid_TUR  bal_after=8928354  spent=4185c ($0.0418)  count=20
+  ↳ xarticles:author-baseline:OAK_Res_FR  bal_before=8928354  est=300c
+  ↳ xarticles:author-baseline:OAK_Res_FR  bal_after=8928354  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:FalconXGlobal  bal_before=8928354  est=300c
+  ↳ xarticles:author-baseline:FalconXGlobal  bal_after=8928354  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:aveai_info  bal_before=8928354  est=300c
+  ↳ xarticles:author-baseline:aveai_info  bal_after=8928354  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_before=8928354  est=300c
+  ↳ xarticles:author-baseline:Crypto_Briefing  bal_after=8928354  spent=0c ($0.0)  count=20
+  ↳ xarticles:author-baseline:ChainCatcher_  bal_before=8928354  est=300c
+  ↳ xarticles:author-baseline:ChainCatcher_  bal_after=8928354  spent=0c ($0.0)  count=20

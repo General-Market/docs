@@ -1,0 +1,43 @@
+# Anti-Cheat Flags targeting — candidates from advanced_search probes
+# Source: docs/x-targeting/anticheat_targeting.md
+# Probes: A (profitable in backtest), C (overfit live), F (paper trading + real money lost), J (walk-forward fail)
+# Generated: 2026-05-20
+
+# Tier 1 — direct quotes of the backtest-vs-live thesis
+DarwinexZero
+Your_NLP_Coach
+kieran__duff
+onlybreakouts
+m_schouten
+SifuBacktest
+pinevault
+dddabtc
+b162543
+ClawArbs
+
+# Tier 2 — practitioners describing personal failures
+oscar_flavioo
+frankgermain
+kryll_io
+SatwikPasunoori
+AlgoTradingxAI
+TradingBeast_
+Flower83_
+THouseTraders
+AlgoPatel
+0xQuaza
+BettysTrades
+MyraOlivara
+BruzWJ
+ventramtech
+FalsifyLab
+anonymous9zs
+cankeremgurel
+
+# Tier 3 — tool builders / educators amplifying the thesis
+haasonline
+bettersystrader
+riskmanaged_io
+RoyAmal
+Gar_Fitz1
+Pradeep891730

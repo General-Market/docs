@@ -1,0 +1,119 @@
+{
+  "updated_at": "2026-03-31T00:00:00Z",
+  "total_sources": 47,
+  "categories": [
+    {
+      "name": "Finance",
+      "sources": ["defi", "rates", "bonds", "pumpfun", "polymarket"]
+    },
+    {
+      "name": "Economic",
+      "sources": ["worldbank", "eia", "ecb", "usa_spending", "adzuna"]
+    },
+    {
+      "name": "Regulatory",
+      "sources": ["sec_13f", "finra_short_vol", "congress"]
+    },
+    {
+      "name": "Blockchain",
+      "sources": ["bchain", "bls"]
+    },
+    {
+      "name": "Weather & Environment",
+      "sources": ["weather", "weather_alerts", "airnow", "noaa_tides", "noaa_met", "ndbc", "nwps", "usgs_water", "wildfire", "earthquake"]
+    },
+    {
+      "name": "Space",
+      "sources": ["spaceweather", "iss"]
+    },
+    {
+      "name": "Entertainment",
+      "sources": ["twitch", "steam", "anilist", "fourchan", "chaturbate", "queue_times"]
+    },
+    {
+      "name": "Tech & Internet",
+      "sources": ["hackernews", "cloudflare"]
+    },
+    {
+      "name": "Gaming",
+      "sources": ["backpacktf"]
+    },
+    {
+      "name": "Real Estate",
+      "sources": ["zillow"]
+    },
+    {
+      "name": "Transport",
+      "sources": ["gtfs_transit", "mta_subway", "citybikes", "parking"]
+    },
+    {
+      "name": "Nature",
+      "sources": ["animals"]
+    },
+    {
+      "name": "Military",
+      "sources": ["mil_aircraft"]
+    },
+    {
+      "name": "Sports",
+      "sources": ["sports"]
+    },
+    {
+      "name": "Academic",
+      "sources": ["crossref", "pubmed"]
+    },
+    {
+      "name": "Retail",
+      "sources": ["bestbuy"]
+    }
+  ],
+  "sources": [
+    { "name": "defi", "batchId": 0, "tickDuration": 120, "description": "DeFi protocol metrics — TVL, yields, volumes" },
+    { "name": "rates", "batchId": 1, "tickDuration": 86400, "description": "Interest rates — Fed funds, SOFR, Treasury yields" },
+    { "name": "bls", "batchId": 2, "tickDuration": 86400, "description": "Bureau of Labor Statistics — employment, CPI, wages" },
+    { "name": "worldbank", "batchId": 3, "tickDuration": 604800, "description": "World Bank indicators — GDP, trade, development" },
+    { "name": "eia", "batchId": 4, "tickDuration": 86400, "description": "Energy Information Admin — oil, gas, electricity prices" },
+    { "name": "ecb", "batchId": 5, "tickDuration": 86400, "description": "European Central Bank — EUR rates, money supply" },
+    { "name": "weather", "batchId": 6, "tickDuration": 3600, "description": "Live weather — temperature, wind, pressure across cities" },
+    { "name": "sec_13f", "batchId": 7, "tickDuration": 21600, "description": "SEC 13F filings — institutional holdings changes" },
+    { "name": "finra_short_vol", "batchId": 8, "tickDuration": 86400, "description": "FINRA short volume — daily short interest ratios" },
+    { "name": "congress", "batchId": 9, "tickDuration": 86400, "description": "Congressional trading — disclosed stock transactions" },
+    { "name": "bchain", "batchId": 10, "tickDuration": 86400, "description": "Blockchain metrics — hashrate, difficulty, fees, mempool" },
+    { "name": "bonds", "batchId": 11, "tickDuration": 86400, "description": "Bond markets — yields, spreads, credit indices" },
+    { "name": "anilist", "batchId": 12, "tickDuration": 600, "description": "Anime popularity — trending shows, scores, watch counts" },
+    { "name": "backpacktf", "batchId": 13, "tickDuration": 600, "description": "TF2 item market — unusual hat prices, trade volumes" },
+    { "name": "cloudflare", "batchId": 14, "tickDuration": 600, "description": "Cloudflare Radar — internet traffic, attack trends" },
+    { "name": "fourchan", "batchId": 15, "tickDuration": 600, "description": "4chan board activity — post rates, unique posters" },
+    { "name": "hackernews", "batchId": 16, "tickDuration": 300, "description": "Hacker News — top story scores, comment velocity" },
+    { "name": "polymarket", "batchId": 17, "tickDuration": 300, "description": "Polymarket — prediction market probabilities" },
+    { "name": "steam", "batchId": 18, "tickDuration": 600, "description": "Steam — concurrent players, game rankings" },
+    { "name": "twitch", "batchId": 19, "tickDuration": 60, "description": "Twitch — live viewer counts, channel rankings" },
+    { "name": "zillow", "batchId": 20, "tickDuration": 86400, "description": "Zillow — home values, rent indices by metro" },
+    { "name": "earthquake", "batchId": 21, "tickDuration": 300, "description": "USGS earthquakes — magnitude, frequency, locations" },
+    { "name": "spaceweather", "batchId": 22, "tickDuration": 600, "description": "Space weather — solar wind, Kp index, CME alerts" },
+    { "name": "wildfire", "batchId": 23, "tickDuration": 1800, "description": "Active wildfires — fire count, acres burned, containment" },
+    { "name": "mil_aircraft", "batchId": 24, "tickDuration": 600, "description": "Military aircraft — tracked flights, ADSB activity" },
+    { "name": "sports", "batchId": 25, "tickDuration": 600, "description": "Live sports — scores, standings, game states" },
+    { "name": "iss", "batchId": 26, "tickDuration": 600, "description": "ISS tracking — orbital position, crew activity, experiments" },
+    { "name": "weather_alerts", "batchId": 27, "tickDuration": 300, "description": "NWS weather alerts — severe storms, warnings, watches" },
+    { "name": "animals", "batchId": 28, "tickDuration": 600, "description": "Animal tracking — migration patterns, species sightings" },
+    { "name": "gtfs_transit", "batchId": 29, "tickDuration": 120, "description": "Public transit — real-time delays, ridership, on-time %" },
+    { "name": "usa_spending", "batchId": 30, "tickDuration": 3600, "description": "Federal spending — contract awards, grant disbursements" },
+    { "name": "pumpfun", "batchId": 31, "tickDuration": 300, "description": "Pump.fun — Solana memecoin launches, volumes, graduations" },
+    { "name": "usgs_water", "batchId": 32, "tickDuration": 600, "description": "USGS water — river flow rates, gauge heights, flood levels" },
+    { "name": "chaturbate", "batchId": 33, "tickDuration": 600, "description": "Chaturbate — room viewer counts, performer rankings" },
+    { "name": "noaa_tides", "batchId": 34, "tickDuration": 900, "description": "NOAA tides — water levels, tide predictions, station data" },
+    { "name": "citybikes", "batchId": 35, "tickDuration": 600, "description": "City bike sharing — available bikes, station occupancy" },
+    { "name": "ndbc", "batchId": 36, "tickDuration": 600, "description": "NDBC buoys — wave height, ocean temperature, wind at sea" },
+    { "name": "noaa_met", "batchId": 37, "tickDuration": 600, "description": "NOAA meteorological — station readings, pressure, humidity" },
+    { "name": "nwps", "batchId": 38, "tickDuration": 600, "description": "Nuclear power — reactor status, output, capacity factors" },
+    { "name": "airnow", "batchId": 39, "tickDuration": 600, "description": "Air quality — AQI readings, PM2.5, ozone by region" },
+    { "name": "crossref", "batchId": 40, "tickDuration": 600, "description": "Academic papers — citation counts, publication rates" },
+    { "name": "pubmed", "batchId": 41, "tickDuration": 600, "description": "PubMed — biomedical publication trends, MeSH topics" },
+    { "name": "parking", "batchId": 42, "tickDuration": 600, "description": "Parking — garage occupancy, available spaces, pricing" },
+    { "name": "bestbuy", "batchId": 43, "tickDuration": 600, "description": "Best Buy — product pricing, deal counts, rating changes" },
+    { "name": "adzuna", "batchId": 44, "tickDuration": 1800, "description": "Job market — listing counts, salary trends by category" },
+    { "name": "queue_times", "batchId": 45, "tickDuration": 600, "description": "Theme parks — ride wait times, park capacity" },
+    { "name": "mta_subway", "batchId": 46, "tickDuration": 300, "description": "NYC subway — train delays, service alerts, ridership" }
+  ]
+}

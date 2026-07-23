@@ -58,7 +58,7 @@ const COLUMNS: Col[] = [
       { label: 'Privacy', href: '/privacy' },
       { label: 'Terms', href: '/terms' },
       { label: 'Legal', href: '/legal-index' },
-      { label: 'Contact', href: 'mailto:hello@generalmarket.io', external: true },
+      { label: 'Contact', href: 'mailto:max@generalmarket.io', external: true },
     ],
   },
 ]

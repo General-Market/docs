@@ -359,7 +359,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps, hideVaults 
           </div>
           <div className="flex items-center gap-3">
             <a
-              href="https://discord.gg/xsfgzwR6"
+              href="https://discord.gg/QbasycShP"
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}

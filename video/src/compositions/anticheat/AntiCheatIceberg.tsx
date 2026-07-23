@@ -17,14 +17,11 @@ import { VIDEO_BEATS } from "./beats";
 
 // The "I lost because of …" iceberg.
 //
-// Camera descends through six tiers. The clamp on scroll has been
-// removed — at T4 and T5 the iceberg's bottom rises into the frame,
-// revealing abyss below. Surface god rays at T0–T2. Waterline sweep
-// at T1. Underwater takes hold afterward: caustic shimmer, three
-// bubble depth layers, motion-blur on the scroll. The climax at
-// "insider traders" gets specular sweep, chromatic split, NYSE
-// solarise, red bloom, and a Wash vignette. Tier stamps are pinned
-// to VIDEO_BEATS.
+// Camera descends through four tiers — we open already underwater
+// (skipping the paper-cut tiers strategy/fees) and keep dropping until
+// "insider traders" lands at the bottom. Halftone shader pulls dots
+// from the source image; threshold is loose enough that the underwater
+// body keeps emitting dots all the way down.
 
 const IMG_NATIVE_W = 1265;
 const IMG_NATIVE_H = 1670;
@@ -33,9 +30,8 @@ const IMG_NATIVE_H = 1670;
 // see tip + body in the same shot, not so wide that we lose the shape.
 const ICEBERG_SCALE = 1.8;
 
+// Anchor cards on the four underwater tier bands of the source image.
 const TIER_Y_NATIVE = [
-  Math.round((0 + 269) / 2),       // 134  — sky / above line 1
-  Math.round((269 + 539) / 2),     // 404  — tip
   Math.round((539 + 857) / 2),     // 698  — upper underwater
   Math.round((857 + 1141) / 2),    // 999  — mid underwater
   Math.round((1141 + 1430) / 2),   // 1285 — lower iceberg
@@ -46,9 +42,12 @@ const TIER_Y_FILL = TIER_Y_NATIVE.map((y) => y * ICEBERG_SCALE);
 const ICEBERG_LAYER_H = IMG_NATIVE_H * ICEBERG_SCALE;
 const MAX_SCROLL = H - ICEBERG_LAYER_H;
 
-// Linear scroll across the tier ladder. Tier 0 flush at the iceberg top,
-// tier 5 flush at the iceberg bottom — no empty space ever.
-const scrollAtTier = (i: number) => (i / (TIER_Y_NATIVE.length - 1)) * MAX_SCROLL;
+// Linear scroll across the four underwater tiers — start with the
+// waterline + upper underwater visible, end flush with the iceberg
+// bottom. Maps i ∈ [0..3] onto fractions [2/5..5/5] of the original
+// six-tier descent so the framing matches the original "tier 2 →
+// tier 5" segment.
+const scrollAtTier = (i: number) => ((i + 2) / 5) * MAX_SCROLL;
 
 type Tier = {
   word: string[];
@@ -62,8 +61,6 @@ type Tier = {
 };
 
 export const TIERS: Tier[] = [
-  { word: ["strategy"] },
-  { word: ["fees"] },
   { word: ["liquidation", "hunters"] },
   { word: ["front", "runners"] },
   { word: ["orderbook", "spoofers"] },
@@ -75,8 +72,6 @@ const LAST = N - 1;
 type TradingTier = { imageSrc: string; glyph: string; label: string };
 
 const TRADING_TIERS: TradingTier[] = [
-  { imageSrc: "anticheat-imgs/trader-0.png", glyph: "📱", label: "you, on your phone" },
-  { imageSrc: "anticheat-imgs/trader-1.png", glyph: "💻", label: "the digital nomad" },
   { imageSrc: "anticheat-imgs/trader-2.png", glyph: "🖥️", label: "prop firm" },
   { imageSrc: "anticheat-imgs/trader-3.png", glyph: "🏛️", label: "trading floor" },
   { imageSrc: "anticheat-imgs/trader-4.png", glyph: "🏦", label: "wall street" },
@@ -86,16 +81,14 @@ const TRADING_TIERS: TradingTier[] = [
 const EASE_OUT = Easing.bezier(0.25, 0.1, 0.3, 1);
 const EASE_DEFAULT = Easing.bezier(0.4, 0, 0.6, 1);
 
-// Beat-locked tier stamps. Iceberg master window [111, 331].
-// Local beats: 10, 36, 61, 87, 113, 139, 164, 190, 216.
-// Anim window is six frames — launch video, no time to dawdle. The
-// motion blur on the iceberg layer carries the eye across the gap.
-const TIER_STAMP_LOCAL = [36, 61, 87, 113, 139, 164] as const;
+// Tightened pacing — four tiers, ~18f apart. Anim window of six frames
+// keeps the snap-in feel; the motion blur carries the eye across.
+const TIER_STAMP_LOCAL = [22, 40, 58, 76] as const;
 const STAMP_OFFSET_FROM_ANIM = 5;
 const TIER_ANIM = 6;
-const ZOOM_OUT = TIER_STAMP_LOCAL[0] - STAMP_OFFSET_FROM_ANIM; // 31
-const FINAL_HOLD = 41;
-const OUTRO = 14;
+const ZOOM_OUT = TIER_STAMP_LOCAL[0] - STAMP_OFFSET_FROM_ANIM; // 17
+const FINAL_HOLD = 32;
+const OUTRO = 12;
 
 const tierAnimStart = (i: number) =>
   TIER_STAMP_LOCAL[i] - STAMP_OFFSET_FROM_ANIM;
@@ -106,7 +99,7 @@ const tierHoldEnd = (i: number) =>
     : tierAnimStart(i + 1);
 
 const SCENE_FRAMES =
-  tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO; // 220
+  tierAnimStart(LAST) + TIER_ANIM + FINAL_HOLD + OUTRO; // 121
 
 type State =
   | { phase: "zoom"; t: number }
@@ -141,18 +134,17 @@ const computeScale = (state: State): number => {
 };
 
 const computeScrollY = (state: State): number => {
-  if (state.phase === "zoom") return 0;
+  if (state.phase === "zoom") return scrollAtTier(0);
   if (state.sub === "hold") return scrollAtTier(state.tier);
-  if (state.tier === 0) return 0;
+  if (state.tier === 0) return scrollAtTier(0);
   const a = scrollAtTier(state.tier - 1);
   const b = scrollAtTier(state.tier);
   return a + (b - a) * EASE_OUT(state.t);
 };
 
-// Per-tier PnL stamp. Escalates roughly with the dollars-extracted scale
-// established in the original LossCounter — strategy is a paper-cut,
-// insider traders is a fatal wound.
-const TIER_PNL = ["−1.0%", "−2.8%", "−6.4%", "−14.7%", "−32.5%", "−74.2%"] as const;
+// Per-tier PnL stamp. The first two cuts (strategy, fees) were paper-cuts;
+// we now open on the actually-extractive tiers.
+const TIER_PNL = ["−6.4%", "−14.7%", "−32.5%", "−74.2%"] as const;
 
 // ─── Halftone shader iceberg ──────────────────────────────────────────────────
 //
@@ -190,12 +182,14 @@ const DOT_FRAGMENT = /* glsl */ `
     vec4 src = texture2D(uTexture, cellUv);
     float luma = dot(src.rgb, vec3(0.299, 0.587, 0.114));
 
-    // Threshold cuts the photo's sky and the pure-black abyss into
-    // solid blue; everything in between — including the underwater
-    // iceberg's darker mass and the rounded bottom — keeps emitting
-    // dots so the iceberg reads all the way down.
-    float mask = smoothstep(0.28, 0.62, luma);
-    float weight = pow(luma, 0.70) * mask;
+    // The underwater iceberg is brighter than the surrounding water on
+    // the green/red channels but they share the same heavy blue. Score
+    // pixels by (R+G)*0.5 so the lighter cyan ice mass separates from
+    // the deep-blue water; the abyss still scores near-zero and bleeds
+    // to background.
+    float ice = (src.r + src.g) * 0.5;
+    float mask = smoothstep(0.20, 0.55, ice);
+    float weight = pow(max(luma, ice), 0.62) * mask;
     float radius = weight * uDotSize * 0.66;
 
     float dist = length(fragCoord - cellCenter);

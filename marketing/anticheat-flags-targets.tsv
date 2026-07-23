@@ -1,0 +1,23 @@
+handle	tier	score	followers	posts_per_day	last_age_days	signal_tweets	notes
+bettersystrader	PRIME	49.14	13797	1.76	0	13	"Perry Kaufman: parameter set with best backtest results is exactly the wrong approach"
+kieran__duff	PRIME	40.72	5293	1.94	0	10	"In-sample backtests almost always exceed out-of-sample live results"
+riskmanaged_io	PRIME	36.18	14	1.89	8	10	"Overfitting is the #1 strategy killer" — tiny account, narrative-aligned tool
+m_schouten	PRIME	32.75	560	0.74	11	12	"Backtests don't fail in live. They just stop being protected by the assumptions you didn't model."
+onlybreakouts	PRIME	31.79	6168	1.06	0	6	"kept seeing live strategies fail that had passed all three [validations]"
+AlgoTradingxAI	PRIME	26.81	640	15.86	0	7	Builds agents that run on cron — backtesting + walk-forward validation
+pinevault	PRIME	26.59	38	1.51	3	16	"Over-optimization remains a constant danger" — tiny but high signal density
+DarwinexZero	PRIME	21.07	11836	5.05	0	2	"2.5%/mo backtest collapses to 0.8-1.2% live" — exact thesis
+Pradeep891730	PRIME	20.81	63	8.70	0	5	"From Backtest to Reality" deep-dive series
+0xQuaza	PRIME	20.38	237	0.57	6	13	"dry run went great. 72.7% WR, $1k → $1.96k in 4 days. Then I turned it live[...]"
+FalsifyLab	PRIME	19.53	33	1.13	0	4	"three bots passing the deploy gate out of 26 built"
+haasonline	PRIME	19.46	2894	0.47	0	5	Algo-trading platform, replies in our threads
+SifuBacktest	PRIME	18.31	205	2.04	0	4	"Backtest methodology is where most tools fail" — toolbuilder
+b162543	PRIME	16.74	54	0.17	0	5	Quant systematic, Sharpe → DSR → walk-forward layered validation
+BettysTrades	PRIME	16.61	402	1.84	1	2	"Killer backtest → real money. One regime shift and it blows up."
+BruzWJ	PRIME	14.06	113	0.31	0	3	pybroker overfit risk + walk-forward concern
+ClawArbs	PRIME	12.10	1261	22.59	4	1	Walk-forward out-of-sample on prediction-market bots
+TradingBeast_	STRONG	9.21	1635	7.78	5	2	Edge vs curve fitting threads
+kryll_io	STRONG	8.70	49586	1.97	1	2	Company account — trading-bot OS (49k followers)
+Your_NLP_Coach	STRONG	8.30	19780	5.56	1	1	"backtested strategies that looked like money printers" — high-reach narrator
+RoyAmal	STRONG	8.30	197	0.43	0	2	Trading framework promoter
+MyraOlivara	STRONG	7.12	1324	24.07	1	1	"Optimization can still overfit. Backtests can still fail in live markets."

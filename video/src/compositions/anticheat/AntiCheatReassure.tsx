@@ -236,7 +236,7 @@ const Headline: React.FC = () => {
     stamp31 > 0
       ? `0 0 ${(stamp31 * 44).toFixed(2)}px rgba(91, 134, 255, ${(
           stamp31 * 0.85
-        ).toFixed(3)}), 0 0 ${(stamp31 * 80).toFixed(2)}px rgba(0, 82, 255, ${(
+        ).toFixed(3)}), 0 0 ${(stamp31 * 80).toFixed(2)}px rgba(45, 91, 255, ${(
           stamp31 * 0.4
         ).toFixed(3)})`
       : flareShadow;
@@ -463,7 +463,7 @@ const RotatingProductPanel: React.FC = () => {
         style={{
           position: "absolute",
           inset: -120,
-          background: `radial-gradient(ellipse at center, rgba(0,82,255,${
+          background: `radial-gradient(ellipse at center, rgba(45, 91, 255,${
             0.14 + pulse * 0.22
           }), transparent 62%)`,
           filter: "blur(60px)",
@@ -614,7 +614,7 @@ const FloatingShield: React.FC<
           scaleSpring * floatScale
         }) rotate(${rotation}deg)`,
         opacity: Math.min(scaleSpring * 1.5, 1),
-        filter: "drop-shadow(2px 6px 12px rgba(0,82,255,0.22))",
+        filter: "drop-shadow(2px 6px 12px rgba(45, 91, 255,0.22))",
         pointerEvents: "none",
       }}
     >
@@ -805,7 +805,7 @@ const ClickBurst: React.FC = () => {
           height: 36,
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, #ffffff 0%, rgba(0,82,255,0.6) 60%, transparent 100%)",
+            "radial-gradient(circle, #ffffff 0%, rgba(45, 91, 255,0.6) 60%, transparent 100%)",
           transform: `scale(${coreScale})`,
           opacity: coreOpacity,
           filter: "blur(2px)",
@@ -850,7 +850,7 @@ const ClickFlash: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        background: `rgba(0, 82, 255, ${tint})`,
+        background: `rgba(45, 91, 255, ${tint})`,
         mixBlendMode: "screen",
         pointerEvents: "none",
       }}
@@ -893,7 +893,7 @@ const ShieldStamp: React.FC = () => {
         opacity,
         transform: `scale(${scale})`,
         transformOrigin: "100% 50%",
-        boxShadow: "0 18px 40px rgba(0,82,255,0.40)",
+        boxShadow: "0 18px 40px rgba(45, 91, 255,0.40)",
         zIndex: 5,
       }}
     >

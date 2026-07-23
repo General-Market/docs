@@ -1,0 +1,39 @@
+1. [GET] https://gembot.io/ => [200] 
+2. [GET] https://gembot.io/assets/index-BtMVnFfW.js => [200] 
+3. [GET] https://gembot.io/assets/react-vendor-CXRB4FZN.js => [200] 
+4. [GET] https://gembot.io/assets/query-CliTu_CO.js => [200] 
+5. [GET] https://gembot.io/assets/vendor-CkQxJMUa.js => [200] 
+6. [GET] https://gembot.io/assets/radix-DXGInVm1.js => [200] 
+7. [GET] https://gembot.io/assets/clerk-B2kNi5z-.js => [200] 
+8. [GET] https://gembot.io/assets/posthog-CN_6j_5E.js => [200] 
+9. [GET] https://gembot.io/assets/index-DQuiZapr.css => [200] 
+10. [GET] https://gembot.io/~flock.js => [200] 
+11. [GET] https://gembot.io/__l5e/events.js => [200] 
+12. [GET] https://clerk.gembot.io/npm/@clerk/clerk-js@5/dist/clerk.browser.js => [307] 
+13. [GET] https://gembot.io/assets/LandingPerformanceDialog.impl-CDQt5Wzr.js => [200] 
+14. [GET] https://gembot.io/assets/usePerformanceData-Ci69oQFN.js => [200] 
+15. [GET] https://gembot.io/assets/BottomSheet-ah2MCydA.js => [200] 
+16. [GET] https://gembot.io/assets/performanceUtils-Db0Wa1u-.js => [200] 
+17. [GET] https://gembot.io/assets/useUnifiedCallsHistory-DkNU-Ebd.js => [200] 
+18. [GET] https://api.gembot.io/performance-data/v2 => [FAILED] net::ERR_FAILED
+19. [GET] https://gembot.io/lovable-uploads/2783ecae-4d2d-498d-8df2-d3db8d4500e7.png => [200] 
+20. [GET] https://us-assets.i.posthog.com/static/exception-autocapture.js?v=1.352.0 => [200] 
+21. [GET] https://us-assets.i.posthog.com/array/phc_XyYPOr1xhHz1oeIIKQDanRkJP0oJ26kP0vYjr3MAQoq/config.js => [200] 
+22. [GET] https://api.gembot.io/performance-data/v2 => [FAILED] net::ERR_FAILED
+23. [GET] https://api.gembot.io/performance-data/v2 => [FAILED] net::ERR_FAILED
+24. [GET] https://us-assets.i.posthog.com/static/posthog-recorder.js?v=1.352.0 => [200] 
+25. [GET] https://us-assets.i.posthog.com/static/surveys.js?v=1.352.0 => [200] 
+26. [GET] https://api.gembot.io/performance-data/v2 => [FAILED] net::ERR_FAILED
+27. [GET] https://clerk.gembot.io/npm/@clerk/clerk-js@5.125.13/dist/clerk.browser.js => [200] 
+28. [GET] https://api.gembot.io/performance/winrate/v2?multipliers=1.2%2C1.5%2C2 => [FAILED] net::ERR_FAILED
+29. [GET] https://api.gembot.io/performance/winrate/v2?multipliers=1.2%2C1.5%2C2 => [FAILED] net::ERR_FAILED
+30. [POST] https://gembot.io/__l5e/trackevents => [202] 
+31. [POST] https://gembot.io/~api/analytics => [200] 
+32. [GET] blob:https://gembot.io/7c4cf600-34ba-417c-895a-3a4640c790a8 => [200] OK
+33. [GET] https://clerk.gembot.io/v1/environment?__clerk_api_version=2025-11-10&_clerk_js_version=5.125.13 => [200] 
+34. [GET] https://clerk.gembot.io/v1/client?__clerk_api_version=2025-11-10&_clerk_js_version=5.125.13 => [200] 
+35. [GET] blob:https://gembot.io/5ffff95f-09a6-4a34-97a9-555f168f07fa => [200] OK
+36. [GET] https://clerk.gembot.io/npm/@clerk/clerk-js@5.125.13/dist/framework_clerk.browser_dc50cf_5.125.13.js => [200] 
+37. [GET] https://clerk.gembot.io/npm/@clerk/clerk-js@5.125.13/dist/vendors_clerk.browser_dc50cf_5.125.13.js => [200] 
+38. [GET] https://clerk.gembot.io/npm/@clerk/clerk-js@5.125.13/dist/ui-common_clerk.browser_dc50cf_5.125.13.js => [200] 
+39. [GET] https://clerk.gembot.io/npm/@clerk/clerk-js@5.125.13/dist/subscriptionDetails_clerk.browser_dc50cf_5.125.13.js => [200] 

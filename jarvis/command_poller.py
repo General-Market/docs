@@ -41,6 +41,11 @@ _SURFACES = {
     "landing": "crxfx.com (landing)",
     "blog": "blog.crxfx.com",
     "solver-dash": "solver.crxfx.com (desk)",
+    "faucet": "faucet.crxfx.com",
+    "dataroom": "dataroom.crxfx.com",
+    "developers": "developers.crxfx.com",
+    "portal": "portal.crxfx.com",
+    "explorer": "explorer.crxfx.com",
 }
 
 
@@ -226,7 +231,12 @@ async def poll_commands_loop(cfg: Config, tg: Telegram) -> None:
                          {"text": "📖 Docs", "callback_data": "crxgo:docs"}],
                         [{"text": "🛬 Landing", "callback_data": "crxgo:landing"},
                          {"text": "🗞 Blog", "callback_data": "crxgo:blog"}],
-                        [{"text": "📊 Solver Dash", "callback_data": "crxgo:solver-dash"}],
+                        [{"text": "💧 Faucet", "callback_data": "crxgo:faucet"},
+                         {"text": "📊 Solver Dash", "callback_data": "crxgo:solver-dash"}],
+                        [{"text": "🗄 Dataroom", "callback_data": "crxgo:dataroom"},
+                         {"text": "🧑‍💻 Developers", "callback_data": "crxgo:developers"}],
+                        [{"text": "🔑 Portal", "callback_data": "crxgo:portal"},
+                         {"text": "🔎 Explorer", "callback_data": "crxgo:explorer"}],
                         [{"text": "❌ Cancel", "callback_data": "crxcancel"}],
                     ]}
                     await tg.send(

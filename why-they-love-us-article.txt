@@ -1,0 +1,533 @@
+How we emotionally take our users hostage
+
+We pulled roughly seven to eight thousand Reddit comments across the subs where traders go to bleed in public. Polymarket, Kalshi, sportsbook, crypto, forex, retail equity, Superstonk. We wanted to know who actually pays for tryGeneral_. We came back with a report on our users that was, against expectations, fun to read. You'll probably recognize yourself in at least one of these wounds. Most people recognize themselves in three.
+
+Brand: tryGeneral_. Pitch: "protects traders pnl from insider trading, spoofing, toxic-flow market making, front-running, and order-flow purchases."
+
+DEEP PAIN POINT ANALYSIS
+Fifteen wounds. Ordered by emotional weight, not frequency. Each documented by quote, context, frequency, intensity, trigger, consequence, variants.
+
+Pain 1. "Got limited" (sportsbooks cut the winners)
+Description. The US bettor who starts winning gets limited - reduced to a max of $5, $16.67, $1.37. He is still a customer. He is just kept from playing.
+Frequency. Daily on r/sportsbook. The single most-repeated phrase in the corpus.
+Intensity. 10/10. Status wound, not wallet wound. He got invited to the country club. He got thrown out.
+Trigger. A few winning bets in a row, sometimes 5, sometimes 50. Reaching a VIP tier. Touching Onyx.
+Consequence. Migration offshore, runners, multi-accounts, Polymarket for "no limits".
+Quotes.
+- "I literally got limited on MGM after winning only $130 on 5 successful bets last Sunday. I am in complete shock." - u/AmazonGlacialChasm
+- "i literally got invited to be apart of DraftKings VIP program last week, immediately a day after my account gets restricted to like $100 dollars per bet, then right after that it got limited to like $15." - u/Upbeat-Shape-7450
+- "Fuck all the vip programs. DK, FD, fanatics I've had 'VIP' status with over the years and they all eventually limit you... Scumbag piece of fucking shit sportsbooks fucking bums." - u/MomCallsMeLowlife
+- "I got up 40k and my host politely told me to fuck off lol." - u/Live-Horror
+- "I think it's complete and utter bullshit. These scummy books have zero problems taking thousands from people who consistently lose, or who might have a gambling addiction, but will limit and promo ban consistent winners to oblivion under the facade of 'business.' It should be flagrantly illegal." - u/RandomGuy622170
+Variants. "got limited", "shadow ban", "max bet $1.37", "promo banned", "they kicked me out after the bonus", "VIP is a scam".
+
+Pain 2. Sandwich attack / front-run on DEX
+Description. A public swap goes through the mempool. A bot sees it, buys in front, sells behind, takes the difference. The trader pays the slippage he himself authorised.
+Frequency. Very high. "Every time I make a large trade on a DEX, I feel like I'm rolling the dice."
+Intensity. 9/10. Scales with size.
+Trigger. Any unprotected public swap.
+Consequence. Publicly documented losses: $215,500 (USDC to USDT), $733,000 (single trader, six swaps), $9,101 (Vitalik / Ethereum Foundation).
+Quotes.
+- "Ok, so Grandma, basically I was trying to swap some internet money and a bot caught me slipping and performed a sandwich attack on my ass. Anyways, I lost $2K and the bot made $500." - u/knowone23
+- "the thing that pissed me off the most wasn't even the big trades. it was the small ones. $200-500 swaps getting sandwiched for a few bucks each time. doesn't feel like much in the moment but it adds up fast." - u/ginete_tech
+- "Sandwich Trading and Front Running Bots are legal theft. They drain liquidity from the pools, dampen the trading on good projects and rob investors." - u/VegasBizBroker
+Variants. "got MEV'd", "got Jared'd", "front-ran me", "sandwich", "private mempool failure", "JIT sniped".
+
+Pain 3. Polymarket / Kalshi insiders (fresh wallets on geopolitical events)
+Description. On Polymarket, wallets created three weeks before the event bet millions on the exact outcome. The persona sees it on-chain and can do nothing.
+Frequency. Recurrent, accelerates on every crisis (Iran, Maduro, Venezuela, elections).
+Intensity. 9/10. Transparency plus powerlessness equals a particular flavour of rage.
+Quotes.
+- "AP reported that at least 50 brand-new Polymarket wallets placed substantial 'Yes' bets in the hours and minutes before Trump's ceasefire post... A Harvard paper estimated roughly $143M in profits trace back to wallets with apparent insider information." - u/MundaneUniversity436
+- "this guy created his polymarket account on april 2026... and he literally buy these 3 market with millions of dollar... how an account being created in april 2026 and risk $17M in geopolitics... like they know something already." - u/Due-Radish1719
+- "bro has access to information that hasn't happened yet and we're sitting here reading charts like idiots." - u/EthanTruthSeeker
+- "The soldier bet $33,034 from Dec. 27, 2025 through Jan. 26, 2026 and made around $409,000 on Maduro and Venezuela related contracts." - u/haney1981
+
+Pain 4. Fake liquidity walls / whales evaporate the orderbook
+Description. Wall of bids at 6c. Retail thinks it sees support. The whale cancels the moment retail clicks. Retail fills at the worst price.
+Frequency. Permanent on Polymarket CLOB. Weekly on crypto exchanges.
+Intensity. 8/10.
+Quotes.
+- "That's a fake liquidity wall... The market makers and whales use these fake walls to manipulate retail sentiment, trick you into entering bad trades, and siphon money from people who don't understand how the order book actually works." - u/sightwhale
+- "bro the fake wall trick has gotten me so many times lmao. you watch that big order just evaporate right as you click buy and its like... yeah that was planned all along." - u/immortalismmmm
+- "fake liquidity walls are easier to detect on websocket than on the UI. the tell is order id stability - real liquidity sits with the same order id over multiple updates, fake walls cycle the order ids constantly." - u/MartinEdge42
+
+Pain 5. PFOF / "Citadel saw your order"
+Description. Robinhood resells the order flow to Citadel Securities. Citadel executes by internalising. The user provides the raw material to the industry that beats him.
+Frequency. Constant since 2021.
+Intensity. 7/10. More political than emotional, more durable.
+Quotes.
+- "Citadel is your daddy. Not Elon." (thread title - pitch in eight words)
+- "Thanks Robinhood, still won't use your fucking app though"
+- "Robinhood clients in 2016-2019 would have been better off using other brokers even after paying per-trade commissions, because the prices Robinhood clients received were much worse... with Robinhood users losing on average $15 on each 500-share order." - Schwarz et al., Journal of Finance
+
+Pain 6. Stop hunt / wick hunt (crypto CEX and equity day-trading)
+Description. The retail stop loss is placed at an obvious level (round number, visible support). The market maker or whale pushes the price just enough to trigger it, then the price reverses.
+Frequency. Daily.
+Intensity. 9/10. Trauma loop.
+Quotes.
+- "I got stopped out in many trades because of tight SL, and the stock reversed right after taking my money."
+- "Stopped out for -$3,000, I wouldn't have held this whole trade but would've been +$12,000." - u/Firm_Diet
+- "MM have level 3, so they can see the stops. Most people play similar style putting stops near obvious support."
+- "if u were holding long positions, you probably got wicked out before you could even blink. we saw btc slice through 85k like it wasn't even there, hitting a low of around 83,300." - u/My_Rhythm875
+- "There was not one time I didn't buy either the top or bottom with 2x on FTX. Almost instantly after buying price went against me and activated stop loss. And I tried with 30+ trades. These bastards scammed their customers." - u/No_Fuel_4676
+Variants. "wick hunt", "stop hunt", "liquidity grab", "scam wick", "stop run", "got SL'd", "took out the low/high then ran".
+
+Pain 7. Forex broker = counterparty (bucket shop)
+Description. The retail forex broker holds the other side of your trade. Mathematically, your stop loss is his revenue.
+Frequency. Permanent.
+Intensity. 8/10. Often accepted as inevitable.
+Quotes.
+- "Banks have already been caught red handed collaborating in chat rooms on how to manipulate the price... Experienced Whale traders at CITI, JP etc know where you have these SL. They also know where you most likely placed your pending buy/sell with tight SL. All they have to do is drive the price enough to take out all of the above." - u/Mozdar
+- "I had recorded why I feel cheated by IC markets. They had employed dirty tricks to make me lose." - u/Simlulan
+- "market makers operate on ECNs = Price maker. market takers (you and me) on ECNs = Price taker. Watch out - the house (MM) always wins (mathematically - hence you always see 70/30 - 65/35 % of our clients loose money)." - u/eatingpeopleisqueasy
+
+Pain 8. Lines moving / steam moves (sportsbooks and prediction markets)
+Description. The sharp bettor sees an edge. Before he can click, the line has already moved.
+Quote.
+- "lines are way too tight. books move instantly on any info. see value, place bet, line's already shifted. get limited constantly because books flag any winner right away... Even random stuff like wnba or d3 volleyball has sharp lines in minutes." - u/jirachi_2000
+
+Pain 9. Insider listing pumps (Coinbase, Binance)
+Description. The coin pumps before the official announcement. Insiders accumulate. Retail buys the peak.
+Quotes.
+- "Wait, people are just noticing now that coinbase does insider trading? This shouldn't be news to anyone at this point..." - u/gagnonca
+- "Binance listing AKA youre money is exit liquidity. Thanks for the fees" - u/countjah
+- "One thing I learned from last bull is you SELL ON BINANCE LISTING FFS. So much lost money." - u/NewPCBuilder2019
+
+Pain 10. Rug pull / honeypot / KOL self-rug
+Description. Dev leaves with the LP. Contract blocks selling. KOL pump-and-dumps his own followers.
+Quotes.
+- "Just woke up in the morning, found out my coin exit-scammed... Today, the team announced they're ceasing operations, price's dropped 95%, can't even withdraw coins from the staking contract." - u/paImer999
+- "Whole fucking country is getting rugged lmfao" - u/EmbraceHegemony (Trump Family Token)
+- "willingly joined partners with the Scam Brothers, became the face of a shitcoin, and basically went AWOL for days without a word of care after her own followers lost their life savings." - u/Every_Hunt_160 (Hawk Tuah girl)
+
+Pain 11. The market-maker cartel (Wintermute / DWF / GSR / Jump)
+- "Three companies control whether your project lives or dies. Three companies decide if you get liquidity. Three companies charge millions to run bots in the dark, dump your tokens whenever they feel like it, and call it 'market making.' DWF. Wintermute. GSR. Say the names. Know them. Because they own you." - u/Samurailaronkes
+
+Pain 12. CEX freeze during a crash
+- "The owner of this site has temporarily banned you... 1) some exchanges bet against the investor; 2) they wick out traders or stop them out; 3) trading fees; 4) funding fees; 5) insurance funds." - u/HammondXX
+
+Pain 13. Oracle rigging (Polymarket UMA whales)
+- "It's an interesting spot for Kalshi. Obviously, there will be some people that start to use Kalshi exclusively and ditch PM due to this defrauding of traders." - u/Plasticfishman
+The Ukraine-mineral-deal market at $7M, resolution reversed by UMA vote. Founding text of prediction-market distrust.
+
+Pain 14. Kalshi vig stacking + outages
+- "I did a bet today and they charged me like $70 on a 1k bet. They say it's a market maker fee but it isn't... in essence you are paying an 11 percent fee to bet on the NFL." - u/gamblersfalacy
+- "99% of entities (traders, market making institutions(SIG)) just operate on Pinnacle... if Pinnacle hides their odds temporarily in order to adjust them Market Makers will pull back all their orders from the orderbook." - u/UnusualRazzmatazz765
+
+Pain 15. Dark pools / internalization / "Citadel routes 47% of retail"
+- "47% of retail orders get sent through Citadel who then routes them through Citadel Connect, where volume is not tracked by FINRA."
+- "Dance of Darkness: The SEC and Dark Pools"
+- "How to Manually Reroute Orders to NYSE Instead of Dark Pool. We Need to Take Matters Into Our Own Hands."
+
+FULL INVENTORY OF USER QUESTIONS
+Over a hundred distinct questions. Grouped by maturity.
+
+Beginner level (just got hit)
+- "Why did my market order fill at $X when the ask was $Y?"
+- "Why did my limit order not fill when the price hit my limit?"
+- "What is PFOF and why should I care?"
+- "Did Citadel really front-run my trade?"
+- "Why does my stop always get hit right before the move?"
+- "Should I use a stop loss at all?"
+- "How can I bet without getting limited?"
+- "Why did DraftKings limit me to $5?"
+- "Is FanDuel allowed to limit me for winning?"
+- "Where do sharp bettors actually bet?"
+- "How did I just lose $2K in one click?"
+- "Why did my Uniswap swap give me way less than I expected?"
+- "What's a sandwich attack and did one happen to me?"
+- "Is Coinbase doing insider trading?"
+- "Is my forex broker actually trading against me?"
+- "Is Robinhood actually free?"
+- "Did the SEC really fine Citadel only $7M?"
+
+Intermediate level (they've read a 606 or a block explorer)
+- "How do I route my order to IEX instead of a wholesaler?"
+- "Does PFOF actually give worse fills or is that overblown?"
+- "What's the real difference between Citadel Connect, a dark pool, and an exchange?"
+- "Why can I never get filled at mid?"
+- "What's a soft book vs a sharp book?"
+- "Can I use Pinnacle from the US?"
+- "How do pros stay un-limited?"
+- "Is Polymarket rigged by insiders?"
+- "How do I tell a real wall from a fake wall on Polymarket?"
+- "Why did the price move to 99c before the news hit?"
+- "Is Kalshi just running Pinnacle's book?"
+- "What's the difference between ECN and STP and which one is real?"
+- "Can anyone ELI5 to me how an MEV Blocker actually works?"
+- "Does Flashbots Protect actually work or is it theatre?"
+- "Is CoW Swap really safer or did they get caught sandwiching too?"
+- "Is sandwiching possible on Arbitrum / Optimism / Base?"
+- "Should I just go back to spot only?"
+
+Advanced level (these are the buyers)
+- "What's the actual leakage on a 500-share market order at Robinhood vs Fidelity vs IBKR vs direct exchange access?"
+- "Is there a broker or platform that publishes per-trade execution data in a verifiable way?"
+- "If a market maker internalizes my order, can I cryptographically verify they didn't sit on it for a millisecond?"
+- "What would 'no PFOF, no internalization, no last look' actually cost me in commissions?"
+- "Why hasn't anyone built a broker that proves the fill on-chain?"
+- "Is the 'best execution' rule actually enforceable or just hand-waving?"
+- "Is there an architecture where MEV extraction is structurally impossible - not hidden, not trusted, but mathematically proven to be fair?"
+- "Once ETH goes PoS and the main validators being CEX, soon you will have coinbase front running your dex trade rather than some miner/farm trying to secure the network - right?"
+- "What's the game theory for exploiting the bots' new inventory risk?"
+- "If I use intent-based systems (CoW, UniswapX), am I just trading sandwich risk for solver trust?"
+- "Is there a prediction market without whales?"
+- "How do I know the oracle isn't going to flip the resolution?"
+- "Where can I trade where the venue isn't the counterparty?"
+- "Does anyone offer an exchange model for US sports?"
+
+Existential level (the question that precedes the purchase)
+- "Is there any venue where the game isn't rigged against me?"
+- "Why does Ethereum allow this when no regulated CEX would?"
+- "Should I just leave crypto?"
+- "Why do 90% of retail traders lose money despite so much free information?"
+
+Questions without a clear answer in the corpus. The advanced ones (35-48) are precisely the void tryGeneral_ fills. Reddit has no answer. The top-upvoted reply is always "there isn't one".
+Misunderstood questions. All beginner-level questions get gaslit - "that's just how markets work", "learn slippage", "git gud". The persona learns not to ask. He learns to know.
+
+LANGUAGE AND LINGUISTIC PATTERNS
+The persona has a dialect. Three dialects layered on top of each other, in fact, that overlap in vocabulary but diverge in register.
+
+The lexicon of resentment (universal, multi-cohort)
+- "rigged" - most frequent word in the corpus. Flat, perfect.
+- "the game" - bitter shorthand. They know it isn't a game.
+- "screwed", "fucked", "ripped off", "robbed", "bent over", "shafted"
+- "the house always wins" - invocation, almost prayer.
+- "exit liquidity" - their word for "person". "if your app froze while BTC hit 83k, congrats you were the exit liquidity."
+- "the spread is a tax" - chronic, not acute.
+- "price improvement" - said with sarcasm.
+
+Precise technical vocabulary, per cohort
+Sportsbook: "got limited", "limited me to $5", "max bet", "promo banned", "shadow ban", "the line", "line move", "stale line", "steam move", "drop the line", "sharp", "square", "soft book", "sharp book", "+EV", "matched betting", "arb", "hold", "vig", "juice", "no-vig price", "runner", "PPH", "kiosk".
+Prediction market: "the whale", "insider", "insider trade", "front-run", "OSINT", "fake wall", "liquidity wall", "thin market", "CLOB", "order book", "websocket", "wallet age", "copytrade", "UMA", "oracle", "governance attack", "resolves", "settle".
+Crypto on-chain: "got sandwiched", "got MEV'd", "got Jared'd", "the mempool", "private mempool", "flashbots RPC", "protect RPC", "MEV Blocker", "JIT", "sniper bot", "first-block snipe", "honeypot", "rugged", "rug pull", "soft rug".
+CEX crypto: "wicked out", "stop hunt", "liquidation cascade", "margin flush", "mechanical margin call", "insider listing", "pre-listing", "market maker cartel".
+Forex / day-trading: "stop hunt", "liquidity grab", "liquidity sweep", "smart money", "SMC", "ICT", "bucket shop", "B-book", "A-book", "ECN", "STP", "MM" (pejorative), "dealing desk", "last look", "asymmetric slippage", "the broker is your counterparty".
+Retail equity PFOF: "front-run", "kickback", "selling my data", "dark pool", "off-exchange", "internalized", "wholesaler", "606 report", "the algos", "the bots", "the HFTs".
+Meme stock conspiracy: "Kenny", "Shitadel", "hedgies", "ape", "MOASS", "DRS", "lock the float", "diamond hands", "paper hands", "smooth brain", "wrinkle brain", "FTD", "naked short", "synthetic shares", "T+35", "married puts", "cellar boxing", "swaps", "RRP", "Cede & Co", "DTCC", "the cycle", "the sneeze", "ThEy CoveRed", "wife's boyfriend", "tendies", "Hedgies R Fuk".
+
+Names of the enemy (ordered by frequency)
+1. Citadel (almost always Citadel Securities the MM, not the hedge fund - the confusion is the persona)
+2. Kenny / Kenny Boy - Griffin
+3. Shitadel
+4. hedgies
+5. the suits
+6. Wall Street
+7. Vlad - Tenev
+8. Plotkin - Melvin Capital
+9. the wholesalers - Citadel + Virtu + Two Sigma + Jane Street + G1
+10. the MM / the cartel
+11. Jared from Subway / JaredFromSubway.eth - crypto folk figure
+12. Wintermute / DWF / GSR / Jump - crypto MM cartel
+13. Trump insider - on-chain wallet identified, now a common noun
+14. JPMorgan (Wallstreetsilver) - the Citadel of metals
+15. DraftKings / FanDuel / BetMGM / Caesars / ESPN BET - by their exact names
+
+Syntactic patterns (steal them as-is for copy)
+- "I had a stop at X. It got hit at X.01. Then it ran to Y." The canonical lament. Setup-pivot-knife in three sentences. The persona writes Cioran by accident.
+- "Stopped out for -$3,000. Would've been +$12,000." The complete ad.
+- "I bought at the top. Of course." The resigned tail.
+- "Free trades aren't free." The punchline they already know.
+- "They saw my order." Paranoia, half-true, foundational.
+- "Citadel pays the fines. They make more from one morning than the fine." Regulatory cynicism.
+- "Of course this happened." Crypto register. Pre-loaded.
+
+PERSONA PSYCHOLOGY
+
+Deep fears (often unspoken)
+- "I'm not smart enough to compete."
+- "The whole system is engineered to take my money."
+- "Every dollar I lose pays for Ken Griffin's yacht."
+- "If I stop, I admit I was a mark."
+- "My family will find out how much I lost."
+- "No protection is coming. The SEC will fine Citadel $7M and call it justice."
+
+Hidden desires (the ones that open the wallet)
+- To be the one who beats them. Not the market - them.
+- To see the orderbook the way HFTs see it.
+- A receipt. Cryptographic. Timestamped. Untouched.
+- An invoice for the absence of theft - the crypto persona has spent six years writing that sentence without knowing it.
+
+Limiting beliefs
+- "The best brokers cost too much in commissions." (False. They don't do the math.)
+- "If it's sold as 'protection', it's a scam." (Healthy distrust. Blocking.)
+- "Nothing can fix the structure, so why try."
+- "Crypto is worse, what's the point."
+
+Observable cognitive biases
+- Confirmation bias on steroids: every loss is the algo.
+- Apophenia: they see manipulation in noise. Sometimes it's real. Often it isn't. Both feel identical.
+- Loss aversion converted to rage: losing $50 on a wick hurts more than losing $500 on a thesis.
+- In-group / out-group polarization: "us, the apes / them, the suits".
+- Sunk-cost as identity: the longer you hold, the more holding becomes who you are.
+- Cynicism as identity: they don't want the market fixed. The fiction of the rigged game is a formed identity. The product must know this. Don't promise utopia. Promise receipts.
+
+The pivotal moment
+Every persona has one. Three archetypes:
+1. The day the "buy" button disappeared (January 28, 2021). Robinhood freezes GME. The persona never recovers.
+2. The day he migrated to Fidelity / IBKR / Pinnacle / a real ECN - made a trade - saw three cents of improvement - did the math - became enraged.
+3. The day he read Atobitt / Trimbath / an MEV thread - understood that the structure permits the theft, not the individual - cannot unlearn it.
+For the bettor: the "Your account has been limited" email. For the crypto trader: the first time he saw his slippage clear 4% on a $5k swap. For the forex retail: no single moment. He just ended up knowing.
+
+MOTIVATIONS AND JOBS TO BE DONE
+
+Primary objective (the top-level JTBD)
+"Deploy capital into a market without the structure of that market stealing a basis point before, during, or after execution."
+
+Secondary objectives
+- Watch the edge he thinks he has materialise in P&L, not evaporate into slippage.
+- Preserve the self-image of "the one who understands the market", not "the one who gets had".
+- Quiet the permanent suspicion. Click without thinking someone read the click.
+- Have a story to tell his wife / roommate / own conscience: "I played, I lost honestly".
+
+Rational vs emotional motivations
+Rational (what he'll say):
+- "Better fills, less slippage."
+- "Execution transparency."
+- "Visible fees instead of hidden ones."
+- "Verifiable protocol architecture."
+Emotional (what makes him buy):
+- Revenge against Kenny / Citadel / Wintermute / DraftKings.
+- "I'm finally on the right side of the game."
+- "I'm not the mark anymore."
+- "My wife will never have to know I got had."
+
+Success criteria from the user's point of view
+- "My trade fills at the price I see."
+- "No entity reads my order before it executes."
+- "If I win, my account doesn't get closed."
+- "I can prove to a skeptic, in three clicks, that I wasn't front-run."
+- "By month end, the sum of my invisible leaks trends to zero."
+
+ANALYSIS OF CURRENT SOLUTIONS
+What tryGeneral_ replaces, in order of prevalence.
+
+At the order level
+- Limit orders instead of market orders. Universal advice, insufficient.
+- Marketable limits bid/ask + 1 cent.
+- Mid-price working orders - wait forever.
+- Order splitting into smaller children.
+- Mental stops instead of platform stops. "They can't hunt what they can't see."
+- ATR-based wider stops instead of fixed stops.
+
+At the venue level
+- Manual routing to IEX (speed bump exchange).
+- Direct Market Access via IBKR Pro, TradeStation, ToS.
+- Migration from Robinhood to Fidelity / IBKR / Tastytrade.
+- Migration from DK / FD to Pinnacle, BetCRIS, Bookmaker, BetOnline, Circa, ProphetX, Sporttrade, NoVig, Betfair, Smarkets.
+- Polymarket precisely because "no limits" - the whole appeal is that DK cannot kick you out for being right.
+- Kalshi - federally licensed, but vig stacked on MM fee on top of Pinnacle-derived pricing.
+- Migration from Polymarket to Kalshi after the UMA scandal.
+- Migration from Kalshi to Polymarket after outages and vig.
+- For forex: cycle Oanda > IC Markets > FXCM > forex.com > Pepperstone > Tickmill > prop firms > repeat.
+
+On-chain crypto
+- Flashbots Protect RPC - first reflex.
+- MEV Blocker - recommended everywhere.
+- CoW Swap - adored, then questioned after the November 2024 pseudo-sandwiching incident.
+- 1inch Fusion, Matcha, UniswapX - anticipated.
+- Low slippage tolerance + higher gas.
+- L2s (Arbitrum, Optimism, Base): "There is no mempool on Arbitrum or Optimism." Half-solution.
+- Trade simulation (Tenderly, Rabby).
+
+Off-chain / CEX
+- Limit-only orders.
+- Multi-exchange side door - 20% of collateral at a secondary venue.
+- No leverage. "Leveraged trading is a mugs game."
+- Stop using stop-losses. "They get hunted."
+- Kraken: "The only exchange that has never cheated with their trade engine." (u/i_have_chosen_a_name)
+- Self-custody, cold wallet. "Not your keys, not your coins."
+
+Sports / matched betting
+- Multi-accounting / runners / PPH.
+- Kiosk betting in casino - anonymous.
+- Betting exchanges - Betfair, Smarkets, ProphetX, Sporttrade, NoVig.
+- OddsJam, DarkHorseOdds, RebelBetting, Unabated - line-shopping software, $50-$100/mo.
+- Matched betting / promo abuse - treat every regulated US book as a bonus farm.
+
+Conspiracy retail
+- DRS to ComputerShare (sacrament).
+- Buy physical silver, not SLV (Wallstreetsilver).
+- Call your rep. SEC comment. Change.org.
+- Substack / Discord / YouTube influencers - then cascading disillusionment.
+- Computershare DSPP - bypass broker.
+- Petition to End FINRA.
+
+The radical option
+- Quit. r/Daytrading and r/Forex have their weekly "I'm done" genre.
+- Boglehead conversion - rare, dramatic, relief.
+
+What they have NOT tried (the void tryGeneral_ fills)
+A broker / venue with verifiable, cryptographic, real-time execution. They don't believe in it. They haven't looked. That is the opening.
+
+OBJECTIONS AND PURCHASE BARRIERS
+In the order they show up on the landing page.
+1. "Who are you and where's the catch?" Default suspicion. Too clean = scam.
+2. "Do I have to give you custody of my funds?" Post-FTX, post-Robinhood-freeze, the most loaded word.
+3. "Is this crypto?" If yes, half the equity / sportsbook traders disappear. If no, easy sell. If "technically yes but doesn't feel like crypto", possible.
+4. "How do you actually prevent front-running? The entire industry can't." The burden of proof is on us.
+5. "How much per trade?" They've internalised "PFOF is bad". They have NOT internalised "I'd pay $5 a trade for clean execution". The math has to be shown.
+6. "Are you regulated?" They hate the SEC and want a regulator to point at. The contradiction is the persona.
+7. "Real stocks or just synthetic perps?" If synthetic, half the equity cohort gone.
+8. "What if you go down?" Robinhood Jan 28 single-point-of-failure paranoia.
+9. "You're just a dark pool in a suit?" The sophisticated cohort asks this. The answer matters.
+10. "Why didn't IBKR or Fidelity build this?" Moat skepticism.
+11. "If it sounds too good to be true..." The reflex. The Cioran reply: "It is. We charge for it. You already knew."
+12. "Show me a fill report I can verify." Asked by the technical cohort. Publish hashable receipts and the sale closes itself.
+13. "You're crypto-backed. So you can rug me." For the equity cohort.
+14. "The oracle can be manipulated like UMA." For the Polymarket cohort. Answer: BLS multi-sig, no governance token.
+15. "Won't my wins get my account limited?" For the sportsbook cohort. Answer: "There is no limits team. There is no one to limit you."
+
+ULTRA-DETAILED PERSONA SEGMENTATION
+Seven profiles. Sorted by proximity to the tryGeneral_ pitch.
+
+Persona 1. The prediction-market evangelist (the zero-th early adopter)
+Profile. 26-38 yo, technical, reads whitepapers, talks microstructure. Crypto-native. English often a second language. Trades Polymarket / Kalshi / PredictIt. Follows Robin Hanson, Tetlock, Vitalik.
+Experience level. Advanced. Understands CLOB, AMM, oracle, MEV, BLS.
+Goals. Find a prediction market where whaling no longer dictates resolution and the oracle isn't a governance token.
+Pain points. UMA manipulation. Fake walls. Insider wallets. Vig + market-maker-fee on Kalshi. Outages.
+Behaviour. Reads source code. Audits the smart contract. Tracks wallets on-chain via Polycool / PolyApex. Compares fees. Documented.
+Language. "toxic flow", "insider", "oracle attack", "CLOB depth", "front-run", "OSINT", "wallet age", "thin market", "no-vig", "implied probability".
+Relationship to solutions. Already paying OddsJam-equivalents. Willing to pay for better. Tests it first.
+Conversion. A whitepaper + an on-chain demo + a thread on r/Polymarket. That's all.
+
+Persona 2. The sportsbook sharp limited everywhere
+Profile. 28-45 yo, math-savvy, +EV bettor. Tier 1 on every US book for three months, limited to $5 after. Multi-accounter. Knows Pinnacle, Circa, BetCRIS.
+Level. Intermediate to advanced. Math in head, mediocre market-structure sense.
+Goals. A venue that takes his action. Limit-free. Pinnacle-quality lines. Without runners.
+Pain points. Limited. Promo banned. Bait-and-switch on $2000 free bets. Lines stale or steaming before he clicks.
+Language. "got limited", "soft book", "sharp book", "+EV", "vig", "juice", "no-vig", "the line", "steam move", "matched betting", "runner", "PPH".
+Relationship to solutions. Multi-accounter. Pays OddsJam. Went offshore. Frustrated by Polymarket (resolution risk) and Kalshi (vig stack).
+Conversion. "We do not have a limits team. There is no limits team. There is no one to limit you." Plus a demo of BLS-cosigned resolutions.
+
+Persona 3. The MEV-pilled crypto trader (5-figure to low-6-figure rotating book)
+Profile. 22-35 yo, on-chain native, follows Crypto Twitter, jaded. Trades Uniswap, daily swaps, multi-chain (ETH, L2s, Solana). Lost $5k-$50k in cumulative sandwiches. Knows who Jared from Subway is.
+Level. Technically advanced. Knows Flashbots, MEV Blocker, JIT, CoW.
+Goals. Trade without setting up an RPC every time. See the invoice of what he didn't lose.
+Pain points. Sandwich. JIT. Failed-tx gas. Solana sniper bots. Honeypots. Insider listings. CEX wick hunts. Market-maker cartel.
+Language. "got sandwiched", "got MEV'd", "got Jared'd", "exit liquidity", "rugged", "honeypot", "sniper", "the mempool", "private RPC", "wicked out", "liquidation cascade", "insider listing", "Wintermute".
+Relationship to solutions. Tried Flashbots, CoW, 1inch Fusion, UniswapX. Knows every venue has its extraction layer. Tired.
+Conversion. Invisible, default-on protection, plus a monthly dashboard quantifying the absence of theft. The persona doesn't pay for fear. He pays for invoices.
+
+Persona 4. The forex retail trauma
+Profile. 22-55 yo, wide spectrum, often emerging-market (Asia, Africa, Eastern Europe). Pays prop firms. Buys ICT courses. Knows he loses but stays.
+Level. Variable. Vocabulary high, P&L low.
+Goals. Trade where the broker is not his counterparty.
+Pain points. Bucket shops. B-book. Last look. Asymmetric slippage. Friday-close spread widening. Stop hunts.
+Language. "bucket shop", "B-book", "stop hunt", "liquidity grab", "SMC", "ICT", "the broker is your counterparty".
+Relationship to solutions. Perpetual broker carousel.
+Conversion. Persona to acquire in phase 3, not phase 1. He no longer trusts himself to judge fairness. He needs social proof - Personas 1, 2, 3 saying "tryGeneral_ didn't front-run me". Once that exists, biggest TAM.
+
+Persona 5. The retail equity refugee (post-Robinhood)
+Profile. 25-45 yo, day-trader or swing, already migrated to Fidelity or IBKR. Has read a 606. Knows PFOF.
+Level. Intermediate. Math in place, microstructure foggy but growing.
+Goals. See the execution. Verify he wasn't internalised. Trade with a receipt.
+Pain points. Limit fills that don't fill. Stop hunts. Wholesalers. "Citadel saw my order."
+Language. "PFOF", "front-run", "kickback", "dark pool", "internalized", "wholesaler", "606", "the algos", "Citadel".
+Relationship to solutions. Already paid by moving to IBKR. Will pay more for verifiability.
+Conversion. Quantified comparative vs Robinhood / Fidelity / IBKR + on-chain demonstration (without leading with the word "blockchain").
+
+Persona 6. The conspiracy retail (the Superstonk cohort)
+Profile. 28-50 yo. Experienced Jan 28 2021 as a personal event. DRS'd. ComputerShare. Has read Atobitt, Trimbath, "House of Cards".
+Level. High folk-expertise (DTCC, FTD, Cede & Co, Reg SHO). Selective.
+Goals. Kenny in prison. More pragmatically: a venue where the structure cannot be rigged.
+Pain points. Jan 28. Naked shorting. Synthetic shares. MMTLP halt. SEC pocketing $7M. Media silence.
+Language. "Kenny", "Shitadel", "hedgies", "MOASS", "DRS", "ape", "diamond hands", "FTD", "synthetic", "T+35", "the cycle", "Hedgies R Fuk".
+Relationship to solutions. DRS, ComputerShare, no broker, physical silver. Dead end.
+Conversion. Radioactive at tier 1. But the vocabulary is gold for the other cohorts. Target them at tier 3 when the product is mature, use their dialect to speak to cohorts 1-5 without becoming a parody. Bridge sentence: "You don't need to believe MOASS is coming. You only need to believe Wall Street has, at every previous opportunity, stolen a basis point from you. We built the rails where they cannot."
+
+Persona 7. The post-rapture bagholder
+Profile. 30-60 yo. Lost six figures on BBBY / AMC / MMTLP / FTX / Luna. No longer active. Reads Reddit like a confessional.
+Level. Variable.
+Goals. Recover. Not the money - the dignity.
+Relationship to solutions. None. They no longer trade. But they testify. Don't target. Read. Their register is the clearest mirror of the living persona.
+
+USER JOURNEY
+
+Stage 1. The trigger
+Always a specific, dated, showable event:
+- The "Your account has been limited" email.
+- The swap that returned 4% less than expected.
+- The stop triggered $0.01 from the wick before the reversal.
+- The Trump tweet 12 minutes after 50 wallets had already bet on it.
+- January 28, 2021 (for the GME generation).
+- The "Cloudflare HSTS" screen while BTC wicked to 83k.
+The persona does not convert by reading. He converts by personal verifiable experience.
+
+Stage 2. Research phase (Reddit)
+The persona arrives on Reddit with a precise question. He looks for confirmation that what happened to him is a pattern, not an accident. He always finds it. He leaves with a vocabulary: "sandwich attack", "PFOF", "got limited", "dark pool". He names what was done to him. It makes it worse.
+
+Stage 3. Comparison phase
+He tries the existing solutions:
+- Crypto: Flashbots Protect, MEV Blocker, CoW Swap, L2s.
+- Equity: Fidelity, IBKR Pro, ToS.
+- Sport: Pinnacle, Circa, BetCRIS, Betfair.
+- Prediction: Polymarket vs Kalshi.
+Each solves part. Each introduces its own cost. The persona becomes an expert in half-solutions.
+
+Stage 4. Decision phase
+The persona doesn't buy a product. He adopts a posture. The decision is slow, preceded by:
+- Reading a Reddit thread where someone like him describes solution X.
+- Asking for verifiable receipts.
+- A minimal test (one trade, one bet, one swap).
+- His own quantified comparison, not the pitch's.
+
+Stage 5. Post-experience
+If the promise holds over 4-6 weeks, the persona becomes an evangelist. Not before.
+If the promise cracks even once, the persona never comes back. And he says so publicly.
+The persona does not forgive - he can no longer afford to.
+
+STRATEGIC OPPORTUNITIES
+
+The acquisition sequence (cannot be reversed)
+- Phase 1. r/Polymarket, r/PredictionMarkets, r/Kalshi. Pitch: "Sealed bets. BLS-cosigned oracles. No UMA tokens overruling the rules. The whale cannot front-run your fills, the insider cannot trade on what you cannot see." Mechanics > marketing. Persona 1 reads the whitepaper.
+- Phase 2. r/sportsbook sharps, r/Mathbet, ProphetX / Sporttrade adjacent. Pitch: "A real exchange with no limits and no toxic flow." Reference Circa and Pinnacle as cousins. DraftKings "max bet $1.37" screenshot as the villain.
+- Phase 3. Crypto MEV (r/CryptoCurrency, r/ethereum, r/UniSwap). Pitch: "Invisible, default-on protection, monthly billed in absence of theft." Not first - the cohort is skeptical of every new MEV solution.
+- Phase 4. Forex retail + r/Daytrading. The biggest TAM, the most cynical cohort. Land here after phases 1-3 produce real testimonials.
+- Phase 5. Retail equity refugees (r/Fidelity, r/InteractiveBrokers, r/options). Mature, sophisticated, slow-moving cohort. Conversion by quantified comparison.
+- Phase 6 (never). Conspiracy retail. Don't try to convert. Use their dialect, name their villains, respect their cosmology without endorsing it.
+
+Market gaps (the open doors)
+1. No venue shows, in numbers and in real time, what the user did not lose. The monthly MEV invoice - "this month, tryGeneral prevented $X of extractable slippage, $Y of wick hunts, $Z of spread widening" - exists nowhere. Building it is on its own a viable product.
+2. No venue combines "no limits" sportsbook + "no whales" prediction market + "no MEV" on-chain. tryGeneral_ is positioned for it.
+3. No venue publishes a user-verifiable cryptographic fill receipt. Nobody. Not even "decentralized" exchanges.
+4. No venue names the enemy. They all sand it down. "Certain large market participants". The persona hates that language. Naming Citadel, Wintermute, DraftKings by name is an allegiance signal that pays out in conversion.
+
+Underused marketing angles
+- The invoice of absent theft. "This month we saved you $147.32 you would have lost to extraction. Here is the math. Here is the on-chain proof." That is the angle.
+- The "no limits team" pitch. "We do not have a limits team. There is no one to call. There is no one to limit you."
+- The "your order doesn't leak before execution" pitch. Sealed orderbook + BLS cosign + on-chain settlement. Three lines. Three proofs. No four.
+- The Cioran angle. "It is rigged. We made one that isn't. We charge for it. You already knew this was the deal."
+
+Headlines that would resonate hardest
+Pulled directly from the corpus, ready to steal:
+- "Citadel is your daddy. Not Elon. Not anymore."
+- "Your stop loss is just a liquidity map. We hide the map."
+- "Got limited? We don't have a limits team. We don't have anyone."
+- "You're the exit liquidity. Until you're not."
+- "The Matrix is real. We patched it."
+- "They saw your order. Now they don't."
+- "Free isn't free. We charge. It's cheaper."
+
+Product / content ideas
+- Public dashboard: extraction.tryGeneral.io - real-time, anonymized: "this hour, $X of MEV extracted across DEXs / $Y of slippage on Robinhood routed orders / $Z of stop-hunt losses on Binance liquidations". The persona comes to watch. Stays to sign up.
+- Receipt verifier - paste a trade ID, prove the fill price vs NBBO to the millisecond. The Superstonk cohort would worship it even without buying.
+- "What it costs you to be the customer" calculator - input a monthly volume, output the average estimated slippage + PFOF leakage + limit-loss + MEV. Compare with what tryGeneral_ would save. The math closes the sale.
+- Anti-Cheat narrative. "The first anti-cheat in trading." A category in one sentence. Every sub-argument (sealed bets, BLS, no PFOF, no UMA) becomes a manifestation of a single legible concept: cheating is structurally impossible.
+
+What absolutely must not be done
+- "Empowering retail investors". "Democratizing access". "Unlock". "Leverage". "Innovative". "Next-gen". The shill phonemes. Robinhood wore them out. The persona filters them before scroll two.
+- Mentioning a VC backer in the hero. "Sequoia-backed" reads as "Sequoia-controlled".
+- Founder bios that mention Citadel, Two Sigma, Jane Street, Jump, Susquehanna unless framed as "I worked at Citadel for 9 years and I am here to burn it down". Otherwise fatal.
+- "AI-powered protection". AI in 2026 = "more bots, this time wearing our colors".
+- "Subject to applicable regulations" in hero copy. Skadden-prose at the top of the page = regulatory capture.
+- "As featured in CNBC / Bloomberg / MarketWatch". Negative-EV.
+- Reading the market in MOASS / squeeze / wealth terms. The persona doesn't buy the redemptive promise. He buys the structural one.
+
+The final test
+One sentence. Just one. If the persona doesn't recognise himself in it, we failed:
+"The venue is no longer the counterparty. The book cannot limit you. The whale cannot front-run you. Insider information becomes useless the moment the protocol demands it."
+The Polymarket persona reads the code. The sportsbook persona reads the price. The forex persona waits for the other two to testify. They all arrive. The order matters.
+
+The persona has spent six years describing this product without believing it could exist. The task is not to convince him he needs it. The task is to make him admit it is real.

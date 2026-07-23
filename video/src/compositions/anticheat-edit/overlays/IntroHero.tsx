@@ -18,6 +18,8 @@ import {
   AbsoluteFill,
   Audio,
   Img,
+  Loop,
+  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
@@ -109,6 +111,8 @@ export const IntroHero: React.FC = () => {
       <Img
         src={staticFile(roomSrc)}
         style={{
+          position: "absolute",
+          inset: 0,
           width: "100%",
           height: "100%",
           objectFit: "cover",
@@ -116,6 +120,21 @@ export const IntroHero: React.FC = () => {
           transformOrigin: "center center",
         }}
       />
+
+      {/* ── 0.5 LIGHT — the same drifting god-rays as the base head, so the
+             blue flares carry through the intro instead of being cut by the
+             room plate / 3D carousel. ── */}
+      <AbsoluteFill
+        style={{ mixBlendMode: "screen", opacity: 0.4, filter: "saturate(1.5) brightness(1.08)" }}
+      >
+        <Loop durationInFrames={360}>
+          <OffthreadVideo
+            src={staticFile("anticheat-edit/light_shafts.mp4")}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            muted
+          />
+        </Loop>
+      </AbsoluteFill>
 
       {/* ── 1. BACK — billion number + far cards (behind the person) ── */}
       <AbsoluteFill>
@@ -145,6 +164,8 @@ export const IntroHero: React.FC = () => {
       <Img
         src={staticFile(cutoutSrc)}
         style={{
+          position: "absolute",
+          inset: 0,
           width: "100%",
           height: "100%",
           objectFit: "cover",
@@ -245,7 +266,7 @@ const BillionPlate: React.FC<{
         fontSize: 1300,
         fontWeight: 800,
         letterSpacing: "-0.05em",
-        color: "rgba(0, 82, 255, 0.5)",
+        color: "rgba(45, 91, 255, 0.5)",
         lineHeight: 0.78,
         whiteSpace: "nowrap",
         transform: `scale(${scale.toFixed(4)})`,

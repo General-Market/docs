@@ -2,7 +2,7 @@
 //
 // The look is the Hasheur "blue world" — a deep blue field with a floating
 // line grid, logos that hover, a chunky-pixel dissolve — but spoken in the
-// AntiCheatFull language: Base blue (#0052FF), Inter/Geist + JetBrains Mono,
+// AntiCheatFull language: Base blue (#2D5BFF), Inter/Geist + JetBrains Mono,
 // near-black type where the field is light, white ink where it is blue.
 //
 // Everything that draws on the blue field reads from `scene`. Keep one
@@ -19,12 +19,12 @@ export const H = 1080;
 
 export const scene = {
   // Base-blue hero, carried straight from the AntiCheatFull palette.
-  accent: base.accent, // #0052FF
+  accent: base.accent, // #2D5BFF
   accentSoft: base.accentSoft, // #5B79FF
 
   // Blue-field gradient stops, bright top-left → deep navy bottom-right.
   blueBright: "#1E73FF",
-  blueMid: "#0052FF",
+  blueMid: "#2D5BFF",
   blueDeep: "#04205C",
   blueAbyss: "#020E2B",
 

@@ -219,6 +219,10 @@ import {
   crxDemoDefaultProps,
   crxDemoDurationInFrames,
 } from "./compositions/crx-demo/CRXDemoComposition";
+import {
+  fxHedgingSquareMeta,
+  macbookHeroStillMeta,
+} from "./compositions/crx-social/FxHedgingSquare";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -303,6 +307,24 @@ export const RemotionRoot: React.FC = () => {
           durationInFrames: WALKTHROUGH_TAKER_FRAMES,
         })}
       />
+      <Folder name="crx-social">
+        <Composition
+          id={fxHedgingSquareMeta.id}
+          component={fxHedgingSquareMeta.component}
+          durationInFrames={fxHedgingSquareMeta.durationInFrames}
+          fps={fxHedgingSquareMeta.fps}
+          width={fxHedgingSquareMeta.width}
+          height={fxHedgingSquareMeta.height}
+        />
+        <Composition
+          id={macbookHeroStillMeta.id}
+          component={macbookHeroStillMeta.component}
+          durationInFrames={macbookHeroStillMeta.durationInFrames}
+          fps={macbookHeroStillMeta.fps}
+          width={macbookHeroStillMeta.width}
+          height={macbookHeroStillMeta.height}
+        />
+      </Folder>
       <Folder name="Article-2">
         <Composition
           id={whyLiquidityIsHardMeta.id}

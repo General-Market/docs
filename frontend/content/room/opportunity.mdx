@@ -6,58 +6,51 @@ description: "Why this problem matters and how large it is."
 
 # The Opportunity
 
-> **What goes on this page:** Problem, market size, competition. The argument for why this opportunity exists at all. Pitch deck and market research belong here, summarized.
-
 ## The problem
 
-Prediction markets are broken in three specific ways:
+Ninety percent of traders quit. They will tell you the market beat them. It didn't. The venue did.
 
-1. **Front-running.** Centralized order books leak flow to operators, market makers, and anyone watching the wire.
-2. **Geographic exclusion.** KYC and licensing carve the global population into eligible and ineligible. Most of the world cannot bet on most events.
-3. **Resolution gaming.** A single oracle is a single point of capture. Whoever controls the oracle controls the payout.
+Walk one hundred trades through any modern venue and watch where the money goes:
 
-Each of these is treated as inevitable. None of them is.
+- The **insider** moves before the news is public, and takes the first cut.
+- The **front-runner** reads your order off the wire and steps in front of it.
+- The **house market maker** prices against you, because the house is the counterparty.
 
-## Why this matters now
+By the time the position is yours, the edge is gone. A two-percent leak per trade compounds, quietly, into an eighty-percent loss. The trader feels stupid and leaves. *He was not stupid. He was farmed.*
 
-Replace this section with the timing argument. What changed in the last 12-24 months? Regulation? Capital? Technology? User behavior? Why is now the right moment?
+This is not a flaw in one product. It is the business model of the whole stack — perps, options, prediction markets, launchpads. Each one is the house.
 
-Three plausible angles:
+## Why now
 
-- **Regulatory shift.** Replace with specific regulatory signal.
-- **Capital flowing back to prediction markets.** Replace with funding-round signal.
-- **Crypto rail maturity.** L2s and L3s now have the throughput and finality for sealed-bet workflows that weren't possible in 2021.
+Three things changed in the last twenty-four months.
+
+- **Retail trades through code.** AI trading-tool adoption rose +340% from 2022 to 2025 (eToro reports +75% in a single year). Code chooses venues on math, not marketing, and the math favors the venue that doesn't skim.
+- **Algorithms became the majority.** In India, algorithmic orders are now the majority of stock-market trades (NSE, 2025). The behavior is already mainstream. It only needs a venue built for it.
+- **The rails matured.** L2 and L3 chains finally have the throughput and finality for sealed-bet settlement that was impossible in 2021.
+
+> Code routes to the venue that doesn't skim. General is built for code.
 
 ## Market size
 
-> **What goes here:** TAM / SAM / SOM. Be honest. Investors discount loud numbers.
+General does not compete with one venue. It sits behind all of them. So the market is the combined volume of every category that currently leaks.
 
 | Layer | Size | Source |
 |---|---|---|
-| **TAM** — global online betting | $X | Replace with source |
-| **SAM** — prediction markets specifically | $Y | Replace with source |
-| **SOM** — addressable in 3 years | $Z | Replace with source |
+| **TAM** — perps, options, predictions, launchpads | $2T+ / yr | Hyperliquid $1T+/yr perps; Deribit $1T+/yr options notional |
+| **SAM** — on-chain, crypto-native volume | $1T+ / yr | On-chain perps and predictions, 2024–2025 |
+| **SOM** — settled volume addressable in 3 years | $120M+ / yr | Base-case ramp to $10M/mo settled (see Business Model) |
 
-Cite where the numbers come from. A footnote with a real source beats a slide with a circle.
+Every category that came before killed one middleman and became a multi-billion-dollar company. Robinhood killed the commission — $40B. Hyperliquid killed the centralized exchange — $30B. Polymarket killed the sportsbook — $9B. *General kills the skim.*
 
 ## Competitive landscape
 
-| Competitor | Strength | Structural weakness we exploit |
+| Venue | Strength | The weakness we exploit |
 |---|---|---|
-| Polymarket | Liquidity, brand | Order book leaks, US geo-blocked, single-oracle resolution |
-| Kalshi | Regulatory clarity | Limited market scope, full KYC, US-only |
-| Augur / older crypto AMMs | Permissionless | Dead liquidity, slow oracles, terrible UX |
-| Sports books | Distribution | Not prediction markets — adversarial pricing, no aggregate truth |
-
-Replace with the real comparison. Be specific about what each competitor does well — investors trust founders who can describe rivals accurately.
+| Polymarket | Liquidity, brand | Order-book leakage, US geo-blocked, single-oracle resolution |
+| Binance / CEX perps | Distribution, depth | The house sees flow and takes the other side |
+| Robinhood | Retail reach | The business *is* selling your order flow |
+| Hyperliquid | On-chain perps, no CEX | Still one visible order book — front-runnable |
 
 ## Why we win
 
-One paragraph. Replace with the unfair-advantage argument. The thing only you can do, or do faster, or do cheaper, or do legally where others can't.
-
----
-
-> **Source documents to attach or link:**
-> - Pitch deck (already public at `/pitchdeck`)
-> - Market research / TAM analysis
-> - Competitive teardown
+Our moat is not a feature. It is our rivals' own history. To advertise anti-cheat, an incumbent would have to admit it cheated for a decade. Binance cannot say "we shut down insider routing." Robinhood cannot say "we stopped selling your flow." To say it is to confess — so they never will. We say it today, and it is the one promise they can never copy.

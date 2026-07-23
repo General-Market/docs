@@ -1,0 +1,71 @@
+{
+  "computed_at": "2026-05-15T13:00:08.882345+00:00",
+  "source": "GMX V2 synthetics squid (gmx.squids.live)",
+  "endpoint_template": "https://gmx.squids.live/gmx-synthetics-{chain}:prod/api/graphql",
+  "query": "accountStats(where:{period_eq:\"total\"})",
+  "period": "lifetime since GMX V2 deploy (Arbitrum: Aug 2023, Avalanche: Jul 2023)",
+  "chains": {
+    "arbitrum": {
+      "n_total_accounts": 246658,
+      "n_with_volume": 178381,
+      "n_zero_volume_dropped": 68277,
+      "percentiles_usd": {
+        "p0_01": -1472819.46,
+        "p0_1": -192184.0,
+        "p1": -14715.49,
+        "p5": -932.1,
+        "p10": -117.01,
+        "p25": -0.87,
+        "p50": -0.01,
+        "p75": 0.1,
+        "p90": 19.21,
+        "p95": 301.44,
+        "p99": 9691.21,
+        "p99_9": 154996.83,
+        "p99_99": 1554756.76
+      },
+      "pct_profitable": 0.4021,
+      "total_profit_usd": 209309979.52,
+      "total_loss_usd": -214882422.39,
+      "net_pnl_usd": -5572442.87,
+      "share_of_total_profit_above_p99": 0.9225,
+      "share_of_total_profit_above_p99_9": 0.6551,
+      "max_pnl_usd": 10386401.57,
+      "min_pnl_usd": -3348844.05,
+      "mean_pnl_usd": -31.24,
+      "median_pnl_usd": -0.01,
+      "total_volume_usd": 174688921986.54
+    },
+    "avalanche": {
+      "n_total_accounts": 10639,
+      "n_with_volume": 6045,
+      "n_zero_volume_dropped": 4594,
+      "percentiles_usd": {
+        "p0_01": -909323.94,
+        "p0_1": -328678.62,
+        "p1": -60109.02,
+        "p5": -8249.24,
+        "p10": -2441.3,
+        "p25": -314.73,
+        "p50": -9.51,
+        "p75": 53.11,
+        "p90": 966.87,
+        "p95": 3107.8,
+        "p99": 33415.61,
+        "p99_9": 290098.81,
+        "p99_99": 2445236.99
+      },
+      "pct_profitable": 0.3965,
+      "total_profit_usd": 16292896.71,
+      "total_loss_usd": -18605333.29,
+      "net_pnl_usd": -2312436.58,
+      "share_of_total_profit_above_p99": 0.8084,
+      "share_of_total_profit_above_p99_9": 0.497,
+      "max_pnl_usd": 3845345.25,
+      "min_pnl_usd": -1026139.36,
+      "mean_pnl_usd": -382.54,
+      "median_pnl_usd": -9.51,
+      "total_volume_usd": 6993216359.21
+    }
+  }
+}

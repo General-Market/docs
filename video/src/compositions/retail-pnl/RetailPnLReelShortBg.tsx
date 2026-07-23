@@ -14,7 +14,7 @@ import { useCurrentFrame } from "remotion";
 const W = 1080;
 const H = 1920;
 const FPS = 60;
-const ACCENT = "#0052FF";
+const ACCENT = "#2D5BFF";
 
 const FINE_SPACING = 18;
 const FINE_RADIUS = 1.8;

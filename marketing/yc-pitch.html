@@ -1,0 +1,1103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>General — YC pitch</title>
+<style>
+  :root {
+    --ink: #1D1D1F;
+    --ink-soft: rgba(29, 29, 31, 0.62);
+    --ink-faint: rgba(29, 29, 31, 0.42);
+    --hairline: rgba(29, 29, 31, 0.08);
+    --paper: #FBFBFD;
+    --paper-warm: #F5F5F7;
+    --night: #0B0B0E;
+    --night-soft: #16161A;
+    --blue: #0071E3;
+    --red: #E5484D;
+    --green: #2E7D32;
+    --gold: #B58900;
+    --display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+    --text: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(0.4, 0, 0.6, 1);
+    --ease-out: cubic-bezier(0.25, 0.1, 0.3, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--paper); color: var(--ink); }
+  body {
+    font-family: var(--text);
+    font-size: 17px; line-height: 1.5; letter-spacing: -0.022em;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    scroll-snap-type: y mandatory; overflow-y: scroll; height: 100vh;
+  }
+  ::selection { background: var(--blue); color: white; }
+
+  section {
+    min-height: 100vh; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 80px 24px;
+    scroll-snap-align: start; position: relative;
+  }
+  .frame { width: 100%; max-width: 1068px; margin: 0 auto; }
+  .narrow { max-width: 734px; }
+  .wide { max-width: 1280px; }
+
+  .display {
+    font-family: var(--display); font-weight: 600;
+    letter-spacing: -0.04em; line-height: 1.05; color: var(--ink);
+  }
+  .display.x1 { font-size: clamp(56px, 9vw, 112px); }
+  .display.x2 { font-size: clamp(40px, 5.8vw, 72px); }
+  .display.x3 { font-size: clamp(28px, 3.8vw, 48px); }
+  .eyebrow {
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint);
+    margin-bottom: 24px;
+  }
+  .lead {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(20px, 2.2vw, 28px); letter-spacing: -0.018em;
+    line-height: 1.35; color: var(--ink-soft); margin-top: 24px;
+  }
+  em { font-style: italic; color: var(--ink); }
+  .num {
+    font-family: var(--display); font-weight: 500;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+
+  .dark { background: var(--night); color: #F5F5F7; }
+  .dark .display { color: #F5F5F7; }
+  .dark .lead { color: rgba(245, 245, 247, 0.7); }
+  .dark .eyebrow { color: rgba(245, 245, 247, 0.5); }
+  .dark em { color: white; }
+
+  /* Chrome */
+  .pager {
+    position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+    z-index: 20; display: flex; flex-direction: column; gap: 10px;
+  }
+  .pager a {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ink-faint); display: block;
+    transition: all 0.28s var(--ease);
+  }
+  .pager a:hover { background: var(--ink); transform: scale(1.4); }
+  .top {
+    position: fixed; top: 18px; left: 24px; z-index: 20;
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    letter-spacing: -0.012em; color: var(--ink);
+  }
+  .top .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); margin-right: 8px; vertical-align: middle; }
+  .count {
+    position: fixed; bottom: 18px; right: 24px; z-index: 20;
+    font-family: var(--display); font-weight: 400; font-size: 12px;
+    color: var(--ink-faint); letter-spacing: 0.011em;
+  }
+  section .page-num {
+    position: absolute; bottom: 18px; left: 24px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink-faint); letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .dark .page-num { color: rgba(245,245,247,0.4); }
+
+  /* Logos */
+  .logo {
+    width: 28px; height: 28px; border-radius: 6px;
+    object-fit: contain; background: white; padding: 3px;
+    border: 1px solid var(--hairline); flex-shrink: 0;
+    display: inline-block; vertical-align: middle;
+  }
+  .logo.sm { width: 20px; height: 20px; padding: 2px; border-radius: 4px; }
+  .logo.lg { width: 36px; height: 36px; padding: 4px; border-radius: 8px; }
+  .dark .logo { background: white; border-color: rgba(255,255,255,0.15); }
+
+  /* Hero */
+  .hero { flex-direction: column; text-align: center; }
+  .hero .display { margin-bottom: 8px; }
+  .hero .lead { max-width: 30ch; }
+  .hero .scroll-cue {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: var(--ink-faint); letter-spacing: 0.12em; text-transform: uppercase;
+  }
+
+  /* Horizontal flow (Problem / Solution) */
+  .flow-block { margin-top: 32px; }
+  .flow-block + .flow-block { margin-top: 24px; }
+  .flow-label {
+    font-family: var(--display); font-weight: 500; font-size: 12px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 16px; text-align: center;
+  }
+  .dark .flow-label { color: rgba(245,245,247,0.5); }
+  .flow-line {
+    display: flex; align-items: stretch; justify-content: center;
+    gap: 8px; flex-wrap: nowrap;
+  }
+  .flow-node {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px 18px;
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 12px;
+    font-family: var(--display); font-weight: 600; font-size: 15px;
+    letter-spacing: -0.012em; color: var(--ink);
+    min-width: 110px; text-align: center;
+  }
+  .dark .flow-node {
+    background: var(--night-soft); border-color: rgba(245,245,247,0.12); color: white;
+  }
+  .flow-node.venue {
+    background: var(--paper-warm); font-size: 12px; font-weight: 500;
+    color: var(--ink-soft); min-width: 150px; line-height: 1.4;
+  }
+  .dark .flow-node.venue { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.75); }
+  .flow-node.good { color: var(--green); border-color: var(--green); }
+  .flow-node.good-big {
+    color: var(--green); border-color: var(--green);
+    font-size: 22px; padding: 20px 26px;
+    background: rgba(46,125,50,0.06);
+  }
+  .flow-node.bad { color: var(--red); border-color: rgba(229,72,77,0.4); }
+  .flow-node.bad-big {
+    color: var(--red); border-color: var(--red);
+    font-size: 22px; padding: 20px 26px;
+    background: rgba(229,72,77,0.06);
+  }
+  .dark .flow-node.bad-big { background: rgba(229,72,77,0.15); }
+  .flow-node .n-name { font-size: 14px; }
+  .flow-node .n-take {
+    font-family: var(--mono); font-size: 12px; color: var(--red);
+    margin-top: 4px; font-weight: 600;
+  }
+  .flow-arrow {
+    display: flex; align-items: center;
+    color: var(--ink-faint); font-size: 18px; font-weight: 400;
+  }
+  .dark .flow-arrow { color: rgba(245,245,247,0.4); }
+  .flow-sep {
+    text-align: center; margin: 24px 0 0;
+    font-family: var(--display); font-weight: 500; font-size: 11px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .dark .flow-sep { color: rgba(245,245,247,0.4); }
+  @media (max-width: 900px) {
+    .flow-line { flex-wrap: wrap; }
+    .flow-arrow { transform: rotate(90deg); padding: 4px 0; }
+  }
+
+  /* Shield wall */
+  .shield-wall {
+    background: var(--blue); color: white;
+    border-radius: 14px; padding: 20px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; min-width: 280px;
+    box-shadow: 0 10px 30px rgba(0,113,227,0.3);
+  }
+  .shield-wall .sw-shield { color: white; }
+  .shield-wall .sw-label {
+    font-family: var(--display); font-weight: 600; font-size: 17px;
+    letter-spacing: -0.018em;
+  }
+  .shield-wall .sw-blocked {
+    display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
+    margin-top: 2px;
+  }
+  .shield-wall .blocked-tag {
+    font-family: var(--display); font-weight: 500; font-size: 11px;
+    background: rgba(255,255,255,0.18); padding: 4px 10px;
+    border-radius: 980px; color: white;
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.5);
+  }
+  .shield-wall .blocked-tag.more {
+    background: rgba(255,255,255,0.05); text-decoration: none;
+    font-style: italic;
+  }
+
+  /* 12 ways */
+  .ways {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-top: 40px;
+  }
+  .way-card {
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 14px; padding: 18px 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .way-card .way-num {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--red); letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .way-card .way-name {
+    font-family: var(--display); font-weight: 600; font-size: 16px;
+    letter-spacing: -0.018em; color: var(--ink); margin-top: 2px;
+  }
+  .way-card .way-desc {
+    margin-top: 4px; font-size: 12px; color: var(--ink-faint);
+    letter-spacing: -0.006em; line-height: 1.4;
+  }
+  @media (max-width: 900px) { .ways { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .ways { grid-template-columns: 1fr 1fr; } }
+
+  /* Basket (re-used in How-it-works) */
+  .basket-side { text-align: center; }
+  .one-market {
+    background: var(--ink); border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-family: var(--display); font-weight: 600;
+    letter-spacing: -0.022em;
+  }
+  .grid-10k { display: grid; grid-template-columns: repeat(40, 1fr); gap: 1px; }
+  .grid-10k span { background: var(--ink); opacity: 0.85; border-radius: 1px; }
+  .basket-arrow { font-family: var(--display); font-size: 24px; color: var(--ink-faint); }
+
+  /* How it works (merged) */
+  .how-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 56px;
+    margin-top: 48px;
+  }
+  .how-col {
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .how-label {
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint);
+    margin-bottom: 24px;
+  }
+  .how-viz {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; min-height: 220px;
+  }
+  .how-viz .one-market {
+    width: 100px; height: 100px; font-size: 22px; border-radius: 14px;
+  }
+  .how-viz .grid-10k {
+    width: 200px; height: 200px;
+  }
+  .how-viz svg { width: 130px; height: auto; }
+  .how-cap {
+    margin-top: 24px; color: var(--ink-soft); font-size: 15px;
+    max-width: 30ch;
+  }
+  @media (max-width: 720px) { .how-grid { grid-template-columns: 1fr; gap: 40px; } }
+
+  /* Product placeholder */
+  .mockup {
+    margin-top: 48px;
+    border: 1px solid var(--hairline); border-radius: 18px;
+    overflow: hidden; background: var(--paper-warm);
+    aspect-ratio: 16 / 9;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mockup .ph {
+    text-align: center; color: var(--ink-faint);
+    font-family: var(--display); font-size: 14px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .product-cta { text-align: center; margin-top: 28px; }
+  .product-cta a {
+    display: inline-block; padding: 12px 24px; border-radius: 980px;
+    background: var(--blue); color: white; text-decoration: none;
+    font-family: var(--display); font-weight: 500; font-size: 15px;
+    letter-spacing: -0.012em; transition: transform 0.28s var(--ease);
+  }
+  .product-cta a:hover { transform: scale(1.04); }
+
+  /* Traction */
+  .tiles {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-top: 48px;
+  }
+  .tile-card {
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 18px; padding: 32px 20px; text-align: center;
+  }
+  .tile-card .big {
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(40px, 5vw, 64px); letter-spacing: -0.03em;
+    color: var(--ink); line-height: 1;
+  }
+  .tile-card .big.zero { color: var(--green); }
+  .tile-card .label {
+    margin-top: 10px; font-size: 13px; color: var(--ink-soft);
+    letter-spacing: -0.006em; line-height: 1.35;
+  }
+  @media (max-width: 720px) { .tiles { grid-template-columns: 1fr 1fr; } }
+
+  /* Bars */
+  .bars {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 56px;
+    margin-top: 48px;
+  }
+  .bar-card {
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 18px; padding: 40px 32px;
+  }
+  .bar-card .num {
+    font-size: clamp(56px, 7vw, 96px); color: var(--blue);
+    line-height: 1; letter-spacing: -0.04em;
+  }
+  .bar-card .label {
+    margin-top: 16px; font-family: var(--display); font-weight: 500;
+    font-size: 18px; letter-spacing: -0.018em; color: var(--ink);
+  }
+  .bar-card .source {
+    margin-top: 8px; font-size: 13px; color: var(--ink-faint);
+    letter-spacing: -0.006em;
+  }
+  .bar-card .source a {
+    color: inherit; text-decoration: underline;
+    text-decoration-color: var(--ink-faint);
+    text-underline-offset: 2px;
+  }
+  .bar-card .source a:hover { color: var(--blue); }
+  .bar-track {
+    margin-top: 24px; height: 6px; background: var(--paper-warm);
+    border-radius: 999px; overflow: hidden;
+  }
+  .bar-fill { height: 100%; background: var(--blue); border-radius: 999px; }
+  @media (max-width: 720px) { .bars { grid-template-columns: 1fr; } }
+
+  /* Market — merged pattern + TAM */
+  .tam { margin-top: 48px; display: flex; flex-direction: column; gap: 14px; }
+  .tam-row {
+    display: grid; grid-template-columns: 200px 1fr 240px; gap: 24px;
+    align-items: center;
+  }
+  .tam-row .tam-cat-cell { display: flex; align-items: center; gap: 10px; }
+  .tam-row .cat {
+    font-family: var(--display); font-weight: 600; font-size: 18px;
+    letter-spacing: -0.022em; color: var(--ink);
+  }
+  .tam-row .track {
+    height: 14px; background: var(--paper-warm); border-radius: 999px; overflow: hidden;
+  }
+  .tam-row .fill { height: 100%; background: var(--ink); border-radius: 999px; }
+  .tam-row .size {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+    text-align: right; font-family: var(--display);
+    font-variant-numeric: tabular-nums;
+  }
+  .tam-row .size .val {
+    font-weight: 600; font-size: 16px; color: var(--ink); letter-spacing: -0.018em;
+  }
+  .tam-row .size .what {
+    font-size: 13px; color: var(--ink-soft); font-weight: 500; letter-spacing: -0.012em;
+  }
+  .tam-row .size .vs {
+    font-size: 12px; color: var(--ink-faint); font-weight: 400;
+  }
+  .tam-row .size .vs s {
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 1.2px;
+    color: var(--ink-faint);
+  }
+  .tam-cap {
+    margin-top: 28px; text-align: center; color: var(--ink-soft);
+    max-width: 60ch; margin-left: auto; margin-right: auto;
+  }
+  @media (max-width: 720px) { .tam-row { grid-template-columns: 1fr; gap: 4px; } .tam-row .size { text-align: left; align-items: flex-start; } }
+
+  /* Moat 2x2 */
+  .quad {
+    margin-top: 48px;
+    position: relative; aspect-ratio: 1.4 / 1; max-width: 720px; margin-left: auto; margin-right: auto;
+    border-left: 1px solid var(--ink-faint); border-bottom: 1px solid var(--ink-faint);
+  }
+  .dark .quad { border-color: rgba(245,245,247,0.3); }
+  .quad::before, .quad::after { content: ""; position: absolute; background: var(--hairline); }
+  .dark .quad::before, .dark .quad::after { background: rgba(245,245,247,0.08); }
+  .quad::before { left: 0; right: 0; top: 50%; height: 1px; }
+  .quad::after { top: 0; bottom: 0; left: 50%; width: 1px; }
+  .quad .axis {
+    position: absolute; font-family: var(--display); font-weight: 500; font-size: 11px;
+    color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .dark .quad .axis { color: rgba(245,245,247,0.55); }
+  .quad .axis-x-left { bottom: -28px; left: 0; }
+  .quad .axis-x-right { bottom: -28px; right: 0; }
+  .quad .axis-y-bottom { left: -110px; bottom: 0; }
+  .quad .axis-y-top { left: -110px; top: 0; }
+  .quad .point {
+    position: absolute; transform: translate(-50%, 50%);
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 980px; padding: 5px 12px 5px 6px;
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    letter-spacing: -0.012em; color: var(--ink);
+    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .quad .point .logo { width: 18px; height: 18px; padding: 1px; border-radius: 4px; border: none; }
+  .quad .point.us {
+    background: var(--blue); color: white; border-color: var(--blue);
+    font-weight: 600; padding: 8px 18px 8px 8px; font-size: 15px;
+    box-shadow: 0 8px 24px rgba(0, 113, 227, 0.35);
+  }
+  .quad .point.us .logo { width: 22px; height: 22px; }
+  @media (max-width: 720px) { .quad { max-width: 100%; } .quad .axis-y-bottom, .quad .axis-y-top { left: 4px; transform: rotate(-90deg); transform-origin: left; } }
+
+  /* Narrative moat */
+  .cant-say {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-top: 40px;
+  }
+  .cs-card {
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 18px; padding: 24px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .cs-card.us { background: var(--blue); color: white; border-color: var(--blue); }
+  .cs-card .cs-head { display: flex; align-items: center; gap: 10px; }
+  .cs-card .cs-name {
+    font-family: var(--display); font-weight: 600; font-size: 16px;
+    letter-spacing: -0.018em;
+  }
+  .cs-card .cs-quote {
+    font-family: var(--display); font-weight: 500; font-size: 16px;
+    letter-spacing: -0.012em; line-height: 1.35; color: var(--ink);
+  }
+  .cs-card.us .cs-quote { color: white; }
+  .cs-card .cs-tag {
+    font-size: 12px; color: var(--red); font-style: italic;
+    margin-top: auto; padding-top: 6px;
+  }
+  .cs-card.us .cs-tag { color: rgba(255,255,255,0.85); }
+  @media (max-width: 900px) { .cant-say { grid-template-columns: 1fr; } }
+
+  /* Business */
+  .biz {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+    margin-top: 48px; align-items: stretch;
+  }
+  .biz-card {
+    background: white; border: 1px solid var(--hairline);
+    border-radius: 18px; padding: 36px;
+  }
+  .biz-card .cost {
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(36px, 4.4vw, 56px); letter-spacing: -0.03em;
+  }
+  .biz-card .cost.them { color: var(--red); }
+  .biz-card .cost.us { color: var(--green); }
+  .biz-card .who {
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint);
+    margin-bottom: 12px;
+  }
+  .biz-card .desc { margin-top: 14px; color: var(--ink-soft); font-size: 15px; }
+  @media (max-width: 720px) { .biz { grid-template-columns: 1fr; } }
+
+  /* Team */
+  .team { margin-top: 40px; display: flex; flex-direction: column; }
+  .team-row {
+    display: grid; grid-template-columns: 80px 1fr;
+    gap: 24px; padding: 16px 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .team-row:last-child { border-bottom: 1px solid var(--hairline); }
+  .team-row .yr {
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    color: var(--ink-faint); letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums; padding-top: 4px;
+  }
+  .team-row .role {
+    font-family: var(--display); font-weight: 600; font-size: 18px;
+    color: var(--ink); letter-spacing: -0.018em; margin-bottom: 2px;
+  }
+  .team-row .role .org { font-weight: 500; color: var(--ink); }
+  .team-row .outcome { font-size: 14px; color: var(--ink-soft); letter-spacing: -0.006em; }
+  .team-row.kicker .role { color: var(--gold); }
+  .team-row.kicker .outcome { color: var(--ink); }
+  .team-row.live .role { color: var(--blue); }
+  .team-row .forks {
+    display: flex; align-items: center; gap: 8px; margin-top: 8px;
+    font-size: 12px; color: var(--ink-faint); letter-spacing: -0.006em;
+    flex-wrap: wrap;
+  }
+  .team-row .forks .logo.sm { width: 18px; height: 18px; padding: 1px; }
+  .team-row .investors {
+    display: flex; align-items: center; gap: 8px; margin-top: 8px;
+    font-size: 12px; color: var(--ink-faint); letter-spacing: -0.006em;
+  }
+  .team-row .investors .inv-name {
+    font-family: var(--display); font-weight: 600; color: var(--ink);
+    background: var(--paper-warm); padding: 3px 10px; border-radius: 980px;
+  }
+  .team-closer {
+    margin-top: 36px; text-align: center;
+    font-family: var(--display); font-weight: 500;
+    font-size: clamp(22px, 2.4vw, 32px); letter-spacing: -0.022em; color: var(--ink);
+  }
+  .team-closer em { color: var(--gold); }
+
+  /* Ask */
+  .ask {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+    margin-top: 40px; align-items: center;
+  }
+  .ask-numbers { text-align: left; }
+  .ask-numbers .big {
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(72px, 9vw, 128px); letter-spacing: -0.04em;
+    line-height: 1; color: white;
+  }
+  .ask-numbers .sub {
+    margin-top: 16px; font-family: var(--display); font-weight: 500;
+    font-size: 22px; letter-spacing: -0.022em; color: rgba(245,245,247,0.7);
+  }
+  .ask-bullets { display: flex; flex-direction: column; gap: 14px; }
+  .ask-bullets .item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .ask-bullets .item:last-child { border-bottom: none; }
+  .ask-bullets .item .pip {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--blue); margin-top: 9px; flex-shrink: 0;
+  }
+  .ask-bullets .item .text {
+    font-family: var(--display); font-weight: 500; font-size: 17px;
+    letter-spacing: -0.018em; color: #F5F5F7; line-height: 1.4;
+  }
+  .ask-bullets .item .text span { color: rgba(245,245,247,0.55); font-weight: 400; }
+  .ask-killer {
+    margin-top: 40px; padding-top: 32px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-family: var(--display); font-weight: 500;
+    font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -0.022em;
+    color: white; line-height: 1.3;
+  }
+  .ask-killer em { color: var(--red); font-style: normal; font-weight: 600; }
+  .ask-pill {
+    display: inline-block; margin-top: 32px;
+    padding: 14px 28px; border-radius: 980px;
+    background: var(--blue); color: white;
+    font-family: var(--display); font-weight: 500; font-size: 17px;
+    letter-spacing: -0.018em; text-decoration: none;
+    transition: transform 0.28s var(--ease);
+  }
+  .ask-pill:hover { transform: scale(1.04); }
+  .ask-sig {
+    margin-top: 20px; font-size: 13px; color: rgba(255,255,255,0.5);
+    letter-spacing: 0.011em;
+  }
+  @media (max-width: 720px) { .ask { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="top"><span class="dot"></span>General — YC pitch</div>
+
+<nav class="pager" aria-hidden="true">
+  <a href="#s1" title="Hero"></a>
+  <a href="#s2" title="Problem"></a>
+  <a href="#s3" title="12 ways"></a>
+  <a href="#s4" title="Solution"></a>
+  <a href="#s5" title="How it works"></a>
+  <a href="#s6" title="Product"></a>
+  <a href="#s7" title="Traction"></a>
+  <a href="#s8" title="Why now"></a>
+  <a href="#s9" title="Market"></a>
+  <a href="#s10" title="AI moat"></a>
+  <a href="#s11" title="Narrative moat"></a>
+  <a href="#s12" title="Business"></a>
+  <a href="#s13" title="Team"></a>
+  <a href="#s14" title="Ask"></a>
+</nav>
+
+<!-- 1. HERO -->
+<section id="s1" class="hero">
+  <div class="frame narrow">
+    <div class="eyebrow">YC Application · 2026</div>
+    <h1 class="display x1">General.</h1>
+    <p class="lead">The anti-cheat for trading.</p>
+  </div>
+  <div class="scroll-cue">Scroll</div>
+</section>
+
+<!-- 2. PROBLEM — horizontal -->
+<section id="s2" class="dark">
+  <div class="frame wide">
+    <div class="eyebrow">The reality of trading</div>
+
+    <div class="flow-block">
+      <div class="flow-label">The dream</div>
+      <div class="flow-line">
+        <div class="flow-node">Trader</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node good-big">+ PnL</div>
+      </div>
+    </div>
+
+    <div class="flow-sep">per 100 trades on perps · options · predictions</div>
+
+    <div class="flow-block">
+      <div class="flow-label">The reality</div>
+      <div class="flow-line">
+        <div class="flow-node venue">Perps<br/>Options<br/>Predictions</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node bad"><div class="n-name">Insider</div><div class="n-take">−30%</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node bad"><div class="n-name">Front-runner</div><div class="n-take">−10%</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node bad"><div class="n-name">MM</div><div class="n-take">−20%</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">Trader</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node bad-big">− PnL</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. TWELVE WAYS -->
+<section id="s3">
+  <div class="frame wide">
+    <div class="eyebrow">The twelve ways</div>
+    <h2 class="display x3">Twelve ways the exchange takes your money before the trade resolves.</h2>
+    <div class="ways">
+      <div class="way-card"><div class="way-num">01</div><div class="way-name">Insider trading</div><div class="way-desc">pre-listing info</div></div>
+      <div class="way-card"><div class="way-num">02</div><div class="way-name">Front-running</div><div class="way-desc">orders read first</div></div>
+      <div class="way-card"><div class="way-num">03</div><div class="way-name">PFOF</div><div class="way-desc">your spread sold</div></div>
+      <div class="way-card"><div class="way-num">04</div><div class="way-name">Wash trading</div><div class="way-desc">fake volume printed</div></div>
+      <div class="way-card"><div class="way-num">05</div><div class="way-name">Spoofing</div><div class="way-desc">fake orders move price</div></div>
+      <div class="way-card"><div class="way-num">06</div><div class="way-name">Layering</div><div class="way-desc">stacked spoofs</div></div>
+      <div class="way-card"><div class="way-num">07</div><div class="way-name">Latency arb</div><div class="way-desc">HFT beats your packet</div></div>
+      <div class="way-card"><div class="way-num">08</div><div class="way-name">MEV sandwich</div><div class="way-desc">bots front and back</div></div>
+      <div class="way-card"><div class="way-num">09</div><div class="way-name">Listing fees</div><div class="way-desc">pay-to-list rigged</div></div>
+      <div class="way-card"><div class="way-num">10</div><div class="way-name">Funding skim</div><div class="way-desc">perps charge wrong-way</div></div>
+      <div class="way-card"><div class="way-num">11</div><div class="way-name">Kill switches</div><div class="way-desc">forced liquidations</div></div>
+      <div class="way-card"><div class="way-num">12</div><div class="way-name">House MM</div><div class="way-desc">exchange is counterparty</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. SOLUTION — horizontal -->
+<section id="s4" class="dark">
+  <div class="frame wide">
+    <div class="eyebrow">The solution</div>
+
+    <div class="flow-block">
+      <div class="flow-label">With General</div>
+      <div class="flow-line">
+        <div class="flow-node venue">Perps<br/>Options<br/>Predictions</div>
+        <div class="flow-arrow">→</div>
+        <div class="shield-wall">
+          <svg class="sw-shield" width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm0 2.18l7 3.11V11c0 4.52-2.98 8.69-7 9.93-4.02-1.24-7-5.41-7-9.93V6.29l7-3.11z"/></svg>
+          <div class="sw-label">General Anti-Cheat</div>
+          <div class="sw-blocked">
+            <span class="blocked-tag">Insider</span>
+            <span class="blocked-tag">Front-runner</span>
+            <span class="blocked-tag">MM</span>
+            <span class="blocked-tag more">+9 more</span>
+          </div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">Trader</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node good-big">+ PnL</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. HOW IT WORKS — merged -->
+<section id="s5">
+  <div class="frame wide">
+    <div class="eyebrow">How it works</div>
+    <h2 class="display x3">Two mechanisms.</h2>
+    <div class="how-grid">
+      <div class="how-col">
+        <h5 class="how-label">The basket</h5>
+        <div class="how-viz">
+          <div class="one-market">1</div>
+          <div class="basket-arrow">→</div>
+          <div class="grid-10k" id="grid10k"></div>
+        </div>
+        <p class="how-cap">Insiders can't move ten thousand markets.</p>
+      </div>
+      <div class="how-col">
+        <h5 class="how-label">The seal</h5>
+        <div class="how-viz">
+          <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="20" width="180" height="110" rx="10" stroke="#1D1D1F" stroke-width="2"/>
+            <path d="M10 30 L100 90 L190 30" stroke="#1D1D1F" stroke-width="2" fill="none"/>
+            <circle cx="100" cy="75" r="14" fill="#E5484D"/>
+            <path d="M94 75 L98 79 L106 71" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="basket-arrow">→</div>
+          <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="40" width="180" height="90" rx="10" stroke="#1D1D1F" stroke-width="2"/>
+            <path d="M10 50 L100 10 L190 50" stroke="#1D1D1F" stroke-width="2" fill="none"/>
+            <text x="100" y="100" text-anchor="middle" font-family="SF Pro Display" font-weight="600" font-size="16" fill="#1D1D1F">REVEALED</text>
+          </svg>
+        </div>
+        <p class="how-cap">Front-runners can't see what's sealed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. PRODUCT -->
+<section id="s6">
+  <div class="frame">
+    <div class="eyebrow">The product</div>
+    <h2 class="display x2">Live.</h2>
+    <div class="mockup"><div class="ph">[ demo video — to embed ]</div></div>
+    <div class="product-cta">
+      <a href="https://generalmarket.io" target="_blank" rel="noopener">Try the live testnet →</a>
+    </div>
+  </div>
+</section>
+
+<!-- 7. TRACTION -->
+<section id="s7">
+  <div class="frame">
+    <div class="eyebrow">Traction · testnet</div>
+    <h2 class="display x2">The system already runs.</h2>
+    <div class="tiles">
+      <div class="tile-card">
+        <div class="big">10,000</div>
+        <div class="label">sealed markets</div>
+      </div>
+      <div class="tile-card">
+        <div class="big">3</div>
+        <div class="label">BLS oracles · 100% consensus</div>
+      </div>
+      <div class="tile-card">
+        <div class="big">14</div>
+        <div class="label">data sources · 2s prices</div>
+      </div>
+      <div class="tile-card">
+        <div class="big zero">0</div>
+        <div class="label">unbacked shares minted</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. WHY NOW -->
+<section id="s8">
+  <div class="frame">
+    <div class="eyebrow">Why now</div>
+    <h2 class="display x2">Retail trades through bots. Not order books.</h2>
+    <div class="bars">
+      <div class="bar-card">
+        <div class="num">+340%</div>
+        <div class="label">Retail AI trading tool adoption</div>
+        <div class="source">2022 → 2025 · <a href="https://www.tradealgo.com/trading-guides/ai-trading/how-ai-is-changing-stock-trading-in-2026-tools-strategies-and-whats-next" target="_blank" rel="noopener">TradeAlgo 2026</a> · <a href="https://www.etoro.com/en-us/news-and-analysis/latest-news/press-release/us-retail-investors-flock-to-ai-tools-with-usage-surging-75-in-one-year/" target="_blank" rel="noopener">eToro +75% YoY</a></div>
+        <div class="bar-track"><div class="bar-fill" style="width: 85%"></div></div>
+      </div>
+      <div class="bar-card">
+        <div class="num">55%</div>
+        <div class="label">of India's stock trades are algorithmic</div>
+        <div class="source">NSE 2025 · <a href="https://iongroup.com/blog/markets/algo-trading-in-india-surges-but-still-has-room-to-grow/" target="_blank" rel="noopener">ION Group</a> · <a href="https://www.marketsandata.com/industry-reports/india-algorithmic-trading-market" target="_blank" rel="noopener">Markets &amp; Data</a></div>
+        <div class="bar-track"><div class="bar-fill" style="width: 88%"></div></div>
+      </div>
+    </div>
+    <p class="basket-caption" style="margin-top: 40px; text-align: center; color: var(--ink-soft);">General is built for code.</p>
+  </div>
+</section>
+
+<!-- 9. MARKET — merged pattern + TAM -->
+<section id="s9">
+  <div class="frame">
+    <div class="eyebrow">Market · the pattern</div>
+    <h2 class="display x2">Every winner named an enemy. Each became a multi-billion company.</h2>
+    <div class="tam">
+      <div class="tam-row">
+        <div class="tam-cat-cell">
+          <img class="logo sm" src="https://logo.clearbit.com/robinhood.com" alt=""/>
+          <div class="cat">Robinhood</div>
+        </div>
+        <div class="track"><div class="fill" style="width: 100%"></div></div>
+        <div class="size">
+          <span class="val">$40B</span>
+          <span class="what">created 0-fee</span>
+          <span class="vs">vs <s>commissions</s></span>
+        </div>
+      </div>
+      <div class="tam-row">
+        <div class="tam-cat-cell">
+          <img class="logo sm" src="https://logo.clearbit.com/hyperliquid.xyz" alt=""/>
+          <div class="cat">Hyperliquid</div>
+        </div>
+        <div class="track"><div class="fill" style="width: 75%"></div></div>
+        <div class="size">
+          <span class="val">$30B</span>
+          <span class="what">created perp DEX</span>
+          <span class="vs">vs <s>CEX</s></span>
+        </div>
+      </div>
+      <div class="tam-row">
+        <div class="tam-cat-cell">
+          <img class="logo sm" src="https://logo.clearbit.com/polymarket.com" alt=""/>
+          <div class="cat">Polymarket</div>
+        </div>
+        <div class="track"><div class="fill" style="width: 22%"></div></div>
+        <div class="size">
+          <span class="val">$9B</span>
+          <span class="what">created prediction</span>
+          <span class="vs">vs <s>sportsbooks</s></span>
+        </div>
+      </div>
+      <div class="tam-row">
+        <div class="tam-cat-cell">
+          <img class="logo sm" src="https://logo.clearbit.com/pump.fun" alt=""/>
+          <div class="cat">Pump.fun</div>
+        </div>
+        <div class="track"><div class="fill" style="width: 12%"></div></div>
+        <div class="size">
+          <span class="val">~$5B</span>
+          <span class="what">created memecoins</span>
+          <span class="vs">vs <s>Uniswap LPs</s></span>
+        </div>
+      </div>
+      <div class="tam-row" style="margin-top: 12px;">
+        <div class="tam-cat-cell">
+          <img class="logo sm" src="https://logo.clearbit.com/generalmarket.io" alt=""/>
+          <div class="cat" style="color: var(--blue);">General</div>
+        </div>
+        <div class="track"><div class="fill" style="width: 4%; background: var(--blue);"></div></div>
+        <div class="size">
+          <span class="val" style="color: var(--blue);">next</span>
+          <span class="what" style="color: var(--blue);">creates anti-cheat</span>
+          <span class="vs">vs <s>the skim</s></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. MOAT 1 — AI -->
+<section id="s10" class="dark">
+  <div class="frame">
+    <div class="eyebrow">Moat 1 · AI cannot vibe-code trust</div>
+    <h2 class="display x2">Crypto moved trust to math. None made retail win.</h2>
+    <div class="quad">
+      <div class="axis axis-x-left">"trust us"</div>
+      <div class="axis axis-x-right">trust the math</div>
+      <div class="axis axis-y-bottom">trader loses</div>
+      <div class="axis axis-y-top">trader wins</div>
+
+      <div class="point us" style="left: 82%; bottom: 78%;">
+        <img class="logo" src="https://logo.clearbit.com/generalmarket.io" alt=""/>General
+      </div>
+      <div class="point" style="left: 22%; bottom: 78%;">
+        <img class="logo" src="https://logo.clearbit.com/vanguard.com" alt=""/>Vanguard
+      </div>
+      <div class="point" style="left: 18%; bottom: 22%;">
+        <img class="logo" src="https://logo.clearbit.com/binance.com" alt=""/>Binance
+      </div>
+      <div class="point" style="left: 22%; bottom: 8%;">
+        <img class="logo" src="https://logo.clearbit.com/robinhood.com" alt=""/>Robinhood
+      </div>
+      <div class="point" style="left: 32%; bottom: 32%;">
+        <img class="logo" src="https://logo.clearbit.com/kalshi.com" alt=""/>Kalshi
+      </div>
+      <div class="point" style="left: 76%; bottom: 30%;">
+        <img class="logo" src="https://logo.clearbit.com/polymarket.com" alt=""/>Polymarket
+      </div>
+      <div class="point" style="left: 86%; bottom: 14%;">
+        <img class="logo" src="https://logo.clearbit.com/dydx.exchange" alt=""/>dYdX
+      </div>
+      <div class="point" style="left: 68%; bottom: 22%;">
+        <img class="logo" src="https://logo.clearbit.com/pump.fun" alt=""/>Pump.fun
+      </div>
+    </div>
+    <p style="text-align: center; color: rgba(245,245,247,0.7); margin-top: 56px; max-width: 56ch; margin-left: auto; margin-right: auto;">Three corners taken. One left.</p>
+  </div>
+</section>
+
+<!-- 11. MOAT 2 — NARRATIVE -->
+<section id="s11">
+  <div class="frame">
+    <div class="eyebrow">Moat 2 · Non-copyable narrative</div>
+    <h2 class="display x2">Binance cannot say what we say.</h2>
+    <div class="cant-say">
+      <div class="cs-card">
+        <div class="cs-head">
+          <img class="logo lg" src="https://logo.clearbit.com/binance.com" alt=""/>
+          <div class="cs-name">Binance</div>
+        </div>
+        <div class="cs-quote">"We are deplatforming our insider routing."</div>
+        <div class="cs-tag">— will never say</div>
+      </div>
+      <div class="cs-card">
+        <div class="cs-head">
+          <img class="logo lg" src="https://logo.clearbit.com/polymarket.com" alt=""/>
+          <div class="cs-name">Polymarket</div>
+        </div>
+        <div class="cs-quote">"Our makers no longer see orderflow first."</div>
+        <div class="cs-tag">— will never say</div>
+      </div>
+      <div class="cs-card us">
+        <div class="cs-head">
+          <img class="logo lg" src="https://logo.clearbit.com/generalmarket.io" alt=""/>
+          <div class="cs-name">General</div>
+        </div>
+        <div class="cs-quote">"No insiders. No front-runners. Ever."</div>
+        <div class="cs-tag">— says today</div>
+      </div>
+    </div>
+    <p style="text-align: center; color: var(--ink-soft); margin-top: 40px; max-width: 60ch; margin-left: auto; margin-right: auto;">To advertise an anti-cheat is to admit fifteen years of skimming.</p>
+  </div>
+</section>
+
+<!-- 12. BUSINESS -->
+<section id="s12">
+  <div class="frame">
+    <div class="eyebrow">Business edge</div>
+    <h2 class="display x2">Most exchanges die from liquidity cost. General has none.</h2>
+    <div class="biz">
+      <div class="biz-card">
+        <div class="who">Polymarket · Binance</div>
+        <div class="cost them">$1M+</div>
+        <div class="desc">to seed one market with paid makers.</div>
+      </div>
+      <div class="biz-card">
+        <div class="who">General</div>
+        <div class="cost us">2 users</div>
+        <div class="desc">to run a market profitably for years.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13. TEAM -->
+<section id="s13">
+  <div class="frame narrow">
+    <div class="eyebrow">Team · category definer</div>
+    <h2 class="display x2">Built four trading categories. Two wins, two lessons, one live.</h2>
+    <div class="team">
+      <div class="team-row">
+        <div class="yr">2021</div>
+        <div>
+          <div class="role">Co-author · <span class="org">Deus v3 → Symmio</span></div>
+          <div class="outcome">Defined on-chain OTC perps. <em>$40B</em> franchise.</div>
+          <div class="forks">
+            <span>Forks:</span>
+            <img class="logo sm" src="https://logo.clearbit.com/symm.io" alt=""/>
+            <img class="logo sm" src="https://logo.clearbit.com/variational.io" alt=""/>
+            <img class="logo sm" src="https://logo.clearbit.com/intentx.io" alt=""/>
+            <img class="logo sm" src="https://logo.clearbit.com/pearprotocol.io" alt=""/>
+            <img class="logo sm" src="https://logo.clearbit.com/carbon.inc" alt=""/>
+            <span>Variational copied the architecture.</span>
+          </div>
+        </div>
+      </div>
+      <div class="team-row">
+        <div class="yr">2024</div>
+        <div>
+          <div class="role">Co-founder · <span class="org">PIO Finance</span></div>
+          <div class="outcome">First private perps (UTXO / Aztec). Acquired.</div>
+        </div>
+      </div>
+      <div class="team-row">
+        <div class="yr">2025</div>
+        <div>
+          <div class="role"><span class="org">General v1</span></div>
+          <div class="outcome">Intent-based index OTC. $300k seed. Shipped. Pivoted.</div>
+          <div class="investors">Backed by <span class="inv-name">Lafayette Tabor</span></div>
+        </div>
+      </div>
+      <div class="team-row live">
+        <div class="yr">2026</div>
+        <div>
+          <div class="role"><span class="org">General v2</span></div>
+          <div class="outcome">Anti-cheat prediction market. Live on testnet.</div>
+        </div>
+      </div>
+      <div class="team-row kicker">
+        <div class="yr">2019</div>
+        <div>
+          <div class="role">Independent HFT</div>
+          <div class="outcome">Front-ran Binance Futures ADL. $7k → <em>$400k</em>. Patched.</div>
+        </div>
+      </div>
+    </div>
+    <p class="team-closer">I was the predator. <em>Now I build the cage.</em></p>
+  </div>
+</section>
+
+<!-- 14. ASK -->
+<section id="s14" class="dark">
+  <div class="frame">
+    <div class="eyebrow">The ask</div>
+    <div class="ask">
+      <div class="ask-numbers">
+        <div class="big">$400k</div>
+        <div class="sub">at $4M post · YC standard SAFE</div>
+      </div>
+      <div class="ask-bullets">
+        <div class="item"><div class="pip"></div><div class="text">Liquidity seeding <span>· bootstrap first markets</span></div></div>
+        <div class="item"><div class="pip"></div><div class="text">Dev + distribution hires <span>· push to mainnet</span></div></div>
+        <div class="item"><div class="pip"></div><div class="text">Mainnet launch <span>· twelve months</span></div></div>
+        <div class="item"><div class="pip"></div><div class="text">First revenue <span>· a Binance-perp fee on settled volume</span></div></div>
+      </div>
+    </div>
+    <p class="ask-killer">If General wins, your other exchanges <em>go down in value</em>.</p>
+    <div style="text-align: center; margin-top: 28px;">
+      <a class="ask-pill" href="mailto:max@generalmarket.io">max@generalmarket.io</a>
+      <div class="ask-sig">General · generalmarket.io · Max Guillabert</div>
+    </div>
+  </div>
+</section>
+
+<div class="count" id="wc"></div>
+
+<script>
+  // Basket grid
+  const g = document.getElementById('grid10k');
+  if (g) {
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 40 * 40; i++) {
+      const s = document.createElement('span');
+      s.style.opacity = (0.55 + Math.random() * 0.45).toFixed(2);
+      frag.appendChild(s);
+    }
+    g.appendChild(frag);
+  }
+
+  // Auto page numbers
+  const sections = document.querySelectorAll('section');
+  const total = String(sections.length).padStart(2, '0');
+  sections.forEach((s, i) => {
+    const n = document.createElement('div');
+    n.className = 'page-num';
+    n.textContent = `${String(i + 1).padStart(2, '0')} / ${total}`;
+    s.appendChild(n);
+  });
+
+  // Word counter
+  const counter = document.getElementById('wc');
+  function countWords() {
+    const clone = document.body.cloneNode(true);
+    clone.querySelectorAll(
+      '.count, .pager, .top, .scroll-cue, .eyebrow, .source, .meta, .tag, .who, .sig, ' +
+      '.ask-sig, .product-cta a, .ask-pill, .mockup .ph, .page-num, ' +
+      '.team-row .yr, .quad .axis, .tile-card .big, .bar-card .num, ' +
+      '.biz-card .cost, .funnel-final em, .ask-numbers .big, .ask-numbers .sub, ' +
+      '.tam-row .tam-cat-cell, .tam-row .size .val, .quad .point, ' +
+      '.cs-card .cs-head, .cs-card .cs-tag, ' +
+      '.team-row .forks, .team-row .investors, ' +
+      '.way-card .way-num, .way-card .way-desc, ' +
+      '.flow-label, .flow-sep, .flow-node .n-take, .shield-wall .blocked-tag, ' +
+      '.how-label'
+    ).forEach(n => n.remove());
+    const text = clone.innerText.replace(/\s+/g, ' ').trim();
+    const words = text.split(' ').filter(Boolean).length;
+    counter.textContent = words + ' words';
+  }
+  countWords();
+</script>
+
+</body>
+</html>

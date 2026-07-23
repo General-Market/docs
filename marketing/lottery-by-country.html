@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lottery markets — by country, 2024</title>
+<style>
+  :root {
+    --ink: #1D1D1F;
+    --ink-soft: #6E6E73;
+    --ink-faint: #86868B;
+    --rule: #D2D2D7;
+    --bg: #FBFBFD;
+    --paper: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    font-feature-settings: "kern", "liga", "calt", "tnum";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    letter-spacing: -0.022em;
+    color: var(--ink);
+    background: var(--bg);
+    padding: 80px 24px 120px;
+  }
+
+  .page {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-family: "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.016em;
+    line-height: 1.12;
+    margin-bottom: 8px;
+  }
+
+  .deck {
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin-bottom: 40px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--paper);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+  }
+
+  th {
+    font-size: 11px;
+    letter-spacing: 0.011em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+    text-align: left;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg);
+  }
+
+  th:nth-child(2), th:nth-child(3) { text-align: right; }
+
+  td {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+  }
+
+  td:nth-child(2), td:nth-child(3) { text-align: right; }
+
+  tr:last-child td { border-bottom: none; }
+
+  .country { font-weight: 500; }
+
+  .num {
+    font-family: "SF Pro Display", "Inter", sans-serif;
+    font-size: 17px;
+    letter-spacing: -0.016em;
+  }
+
+  .footnote {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Lottery by country, 2024</h1>
+  <p class="deck">Past-year participation. Sales per inhabitant. Sorted by participation.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Country</th>
+        <th>Participation</th>
+        <th>Sales / person</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="country">Italy</td><td class="num">75%</td><td class="num">$380</td></tr>
+      <tr><td class="country">Netherlands</td><td class="num">64%</td><td class="num">$365</td></tr>
+      <tr><td class="country">Australia</td><td class="num">53%</td><td class="num">$247</td></tr>
+      <tr><td class="country">Finland</td><td class="num">52%</td><td class="num">$370</td></tr>
+      <tr><td class="country">Norway</td><td class="num">49%</td><td class="num">$882</td></tr>
+      <tr><td class="country">USA</td><td class="num">49%</td><td class="num">$330</td></tr>
+      <tr><td class="country">Japan</td><td class="num">48%</td><td class="num">$43</td></tr>
+      <tr><td class="country">Brazil</td><td class="num">47%</td><td class="num">$23</td></tr>
+      <tr><td class="country">Portugal</td><td class="num">46%</td><td class="num">$326</td></tr>
+      <tr><td class="country">Ireland</td><td class="num">42%</td><td class="num">$178</td></tr>
+      <tr><td class="country">France</td><td class="num">34%</td><td class="num">$42</td></tr>
+      <tr><td class="country">UK</td><td class="num">32%</td><td class="num">$151</td></tr>
+      <tr><td class="country">Hong Kong</td><td class="num">29%</td><td class="num">$146</td></tr>
+      <tr><td class="country">Germany</td><td class="num">20%</td><td class="num">$110</td></tr>
+      <tr><td class="country">Singapore</td><td class="num">—</td><td class="num">$1,501</td></tr>
+    </tbody>
+  </table>
+
+  <p class="footnote">Sales = lottery handle (total ticket sales) in nominal USD divided by total population. Participation = share of adults who bought any lottery product in the past year. Singapore listed at bottom — no clean participation survey, but highest per-capita spend.</p>
+
+</div>
+</body>
+</html>

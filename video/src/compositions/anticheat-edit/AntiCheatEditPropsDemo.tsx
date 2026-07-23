@@ -51,7 +51,6 @@ export const AntiCheatEditPropsDemo: React.FC = () => {
         cellSize={56}
       >
         <SceneFrame
-          kicker="STANDARD PROP · BLUE FIELD"
           title="Geography is not an input"
           durationInFrames={DURATION}
         >

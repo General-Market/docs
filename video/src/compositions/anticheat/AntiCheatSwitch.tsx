@@ -417,7 +417,7 @@ const BlocksLogo: React.FC<{ frame: number; morphT: number }> = ({
           width: "100%",
           height: "100%",
           display: "block",
-          filter: "drop-shadow(0 6px 22px rgba(0, 82, 255, 0.36))",
+          filter: "drop-shadow(0 6px 22px rgba(45, 91, 255, 0.36))",
         }}
       />
     </div>
@@ -664,10 +664,10 @@ const Streak: React.FC<{
         transformOrigin: "center center",
         borderRadius: thickness / 2,
         background:
-          "linear-gradient(90deg, rgba(0,82,255,0) 0%, rgba(0,82,255,0.3) 28%, rgba(0,82,255,0.95) 72%, rgba(200,225,255,1) 92%, rgba(255,255,255,1) 100%)",
+          "linear-gradient(90deg, rgba(45, 91, 255,0) 0%, rgba(45, 91, 255,0.3) 28%, rgba(45, 91, 255,0.95) 72%, rgba(200,225,255,1) 92%, rgba(255,255,255,1) 100%)",
         filter: "blur(2px)",
         boxShadow:
-          "0 0 28px rgba(0,82,255,0.85), 0 0 72px rgba(0,82,255,0.5), 0 0 160px rgba(0,82,255,0.22)",
+          "0 0 28px rgba(45, 91, 255,0.85), 0 0 72px rgba(45, 91, 255,0.5), 0 0 160px rgba(45, 91, 255,0.22)",
         opacity,
         willChange: "transform, opacity",
         pointerEvents: "none",
@@ -700,7 +700,7 @@ const ImpactFlash: React.FC<{ frame: number }> = ({ frame }) => {
         transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
         borderRadius: "50%",
         background:
-          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(200,225,255,0.92) 14%, rgba(0,82,255,0.72) 30%, rgba(0,82,255,0.22) 55%, rgba(0,82,255,0) 78%)",
+          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(200,225,255,0.92) 14%, rgba(45, 91, 255,0.72) 30%, rgba(45, 91, 255,0.22) 55%, rgba(45, 91, 255,0) 78%)",
         filter: "blur(20px)",
         opacity,
         pointerEvents: "none",
@@ -736,7 +736,7 @@ const SettleOrb: React.FC<{ frame: number; fps: number }> = ({
         transform: `translate(-50%, -50%) scale(${scale.toFixed(3)})`,
         borderRadius: "50%",
         background:
-          "radial-gradient(circle, rgba(0,82,255,0.42) 0%, rgba(0,82,255,0.22) 25%, rgba(0,82,255,0.08) 50%, rgba(0,82,255,0) 78%)",
+          "radial-gradient(circle, rgba(45, 91, 255,0.42) 0%, rgba(45, 91, 255,0.22) 25%, rgba(45, 91, 255,0.08) 50%, rgba(45, 91, 255,0) 78%)",
         filter: "blur(40px)",
         opacity,
         pointerEvents: "none",

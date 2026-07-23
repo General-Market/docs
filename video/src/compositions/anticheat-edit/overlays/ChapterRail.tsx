@@ -1,34 +1,40 @@
-// ChapterRail — the vertical chapter board down the right edge.
+// ChapterRail — the full-height chapter board on the right edge.
 //
-// A tall blue panel: a hazard-stripe band at the top, then big numbers stacked
-// down the column — "01 Colocation", "02 Unfair Fee Tiers"… The live chapter is
-// bright white and PINNED at the second visible slot; the ones behind it sit
-// above as ghosts, the ones ahead below. As the talk crosses into a new
-// mechanism the whole column scrolls up one cell, so the live number always
-// rises to that same pinned slot — and the count climbs until there is no more.
+// A tall blue strip, hazard stripes on top, big numbers stacked down it — ~4.5
+// visible — names beneath, the live mechanism PINNED at the second slot. It is
+// transient: slides in at a chapter change, holds ~3s, slides out, and the head
+// eases clear of it (AntiCheatLayout reads chapterCardPresence).
 //
-// The board claims the right ~30% of frame (RAIL_W). AntiCheatLayout eases the
-// head + panels into the remaining width by the same presence curve, so the
-// speaker is never hidden behind it. It slides in before mechanism 01 and out
-// at the turn.
+// The switch reads as MOVEMENT: a white square sits fixed at the second slot;
+// the numbers CLIMB through it, so the previous number rolls up and out and the
+// next one rolls in. The digit inside the white square is painted blue by a
+// second copy of the column, clipped to the square — so whatever number is in
+// the square is the highlighted one, mid-roll included.
 
 import React from "react";
 import {
   AbsoluteFill,
+  spring,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { font } from "../../../common/fonts";
-import { CHAPTERS, RAIL_W, railPresence } from "./chapters";
+import { CHAPTERS, BOARD_W, CARD_SLIDE, activeChapterCard } from "./chapters";
 
-// One chapter cell's vertical pitch, the first slot's top, and how long the
-// column takes to scroll one cell when a new mechanism begins.
-const CELL_H = 234;
+const CELL_H = 232; // vertical pitch — ~4.5 cells fill 1080
 const TOP_PAD = 64;
 const PAD_L = 52;
 const PAD_R = 28;
-const SCROLL_DUR = 0.55; // seconds
-const HAZARD_H = 40;
+const HAZARD_H = 38;
+const NUM_SIZE = 132;
+
+// The fixed white highlight at the second slot (where the live number rests).
+const BOX_TOP = TOP_PAD + CELL_H - 12;
+const BOX_H = 138;
+const BOX_LEFT = PAD_L - 18;
+const BOX_W = 210;
+
+const ACCENT = "#2D5BFF";
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 const smoothstep = (a: number, b: number, x: number): number => {
@@ -36,131 +42,146 @@ const smoothstep = (a: number, b: number, x: number): number => {
   return t * t * (3 - 2 * t);
 };
 
+const numStyle = (color: string): React.CSSProperties => ({
+  fontSize: NUM_SIZE,
+  fontWeight: 800,
+  lineHeight: 0.9,
+  letterSpacing: "-0.04em",
+  fontVariantNumeric: "tabular-nums",
+  color,
+});
+
 export const ChapterRail: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width: W, height: H } = useVideoConfig();
   const sec = frame / fps;
 
-  const presence = railPresence(sec);
-  if (presence <= 0.001) return null;
+  const card = activeChapterCard(sec);
+  if (!card) return null;
 
-  // Current chapter — the last whose start has passed (-1 during the lead-in).
-  let current = -1;
-  for (let i = 0; i < CHAPTERS.length; i++) {
-    if (sec >= CHAPTERS[i].at) current = i;
-    else break;
-  }
+  const { chapterIdx, start, end } = card;
 
-  // Continuous scroll index: ease from (current-1) to current over SCROLL_DUR
-  // after each boundary, so the live chapter rises into the pinned 2nd slot.
-  const floatIndex =
-    current < 0
-      ? -1
-      : current - 1 + smoothstep(CHAPTERS[current].at, CHAPTERS[current].at + SCROLL_DUR, sec);
+  // Slide the whole board in from the right, out at the end.
+  const appear = smoothstep(start, start + CARD_SLIDE, sec);
+  const leave = smoothstep(end - CARD_SLIDE, end, sec);
+  const slideX = (1 - appear) * BOARD_W + leave * BOARD_W;
 
-  // Land cell[floatIndex] at slot 1 (the SECOND slot, top = TOP_PAD + CELL_H).
+  // The column climbs one notch as the board lands: it begins with the previous
+  // chapter under the white square and rolls up so the live one arrives there.
+  const climb = spring({
+    frame: (sec - start) * fps,
+    fps,
+    config: { damping: 18, mass: 0.7, stiffness: 130 },
+    durationInFrames: Math.round(0.7 * fps),
+  });
+  const floatIndex = chapterIdx - 1 + climb;
   const translateY = TOP_PAD + (1 - floatIndex) * CELL_H;
 
-  // The board slides in from the right edge by the shared presence curve.
-  const slideX = (1 - presence) * RAIL_W;
+  const maskFade =
+    "linear-gradient(180deg, transparent 0%, #000 9%, #000 82%, transparent 100%)";
 
-  // Slow drift on the hazard stripes — never fully static.
-  const hazardShift = (frame * 0.7) % 56;
+  // The column of numbers, rendered in a given colour — used twice: ghost in the
+  // strip, blue inside the clipped white square.
+  const numberColumn = (color: string) =>
+    CHAPTERS.map((c, i) => (
+      <div key={c.n} style={{ position: "absolute", top: i * CELL_H, left: PAD_L, ...numStyle(color) }}>
+        {String(c.n).padStart(2, "0")}
+      </div>
+    ));
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none", fontFamily: font }}>
       <div
         style={{
           position: "absolute",
-          left: W - RAIL_W,
+          left: W - BOARD_W,
           top: 0,
-          width: RAIL_W,
+          width: BOARD_W,
           height: H,
           transform: `translateX(${slideX.toFixed(1)}px)`,
+          background: "linear-gradient(160deg, #1E6BFF 0%, #0A52F0 46%, #003BC2 100%)",
+          boxShadow: "-26px 0 60px rgba(0,0,0,0.40)",
         }}
       >
-        {/* Panel background — a deep Base-blue gradient, lifted off the head by
-            a soft left shadow. */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(160deg, #1E6BFF 0%, #0A52F0 46%, #003BC2 100%)",
-            boxShadow: "-26px 0 60px rgba(0,0,0,0.38)",
-          }}
-        />
-
-        {/* The scrolling column of chapters, masked so cells fade as they near
-            the top and bottom edges. */}
+        {/* Masked viewport: ghost numbers + names, climbing. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             overflow: "hidden",
-            WebkitMaskImage:
-              "linear-gradient(180deg, transparent 0%, #000 9%, #000 82%, transparent 100%)",
-            maskImage:
-              "linear-gradient(180deg, transparent 0%, #000 9%, #000 82%, transparent 100%)",
+            WebkitMaskImage: maskFade,
+            maskImage: maskFade,
+          }}
+        >
+          {/* Ghost numbers. */}
+          <div style={{ position: "absolute", inset: 0, transform: `translateY(${translateY.toFixed(1)}px)` }}>
+            {numberColumn("rgba(255,255,255,0.20)")}
+          </div>
+          {/* Names — the live one bright, the rest faint. */}
+          <div style={{ position: "absolute", inset: 0, transform: `translateY(${translateY.toFixed(1)}px)` }}>
+            {CHAPTERS.map((c, i) => (
+              <div
+                key={c.n}
+                style={{
+                  position: "absolute",
+                  top: i * CELL_H + NUM_SIZE * 0.9 + 8,
+                  left: PAD_L,
+                  width: BOARD_W - PAD_L - PAD_R,
+                  fontSize: 28,
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.01em",
+                  color: i === chapterIdx ? "#FFFFFF" : "rgba(255,255,255,0.34)",
+                }}
+              >
+                {c.name}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* The fixed white square at the second slot. */}
+        <div
+          style={{
+            position: "absolute",
+            top: BOX_TOP,
+            left: BOX_LEFT,
+            width: BOX_W,
+            height: BOX_H,
+            borderRadius: 22,
+            background: "#FFFFFF",
+            boxShadow: "0 16px 44px rgba(0,0,0,0.30)",
+          }}
+        />
+        {/* The number inside the square, painted blue — a second copy of the
+            column clipped to the white box, so whatever digit is in the square
+            (mid-roll included) reads as the highlighted one. */}
+        <div
+          style={{
+            position: "absolute",
+            top: BOX_TOP,
+            left: BOX_LEFT,
+            width: BOX_W,
+            height: BOX_H,
+            overflow: "hidden",
+            borderRadius: 22,
           }}
         >
           <div
             style={{
               position: "absolute",
-              left: 0,
-              top: 0,
-              width: "100%",
+              top: -BOX_TOP,
+              left: -BOX_LEFT,
+              width: BOARD_W,
+              height: H,
               transform: `translateY(${translateY.toFixed(1)}px)`,
             }}
           >
-            {CHAPTERS.map((ch, i) => {
-              const isActive = i === current;
-              return (
-                <div
-                  key={ch.n}
-                  style={{
-                    position: "absolute",
-                    top: i * CELL_H,
-                    left: 0,
-                    width: "100%",
-                    height: CELL_H,
-                    paddingLeft: PAD_L,
-                    paddingRight: PAD_R,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 132,
-                      fontWeight: 800,
-                      lineHeight: 0.9,
-                      letterSpacing: "-0.04em",
-                      fontVariantNumeric: "tabular-nums",
-                      color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.20)",
-                      textShadow: isActive ? "0 2px 26px rgba(255,255,255,0.22)" : "none",
-                    }}
-                  >
-                    {String(ch.n).padStart(2, "0")}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 6,
-                      fontSize: 28,
-                      fontWeight: 600,
-                      lineHeight: 1.1,
-                      letterSpacing: "-0.01em",
-                      color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.34)",
-                      maxWidth: RAIL_W - PAD_L - PAD_R,
-                    }}
-                  >
-                    {ch.name}
-                  </div>
-                </div>
-              );
-            })}
+            {numberColumn(ACCENT)}
           </div>
         </div>
 
-        {/* Hazard band, over the column — the caution-tape header. */}
+        {/* Hazard band, over everything. */}
         <div
           style={{
             position: "absolute",
@@ -171,7 +192,7 @@ export const ChapterRail: React.FC = () => {
             backgroundImage:
               "repeating-linear-gradient(135deg, #FFFFFF 0 16px, transparent 16px 34px)",
             backgroundSize: "56px 56px",
-            backgroundPositionX: `${hazardShift.toFixed(1)}px`,
+            backgroundPositionX: `${((frame * 0.7) % 56).toFixed(1)}px`,
             opacity: 0.92,
           }}
         />

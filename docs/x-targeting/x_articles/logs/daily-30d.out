@@ -1,0 +1,112 @@
+=== ai-30d ===
+{
+  "date": "2026-06-09",
+  "niche": "ai-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-09/ai-30d",
+  "tweets": 1406,
+  "native_x_articles": 100,
+  "top": {
+    "tweet_id": "2062467341263196286",
+    "tweet_url": "https://x.com/DamiDefi/status/2062467341263196286",
+    "article_url": "https://x.com/i/article/2062464044733284352",
+    "title": "SpaceX IPOs in 7 days. I Fed the S1 Doc Into Claude. Here Is What It Found Buried in 300 Pages.",
+    "preview_text": "The number that stopped me was not the $2 trillion valuation.\nIt was $791 million. That is what SpaceX made in net income in 2024. A profitable, growing aerospace company with a genuine moat in launch",
+    "cover_media_img_url": "https://pbs.twimg.com/media/HJ9ZfQgXMAAi1zs.jpg",
+    "author": "DamiDefi",
+    "author_name": "Dami-Defi",
+    "author_followers": 97544,
+    "created_at": "Thu Jun 04 09:31:47 +0000 2026",
+    "likes": 1537,
+    "retweets": 227,
+    "replies": 116,
+    "quotes": 96,
+    "bookmarks": 2612,
+    "views": 6144678,
+    "query_label": "likes-gte-1000",
+    "engagement": 4588,
+    "weighted_engagement": 4911,
+    "engagement_per_1k_views": 0.747,
+    "score": 5011,
+    "author_avg_views_last10": 12697.8,
+    "author_avg_views_min_age_hours": 4,
+    "views_per_1k_followers": 62993.91,
+    "views_vs_author_avg": 483.917,
+    "outlier_score": 111386.357
+  }
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-09/ai-30d/by-likes.md (100 articles, 115,706 likes)
+=== crypto-30d ===
+{
+  "date": "2026-06-09",
+  "niche": "crypto-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-09/crypto-30d",
+  "tweets": 2370,
+  "native_x_articles": 100,
+  "top": {
+    "tweet_id": "2064367418944688462",
+    "tweet_url": "https://x.com/FirepanHQ/status/2064367418944688462",
+    "article_url": "https://x.com/i/article/2064148720518623233",
+    "title": "The Bug Hiding in Curve's Code That Only AI Could Find",
+    "preview_text": "Curve is one of the most audited protocols in DeFi. Firepan's AI still found a critical vulnerability in its newest AMM - before a single dollar was ever at risk.\nIn April 2026, Firepan ran an",
+    "cover_media_img_url": "https://pbs.twimg.com/media/HKYWdqTWUAAzsC-.jpg",
+    "author": "FirepanHQ",
+    "author_name": "Firepan",
+    "author_followers": 628,
+    "created_at": "Tue Jun 09 15:22:01 +0000 2026",
+    "likes": 21,
+    "retweets": 6,
+    "replies": 4,
+    "quotes": 2,
+    "bookmarks": 8,
+    "views": 14986,
+    "query_label": "keyword-native-top",
+    "engagement": 41,
+    "weighted_engagement": 49,
+    "engagement_per_1k_views": 2.736,
+    "score": 53.995333333333335,
+    "author_avg_views_last10": 156.3,
+    "author_avg_views_min_age_hours": 4,
+    "views_per_1k_followers": 23863.057,
+    "views_vs_author_avg": 95.88,
+    "outlier_score": 33453.793
+  }
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-09/crypto-30d/by-likes.md (100 articles)
+=== trading-30d ===
+{
+  "date": "2026-06-09",
+  "niche": "trading-30d",
+  "out_dir": "/Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-09/trading-30d",
+  "tweets": 2200,
+  "native_x_articles": 100,
+  "top": {
+    "tweet_id": "2062420467034513604",
+    "tweet_url": "https://x.com/Sprytixl/status/2062420467034513604",
+    "article_url": "https://x.com/i/article/2061849440290291712",
+    "title": "Kimi K2.6 runs 300 parallel agents. Here's what comes out.",
+    "preview_text": "Imagine you want to research the fitness app market before launching a product. Before this was two weeks of work - TikTok, Reddit, App Store, competitors, reviews, trends. One by one. Manually. And",
+    "cover_media_img_url": "https://pbs.twimg.com/media/HJ8vps5XAAAu7VC.jpg",
+    "author": "Sprytixl",
+    "author_name": "Sprytix",
+    "author_followers": 3972,
+    "created_at": "Thu Jun 04 06:25:31 +0000 2026",
+    "likes": 193,
+    "retweets": 20,
+    "replies": 13,
+    "quotes": 25,
+    "bookmarks": 622,
+    "views": 471641,
+    "query_label": "broad-native-top",
+    "engagement": 873,
+    "weighted_engagement": 918,
+    "engagement_per_1k_views": 1.851,
+    "score": 1018,
+    "author_avg_views_last10": 3188.0,
+    "author_avg_views_min_age_hours": 4,
+    "views_per_1k_followers": 118741.44,
+    "views_vs_author_avg": 147.943,
+    "outlier_score": 133537.591
+  }
+}
+wrote /Users/maxguillabert/Downloads/index/docs/x-targeting/x_articles/2026-06-09/trading-30d/by-likes.md (100 articles)
+=== trading-ai-30d ===

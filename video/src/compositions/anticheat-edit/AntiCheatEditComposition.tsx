@@ -27,13 +27,28 @@ import metaJson from "./final.meta.json";
 import { AntiCheatLayout } from "./AntiCheatLayout";
 import { CaptionLayer } from "./CaptionLayer";
 import { ChapterRail } from "./overlays/ChapterRail";
+import { SubPartTag } from "./overlays/SubPartTag";
 import { MusicTrack } from "./MusicTrack";
 import { AtmosphereTrack } from "./AtmosphereTrack";
 import { IntroHero, HERO_FROM, HERO_DUR } from "./overlays/IntroHero";
+import { BehindBeat } from "./overlays/BehindBeat";
+import { ProtocolScreens } from "./overlays/ProtocolScreens";
 import {
   AntiCheatEndCard,
   antiCheatEndCardMeta,
 } from "../anticheat/AntiCheatEndCard";
+
+// Closing thesis beat — "Always choose who is your counterparty" lands behind
+// the speaker in the open stretch after the last turn panel (window matted by
+// scripts/cutout_window.py → beats/counterparty, --start 627 --duration 7).
+const CP_START_SEC = 627;
+const CP_FRAMES = 210;
+
+// "I built perps and index protocol myself" (~play 15.6s) — his two products
+// float behind him: the index app (General/Markets) and the perps frontend
+// (Symmio). Window matted to beats/protocols (--start 15.6 --duration 7).
+const PROTO_START_SEC = 15.6;
+const PROTO_FRAMES = 210;
 
 const FPS = 30;
 const W = 1920;
@@ -81,11 +96,42 @@ export const AntiCheatEditComposition: React.FC = () => {
         <IntroHero />
       </Sequence>
 
-      {/* Chapter rail — the persistent progress spine. Always on while the 13
-          mechanisms play (mechanism 01 → the turn); top-edge chrome over the
-          head, fades out as the answer begins. */}
+      {/* "…perps and index protocol myself" — his two products float behind him. */}
+      <Sequence
+        from={Math.round(PROTO_START_SEC * FPS)}
+        durationInFrames={PROTO_FRAMES}
+        layout="none"
+      >
+        <BehindBeat
+          beatDir="anticheat-edit/beats/protocols"
+          frames={PROTO_FRAMES}
+          startSec={PROTO_START_SEC}
+          back={<ProtocolScreens />}
+        />
+      </Sequence>
+
+      {/* Closing thesis — the headline rises behind the speaker on the line. */}
+      <Sequence from={Math.round(CP_START_SEC * FPS)} durationInFrames={CP_FRAMES} layout="none">
+        <BehindBeat
+          beatDir="anticheat-edit/beats/counterparty"
+          frames={CP_FRAMES}
+          startSec={CP_START_SEC}
+          side="left"
+          lines={["CHOOSE YOUR", "COUNTERPARTY"]}
+          fontSize={124}
+        />
+      </Sequence>
+
+      {/* Chapter card — transient. Slides in on the right ONLY at a chapter
+          change, names the mechanism, then closes. */}
       <Sequence durationInFrames={SPEECH_END_FRAMES} layout="none">
         <ChapterRail />
+      </Sequence>
+
+      {/* Sub-part tag — transient. Pops at each sub-beat down at the caption
+          line: progress squares + one teasing line, then leaves. */}
+      <Sequence durationInFrames={SPEECH_END_FRAMES} layout="none">
+        <SubPartTag />
       </Sequence>
 
       {/* Emphasis captions — above the rig, hidden whenever a panel is active. */}

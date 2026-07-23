@@ -1,5 +1,12 @@
 # AntiCheatEdit — Music & Atmosphere Cue Sheet
 
+> **Note (what shipped vs. what's below):** this was the original plan — an
+> eleven-section generated score. It was *not* built. What actually plays is
+> four curated Epidemic Sound tracks; their cue timing and gains live in
+> `overlays/music.ts`, and they are catalogued (emotion · instruments · BPM ·
+> key · count · genre) in `music-library/anticheat-edit/CATALOG.md`. Read this
+> file as design intent, not as the current state.
+
 The composition plays one baked `final.mp4` (voice only, 802s / 13:22) with
 chart overlays on the 13 mechanism beats. No music is wired in yet.
 

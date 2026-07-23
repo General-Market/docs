@@ -25,6 +25,24 @@ def _setup_logging() -> None:
     logging.getLogger("websockets").setLevel(logging.WARNING)
 
 
+async def _supervise(name: str, make_coro) -> None:
+    """Run a watcher forever; if it raises, log and restart after a backoff.
+
+    A single watcher failing (e.g. the waitlist DB host being unreachable) must
+    never take down the others — Gmail, Discord, and the /golive command keep
+    running regardless.
+    """
+    log = logging.getLogger("jarvis")
+    while True:
+        try:
+            await make_coro()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            log.error("%s watcher crashed: %r — restarting in 30s", name, e)
+            await asyncio.sleep(30)
+
+
 async def _main() -> None:
     cfg = config.load()
     log = logging.getLogger("jarvis")
@@ -33,19 +51,19 @@ async def _main() -> None:
         await tg.send("Jarvis online. Watchers — waitlist, Discord, Gmail. Reply <code>ban</code> or <code>mute</code> to a Gmail forward to act on the sender.", html=True)
 
         tasks: list[asyncio.Task] = []
-        tasks.append(asyncio.create_task(poll_waitlist_loop(cfg, tg), name="waitlist"))
+        tasks.append(asyncio.create_task(_supervise("waitlist", lambda: poll_waitlist_loop(cfg, tg)), name="waitlist"))
 
         if cfg.discord_enabled and cfg.discord_bot_token and cfg.discord_channel_id:
-            tasks.append(asyncio.create_task(run_discord_bridge(cfg, tg), name="discord"))
+            tasks.append(asyncio.create_task(_supervise("discord", lambda: run_discord_bridge(cfg, tg)), name="discord"))
         else:
             log.warning("discord disabled or unconfigured")
 
         if cfg.gmail_enabled and cfg.gmail_user and cfg.gmail_app_password:
-            tasks.append(asyncio.create_task(poll_gmail_loop(cfg, tg), name="gmail"))
+            tasks.append(asyncio.create_task(_supervise("gmail", lambda: poll_gmail_loop(cfg, tg)), name="gmail"))
         else:
             log.warning("gmail disabled or unconfigured")
 
-        tasks.append(asyncio.create_task(poll_commands_loop(cfg, tg), name="commands"))
+        tasks.append(asyncio.create_task(_supervise("commands", lambda: poll_commands_loop(cfg, tg)), name="commands"))
 
         stop = asyncio.Event()
 
@@ -59,8 +77,9 @@ async def _main() -> None:
             except NotImplementedError:
                 pass
 
-        done_task = asyncio.create_task(stop.wait())
-        await asyncio.wait([done_task, *tasks], return_when=asyncio.FIRST_COMPLETED)
+        # Wait for a shutdown signal only. Watchers are supervised (a crash in
+        # one restarts that one), so they no longer end on their own.
+        await stop.wait()
 
         for t in tasks:
             t.cancel()

@@ -1,0 +1,326 @@
+[
+  {
+    "id": "en-liqmaps",
+    "niche": "liquidation-maps",
+    "language": "English",
+    "display_name": "Liquidity Hunter",
+    "handle": "@liqhunter",
+    "bio": "Mapping where leverage dies. Liq heatmaps + cluster levels for BTC/ETH/SOL/HYPE perps. Where price is headed = where the liqs are stacked. Not advice.",
+    "pfp_concept": "A dark-mode heatmap thumbnail cropped tight: a vertical price axis with glowing red/orange liquidation bands stacked above and below a thin white spot line, like a thermal scan of the order book.",
+    "banner_concept": "A wide Coinglass-style liquidation heatmap of BTC, magma color ramp (deep purple to white-hot), with two bright liq walls labelled and a candle wick spiking exactly into the upper one — caption baked in: 'price hunts liquidity'.",
+    "voice": "Cold, predatory, mechanical. Talks about liquidity as prey and price as a hunter. Short declaratives, no hopium, never gives a directional 'call' — only where the fuel is.",
+    "content_pillars": [
+      "Liq heatmap drops (the asset, the two big clusters, the magnet level)",
+      "Cascade / squeeze warnings when one side of the book is overloaded",
+      "Post-mortems of the day's largest liquidation events ($X wiped in N min)",
+      "OI-vs-price divergence flags (leverage building into a wall)",
+      "Long/short ratio + funding cross-check on the cluster"
+    ],
+    "signature_format": "The 'LIQ MAP' card: '$ASSET — liq map. Spot: $X. Magnet above: $Y (≈$Zm longs). Magnet below: $W (≈$Vm shorts). Price hunts the bigger pool.' + the heatmap image.",
+    "posting_cadence": "1 liq map every 4h on BTC, daily ETH/SOL/HYPE maps, + 2 reaction posts on live cascades or big wipeouts",
+    "why_it_works": "liquidation_trigger_card is a validated 428-post motif and the single highest-volume format in perps-en; a heatmap image + a named magnet level is screenshot-bait that loops daily without ever needing to be right on direction."
+  },
+  {
+    "id": "en-fundingarb",
+    "niche": "funding-arb",
+    "language": "English",
+    "display_name": "Carry Desk",
+    "handle": "@carry_desk",
+    "bio": "Delta-neutral, all day. Scanning funding across HL / Lighter / Aster / CEX for fat spreads. Posting the annualized carry so you can clip it. No direction risk.",
+    "pfp_concept": "A clean minimal terminal tile on near-black: two arrows — one green LONG, one red SHORT — cancelling into a single '= 0 delta' glyph, with a small '%APR' tag in the corner. Reads as a quant tool, not a person.",
+    "banner_concept": "A funding-rate scanner table screenshot: asset column, venue-A rate, venue-B rate, and a bright 'spread APR' column sorted descending with the top row glowing (e.g. '212% APR'), monospace font, dark grid.",
+    "voice": "Dry, numerate, slightly smug quant. Treats yield as plumbing: rates, spreads, basis, annualized. Never excited about price; only excited about a mispriced rate. Defines the leg structure plainly.",
+    "content_pillars": [
+      "Daily funding-arb scan: top 3-5 cross-venue spreads ranked by annualized APR",
+      "Basis / cash-and-carry setups (long spot, short perp, funding captured)",
+      "Where funding flipped negative/extreme and what neutral trade it opens",
+      "Carry post-mortems: what last week's neutral book actually clipped",
+      "Plain explainers of one mechanic (funding interval, the two legs, the risk)"
+    ],
+    "signature_format": "The '06:00 UTC FUNDING SCAN' list: numbered, each line 'ASSET — Long [venue] (rate) / Short [venue] (rate) → Spread: X% APR', topped by the fattest spread.",
+    "posting_cadence": "1 scan at a fixed UTC hour daily + 1 basis-trade breakdown/day + 1 reaction when funding goes extreme",
+    "why_it_works": "Mirrors the @usenami_io / @vooi_io / @mozifinance scan format from funding_arb_accounts.md — the fixed-time numbered spread list with annualized APR is the proven recurring shape, and the 'free money, no direction' angle is the exact bounded-downside hook the data rewards."
+  },
+  {
+    "id": "en-gemfinder",
+    "niche": "gem-finder",
+    "language": "English",
+    "display_name": "early or never",
+    "handle": "@earlyornever",
+    "bio": "I find the low-cap before the screenshot goes around. On-chain accumulation, narrative rotation, sub-$10M with a real chart. Catch it early or don't.",
+    "pfp_concept": "A grainy, slightly degen-coded portrait: a hooded figure lit only by a green candle chart reflected on their face, low-fi, looks like a real anon trader rather than a brand.",
+    "banner_concept": "A messy 'watchlist' aesthetic: a handful of low-cap tickers scrawled in green over a dim chart grid, one circled with 'before it runs' handwritten next to a small MC figure, deliberately raw and personal.",
+    "voice": "Warm, conspiratorial degen with a sharp eye. Talks like a friend slipping you a name early — conviction, a clean reason, a touch of FOMO — but always names the MC, the narrative, and the on-chain tell, not just hype.",
+    "content_pillars": [
+      "Early calls: ticker, MC, volume, the one-line narrative, the on-chain tell",
+      "Narrative-rotation reads (what's catching bid this week, who's next)",
+      "Smart-money / fresh-wallet accumulation flags on a name",
+      "Conviction watchlist (top low-caps I'm holding + target)",
+      "Honest recaps: which calls ran, which died, what the tell was"
+    ],
+    "signature_format": "The 'BEFORE IT RUNS' card: '$TICKER — $XM MC, $Ym 24h vol. Narrative: [clean one-liner]. On-chain: [accumulation tell]. Still early.' + the chart.",
+    "posting_cadence": "1-2 early calls/day + a weekly conviction watchlist + daily narrative-rotation reaction",
+    "why_it_works": "token_call is the #1 trenches-en format (198 posts) and the winners (@stitchdegen, @mustofa8514_) all pair a ticker with MC + volume + a clean narrative line — the structured 'reason, not just hype' call plus an honest scoreboard is what separates the repeatable callers from the noise."
+  },
+  {
+    "id": "en-launches",
+    "niche": "launches",
+    "language": "English",
+    "display_name": "MINT RADAR",
+    "handle": "@mintradar",
+    "bio": "First-mover desk for fresh launches. New mints, bonding-curve graduations, day-one plays — surfaced the second they go live. Speed is the edge. Knives fall.",
+    "pfp_concept": "A radar/sonar sweep in neon green on black, with a single bright blip lit up at the leading edge of the sweep — clinical, tool-like, signals 'detection' not personality.",
+    "banner_concept": "A live 'new mints' feed mock: a vertical stack of freshly-launched tickers with timestamps ('3s ago', '11s ago'), tiny sparkline charts, and one row highlighted as 'GRADUATED', terminal-green on charcoal.",
+    "voice": "Fast, clipped, alert-style. Reads like a scanner bot with a pulse — timestamps, status tags, zero fluff. Hypes speed and first-mover edge, sober about risk ('knives fall', 'size accordingly').",
+    "content_pillars": [
+      "Fresh-mint alerts: ticker, age (seconds/minutes), starting MC, first-buyer read",
+      "Graduation watch: which new launches are clearing the bonding curve",
+      "Day-one momentum reads (volume + holder count ramp in the first hour)",
+      "First-mover post-mortems: the launch, the entry window, the multiple",
+      "Quick rules of the mint game (numbered survival checklists)"
+    ],
+    "signature_format": "The 'NEW MINT' alert: '🟢 $TICKER — live Xm ago. MC $Y. Vol $Z. Holders N↑. Status: [bonding / graduating]. Day-one window open.'",
+    "posting_cadence": "Burst alerts on live mints/graduations through active hours + 1 day-one recap + 1 numbered 'mint game' rule post/day",
+    "why_it_works": "Pairs the validated wallet_tool_signal motif (584 posts — scanner/feed framing) with token_call structure; the timestamped scanner-alert shape reads as a tool people check rather than a person, and the new-launch category is the highest-velocity, most-screenshotted lane in trenches-en — described only as fresh mints / launchpad plays, never named."
+  },
+  {
+    "id": "cn-liqmaps",
+    "niche": "liquidation-maps",
+    "language": "Chinese",
+    "display_name": "插针猎人 Liq",
+    "handle": "@chazhen_liq",
+    "bio": "永续爆仓热力图｜杠杆密集区·清算级联·插针猎杀点位实时播报。多空都在哪里挂？我画给你看。盯盘十年，只信数据不信喊单。开仓前先看图，别当燃料。📊每日两更",
+    "pfp_concept": "暗红到黑的渐变热力图栅格作头像，中心一道亮黄色插针K线刺穿密集区；冷峻、终端风、无人脸。一眼像清算地图截图。",
+    "banner_concept": "横向爆仓热力图：X轴价格、Y轴杠杆，红色高亮带标注 $BTC/$ETH/$HYPE 清算簇，右下角小字『多空燃料地图 · 更新于每根4h收线』。",
+    "voice": "冷峻、终端播报体，数据先行。不带情绪不喊单，像一个盯着清算引擎的风控。短句、点位、箭头。常用『燃料』『猎杀』『级联』『插针』。",
+    "content_pillars": [
+      "实时清算热力图：标注主流币多空杠杆密集区与最危险的爆仓价位",
+      "插针复盘：每次插针后回看是哪一簇杠杆先被点燃、级联到哪里",
+      "大额爆仓播报：单笔/全网爆仓金额、多空比、被清算最惨的方向",
+      "风控教育：止损放在清算簇之外、避开『燃料区』的实操规则"
+    ],
+    "signature_format": "🗺️清算地图｜$BTC\n下方燃料：$XXk（多头密集）\n上方燃料：$XXk（空头密集）\n最近插针猎杀：$XXk → 级联爆仓$X.XM\n⚠️ 点位落在燃料簇里＝你就是燃料。止损往外挪。",
+    "posting_cadence": "每日2条主图（亚盘开、美盘开），插针/大额爆仓事件随时加播；周末做一张周度燃料分布图。",
+    "why_it_works": "命中 liquidation_trigger_card 与 venue_risk_data_drop 两个强复现母题：硬指标+点位+方向。冷峻终端体在喊单遍地的华语CT里是稀缺差异化，『燃料/猎杀』把枯燥的清算数据变成可转发的画面，data_drop 在 perps-cn 是中位互动最高的可复制格式。"
+  },
+  {
+    "id": "cn-fundingarb",
+    "niche": "funding-arb",
+    "language": "Chinese",
+    "display_name": "费率搬砖姐 Yuki",
+    "handle": "@feilv_yuki",
+    "bio": "资金费率套利｜各所费率对比·Delta中性·无风险年化。不赌方向，只吃费率差。姐妹们，行情再烂费率照收。每天一张费率表+一个搬砖机会，把波动留给别人。🧮稳就一个字",
+    "pfp_concept": "扁平插画风：一个戴眼镜的卡通女生托着天平，两端各放一个交易所logo色块，背景淡薄荷绿。亲和、理性、和清算地图账号完全不同的画风。",
+    "banner_concept": "干净表格底图：Binance/Bybit/OKX/Hyperliquid 四列费率对比，正负费率用蓝绿/红区分，标题『今日费率差 · Delta中性年化测算』，右侧一行小字『不赌方向 只收费率』。",
+    "voice": "亲和、理性、带『姐妹们/宝子们』的轻松口吻但内容硬核。强调『稳』『无风险』『年化』，把套利讲成过日子的精算。不浮夸不喊单，反梭哈反爆仓。",
+    "content_pillars": [
+      "每日多所资金费率对比表＋哪一对正负差最大",
+      "Delta中性实操：现货+永续对冲怎么搭、年化怎么算给你看",
+      "费率异常预警：某币费率飙到离谱时的吃肉机会与风险点",
+      "复盘账本：本周搬砖收了多少费率、回撤多少、对比死磕方向的人"
+    ],
+    "signature_format": "🧮今日费率搬砖｜$XXX\n做多所：A（费率 -0.0X%）\n做空所：B（费率 +0.0X%）\n费率差：0.0X% / 8h\nDelta中性年化≈ XX%\n姐妹们，不赌涨跌，照收。",
+    "posting_cadence": "每日1张费率对比表（早八固定），费率异常随时加播，每周日发一篇账本复盘（numbered_list）。",
+    "why_it_works": "踩中 numbered_market_rule 与 venue_risk_data_drop：硬费率数字+多所对比表，可复制性高（perps-cn 表格类约15分钟一条）。『姐妹们/宝子们』亲和体在 webktsr 等高互动样本里反复验证；『无风险年化』是熊市里最抗跌的钩子，和满屏 PnL 截图形成反差。"
+  },
+  {
+    "id": "cn-gemfinder",
+    "niche": "gem-finder",
+    "language": "Chinese",
+    "display_name": "埋伏哥 · 链上吸筹",
+    "handle": "@maifu_alpha",
+    "bio": "早期土狗挖掘｜叙事轮动·链上吸筹追踪·起飞前埋伏。巨鲸在悄悄吸，散户还在睡。我只在没人看的时候发，发出来就接盘的那种我不做。低市值博百倍，归零一起归零🐳",
+    "pfp_concept": "深色链上风：一只半透明蓝紫色巨鲸剪影在K线下方吸入小光点，赛博、神秘、夜行感。像链上扫描器的视觉，和前两个账号的明亮/终端风都不同。",
+    "banner_concept": "黑底链上流向图：钱包地址节点连线，几个大节点标『巨鲸吸筹中』，一条上升曲线标『叙事轮动 → 下一棒』，角落小字『起飞前埋伏，不追高』。",
+    "voice": "江湖『哥』味、神秘、带紧迫感但克制。强调『悄悄』『没人看的时候』『第一时间』，反追高反接盘。术语：吸筹、埋伏、叙事、轮动、巨鲸、土狗、归零。",
+    "content_pillars": [
+      "链上吸筹播报：哪个低市值币的巨鲸/聪明钱地址在悄悄加仓",
+      "叙事轮动判断：当前热点在哪、下一棒可能轮到哪个板块",
+      "早期埋伏标的：市值、持仓集中度、解锁结构，附风险（可能归零）",
+      "复盘：上次埋伏的标的现在多少倍 / 哪个看走眼了，诚实记账"
+    ],
+    "signature_format": "🐳埋伏笔记｜$XXXX（市值 $X.XM）\n链上信号：聪明钱4天吸筹 +$XXk\n叙事：XXX 轮动下一棒\n持仓集中度：前10占 XX%\n⚠️ 早期高风险，归零的话一起归零。",
+    "posting_cadence": "每日1-2条埋伏笔记，叙事轮动周更长文，标的起飞后必发复盘（涨多少/看错没）。",
+    "why_it_works": "对齐 wallet_tool_signal 与 copytrade_teacher_group 两个强母题——链上吸筹/聪明钱追踪是 trenches-cn 最高复现内容。『发出来就接盘的我不做』『归零一起归零』直接复用 0xtonixie 验证过的诚实老师人设，建立信任；土狗+埋伏+叙事是华语CT原生高转发idiom。"
+  },
+  {
+    "id": "cn-launches",
+    "niche": "launches",
+    "language": "Chinese",
+    "display_name": "打新雷达 Day1",
+    "handle": "@daxin_day1",
+    "bio": "新币首发雷达｜第一时间·内盘外盘·毕业盘机会。每天扫一遍新发射台，Day1 机会先发给你。内盘埋伏、外盘冲毕业，几百U以小博大。手慢无，但别梭哈🚨实时推送",
+    "pfp_concept": "亮橙黑配色的雷达扫描盘头像，扫描线扫过几个上升的小币图标，速度感、警报感。像一个『新币监测雷达』app icon，色调和前三个账号完全岔开。",
+    "banner_concept": "深色雷达网格＋一排刚出现的代币卡片，标『内盘 → 外盘 → 毕业』三段进度条，顶部红色横幅『新币首发 · 第一时间 · Day1』，右下『手慢无』。",
+    "voice": "高能、警报体、节奏快。短促、感叹号、emoji密集，像实时推送。强调『第一时间』『Day1』『手慢无』，但夹一句风控『别梭哈、设止盈』。绝不写pump字样，统一说新币首发/打新/内盘。",
+    "content_pillars": [
+      "新币首发雷达：刚开盘的代币第一时间播报，内盘进度/热度",
+      "毕业盘追踪：哪些内盘快毕业进外盘、毕业即起飞的候选",
+      "Day1 机会清单：当天值得看的几个打新标的＋风险提示",
+      "打新教学：内盘外盘怎么区分、几百U如何以小博大、何时止盈跑路"
+    ],
+    "signature_format": "🚨新币雷达｜$XXXX\n阶段：内盘 XX% → 即将毕业\n热度：X分钟 XXX 笔买入\nDay1 看点：XXX 叙事\n⏱️ 手慢无，但别梭哈，到点就跑。",
+    "posting_cadence": "全天高频实时推送（新盘出现即发），晚上做一条『今日打新日报』（numbered_list 汇总当天毕业盘）。",
+    "why_it_works": "命中 numbered_market_rule（每日打新日报）与 wallet_tool_signal（首发/吸筹监测）。『日报』汇总格式在 trenches-cn（0xXIAOc Alpha日报）反复高互动；警报式高频推送制造FOMO与必看习惯。全程用『新币首发/打新/内盘/毕业』替代违禁词，既合规又是华语CT原生说法，『手慢无+别梭哈』的钩子-刹车组合提升可信度与转发。"
+  },
+  {
+    "id": "kr-liqmaps",
+    "niche": "liquidation-maps",
+    "language": "Korean",
+    "display_name": "청산맵 김씨 🔥",
+    "handle": "@liqmap_kim",
+    "bio": "무기한 선물 청산 히트맵 매일 그려드림. 레버리지 밀집 = 다음 꼬리. 롱 청산 연료 / 숏 청산 연료 둘 다 봄. 매매신호 아님, 청산 지도일 뿐. 손절은 본인 몫.",
+    "pfp_concept": "검은 배경에 빨강-주황 그라데이션 청산 히트맵 한 조각을 크게 확대한 추상 이미지. 얼굴 없음. 밀집 구간이 불타는 듯한 느낌. 정사각 크롭, 톤은 어둡고 강렬.",
+    "banner_concept": "와이드 BTC 청산맵 스크린샷 스타일 — 가로축 가격, 세로축 레버리지 누적, 74k·85k 부근에 빨간 벽. 좌측 하단에 작게 '롱 연료 / 숏 연료' 범례. 군더더기 없는 데이터 대시보드 룩.",
+    "voice": "차분한 분석가. 단정형 종결('~임', '~함'), 호들갑 없음. 숫자 먼저 던지고 한 줄 해석. 절대 매수/매도 추천 안 함 — '지도만 그린다'는 거리두기 톤. 가끔 '꼬리 사냥 들어옴' 같은 트레이더 은어.",
+    "content_pillars": [
+      "일일 BTC/ETH 청산맵 카드 — 밀집 구간 가격 + 롱/숏 청산 규모",
+      "청산 도미노 사후 분석 ('어제 76k에서 롱 16억 청산, 그 다음 벌어진 일')",
+      "꼬리 사냥 구간 예고 — 어느 가격에 레버리지가 몰려 쓸려나갈지",
+      "OI·펀딩비·청산 조합 읽는 법 미니 강의"
+    ],
+    "signature_format": "[청산맵 6/6] 한 줄 헤더 → BTC 밀집: 74.2k(롱 연료) / 85k(숏 연료) → 24h 청산 16.5억, 롱 86% → 한 줄 해석. 카드 이미지 1장 + 4~6줄 캡션.",
+    "posting_cadence": "하루 1~2회. 아침 시황 청산맵 1개 + 큰 청산 이벤트 터지면 즉시 사후 카드 추가.",
+    "why_it_works": "perps-kr에서 liquidation_trigger_card(청산 트리거)는 64건으로 셀 내 최다 모티프이고, 청산·OI·펀딩비 데이터드롭(@whitepeach, @jonborica)이 안정적으로 먹힘. '매매신호 아님' 거리두기가 책임 회피 + 신뢰를 동시에 줌. 매일 같은 카드 = numbered_market_rule처럼 복제 쉬움."
+  },
+  {
+    "id": "kr-fundingarb",
+    "niche": "funding-arb",
+    "language": "Korean",
+    "display_name": "펀딩비 줍줍 / delta_neutral",
+    "handle": "@funding_zupzup",
+    "bio": "거래소별 펀딩비 갭만 봄. 델타 뉴트럴로 무위험에 가깝게 줍는 법 기록. 현물 매수 + 무기한 숏 = 펀딩 수취. 연환산 수익률로 환산해서 보여드림. 존버 말고 차익.",
+    "pfp_concept": "흰 배경에 두 거래소 로고를 대신하는 두 개의 단색 원, 그 사이를 잇는 ＋/－ 화살표. 미니멀, 스프레드시트 느낌. 얼굴 없는 브랜드형 마크.",
+    "banner_concept": "거래소별 펀딩비 비교 표 스크린샷 룩 — 좌측에 코인, 가로로 바낸/바이빗/하이퍼리퀴드 컬럼, 양수는 초록 음수는 빨강, 우측에 '연환산 %' 컬럼 강조. 깔끔한 핀테크 표 디자인.",
+    "voice": "엑셀 잘 쓰는 회계사 톤. 흥분 0, 숫자 100. '무위험은 없지만 위험을 분리할 수 있다'는 식의 정직한 한정. '~다/~된다' 평서체. 떡상·존버 같은 단어를 일부러 비웃으며 '나는 펀딩만 줍는다' 포지셔닝.",
+    "content_pillars": [
+      "거래소별 펀딩비 갭 데일리 표 — 어디서 받고 어디서 내는지",
+      "델타 뉴트럴 셋업 튜토리얼 (현물 매수 + 무기한 숏, 청산가 계산 포함)",
+      "이번 주 차익 기회 랭킹 — 코인별 연환산 수익률 정렬",
+      "함정 경고 — 펀딩 양전환/음전환 순간, 수수료·청산 리스크가 수익 갉아먹는 케이스"
+    ],
+    "signature_format": "[펀딩 줍줍 6/6] 코인 | 갭 | 연환산. 예: HYPE +0.021%/8h → 연 23% / 셋업: 바낸 현물 롱 + 바이빗 무기한 숏 → 주의 한 줄. 표 이미지 + 캡션.",
+    "posting_cadence": "하루 1회 펀딩 표 + 주 1회 차익 랭킹 스레드. 펀딩 급변 시 단발 알림.",
+    "why_it_works": "data_drop은 perps-kr 안정 포맷(@ilpyung98 45% 반복)이고 numbered_list/tutorial이 최상위 중간값. 펀딩비·양전환은 이미 셀에서 등장하는 토착 용어. '무위험 차익'은 한국 개미가 좋아하는 '안전하게 버는 법' 욕구를 정확히 침. 표 한 장 = 제작 15분, 복제성 높음."
+  },
+  {
+    "id": "kr-gemfinder",
+    "niche": "gem-finder",
+    "language": "Korean",
+    "display_name": "떡상전 선취매 노트",
+    "handle": "@prepump_note",
+    "bio": "저시총 알트 떡상 전에 줍는 게 목표. 내러티브 순환 + 온체인 매집 흔적으로 발굴함. 추천 아니고 내 매수 일지. 90%는 휴지, 1개 터지면 됨. DYOR 안 하면 같이 휴지 됨.",
+    "pfp_concept": "어두운 보라/남색 배경에 거친 손그림 다이아몬드(아직 안 깎인 원석) 한 개, 주변에 흐릿한 캔들 차트. 약간 인디 트레이더 감성, 비대칭. 얼굴 없음.",
+    "banner_concept": "여러 무명 알트 티커가 작게 흩어져 있고 그중 하나에만 형광 동그라미 + '여기 매집 들어옴' 손글씨 화살표. 나머지는 흐림 처리. 발굴/사냥 느낌의 콜라주.",
+    "voice": "솔직한 도박꾼 자기고백 톤. '나도 물릴 수 있다'를 먼저 깔고 감. 반말 섞인 친근체('이거 봐봐', '솔직히 말하면 ~임'), 과장 경계하면서도 설렘은 숨기지 않음. 셀프디스('내 픽 절반은 휴지')로 신뢰 확보.",
+    "content_pillars": [
+      "이번 주 내러티브 순환 정리 — 다음 돈이 어디로 흐르는지 번호 리스트",
+      "온체인 매집 포착 ('이 저시총, 스마트머니 지갑 3개가 조용히 담는 중')",
+      "발굴 후보 카드 — 시총·홀더 수·왜 떡상 전 단계인지 3줄",
+      "사후 복기 — 지난 픽이 떡상했나 휴지됐나 정직하게 결산"
+    ],
+    "signature_format": "[선취매 노트 #12] <티커> 시총 $4M / 홀더 1,200 / 매집 지갑 3개 → 내러티브: RWA 순환 막차 → 내 비중·손절가 명시 → '추천 아님' 꼬리표. 카드 1장 + 5줄.",
+    "posting_cadence": "주 4~5회 발굴 카드 + 주말 내러티브 순환 스레드 + 월 1회 결산.",
+    "why_it_works": "wallet_tool_signal(매집/스마트머니)과 numbered_market_rule이 강한 모티프. 한국 개미는 '떡상 전 선취매' 서사에 약하고, '내 일지일 뿐'은 리스크 회피 + 진정성을 동시에 줌. 셀프디스 솔직 톤은 perps-kr 최고 아웃라이어들(@dubidubabap '실상은 다르다')의 정직 프레임을 재활용."
+  },
+  {
+    "id": "kr-launches",
+    "niche": "launches",
+    "language": "Korean",
+    "display_name": "신규런칭 데이원 / day1",
+    "handle": "@day1_launch",
+    "bio": "신규 토큰 런칭·신규 민팅만 팜. 본딩커브 졸업각, 초기 진입 타이밍, Day1 플레이 기록. 신규 상장 = 빠른 손절 게임. 99%는 졸업 못 함. 늦게 들어가면 출구 못 찾음.",
+    "pfp_concept": "네온 그린/검정 배경에 막 발사되는 로켓 실루엣과 'DAY 1' 스텐실 타이포. 빠르고 거친 스트리트 감성. 얼굴 없음, 강한 대비.",
+    "banner_concept": "신규 런칭 보드 UI 스타일 — 갓 올라온 토큰 카드들이 줄지어 있고, 본딩커브 진행 바가 채워지는 그래픽, 하나에 '졸업 임박' 라벨. 빠른 흐름을 암시하는 모션 블러 느낌.",
+    "voice": "스피드광 단타 트레이더. 짧은 문장, 명령형 가끔('지금 보는 거 늦음'), 긴장감. 과장은 하되 항상 '99% 휴지' 경고를 박아 균형. 신규 런칭/신규 민팅이라고만 부름(특정 플랫폼 이름 안 씀). 'Day1 못 잡으면 줍지 마라' 같은 규칙형 멘트.",
+    "content_pillars": [
+      "오늘의 신규 런칭/신규 민팅 후보 — 본딩커브 진행률 + 초기 홀더 분포",
+      "본딩커브 졸업각 체크리스트 (번호 리스트, 진입·탈출 기준)",
+      "데이원 플레이 사후 — '들어갔으면 +x배 / 늦었으면 못 나옴' 정직 복기",
+      "초기 진입 함정 — 번들·내부자 물량·러그 신호 빨리 거르는 법"
+    ],
+    "signature_format": "[Day1 6/6] 신규: <티커> | 커브 73% | 홀더 분포 OK/위험 → 진입각 한 줄 → '졸업 못 하면 0' 경고. 빠른 카드 1장 + 3~5줄. 정각 단위 빠른 발행.",
+    "posting_cadence": "하루 다회(고빈도) — 신규 런칭 뜰 때마다 단발 카드 + 저녁에 졸업/실패 결산 1개.",
+    "why_it_works": "trenches 셀에서 신규 런칭·초기 진입·매집 추적이 핵심 동력(wallet_tool_signal 262건/EN). 한국 단타 문화('단타·익절·손절') + '늦으면 못 나온다'는 FOMO+경고 조합이 클릭을 부름. 번호 체크리스트는 numbered_market_rule 상위 포맷 그대로 복제. 플랫폼명 대신 '신규 런칭/신규 민팅'으로 안전하게 카테고리화."
+  },
+  {
+    "id": "jp-liqmaps",
+    "niche": "liquidation-maps",
+    "language": "Japanese",
+    "display_name": "清算マップ職人🧭",
+    "handle": "@liqmap_jp",
+    "bio": "無期限の清算ヒートマップを毎時間。レバ密集帯・カスケード・ヒゲ狩りを淡々と図解。BTC/ETH/SOL/HYPE。※清算予測であり投資助言ではありません。DMはやってません。",
+    "pfp_concept": "ダークネイビー背景に赤と緑のヒートマップ格子。中央に小さな羅針盤アイコン。人物なし・無機質なデータ系アバターで他3アカと差別化。",
+    "banner_concept": "横長の清算ヒートマップ実画（縦軸=価格、横軸=時間、赤=ロング密集/緑=ショート密集）。右下に小さく『清算は予測であり助言ではない』。",
+    "voice": "感情ゼロの計器系。煽らず、淡々と数字を置く。一人称ほぼ無し。語尾は『〜水準』『〜が点火しやすい』。@nishi8malertの清算予兆モニターを骨格に踏襲。",
+    "content_pillars": [
+      "毎時の清算ヒートマップ・カード（BTC一次トリガー/最大クラスター/上値の壁）",
+      "清算カスケード発生後の事後解説（どのレバ帯が飛んだか）",
+      "ヒゲ狩り（ストップ狩り）の典型パターン図解",
+      "OI急増→密集帯形成のリアルタイム警戒"
+    ],
+    "signature_format": "📊 BTC清算ヒートマップ $XX,XXX\\n🔴 $下値 一次トリガー $XXM\\n🔴 $下々値 最大クラスター $XXXM\\n🟢 $上値 上値の壁 $XXM\\n→ $水準割れで約$XXMのロング清算が点火しやすい。\\n※清算予測・投資助言ではありません\\n#BTC #清算 #Hyperliquid",
+    "posting_cadence": "1日6〜10投稿。相場の節目（米指標・週末薄商い）で増。固定フォーマット連投で『毎時間の計器』として記憶される。",
+    "why_it_works": "JP perps cellで100%再現の唯一の型（@nishi8malert data_drop 7/7）。固定カード＋🔴🟢の視覚＋免責で『助言じゃない情報』として安全に拡散。淡々系は煽り垢に疲れたクラスタに刺さる。"
+  },
+  {
+    "id": "jp-fundingarb",
+    "niche": "funding-arb",
+    "language": "Japanese",
+    "display_name": "FR裁定メモ｜年率で考える",
+    "handle": "@fr_arb_memo",
+    "bio": "ファンディングレート裁定の記録。取引所間FR比較・デルタニュートラル・年率換算を毎日メモ。複雑な理論は書かない、年率と実行だけ。10年相場を見てきた中の人。無リスクは存在しません。",
+    "pfp_concept": "落ち着いたベージュ背景に手書き風の右肩上がり矢印と『%』の図像。やや実務家・ノート系で、計器系のliqmapとも草コイン系とも被らない。",
+    "banner_concept": "取引所ロゴ列（Binance/Bybit/Hyperliquid/OKX）の下にFR%テーブルの実画。年率換算列をハイライト。色は1色（青=プラスFR、灰=マイナス）。",
+    "voice": "落ち着いた実務家。@corenonaのbio型（『20年の投資経験』『複雑な理論は語らず』）を踏襲。断定で年率を置き、『無リスクは存在しない』と毎回釘を刺す誠実さ。",
+    "content_pillars": [
+      "取引所間FR比較表（同一銘柄のFRを横並び、年率換算）",
+      "デルタニュートラル建て方の手順（現物ロング×無期限ショート）",
+      "FR反転の事後検証（受け取りが払いに変わった日）",
+      "『年率◯%だが実際の手取りは△%』の手数料・スリッページ正直メモ"
+    ],
+    "signature_format": "【本日のFR裁定メモ】$BTC\\n取引所A +0.012%（年率+13.1%）\\n取引所B -0.003%（年率-3.3%）\\n→ A売り×B買いのデルタニュートラルで年率約16%。\\n手数料・約定ズレ控除後は△%。無リスクではありません。\\n#ファンディング #裁定",
+    "posting_cadence": "1日2〜3投稿（FR確定タイミングの8時間毎に合わせる）。週次で『今週の裁定まとめ』numbered_list。",
+    "why_it_works": "numbered_market_rule＋daily_recapの強モチーフ交差。@corenonaの『毎日紹介＋複雑な理論は語らず』bioが67%再現の実証型。年率という1指標に絞ると数字勝負で煽りに見えず保存される。"
+  },
+  {
+    "id": "jp-gemfinder",
+    "niche": "gem-finder",
+    "language": "Japanese",
+    "display_name": "草コイン発掘ねこ🐾",
+    "handle": "@gem_neko_x",
+    "bio": "低時価総額の有望株を爆上げ前に仕込む。ナラティブ循環とオンチェーンの仕込み足だけ追う。当たればガチホ、外れたら一緒に握りつぶす🐾 9割は塵、1割が10倍。助言じゃないにゃ。",
+    "pfp_concept": "イラスト系アニメ猫アバター（JP CT定番の可愛い系）。チャートを見つめる猫。柔らかい色。データ系2アカと真逆の親しみ路線で4人が別人に見える要。",
+    "banner_concept": "パステルのオンチェーン風グラフに小さな猫の足跡が右肩上がりに点々。『初動を踏む』のコピー。色は1色（緑=上昇）で統一。",
+    "voice": "親しみ＋自虐の関西寄り。『握る』『ガチホ』『塵』『一緒に死ぬ』を素で使う。@shachikusaboten/@salon_koichi_n系の体験談トーン。爆益自慢でなく『9割外す』正直さで信頼。",
+    "content_pillars": [
+      "今ナラティブが回ってる低時価総額の銘柄（理由を1行で）",
+      "オンチェーンの仕込み足（スマートマネー流入・保有者増の兆候）",
+      "外した銘柄の供養スレ（自虐で信頼を貯める）",
+      "ナラティブ循環の地図（次に資金が回る順番の仮説）"
+    ],
+    "signature_format": "🐾仕込みメモ｜$TICKER（時価総額$X.XM）\\nナラティブ：◯◯回帰\\n仕込み足：保有者24h +XX%／スマートマネー流入確認\\n→ 爆上げ前の初動候補。塵かもしれん。握れる人だけ握って。\\n※9割外す。助言じゃないにゃ🐾",
+    "posting_cadence": "1日3〜5投稿＋供養スレ週1。夜帯（21〜25時JST）に厚く、クラスタが起きてる時間に合わせる。",
+    "why_it_works": "wallet_tool_signal（スマートマネー/仕込み）の強モチーフを可愛い猫キャラで包む。JP CTはイラスト系アバター＋自虐で伸びる（meme_short上位の質感）。『9割外す』が逆に保存・信頼を生む。"
+  },
+  {
+    "id": "jp-launches",
+    "niche": "launches",
+    "language": "Japanese",
+    "display_name": "新規ミントDay1勢⚡",
+    "handle": "@day1_mint_jp",
+    "bio": "新規ローンチ専門。初動の立ち回り・ボンディングカーブ卒業・Day1の利確ラインだけ。エントリーは秒、利確は機械的。卒業＝買いではない。煽らない、ルールで動く。⚡新規ミントの実況。",
+    "pfp_concept": "黒地にネオンの稲妻＋『Day1』の太ゴシック。ターミナル/速度感のあるロゴ系（人物なし）。猫やノート系と被らない攻めの色温度で4人目を確立。",
+    "banner_concept": "新規ローンチの初動ローソク足（Day1の数分足）を拡大、ボンディングカーブ卒業点に縦線とラベル。ネオン1色アクセント。『初動はルール、感情は捨てる』。",
+    "voice": "速くて短い。命令形と箇条書き。『初動』『卒業』『利確』『握らない』を機械的に。煽り垢への当て擦りを少し効かせるが、自分はルール厨という立ち位置。新規ローンチ/新規ミントとだけ呼ぶ。",
+    "content_pillars": [
+      "新規ローンチの初動立ち回りチェックリスト（入る条件3つ）",
+      "ボンディングカーブ卒業の良し悪し判定（卒業＝買いではない）",
+      "Day1の機械的な利確ライン設計（×2で半分、残りトレール）",
+      "初動で踏んではいけない罠（即ラグ・板薄・配布過多）の速報"
+    ],
+    "signature_format": "⚡新規ミント初動チェック $TICKER\\n1) 卒業直後の出来高 継続してるか\\n2) 上位保有 集中してないか\\n3) 板 薄くないか\\n→ 3つ揃えば初動エントリー。×2で半分利確、残りトレール。\\n卒業＝買いではない。握らずルールで。\\n#新規ローンチ #初動",
+    "posting_cadence": "1日5〜8投稿＋ローンチ多発帯はリアルタイム実況。スピード命なので即時性で差別化。",
+    "why_it_works": "numbered_market_rule（入る条件3つ）＋liquidation/初動の速報性。JP CTは『3行ルール』が強い（@JOOWOL2型）。機械的・反煽りの立ち位置でギャンブル垢と差別化、保存される実用カードになる。"
+  }
+]

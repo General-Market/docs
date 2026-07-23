@@ -15,7 +15,7 @@ import { IdleZoom, RevealChars } from "../../anticheat/vibe";
 //
 // One card per mechanism. The kicker counts it out of thirteen.
 
-const ACCENT = colors.accent; // #0052FF
+const ACCENT = colors.accent; // #2D5BFF
 
 export type TitleSlideProps = {
   kicker?: string;

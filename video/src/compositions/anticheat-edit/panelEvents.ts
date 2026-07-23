@@ -54,11 +54,14 @@ function build(): PanelEvent[] {
 
   const sortedOverlays = [...OVERLAYS].sort((a, b) => a.at - b.at);
   for (const slot of sortedOverlays) {
-    const boundary = isTitle(slot);
-    if (boundary) {
-      // Flip for every new mechanism after the first.
+    if (isTitle(slot)) {
+      // Title slots are boundary markers ONLY — they flip the schematic side
+      // for the next mechanism but no longer render as a full-page panel. The
+      // transient ChapterRail card announces the mechanism now, so the head
+      // never shifts aside for an empty title. Flip and skip.
       side = started ? (side === "left" ? "right" : "left") : "left";
       started = true;
+      continue;
     }
     const Component = slot.component as React.FC & {
       panelSrcW?: number;
@@ -70,7 +73,7 @@ function build(): PanelEvent[] {
       side,
       kind: "schematic",
       pixel: Boolean(slot.pixel),
-      isBoundary: boundary,
+      isBoundary: false,
       srcW: Component.panelSrcW,
       srcH: Component.panelSrcH,
       render: React.createElement(Component),

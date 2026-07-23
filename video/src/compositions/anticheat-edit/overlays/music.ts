@@ -15,6 +15,12 @@
 // short crossfade at the seam, and never fall silent under a long section.
 //
 // `gain` is the ducked level under the voice (the voice lives in final.mp4).
+// All four gains are pinned to one effective loudness (~-27.5 LUFS) so the bed
+// is even across the whole talk — no cue sits louder than another. Eternal
+// Odyssey and Don't Lose Faith are cinematic swells (source LRA ~15); their
+// loud crescendos were buried under a 2:1 compressor (threshold -12 dB) before
+// re-levelling, so the peaks land ~25% quieter without flattening the quiet
+// intros. Pitch-Black City is the quiet, even reference the others match.
 // Files live in public/anticheat-edit/music/, copied from the ES_* downloads.
 
 export type MusicCue = {
@@ -57,7 +63,7 @@ export const MUSIC_CUES: MusicCue[] = [
     file: "01-pitch-black-city.mp3",
     trimStart: 13.096,
     trackDuration: 120.833,
-    gain: 0.17,
+    gain: 0.165,
     label: "§exposé A — cold open + M1-M3 — Pitch-Black City",
   },
   {
@@ -68,7 +74,7 @@ export const MUSIC_CUES: MusicCue[] = [
     file: "02-mammoth.mp3",
     trimStart: 21.525,
     trackDuration: 218.182,
-    gain: 0.15,
+    gain: 0.111,
     label: "§exposé B — M4-M13 into the dread — Mammoth",
   },
   {
@@ -79,7 +85,7 @@ export const MUSIC_CUES: MusicCue[] = [
     file: "03-eternal-odyssey.mp3",
     trimStart: 89.211,
     trackDuration: 179.667,
-    gain: 0.22,
+    gain: 0.2,
     label: "§turn — the solution, hope rising — Eternal Odyssey",
   },
   {
@@ -90,7 +96,7 @@ export const MUSIC_CUES: MusicCue[] = [
     file: "04-dont-lose-faith.mp3",
     trimStart: 74.234,
     trackDuration: 122.007,
-    gain: 0.2,
+    gain: 0.168,
     label: "§outro — the warm close — Don't Lose Faith",
   },
 ];

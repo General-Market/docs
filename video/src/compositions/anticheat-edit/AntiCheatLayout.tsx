@@ -44,7 +44,7 @@ import {
 } from "./panelEvents";
 import { BEATS_PLAY_TIME } from "./beatgrid";
 import { colors } from "../anticheat/theme";
-import { RAIL_W, railPresence } from "./overlays/chapters";
+import { BOARD_W, chapterCardPresence } from "./overlays/chapters";
 
 const SRC_W = 1920;
 const SRC_H = 1080;
@@ -456,7 +456,7 @@ const PanelStage: React.FC<{ scene: Scene; areas: Record<PanelSide, Rect> }> = (
 // ── Blue dot field — the inverted end-card background ────────────────────────
 //
 // Whenever the webcam zooms out into a panel, the head and the page sit on the
-// same field the film closes on: Base blue (#0052FF) under a faint white dot
+// same field the film closes on: Base blue (#2D5BFF) under a faint white dot
 // grid. Same texture vocabulary as the end card's resting state (spacing 14,
 // radius 1.6, white at 0.18), drawn here as a tiled CSS gradient so it costs
 // nothing across the full talk instead of ~10k SVG circles per frame.
@@ -481,10 +481,10 @@ export const AntiCheatLayout: React.FC = () => {
   const { fps, width: W, height: H } = useVideoConfig();
   const sec = frame / fps;
 
-  // The chapter board claims the right edge while it is live; ease the whole
-  // rig into the remaining left width by the same presence curve, so the head
-  // and panels never sit behind it (and ease back to full frame at the turn).
-  const EW = W - RAIL_W * railPresence(sec);
+  // While the chapter board is up on the right, ease the head + panels into the
+  // remaining width so the full board never sits over the speaker; back to full
+  // frame once it closes.
+  const EW = W - BOARD_W * chapterCardPresence(sec);
   const { webcam: RECTS, content: AREAS } = buildRects(EW, H);
 
   const scene = panelScene(sec);

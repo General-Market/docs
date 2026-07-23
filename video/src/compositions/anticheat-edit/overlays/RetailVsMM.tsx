@@ -163,7 +163,7 @@ export const RetailVsMM: React.FC = () => {
   });
 
   return (
-    <SceneFrame kicker="EVERY TRADE YOU MAKE">
+    <SceneFrame>
       <div
         style={{
           position: "absolute",
